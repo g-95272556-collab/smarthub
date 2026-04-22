@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offline | SmartSchoolHub</title>
+<meta name="theme-color" content="#08152B">
+<style>
+  :root {
+    --navy: #08152B;
+    --blue: #1A4FA0;
+    --gold: #F5C518;
+    --bg: #F0F4FB;
+    --surface: #FFFFFF;
+    --text: #0A1828;
+    --muted: #556B8A;
+    --border: rgba(26, 79, 160, 0.14);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Plus Jakarta Sans", Arial, sans-serif;
+    background:
+      radial-gradient(circle at top right, rgba(245,197,24,0.28), transparent 32%),
+      linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+  }
+
+  .card {
+    width: min(560px, 100%);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 24px 60px rgba(8, 21, 43, 0.12);
+    padding: 28px;
+    text-align: center;
+  }
+
+  .logo {
+    width: 86px;
+    height: 86px;
+    border-radius: 22px;
+    object-fit: cover;
+    box-shadow: 0 10px 24px rgba(8, 21, 43, 0.14);
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    margin: 0 0 10px;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    color: var(--navy);
+  }
+
+  p {
+    margin: 0 0 14px;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+
+  .btn {
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 18px;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--navy);
+    color: #fff;
+  }
+
+  .btn-secondary {
+    background: rgba(26, 79, 160, 0.08);
+    color: var(--blue);
+  }
+</style>
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="assets/sk-kiandongo-logo.png" alt="Logo SK Kiandongo">
+    <h1>SmartSchoolHub sedang offline</h1>
+    <p>Aplikasi ini telah dipasang sebagai PWA, tetapi sambungan internet tidak tersedia sekarang.</p>
+    <p>Anda masih boleh buka semula shell aplikasi yang telah dicache. Ciri yang memerlukan login Google, GPS, atau sambungan ke backend akan berfungsi semula apabila internet kembali stabil.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="./index.html">Buka semula aplikasi</a>
+      <button class="btn btn-secondary" type="button" onclick="location.reload()">Cuba lagi</button>
+    </div>
+  </main>
+</body>
+</html>

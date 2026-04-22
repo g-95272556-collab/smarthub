@@ -1,8 +1,17 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ms">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#08152B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="SmartSchoolHub">
+<meta name="application-name" content="SmartSchoolHub">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
 <title>Smart School Hub v2.0 — SK Kiandongo</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -200,13 +209,30 @@ html, body {
 .sidebar-user .user-role {
   margin-top: 6px;
 }
-.sidebar-user .logout-btn {
-  background: none; border: none; cursor: pointer;
-  color: rgba(255,255,255,0.3); font-size: 1rem;
-  padding: 4px; border-radius: 6px;
-  transition: color 0.15s;
+.sidebar-user .user-actions {
+  margin-top: 10px;
 }
-.sidebar-user .logout-btn:hover { color: var(--red); }
+.sidebar-user .logout-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(239,68,68,0.28);
+  background: rgba(239,68,68,0.10);
+  color: #FECACA;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s, color 0.15s;
+}
+.sidebar-user .logout-btn:hover {
+  background: rgba(239,68,68,0.18);
+  border-color: rgba(248,113,113,0.45);
+  color: #FFE4E6;
+  transform: translateY(-1px);
+}
 
 /* ─────────────────────────────────────────── */
 /* MAIN CONTENT                                */
@@ -343,6 +369,73 @@ html, body {
 /* TABLE                                       */
 /* ─────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; border-radius: var(--r); }
+.d1-editor-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: end;
+  margin: 14px 0 12px;
+}
+.d1-editor-toolbar--filters {
+  margin: 0 0 12px;
+}
+.d1-editor-table-wrap {
+  margin-top: 10px;
+  overflow: auto;
+  max-height: 72vh;
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(248,250,252,.96), #fff 56px);
+}
+.d1-editor-table-wrap table {
+  min-width: 100%;
+}
+.d1-editor-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  backdrop-filter: blur(8px);
+}
+.d1-editor-card-list {
+  display: none;
+  gap: 14px;
+  margin-top: 10px;
+}
+.d1-editor-card {
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15,23,42,.05);
+  padding: 14px;
+}
+.d1-editor-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.d1-editor-card-title {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 800;
+}
+.d1-editor-card-subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.d1-editor-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.d1-editor-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
 table {
   width: 100%; border-collapse: collapse;
   font-size: 0.88rem;
@@ -359,6 +452,718 @@ table th {
 table td { padding: 13px 16px; border-bottom: 1px solid var(--border); }
 table tbody tr:hover { background: rgba(26,79,160,0.025); }
 table tbody tr:last-child td { border-bottom: none; }
+.table-input,
+.table-textarea {
+  width: 100%;
+  border: 1px solid rgba(26,79,160,0.12);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+}
+.table-input:focus,
+.table-textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,79,160,0.08);
+}
+.table-textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.form-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.form-table td:first-child {
+  width: 120px;
+  font-weight: 600;
+  color: var(--text);
+}
+.form-table textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  resize: vertical;
+}
+.ai-status-box {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(245,197,24,0.1), rgba(26,79,160,0.1));
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai-status-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ai-status-icon {
+  font-size: 1.8rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.8);
+  box-shadow: 0 2px 8px rgba(245,197,24,0.3);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.ai-status-text {
+  flex: 1;
+}
+.ai-status-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.ai-status-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.ai-progress {
+  width: 120px;
+  margin-top: 12px;
+}
+.ai-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+.ai-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold2));
+  width: 0%;
+  transition: width 0.5s ease;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(245,197,24,0.5);
+}
+.report-header-card {
+  background: linear-gradient(135deg, rgba(26,79,160,0.05), rgba(245,197,24,0.10));
+  border: 1px solid rgba(26,79,160,0.12);
+}
+.report-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.report-banner h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.18rem;
+  margin-bottom: 4px;
+}
+.report-banner p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.report-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(26,79,160,0.12);
+  color: var(--blue);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.report-matrix th:first-child,
+.report-matrix td:first-child {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
+}
+.report-matrix thead th:first-child {
+  background: rgba(26,79,160,0.04);
+}
+.report-inline-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.report-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 20px;
+}
+.report-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.report-sign-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.report-sign-card {
+  border: 1px dashed rgba(26,79,160,0.2);
+  border-radius: 16px;
+  padding: 18px;
+  background: rgba(26,79,160,0.02);
+}
+.report-sign-card h3 {
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+}
+.weekly-report-shell {
+  display: grid;
+  gap: 20px;
+}
+.weekly-report-hero {
+  background:
+    radial-gradient(circle at top right, rgba(245,197,24,0.22), transparent 34%),
+    linear-gradient(135deg, #0d2142 0%, #163c73 56%, #1a4fa0 100%);
+  color: #fff;
+  border: none;
+  overflow: hidden;
+  position: relative;
+}
+.weekly-report-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto -40px -60px auto;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+}
+.weekly-report-hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+.weekly-report-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.92);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.weekly-report-hero h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.4rem, 2vw, 2rem);
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+.weekly-report-hero p {
+  color: rgba(255,255,255,0.82);
+  line-height: 1.75;
+  max-width: 720px;
+}
+.weekly-report-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.weekly-report-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.weekly-report-hero-side {
+  display: grid;
+  gap: 14px;
+}
+.weekly-report-progress-card {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 18px;
+  backdrop-filter: blur(8px);
+}
+.weekly-report-progress-card small {
+  display: block;
+  color: rgba(255,255,255,0.72);
+  font-size: 0.78rem;
+  margin-bottom: 8px;
+}
+.weekly-report-progress-card strong {
+  display: block;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+.weekly-report-progress-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.16);
+  overflow: hidden;
+}
+.weekly-report-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), #fde68a);
+  transition: width 0.25s ease;
+}
+.weekly-report-progress-caption {
+  margin-top: 10px;
+  color: rgba(255,255,255,0.8);
+  font-size: 0.82rem;
+}
+.weekly-report-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.weekly-report-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.weekly-report-stat small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 6px;
+}
+.weekly-report-stat strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.28rem;
+  display: block;
+}
+.weekly-report-stat span {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.weekly-report-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.weekly-report-nav button {
+  border: 1px solid rgba(26,79,160,0.12);
+  background: rgba(255,255,255,0.9);
+  color: var(--blue);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.weekly-report-nav button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(26,79,160,0.26);
+}
+.weekly-report-nav button.is-done {
+  background: rgba(16,185,129,0.10);
+  color: #047857;
+  border-color: rgba(16,185,129,0.22);
+}
+.weekly-report-section {
+  display: grid;
+  gap: 16px;
+}
+.weekly-report-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.weekly-report-section-head h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.14rem;
+  margin-bottom: 6px;
+}
+.weekly-report-section-head p {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.7;
+  max-width: 760px;
+}
+.weekly-report-section-body {
+  display: grid;
+  gap: 16px;
+}
+.weekly-report-note {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(26,79,160,0.05);
+  border: 1px solid rgba(26,79,160,0.10);
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.7;
+}
+.weekly-report-highlight {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.weekly-report-highlight-item {
+  background: rgba(8,21,43,0.03);
+  border: 1px solid rgba(26,79,160,0.08);
+  border-radius: 18px;
+  padding: 16px;
+}
+.weekly-report-highlight-item span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-bottom: 6px;
+}
+.weekly-report-highlight-item strong {
+  display: block;
+  font-size: 1rem;
+}
+.weekly-report-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.weekly-report-field-card {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+.weekly-report-field-card h3 {
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+.weekly-report-field-card p {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.weekly-report-field-card textarea,
+.weekly-report-field-card input {
+  width: 100%;
+}
+.weekly-report-field-card textarea,
+.weekly-report-field-card input,
+.weekly-report-field-card select {
+  border: 1px solid rgba(26,79,160,0.16);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.weekly-report-field-card textarea:focus,
+.weekly-report-field-card input:focus,
+.weekly-report-field-card select:focus {
+  outline: none;
+  border-color: rgba(26,79,160,0.45);
+  box-shadow: 0 0 0 4px rgba(26,79,160,0.08);
+  transform: translateY(-1px);
+}
+.weekly-report-field-card textarea {
+  min-height: 82px;
+  line-height: 1.7;
+}
+.weekly-report-field-card .table-wrap {
+  margin-top: 0;
+}
+.weekly-report-guided-note {
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+.weekly-report-activity-panel {
+  padding: 0;
+  background: transparent;
+}
+.weekly-report-activity-strip {
+  display: none;
+}
+.weekly-report-activity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: rgba(26,79,160,0.08);
+  color: var(--blue);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.weekly-report-activity-chip strong {
+  color: var(--navy);
+}
+.weekly-report-activity-table {
+  overflow: hidden;
+  border-radius: 0;
+  border: 1px solid #4d78b4;
+  background: #fff;
+}
+.weekly-report-activity-table table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.weekly-report-activity-table thead th {
+  background: #214f88;
+  color: #fff;
+  border-bottom: 1px solid #4d78b4;
+  padding: 15px 14px;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
+}
+.weekly-report-activity-table tbody td {
+  padding: 0;
+  border-top: 1px solid #4d78b4;
+  vertical-align: top;
+}
+.weekly-report-activity-table tbody tr:nth-child(odd) {
+  background: #fff;
+}
+.weekly-report-activity-table tbody tr:nth-child(even) {
+  background: #eef4fb;
+}
+.weekly-report-activity-table tbody tr:hover {
+  background: #f6f9fe;
+}
+.weekly-report-activity-table tbody td:first-child {
+  text-align: center;
+  font-weight: 800;
+  color: var(--blue);
+  font-size: 1rem;
+  width: 70px;
+  padding: 20px 10px;
+}
+.weekly-report-activity-table tbody td:first-child::before {
+  content: '';
+}
+.weekly-report-activity-table tbody td:nth-child(2),
+.weekly-report-activity-table tbody td:nth-child(3),
+.weekly-report-activity-table tbody td:nth-child(4) {
+  padding: 10px;
+}
+.weekly-report-activity-table tbody input {
+  min-height: 52px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+.weekly-report-activity-table tbody tr td:nth-child(2) input {
+  font-weight: 700;
+  color: var(--navy);
+}
+.weekly-report-activity-table tbody tr td:nth-child(3) input {
+  min-height: 78px;
+}
+.weekly-report-activity-table tbody tr td:nth-child(4) input {
+  color: var(--muted);
+}
+.weekly-report-activity-table tbody tr:first-child td {
+  border-top: none;
+}
+.weekly-report-activity-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.weekly-report-section-card {
+  position: relative;
+  overflow: visible;
+  border: 1px solid #b9c9e0;
+  box-shadow: none;
+  background: #fff;
+  border-radius: 0;
+}
+.weekly-report-section-card::before {
+  content: none;
+}
+.weekly-report-section-card > .section-header {
+  padding-left: 0;
+}
+.weekly-report-section-card > .weekly-report-note {
+  margin-left: 0;
+  margin-right: 0;
+}
+.weekly-report-section-card .weekly-report-field-card {
+  margin: 10px 0 0;
+  background: transparent;
+}
+.weekly-report-section-card .weekly-report-field-card table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.weekly-report-section-card .weekly-report-field-card textarea,
+.weekly-report-section-card .weekly-report-field-card input,
+.weekly-report-section-card .weekly-report-field-card select {
+  font-size: 0.92rem;
+}
+.weekly-report-section-card .weekly-report-field-card textarea::placeholder,
+.weekly-report-section-card .weekly-report-field-card input::placeholder {
+  color: rgba(85,107,138,0.62);
+}
+.weekly-report-section-card .weekly-report-field-card textarea {
+  min-height: 90px;
+}
+.weekly-report-section-card .weekly-report-field-card .table-wrap {
+  margin-top: 0;
+}
+.weekly-report-section-card .form-group > label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--blue);
+}
+.weekly-report-detail-table table,
+.weekly-report-class-table table,
+.weekly-report-ranking-table table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  background: #fff;
+  border: 1px solid #4d78b4;
+}
+.weekly-report-detail-table tbody tr,
+.weekly-report-class-table tbody tr,
+.weekly-report-ranking-table tbody tr {
+  border: 1px solid #4d78b4;
+}
+.weekly-report-detail-table tbody td,
+.weekly-report-class-table tbody td,
+.weekly-report-ranking-table tbody td {
+  display: table-cell;
+  vertical-align: middle;
+  padding: 12px 14px;
+  border: 1px solid #4d78b4;
+}
+.weekly-report-detail-table tbody td:last-child,
+.weekly-report-class-table tbody td:last-child,
+.weekly-report-ranking-table tbody td:last-child {
+  border-right: 1px solid #4d78b4;
+}
+.weekly-report-detail-table tbody td:first-child,
+.weekly-report-class-table tbody td:first-child,
+.weekly-report-ranking-table tbody td:first-child {
+  background: rgba(26,79,160,0.06);
+  font-weight: 800;
+  color: var(--navy);
+}
+.weekly-report-detail-table tbody td:first-child {
+  width: 240px;
+}
+.weekly-report-detail-table tbody td textarea,
+.weekly-report-detail-table tbody td input,
+.weekly-report-detail-table tbody td select,
+.weekly-report-class-table tbody td textarea,
+.weekly-report-class-table tbody td input,
+.weekly-report-class-table tbody td select,
+.weekly-report-ranking-table tbody td textarea,
+.weekly-report-ranking-table tbody td input,
+.weekly-report-ranking-table tbody td select {
+  width: 100%;
+}
+.weekly-report-detail-table tbody td textarea,
+.weekly-report-class-table tbody td textarea,
+.weekly-report-ranking-table tbody td textarea {
+  min-height: 66px;
+}
+.weekly-report-class-table tbody td:nth-child(4),
+.weekly-report-ranking-table tbody td:nth-child(4) {
+  background: rgba(245,248,255,0.9);
+}
+.weekly-report-class-table tbody td:nth-child(5),
+.weekly-report-ranking-table tbody td:nth-child(5),
+.weekly-report-ranking-table tbody td:nth-child(6) {
+  background: rgba(255,255,255,0.8);
+}
+.weekly-report-detail-table tbody tr:hover,
+.weekly-report-class-table tbody tr:hover,
+.weekly-report-ranking-table tbody tr:hover {
+  background: rgba(26,79,160,0.03);
+}
+.weekly-report-detail-table thead th,
+.weekly-report-class-table thead th,
+.weekly-report-ranking-table thead th {
+  background: #214f88;
+  color: #fff;
+  font-weight: 800;
+  border: 1px solid #4d78b4;
+  padding: 14px 12px;
+  text-align: center;
+}
+.weekly-report-detail-table tbody tr:nth-child(even),
+.weekly-report-class-table tbody tr:nth-child(even),
+.weekly-report-ranking-table tbody tr:nth-child(even) {
+  background: rgba(239,244,255,0.88);
+}
+.weekly-report-subtitle {
+  margin: 6px 0 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+.weekly-report-footer {
+  position: sticky;
+  bottom: 18px;
+  z-index: 3;
+}
+.weekly-report-footer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: rgba(8,21,43,0.92);
+  color: #fff;
+  box-shadow: 0 20px 44px rgba(8,21,43,0.20);
+}
+.weekly-report-footer-card p {
+  color: rgba(255,255,255,0.72);
+  font-size: 0.84rem;
+  line-height: 1.7;
+}
+.weekly-report-footer-card .report-actions {
+  justify-content: flex-end;
+}
 
 /* ─────────────────────────────────────────── */
 /* BADGE / PILL                                */
@@ -401,6 +1206,52 @@ table tbody tr:last-child td { border-bottom: none; }
   from { transform: translateX(40px); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
 }
+.pwa-banner {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(26,79,160,0.14);
+  background: linear-gradient(135deg, rgba(8,21,43,0.04), rgba(26,79,160,0.08)), #fff;
+  box-shadow: 0 10px 28px rgba(8,21,43,0.06);
+}
+.pwa-banner.is-visible { display: flex; }
+.pwa-banner.is-offline {
+  border-color: rgba(239,68,68,0.18);
+  background: linear-gradient(135deg, rgba(239,68,68,0.05), rgba(245,158,11,0.08)), #fff;
+}
+.pwa-banner-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.pwa-banner-copy strong {
+  color: var(--navy);
+  font-size: 0.95rem;
+}
+.pwa-banner-copy span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.pwa-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.pwa-install-btn,
+.pwa-update-btn {
+  display: none;
+}
+.pwa-install-btn.is-visible,
+.pwa-update-btn.is-visible {
+  display: inline-flex;
+}
 
 /* ─────────────────────────────────────────── */
 /* MODAL                                       */
@@ -439,6 +1290,178 @@ table tbody tr:last-child td { border-bottom: none; }
   padding: 18px 26px;
   border-top: 1px solid var(--border);
   display: flex; justify-content: flex-end; gap: 10px;
+}
+.murid-attendance-modal {
+  width: min(920px, 100%);
+  max-height: min(88vh, 920px);
+  display: flex;
+  flex-direction: column;
+}
+.murid-attendance-modal .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.murid-attendance-modal .modal-footer {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+}
+.murid-attendance-intro {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid rgba(245,197,24,0.22);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(245,197,24,0.18), transparent 38%),
+    linear-gradient(135deg, rgba(255,250,232,0.95), rgba(248,251,255,0.98));
+}
+.murid-attendance-intro h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+.murid-attendance-intro p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.murid-attendance-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.murid-attendance-pill {
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.86);
+  border: 1px solid rgba(14,26,43,0.08);
+  box-shadow: 0 10px 22px rgba(8,21,43,0.06);
+}
+.murid-attendance-pill small {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.murid-attendance-pill strong {
+  font-size: 1.18rem;
+  color: var(--navy);
+}
+.murid-attendance-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 12px;
+  align-items: end;
+}
+.murid-attendance-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+}
+.murid-attendance-bulk span {
+  margin-right: 4px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+.murid-attendance-search label {
+  display: block;
+  margin-bottom: 8px;
+}
+.murid-attendance-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+.murid-attendance-count {
+  font-weight: 700;
+  color: var(--navy);
+}
+.murid-attendance-table {
+  max-height: 430px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+}
+.murid-attendance-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+.murid-attendance-table thead {
+  position: sticky;
+  top: 0;
+  background: #fffaf0;
+  z-index: 1;
+}
+.murid-attendance-student strong {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--navy);
+}
+.murid-attendance-student div {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+.murid-attendance-footer-note {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.murid-attendance-modal .modal-footer {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.murid-attendance-footer-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 860px) {
+  .murid-attendance-summary,
+  .murid-attendance-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .murid-attendance-modal .modal-header,
+  .murid-attendance-modal .modal-body,
+  .murid-attendance-modal .modal-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .murid-attendance-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .murid-attendance-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .murid-attendance-modal .modal-footer,
+  .murid-attendance-footer-actions {
+    width: 100%;
+  }
+  .murid-attendance-footer-actions .btn {
+    flex: 1 1 180px;
+  }
 }
 
 /* ─────────────────────────────────────────── */
@@ -658,16 +1681,49 @@ table tbody tr:last-child td { border-bottom: none; }
     padding: 8px 12px;
   }
   .main-content { padding: 20px 18px; }
+  .pwa-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pwa-banner-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
   .card-grid-4 { grid-template-columns: repeat(2, 1fr); }
   .card-grid-3 { grid-template-columns: repeat(2, 1fr); }
   .card-grid-2 { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
+  .report-sign-grid { grid-template-columns: 1fr; }
   .config-grid { grid-template-columns: 1fr; }
+  .weekly-report-hero-inner,
+  .weekly-report-stat-grid,
+  .weekly-report-two-col,
+  .weekly-report-highlight { grid-template-columns: 1fr; }
+  .weekly-report-footer-card { padding: 16px; }
+  .d1-editor-toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+  }
+  .d1-editor-toolbar > * {
+    min-width: 0 !important;
+  }
+  .d1-editor-toolbar label {
+    width: 100%;
+  }
+  .d1-editor-table-wrap { max-height: 65vh; }
 }
 @media (max-width: 560px) {
   .card-grid-4 { grid-template-columns: 1fr 1fr; }
   .card-grid-3 { grid-template-columns: 1fr; }
   .nav-item span { display: none; }
+  .weekly-report-nav { gap: 8px; }
+  .weekly-report-nav button { width: 100%; justify-content: center; }
+  .weekly-report-footer { bottom: 10px; }
+  .d1-editor-toolbar { grid-template-columns: 1fr; }
+  .d1-editor-table-wrap { max-height: 58vh; }
+  .d1-editor-card-list { display: grid; }
+  .d1-editor-card { padding: 12px; }
 }
 </style>
 </head>
@@ -731,17 +1787,17 @@ table tbody tr:last-child td { border-bottom: none; }
       </button>
 
       <div class="nav-section-label">Utiliti Guru</div>
-      <button class="nav-item" onclick="showModule('geofence')">
-        <span class="nav-icon">📍</span>
-        <span>Daftar Kehadiran</span>
-      </button>
       <button class="nav-item" onclick="showModule('opr')">
         <span class="nav-icon">📄</span>
-        <span>Laporan OPR</span>
+        <span>OPR</span>
       </button>
       <button class="nav-item" onclick="showModule('laporan-kelas')">
         <span class="nav-icon">📋</span>
         <span>Laporan Guru Bertugas Mingguan</span>
+      </button>
+      <button class="nav-item" onclick="showModule('pelaporan-kokum')">
+        <span class="nav-icon">🏅</span>
+        <span>Pelaporan Kokum</span>
       </button>
 
       <div class="nav-section-label" data-admin-label="true">Pengurusan Data</div>
@@ -752,6 +1808,10 @@ table tbody tr:last-child td { border-bottom: none; }
       <button class="nav-item" data-admin-nav="true" onclick="showModule('data-murid')">
         <span class="nav-icon">👩‍🎓</span>
         <span>Data Murid</span>
+      </button>
+      <button class="nav-item" data-admin-nav="true" onclick="showModule('hari-lahir')">
+        <span class="nav-icon">🎂</span>
+        <span>Data Hari Lahir</span>
       </button>
 
       <div class="nav-section-label" data-admin-label="true">Sistem</div>
@@ -768,13 +1828,26 @@ table tbody tr:last-child td { border-bottom: none; }
           <div class="user-role">
             <span id="userRoleBadge" class="badge badge-blue">Guru</span>
           </div>
+          <div class="user-actions">
+            <button class="logout-btn" onclick="handleLogout()" title="Log keluar">Log Keluar</button>
+          </div>
         </div>
-        <button class="logout-btn" onclick="handleLogout()" title="Log keluar">✕</button>
       </div>
     </aside>
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
+      <div id="pwaBanner" class="pwa-banner">
+        <div class="pwa-banner-copy">
+          <strong id="pwaBannerTitle">Aplikasi web sedang aktif</strong>
+          <span id="pwaBannerText">SmartSchoolHub boleh dipasang pada peranti untuk akses lebih pantas.</span>
+        </div>
+        <div class="pwa-banner-actions">
+          <span id="pwaStatusBadge" class="badge badge-blue">PWA aktif</span>
+          <button id="pwaInstallBtn" class="btn btn-primary pwa-install-btn" onclick="promptPWAInstall()">Pasang Aplikasi</button>
+          <button id="pwaUpdateBtn" class="btn btn-secondary pwa-update-btn" onclick="applyPWAUpdate()">Kemas Kini App</button>
+        </div>
+      </div>
 
       <!-- ══ DASHBOARD ══ -->
       <div id="mod-dashboard" class="module active">
@@ -942,6 +2015,7 @@ table tbody tr:last-child td { border-bottom: none; }
           </div>
           <div style="display:flex;gap:10px">
             <button class="btn btn-secondary" onclick="loadKehadiranGuru()">↻ Muat Semula</button>
+            <button class="btn btn-secondary" onclick="punchOutManual()">🕐 Punch-Out Manual</button>
             <button class="btn btn-secondary" onclick="openTambahKehadiranGuru()">✏️ Daftar Manual</button>
           </div>
         </div>
@@ -976,16 +2050,17 @@ table tbody tr:last-child td { border-bottom: none; }
             </div>
             <button class="btn btn-sm btn-secondary" onclick="mulaAutoGPS()">🔄 Semak Semula</button>
           </div>
-
-          <!-- Action buttons — shown based on GPS result -->
-          <div id="geoActionDalam" style="display:none">
-            <button class="btn btn-primary btn-full btn-lg" onclick="autoHadir()" style="font-size:1rem;padding:16px">
+          <div id="geoActionDalam" style="display:none;gap:10px">
+            <button class="btn btn-primary btn-full btn-lg" onclick="autoHadir({ manual: true })" style="font-size:1rem;padding:16px">
               ✅ Daftar Hadir Sekarang
             </button>
-            <p style="font-size:0.78rem;color:var(--muted);text-align:center;margin-top:8px">Nama dan masa akan direkod automatik</p>
+            <button class="btn btn-secondary btn-full" onclick="punchOutManual()" style="font-size:0.95rem;padding:14px">
+              🕐 Punch-Out Sekarang
+            </button>
+            <p style="font-size:0.78rem;color:var(--muted);text-align:center;margin-top:4px">Punch-out automatik akan cuba direkod pada 13:00 (Isnin–Khamis) atau 11:30 (Jumaat) jika anda berada dalam geofence sekolah.</p>
           </div>
 
-          <div id="geoActionLuar" style="display:none;display:grid;gap:10px">
+          <div id="geoActionLuar" style="display:none;gap:10px">
             <p style="font-size:0.85rem;font-weight:600;color:var(--text);margin:0">Anda berada di luar kawasan sekolah. Pilih kenyataan:</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
               <button class="btn btn-secondary" style="padding:14px;font-size:0.88rem" onclick="showKenyataanLuar()">
@@ -1070,11 +2145,11 @@ table tbody tr:last-child td { border-bottom: none; }
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Nama</th><th>Tarikh</th><th>Masa</th>
+                <th>Nama</th><th>Tarikh</th><th>Masa Masuk</th><th>Masa Keluar</th>
                 <th>Status</th><th>Catatan</th><th>GPS</th>
               </tr></thead>
               <tbody id="guruKehadiranBody">
-                <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Klik "Muat Semula" untuk memuatkan data</td></tr>
+                <tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px">Klik "Muat Semula" untuk memuatkan data</td></tr>
               </tbody>
             </table>
           </div>
@@ -1185,73 +2260,300 @@ table tbody tr:last-child td { border-bottom: none; }
         <div class="page-header">
           <div>
             <h1>Laporan Guru Bertugas Mingguan</h1>
-            <p>Statistik dan laporan kehadiran guru bertugas mingguan</p>
+            <p>Borang laporan mingguan mengikut format dokumen sekolah</p>
           </div>
-          <button class="btn btn-primary" onclick="generateLaporanKelas()">📄 Jana Laporan</button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-secondary" onclick="initLaporanGuruBertugasMingguanModule(true)">Muat Semula</button>
+          </div>
+        </div>
+
+        <div class="card weekly-report-section-card" style="margin-bottom:20px">
+          <div class="section-header"><h2>Maklumat Laporan</h2></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Guru Bertugas</label>
+              <input id="laporanBertugasNamaGuru" type="text" placeholder="Nama guru bertugas mingguan">
+            </div>
+            <div class="form-group">
+              <label>Jawatan / Peranan</label>
+              <input id="laporanBertugasJawatanGuru" type="text" placeholder="Contoh: Guru Bertugas Minggu Ke-15">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Minggu</label>
+              <input id="laporanBertugasMinggu" type="text" placeholder="Contoh: 20 April 2026 – 24 April 2026 (Minggu Ke-15)">
+            </div>
+            <div class="form-group">
+              <label>Tarikh Laporan</label>
+              <input id="laporanBertugasTarikhLaporan" type="date">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Pembantu Guru Bertugas</label>
+              <input id="laporanBertugasPembantuGuru" type="text" placeholder="Nama pembantu guru bertugas">
+            </div>
+            <div class="form-group">
+              <label>Catatan Minggu</label>
+              <input id="laporanBertugasTajuk" type="text" placeholder="Contoh: Minggu Ke-15, Penggal 1">
+            </div>
+          </div>
+        </div>
+
+        <div class="card weekly-report-section-card" style="margin-bottom:20px">
+          <div class="section-header">
+            <h2>1. Kehadiran Murid Harian dan Keseluruhan</h2>
+            <button class="btn btn-sm btn-secondary" onclick="loadLaporanGuruBertugasAttendance()">Muat Data Kehadiran</button>
+          </div>
+          <div class="weekly-report-note weekly-report-guided-note">Data kehadiran murid dimuat secara automatik daripada modul Kehadiran Murid. Butang ini hanya menyegar semula data semasa jika ada perubahan terkini.</div>
+          <div class="weekly-report-field-card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Hari</th>
+                    <th>Tarikh</th>
+                    <th>Jumlah Murid Hadir</th>
+                    <th>Jumlah Murid Enrolmen</th>
+                    <th>Peratus Kehadiran (%)</th>
+                  </tr>
+                </thead>
+                <tbody id="laporanBertugasAttendanceBody">
+                  <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px">Klik "Muat Data Kehadiran" untuk memuatkan data</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="form-group" style="margin-top:16px">
+              <label>Rumusan Kehadiran Keseluruhan</label>
+              <textarea id="laporanBertugasAttendanceSummary" rows="3" placeholder="Rumusan kehadiran keseluruhan minggu akan dijana automatik berdasarkan data kehadiran murid."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="card weekly-report-section-card" style="margin-bottom:20px">
+          <div class="section-header"><h2>2. Kenyataan Aktiviti Sepanjang Minggu</h2></div>
+          <div class="weekly-report-note weekly-report-guided-note">Isi sekurang-kurangnya 3 aktiviti/butiran, dan boleh tambah sehingga 6 jika perlu. Gunakan kategori ringkas seperti Akademik, Ko-Kurikulum, Sukan/PJ, PdPc dan Lain-lain supaya laporan lebih kemas.</div>
+          <div class="weekly-report-field-card weekly-report-activity-panel">
+            <div class="weekly-report-activity-strip">
+              <div class="weekly-report-activity-chip">🧭 <strong>Minimum 3</strong> aktiviti wajib</div>
+              <div class="weekly-report-activity-chip">✨ Disyorkan 4-6 butiran ringkas</div>
+              <div class="weekly-report-activity-chip">📝 Satu baris = satu peristiwa utama</div>
+            </div>
+            <div class="table-wrap weekly-report-activity-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:70px">Bil.</th>
+                    <th style="width:180px">Kategori</th>
+                    <th>Aktiviti / Butiran</th>
+                    <th style="width:220px">Tarikh / Hari</th>
+                  </tr>
+                </thead>
+                <tbody id="laporanBertugasAktivitiBody">
+                  <tr>
+                    <td>1</td>
+                    <td><input type="text" value="Akademik" style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Perhimpunan rasmi mingguan dan penyampaian maklumat sekolah berjalan lancar." style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Isnin (20/04/2026)" style="width:100%"></td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td><input type="text" value="Akademik" style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Pemantauan PdPc dan semakan buku latihan dijalankan oleh pentadbir." style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Selasa (21/04/2026)" style="width:100%"></td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td><input type="text" value="Ko-Kurikulum" style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Latihan unit beruniform / kelab dijalankan mengikut jadual." style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Rabu (22/04/2026)" style="width:100%"></td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td><input type="text" value="Sukan / PJ" style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Aktiviti latihan sukan sekolah dan pemilihan peserta dijalankan." style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Khamis (23/04/2026)" style="width:100%"></td>
+                  </tr>
+                  <tr>
+                    <td>5</td>
+                    <td><input type="text" value="PdPc" style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Penggunaan bahan digital / interaktif membantu penglibatan murid semasa PdPc." style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Sepanjang minggu" style="width:100%"></td>
+                  </tr>
+                  <tr>
+                    <td>6</td>
+                    <td><input type="text" value="Lain-lain" style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Mesyuarat, taklimat atau aktiviti khas sekolah yang lain." style="width:100%"></td>
+                    <td><input type="text" placeholder="Contoh: Jumaat (24/04/2026)" style="width:100%"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card weekly-report-section-card" style="margin-bottom:20px">
+          <div class="section-header"><h2>3. Kenyataan Tahap Disiplin Murid</h2></div>
+          <div class="weekly-report-note weekly-report-guided-note">Fokus pada empat butiran ini sahaja: status umum, kes salah laku, pakaian seragam dan buku demerit. Gaya bahasa ringkas lebih mudah dibaca semula.</div>
+          <div class="weekly-report-field-card">
+            <div class="table-wrap weekly-report-detail-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:240px">Aspek Disiplin</th>
+                    <th>Butiran / Catatan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Status Umum</td>
+                    <td><textarea id="laporanBertugasDisiplinStatusUmum" rows="2" placeholder="Contoh: Baik. Tiada insiden disiplin serius sepanjang minggu ini."></textarea></td>
+                  </tr>
+                  <tr>
+                    <td>Kes Salah Laku</td>
+                    <td><textarea id="laporanBertugasDisiplinKes" rows="2" placeholder="Contoh: Terdapat 1 kes ponteng kelas dan ibu bapa telah dihubungi untuk tindakan susulan."></textarea></td>
+                  </tr>
+                  <tr>
+                    <td>Pakaian Seragam</td>
+                    <td><textarea id="laporanBertugasDisiplinUniform" rows="2" placeholder="Contoh: Pemeriksaan pakaian seragam dijalankan dan murid yang tidak lengkap diberi teguran lisan."></textarea></td>
+                  </tr>
+                  <tr>
+                    <td>Buku Demerit</td>
+                    <td><textarea id="laporanBertugasDisiplinDemerit" rows="2" placeholder="Contoh: Tiada rekod baharu dalam buku demerit sepanjang minggu ini."></textarea></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card weekly-report-section-card" style="margin-bottom:20px">
+          <div class="section-header"><h2>4. Status Pelaksanaan Rancangan Makanan Tambahan (RMT)</h2></div>
+          <div class="weekly-report-note weekly-report-guided-note">Catat status pelaksanaan, jumlah penerima, menu dan aduan secara ringkas. Jika tiada isu, tulis jelas supaya semakan akhir lebih mudah.</div>
+          <div class="weekly-report-field-card">
+            <div class="table-wrap weekly-report-detail-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:240px">Perkara</th>
+                    <th>Status / Maklumat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Status Pelaksanaan</td>
+                    <td><textarea id="laporanBertugasRmtStatus" rows="2" placeholder="Contoh: Berjalan seperti biasa sepanjang minggu. Makanan disediakan dan diedarkan tepat pada masa."></textarea></td>
+                  </tr>
+                  <tr>
+                    <td>Jumlah Penerima RMT</td>
+                    <td><textarea id="laporanBertugasRmtJumlah" rows="2" placeholder="Contoh: 38 orang murid layak menerima RMT dan majoriti hadir menerima sajian setiap hari."></textarea></td>
+                  </tr>
+                  <tr>
+                    <td>Menu Minggu Ini</td>
+                    <td><textarea id="laporanBertugasRmtMenu" rows="3" placeholder="Contoh: Isnin: Nasi Lemak; Selasa: Mi Goreng; Rabu: Nasi + Ayam Goreng; Khamis: Roti + Susu; Jumaat: Nasi + Ikan Masak Kicap"></textarea></td>
+                  </tr>
+                  <tr>
+                    <td>Aduan / Masalah</td>
+                    <td><textarea id="laporanBertugasRmtAduan" rows="2" placeholder="Contoh: Tiada aduan diterima. Murid memberikan maklum balas yang positif terhadap menu minggu ini."></textarea></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <div class="card" style="margin-bottom:20px">
-          <div class="section-header"><h2>Pilih Bulan & Kelas</h2></div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Bulan</label>
-              <input type="month" id="laporanBulan">
-            </div>
-            <div class="form-group">
-              <label>Kelas (kosongkan untuk semua)</label>
-              <select id="laporanKelas">
-                <option value="">Semua Kelas</option>
-                <option>1 NILAM</option>
-                <option>2 INTAN</option>
-                <option>3 KRISTAL</option>
-                <option>4 MUTIARA</option>
-                <option>5 DELIMA</option>
-                <option>6 BAIDURI</option>
-                </select>
-            </div>
-          </div>
-          <div style="margin-top:14px">
-            <button class="btn btn-primary" onclick="loadLaporanData()">Muatkan Data</button>
-          </div>
-        </div>
-
-        <div class="card-grid card-grid-3" id="laporanStats" style="margin-bottom:20px;display:none">
-          <div class="stat-card">
-            <div class="stat-icon blue">🏫</div>
-            <div class="stat-info"><small>Jumlah Murid</small><strong id="lap-jumlah">—</strong></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon green">📊</div>
-            <div class="stat-info"><small>Purata Kehadiran</small><strong id="lap-purata">—</strong></div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon red">⚠️</div>
-            <div class="stat-info"><small>Murid Berisiko (&lt;80%)</small><strong id="lap-risiko">—</strong></div>
-          </div>
-        </div>
-
-        <div class="card" id="laporanTableCard">
           <div class="section-header">
-            <h2>Ringkasan Kehadiran Mengikut Kelas</h2>
-            <button class="btn btn-sm btn-secondary" onclick="exportLaporanCSV()">⬇ Export CSV</button>
+            <h2>5. Tahap Kebersihan Kelas</h2>
+            <button class="btn btn-sm btn-secondary" onclick="loadLaporanGuruBertugasClassTables()">Muat Nama Kelas</button>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Kelas</th>
-                  <th>Jumlah Murid</th>
-                  <th>Hari Hadir (avg)</th>
-                  <th>Hari Tidak Hadir (avg)</th>
-                  <th>Peratus Kehadiran</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="laporanBody">
-                <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Pilih bulan dan klik "Muatkan Data"</td></tr>
-              </tbody>
-            </table>
+          <div class="weekly-report-note weekly-report-guided-note">Senarai kelas diambil dari data murid, jadi nama kelas yang dipaparkan akan kekal selari dengan rekod semasa sekolah.</div>
+          <div class="weekly-report-field-card">
+            <div class="table-wrap weekly-report-class-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:70px">Bil.</th>
+                    <th>Nama Kelas</th>
+                    <th style="width:100px">Tahun</th>
+                    <th style="width:180px">Tahap Kebersihan</th>
+                    <th>Catatan</th>
+                  </tr>
+                </thead>
+                <tbody id="laporanBertugasKebersihanBody">
+                  <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px">Klik "Muat Nama Kelas" untuk memuatkan senarai kelas Tahun 1 hingga Tahun 6</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="section-header">
+            <h2>6. Pertandingan Keceriaan Kelas</h2>
+            <button class="btn btn-sm btn-secondary" onclick="loadLaporanGuruBertugasClassTables()">Muat Senarai Kelas</button>
+          </div>
+          <div class="weekly-report-note weekly-report-guided-note">Isikan kedudukan, guru kelas, markah dan catatan. Jika data guru kelas sudah ada pada sheet, medan itu akan membantu memudahkan semakan akhir.</div>
+          <div class="weekly-report-field-card">
+            <div class="table-wrap weekly-report-ranking-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:90px">Tempat</th>
+                    <th style="width:90px">Tahun</th>
+                    <th>Nama Kelas</th>
+                    <th>Guru Kelas</th>
+                    <th style="width:120px">Markah (%)</th>
+                    <th>Catatan</th>
+                  </tr>
+                </thead>
+                <tbody id="laporanBertugasKeceriaanBody">
+                  <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Klik "Muat Senarai Kelas" untuk memuatkan jadual penilaian keceriaan</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="form-group" style="margin-top:16px">
+              <label>Catatan Penilaian Keceriaan</label>
+              <textarea id="laporanBertugasKeceriaanNota" rows="3" placeholder="Contoh: Penilaian dijalankan pada hari Khamis oleh jawatankuasa keceriaan sekolah berdasarkan hiasan dinding, kebersihan am, sudut bacaan, pokok hiasan dan semangat kelas."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="section-header">
+            <h2>7. Rumusan Mingguan</h2>
+            <button class="btn btn-sm btn-primary" id="laporanBertugasAiBtn" onclick="janaRumusanLaporanGuruBertugas()">Jana AI</button>
+          </div>
+          <div class="weekly-report-note weekly-report-guided-note">Rumusan boleh ditaip manual atau dijana AI selepas semua seksyen lain siap. Gunakan bahasa formal dan ringkas.</div>
+          <div id="laporanBertugasAiStatus" style="display:none;margin-bottom:14px;padding:12px 14px;border-radius:12px;background:rgba(26,79,160,0.08);color:var(--blue);font-size:0.88rem"></div>
+          <div class="weekly-report-field-card">
+            <div class="table-wrap weekly-report-detail-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:240px">Perkara</th>
+                    <th>Rumusan / Panduan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Rumusan Mingguan</td>
+                    <td><textarea id="laporanBertugasRumusanMingguan" rows="8" placeholder="Contoh: Secara keseluruhannya, pengurusan sekolah sepanjang minggu ini adalah terkawal dan memuaskan. Kehadiran murid berada pada tahap baik, disiplin murid terkawal, pelaksanaan RMT berjalan lancar, dan kebersihan kelas menunjukkan peningkatan dengan beberapa tindakan susulan kecil diperlukan."></textarea></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="weekly-report-note" style="margin-top:14px">
+              Rumusan yang baik biasanya merangkum kehadiran, aktiviti, disiplin, RMT, kebersihan dan keceriaan dalam 1 hingga 2 perenggan. Jika perlu, jana draf AI dahulu dan kemaskan ayat akhir selepas itu.
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="btn btn-secondary" onclick="initLaporanGuruBertugasMingguanModule(true)">Reset Data Auto</button>
+          <button class="btn btn-success" onclick="simpanLaporanGuruBertugasMingguan()">Simpan Laporan</button>
+          <button class="btn btn-primary" onclick="cetakLaporanGuruBertugasMingguan()">Cetak / Eksport PDF</button>
         </div>
       </div>
 
@@ -1272,6 +2574,8 @@ table tbody tr:last-child td { border-bottom: none; }
               <div id="notif-module-status" style="font-weight:700;color:var(--blue)">Memuat...</div>
             </div>
             <button class="btn btn-secondary" onclick="toggleNotifAutoEnabled()" id="notifModuleToggle">Togol Notifikasi</button>
+            <button class="btn btn-secondary" onclick="testTelegram()">🧪 Uji Telegram</button>
+            <button class="btn btn-secondary" onclick="testFonnte()">🧪 Uji Fonnte</button>
           </div>
         </div>
 
@@ -1283,11 +2587,11 @@ table tbody tr:last-child td { border-bottom: none; }
 
         <!-- TAB: HANTAR -->
         <div id="notif-tab-hantar">
-          <div class="card-grid card-grid-2" style="margin-bottom:20px">
+          <div class="card-grid card-grid-3" style="margin-bottom:20px">
             <div class="card">
               <div class="section-header"><h2>Notifikasi Tidak Hadir</h2></div>
               <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;line-height:1.7">
-                Hantar makluman automatik kepada ibu bapa / penjaga murid yang tidak hadir hari ini.
+                Hantar makluman automatik kepada ibu bapa / penjaga murid yang tidak hadir hari ini melalui Telegram dan WhatsApp.
               </p>
               <div class="form-group" style="margin-bottom:12px">
                 <label>Tarikh</label>
@@ -1302,7 +2606,7 @@ table tbody tr:last-child td { border-bottom: none; }
                   <option>5 DELIMA</option><option>6 BAIDURI</option>
                 </select>
               </div>
-              <button class="btn btn-primary btn-full" onclick="hantarNotifTidakHadir()">📩 Hantar Sekarang</button>
+              <button class="btn btn-primary btn-full" onclick="hantarTelegramTidakHadirMuridManual()">📩 Hantar Telegram & WhatsApp</button>
             </div>
 
             <div class="card">
@@ -1316,6 +2620,22 @@ table tbody tr:last-child td { border-bottom: none; }
                 <textarea id="notifMesej" rows="5" placeholder="Taip mesej di sini..."></textarea>
               </div>
               <button class="btn btn-primary btn-full" onclick="hantarNotifTersuai()">📤 Hantar Mesej</button>
+            </div>
+
+            <div class="card">
+              <div class="section-header"><h2>Peringatan Guru Belum Daftar</h2></div>
+              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;line-height:1.7">
+                Hantar peringatan terus kepada guru yang belum mendaftar kehadiran hari ini melalui Telegram dan WhatsApp.
+              </p>
+              <div class="form-group" style="margin-bottom:12px">
+                <label>Tarikh</label>
+                <input type="date" id="notifGuruTarikh" onchange="setText('notifGuruTarikhPreview', this.value)">
+              </div>
+              <div class="form-group" style="margin-bottom:16px">
+                <label>Nota</label>
+                <div id="notifGuruTarikhPreview" style="font-size:0.85rem;color:var(--muted)">Gunakan tarikh hari ini jika kosong.</div>
+              </div>
+              <button class="btn btn-primary btn-full" onclick="hantarTelegramGuruTidakHadirManual()">📩 Hantar Peringatan Guru</button>
             </div>
           </div>
 
@@ -1404,9 +2724,26 @@ _SK Kiandongo_</textarea>
           </div>
         </div>
 
+        <div class="card" style="margin-bottom:20px;border:1px solid rgba(37,99,235,.14);background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%)">
+          <div class="section-header">
+            <h2>Menu Konfigurasi</h2>
+            <span class="badge badge-blue">Pusat Tetapan</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+            <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})">Worker & Apps Script</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})">Notifikasi Hari Lahir</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-group-card').scrollIntoView({behavior:'smooth', block:'start'})">Group Fonnte</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-kokum-card').scrollIntoView({behavior:'smooth', block:'start'})">Pelaporan Kokum</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-d1-card').scrollIntoView({behavior:'smooth', block:'start'})">Pengurusan D1</button>
+          </div>
+        </div>
+
         <div class="config-grid">
-          <div class="card">
-            <div class="section-header"><h2>Worker & Apps Script</h2></div>
+          <div class="card" id="config-worker-card">
+            <div class="section-header">
+              <h2>Worker & Apps Script</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+            </div>
             <div style="display:grid;gap:14px">
               <div class="form-group">
                 <label>Cloudflare Worker URL</label>
@@ -1427,7 +2764,10 @@ _SK Kiandongo_</textarea>
           </div>
 
           <div class="card">
-            <div class="section-header"><h2>Konfigurasi Kunci</h2></div>
+            <div class="section-header">
+              <h2>Konfigurasi Kunci</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+            </div>
             <div style="display:grid;gap:14px">
               <div class="form-group">
                 <label>Nama Kunci</label>
@@ -1444,10 +2784,203 @@ _SK Kiandongo_</textarea>
               </div>
             </div>
           </div>
+
+          <div class="card" id="config-group-card">
+            <div class="section-header">
+              <h2>Setup Group Fonnte</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+            </div>
+            <p style="font-size:0.9rem;color:var(--muted);margin-bottom:14px;line-height:1.7">
+              Semak status group guru dan group kelas. Jika group wujud, ID group akan dipaparkan terus di sini supaya setup lebih jelas dan mudah disemak.
+            </p>
+            <div style="display:grid;gap:16px">
+              <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+                <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+                  <div>
+                    <div style="font-weight:700">Test Group (Fonnte)</div>
+                    <div style="font-size:0.85rem;color:var(--muted)">Digunakan untuk menerima mesej ujian Fonnte bagi mengelak gangguan ke group sebenar.</div>
+                  </div>
+                  <span id="config-fonnte-test-status" class="badge badge-gray">Memuat...</span>
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                  <label>ID Test Group</label>
+                  <input id="config-fonnte-test-group" type="text" placeholder="contoh: 120363423994004887@g.us">
+                </div>
+                <div id="config-fonnte-test-id" style="margin-top:8px;font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                <button class="btn btn-sm btn-primary" style="margin-top:12px" onclick="simpanTestGroupFonnte()">Simpan Test Group</button>
+              </div>
+
+              <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+                <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+                  <div>
+                    <div style="font-weight:700">Group Guru (Fonnte)</div>
+                    <div style="font-size:0.85rem;color:var(--muted)">Digunakan oleh notifikasi yang berkaitan dengan guru / hari lahir.</div>
+                  </div>
+                  <span id="config-fonnte-guru-status" class="badge badge-gray">Memuat...</span>
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                  <label>ID Group Guru</label>
+              <input id="config-fonnte-guru-group" type="text" placeholder="contoh: 60148608242-1434600192@g.us" oninput="syncGroupGuruFonnteInputsFrom('config-fonnte-guru-group')">
+                </div>
+                <div id="config-fonnte-guru-id" style="margin-top:8px;font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                <button class="btn btn-sm btn-primary" style="margin-top:12px" onclick="simpanGroupGuruFonnte()">Simpan Group Guru</button>
+              </div>
+              <div>
+                <div class="section-header" style="margin-bottom:10px">
+                  <h3 style="font-size:1rem;margin:0">Group Kelas</h3>
+                  <span id="config-group-kelas-summary" class="badge badge-blue">Memuat...</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+                  <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+                      <div style="font-weight:700">1 NILAM</div>
+                      <span id="grp-1-nilam-status" class="badge badge-gray">Memuat...</span>
+                    </div>
+                    <input id="grp-1-nilam" type="text" placeholder="ID group kelas 1 NILAM">
+                    <div id="grp-1-nilam-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                  </div>
+                  <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+                      <div style="font-weight:700">2 INTAN</div>
+                      <span id="grp-2-intan-status" class="badge badge-gray">Memuat...</span>
+                    </div>
+                    <input id="grp-2-intan" type="text" placeholder="ID group kelas 2 INTAN">
+                    <div id="grp-2-intan-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                  </div>
+                  <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+                      <div style="font-weight:700">3 KRISTAL</div>
+                      <span id="grp-3-kristal-status" class="badge badge-gray">Memuat...</span>
+                    </div>
+                    <input id="grp-3-kristal" type="text" placeholder="ID group kelas 3 KRISTAL">
+                    <div id="grp-3-kristal-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                  </div>
+                  <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+                      <div style="font-weight:700">4 MUTIARA</div>
+                      <span id="grp-4-mutiara-status" class="badge badge-gray">Memuat...</span>
+                    </div>
+                    <input id="grp-4-mutiara" type="text" placeholder="ID group kelas 4 MUTIARA">
+                    <div id="grp-4-mutiara-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                  </div>
+                  <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+                      <div style="font-weight:700">5 DELIMA</div>
+                      <span id="grp-5-delima-status" class="badge badge-gray">Memuat...</span>
+                    </div>
+                    <input id="grp-5-delima" type="text" placeholder="ID group kelas 5 DELIMA">
+                    <div id="grp-5-delima-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                  </div>
+                  <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
+                    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+                      <div style="font-weight:700">6 BAIDURI</div>
+                      <span id="grp-6-baiduri-status" class="badge badge-gray">Memuat...</span>
+                    </div>
+                    <input id="grp-6-baiduri" type="text" placeholder="ID group kelas 6 BAIDURI">
+                    <div id="grp-6-baiduri-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="simpanGroupGuruFonnte()">Simpan Group Guru</button>
+              <button class="btn btn-secondary" onclick="simpanSemuaGroupKelas()">Simpan Group Kelas</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card" id="config-birthday-card" style="margin-top:20px;border:1px solid rgba(16,185,129,.18);background:linear-gradient(180deg,#ffffff 0%,#f8fffb 100%)">
+          <div class="section-header" style="align-items:flex-start;gap:14px">
+            <div style="flex:1;min-width:0">
+              <h2>Konfigurasi Notifikasi Hari Lahir</h2>
+              <p style="font-size:0.9rem;color:var(--muted);margin:8px 0 0;line-height:1.7">
+                Paparkan, semak, dan sahkan konfigurasi Telegram, token Fonnte, group guru, serta semua group kelas untuk aliran ucapan dan peringatan hari lahir.
+              </p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <span class="badge badge-green">Konfigurasi Berpusat</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px">
+            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Telegram</div>
+              <div id="birthdayNotifTelegramStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
+              <div id="birthdayNotifTelegramMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Status sambungan Telegram akan dipaparkan di sini.</div>
+            </div>
+            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Fonnte Token</div>
+              <div id="birthdayNotifFonnteStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
+              <div id="birthdayNotifFonnteMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Status token Fonnte akan dipaparkan di sini.</div>
+            </div>
+            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Group Guru</div>
+              <div id="birthdayNotifGuruGroupStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
+              <div id="birthdayNotifGuruGroupMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Status group guru akan dipaparkan di sini.</div>
+            </div>
+            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Group Kelas</div>
+              <div id="birthdayNotifClassGroupStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
+              <div id="birthdayNotifClassGroupMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Status semua group kelas akan dipaparkan di sini.</div>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-top:16px">
+            <div class="form-group">
+              <label>Telegram Bot Token</label>
+              <input id="hl-tg-bot" type="text" placeholder="bot token Telegram">
+            </div>
+            <div class="form-group">
+              <label>Telegram Chat ID</label>
+              <input id="hl-tg-chat" type="text" placeholder="-100xxxxxxx">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Telegram Topic ID</label>
+              <input id="hl-tg-topic" type="text" placeholder="topic id">
+            </div>
+            <div class="form-group">
+              <label>Fonnte Token</label>
+              <input id="hl-fonnte-token" type="text" placeholder="token Fonnte">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+            <button class="btn btn-primary" onclick="simpanKonfigHariLahir()">Simpan Konfigurasi Hari Lahir</button>
+            <button class="btn btn-secondary" onclick="loadBirthdayNotificationConfig()">Muat Semula Konfigurasi</button>
+            <button class="btn btn-secondary" onclick="testBirthdayTelegramConfig()">Uji Telegram</button>
+            <button class="btn btn-secondary" onclick="testBirthdayFonnteTarget('guru')">Uji Group Guru</button>
+            <button class="btn btn-secondary" onclick="testAllBirthdayFonnteGroups()">Uji Semua Group Fonnte</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-group-card').scrollIntoView({behavior:'smooth', block:'start'})">Semak Semua Group Kelas</button>
+          </div>
+
+          <div id="birthdayNotifConfigCheckResult" class="result-box" style="display:none;margin-top:14px"></div>
+
+          <div class="table-wrap" style="margin-top:16px">
+            <table>
+              <thead>
+                <tr>
+                  <th>Saluran / Kelas</th>
+                  <th>Status</th>
+                  <th>ID / Nilai</th>
+                  <th>Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="birthdayNotifGroupBody">
+                <tr><td colspan="4" style="padding:18px;text-align:center;color:var(--muted)">Memuat status group...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div class="card" style="margin-top:20px">
-          <div class="section-header"><h2>Akses & Notifikasi Admin</h2></div>
+          <div class="section-header">
+            <h2>Akses & Notifikasi Admin</h2>
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+          </div>
           <div style="display:grid;gap:14px">
             <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
               <div style="flex:1;min-width:260px">
@@ -1457,19 +2990,14 @@ _SK Kiandongo_</textarea>
               <button id="config-notif-auto-toggle" class="btn btn-secondary" onclick="toggleNotifAutoEnabled()">Togol Notifikasi</button>
               <button class="btn btn-sm btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar')">Buka Notifikasi</button>
             </div>
-            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-              <div style="flex:1;min-width:260px">
-                <label>Status Peringatan Hari Lahir</label>
-                <div id="config-hl-status" style="font-weight:700;color:var(--blue)">Memuat...</div>
-              </div>
-              <button id="config-hl-toggle" class="btn btn-secondary" onclick="toggleHLNotifEnabled()">Togol Hari Lahir</button>
-              <button class="btn btn-sm btn-secondary" onclick="showModule('hari-lahir')">Buka Hari Lahir</button>
-            </div>
           </div>
         </div>
 
         <div class="card" style="margin-top:20px">
-          <div class="section-header"><h2>Pengurusan Admin</h2></div>
+          <div class="section-header">
+            <h2>Pengurusan Admin</h2>
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+          </div>
           <p style="font-size:0.9rem;color:var(--muted);margin-bottom:14px">Admin lalai: PK Pentadbiran. Tambah admin lain untuk berkongsi akses konfigurasi dan notifikasi.</p>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
             <div style="flex:1;min-width:240px">
@@ -1489,13 +3017,19 @@ _SK Kiandongo_</textarea>
         <div class="card" style="margin-top:20px">
           <div class="section-header">
             <h2>Status & Output</h2>
-            <button class="btn btn-sm btn-secondary" onclick="clearConfigStatus()">Kosongkan</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <button class="btn btn-sm btn-secondary" onclick="clearConfigStatus()">Kosongkan</button>
+            </div>
           </div>
           <div id="configStatus" class="result-box">Status akan dipaparkan di sini.</div>
         </div>
 
         <div class="card" id="configPreviewCard" style="margin-top:20px;display:none">
-          <div class="section-header"><h2>Config Semasa (dari Google Sheet)</h2></div>
+          <div class="section-header">
+            <h2>Config Semasa (dari Google Sheet)</h2>
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+          </div>
           <div class="table-wrap">
             <table id="configTable">
               <thead><tr><th>Kunci</th><th>Nilai</th></tr></thead>
@@ -1504,8 +3038,79 @@ _SK Kiandongo_</textarea>
           </div>
         </div>
 
+        <div class="card" id="config-kokum-card" style="margin-top:20px;border:1px solid rgba(16,185,129,.16);background:linear-gradient(180deg,#ffffff 0%,#f7fffb 100%)">
+          <div class="section-header" style="align-items:flex-start;gap:12px">
+            <div style="flex:1;min-width:0">
+              <h2>Konfigurasi Pelaporan Kokum</h2>
+              <p style="font-size:0.92rem;color:var(--muted);margin:8px 0 0;line-height:1.7">
+                Urus senarai program, kemas kini guru penasihat, dan muat naik data kokum murid supaya modul Pelaporan Kokum terus memanggil data yang tepat.
+              </p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <span id="kokumConfigProgramMeta" class="badge badge-green">Memuat konfigurasi...</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px">
+            <div style="padding:16px;border:1px solid var(--border);border-radius:16px;background:#fff;display:grid;gap:10px">
+              <div style="font-weight:700;color:var(--blue)">Unit Beruniform</div>
+              <textarea id="kokumConfigUnitBeruniform" rows="9" placeholder="Satu program bagi setiap baris&#10;Contoh: Kadet Remaja Sekolah (KRS)&#10;Pengakap"></textarea>
+            </div>
+            <div style="padding:16px;border:1px solid var(--border);border-radius:16px;background:#fff;display:grid;gap:10px">
+              <div style="font-weight:700;color:var(--blue)">Kelab dan Persatuan</div>
+              <textarea id="kokumConfigKelabPersatuan" rows="9" placeholder="Satu program bagi setiap baris&#10;Contoh: Kelab STEM&#10;Kelab Seni Muzik"></textarea>
+            </div>
+            <div style="padding:16px;border:1px solid var(--border);border-radius:16px;background:#fff;display:grid;gap:10px">
+              <div style="font-weight:700;color:var(--blue)">Sukan dan Permainan</div>
+              <textarea id="kokumConfigSukanPermainan" rows="9" placeholder="Satu program bagi setiap baris&#10;Contoh: Bola Tampar&#10;Catur"></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px">
+            <button class="btn btn-primary" onclick="simpanKonfigurasiProgramKokum()">Simpan Senarai Program</button>
+            <button class="btn btn-secondary" onclick="loadKokumProgramConfig(true)">Muat Semula Config Kokum</button>
+            <button class="btn btn-secondary" onclick="resetKonfigurasiProgramKokum()">Reset Tempatan</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:18px">
+            <div style="padding:16px;border:1px solid var(--border);border-radius:16px;background:#fff;display:grid;gap:10px">
+              <div class="section-header" style="margin-bottom:0">
+                <h3 style="font-size:1rem;margin:0">Upload Data Guru Penasihat</h3>
+                <button class="btn btn-sm btn-secondary" onclick="downloadKokumGuruConfigTemplate()">Muat Turun Templat</button>
+              </div>
+              <p style="margin:0;font-size:0.86rem;color:var(--muted);line-height:1.6">
+                CSV perlu mengandungi lajur: <strong>Nama, Emel, Kokum Unit Beruniform, Kokum Kelab Dan Persatuan, Kokum Sukan Dan Permainan</strong>.
+              </p>
+              <input id="kokumGuruConfigCsv" type="file" accept=".csv,text/csv">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-primary" onclick="importKokumGuruConfigCSV()">Import Guru Penasihat</button>
+              </div>
+              <div id="kokumGuruConfigResult" class="result-box" style="display:none"></div>
+            </div>
+
+            <div style="padding:16px;border:1px solid var(--border);border-radius:16px;background:#fff;display:grid;gap:10px">
+              <div class="section-header" style="margin-bottom:0">
+                <h3 style="font-size:1rem;margin:0">Upload Data Kokum Murid</h3>
+                <button class="btn btn-sm btn-secondary" onclick="downloadKokumMuridConfigTemplate()">Muat Turun Templat</button>
+              </div>
+              <p style="margin:0;font-size:0.86rem;color:var(--muted);line-height:1.6">
+                CSV perlu mengandungi lajur: <strong>Nama, Kelas, Kokum Unit Beruniform, Kokum Kelab Dan Persatuan, Kokum Sukan Dan Permainan</strong>.
+              </p>
+              <input id="kokumMuridConfigCsv" type="file" accept=".csv,text/csv">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-primary" onclick="importKokumMuridConfigCSV()">Import Kokum Murid</button>
+              </div>
+              <div id="kokumMuridConfigResult" class="result-box" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+
         <div class="card" style="margin-top:20px">
-          <div class="section-header"><h2>Paparkan Sheet Data</h2></div>
+          <div class="section-header">
+            <h2>Paparkan Sheet Data</h2>
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+          </div>
           <div style="display:flex;gap:10px;margin-bottom:14px">
             <input id="sheetKey" type="text" placeholder="Contoh: GURU / MURID / KEHADIRAN_GURU / KEHADIRAN_MURID" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.88rem">
             <button class="btn btn-secondary" onclick="loadSheetData()">📊 Paparkan</button>
@@ -1517,6 +3122,121 @@ _SK Kiandongo_</textarea>
                 <thead id="sheetTableHead"></thead>
                 <tbody id="sheetTableBody"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="config-d1-card" style="margin-top:20px;border:1px solid rgba(37,99,235,.14);background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);box-shadow:0 18px 40px rgba(15,23,42,.08)">
+          <div class="section-header" style="align-items:flex-start;gap:14px;margin-bottom:8px">
+            <div style="flex:1;min-width:0">
+              <h2>Pengurusan D1</h2>
+              <p style="font-size:0.92rem;color:var(--muted);margin:8px 0 0;line-height:1.7">
+                Edit terus data guru, murid, kehadiran dan hari lahir dalam satu panel yang bersih dan mesra pengguna.
+              </p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#e8f3ff;color:#1d4ed8;font-weight:700;font-size:0.8rem">
+                <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block"></span>
+                Cloudflare D1 aktif
+              </span>
+              <button class="btn btn-secondary" onclick="loadD1Summary()">Muat Ringkasan</button>
+            </div>
+          </div>
+
+          <div id="d1SummaryStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:14px 0 18px"></div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,0.85fr);gap:14px;align-items:start">
+            <div style="border:1px solid var(--border);border-radius:16px;padding:18px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.05);min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+                <div>
+                  <div id="d1EditorTitle" style="font-weight:800;color:var(--blue);font-size:1.02rem">Editor D1</div>
+                  <div id="d1EditorMeta" style="font-size:0.88rem;color:var(--muted);margin-top:4px;line-height:1.6">Pilih sheet yang ingin diedit.</div>
+                </div>
+                <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#f1f5f9;color:#334155;font-weight:700;font-size:0.82rem">
+                  <span>Rekod:</span>
+                  <span id="d1EditorCount">0</span>
+                </div>
+              </div>
+
+              <div class="d1-editor-toolbar">
+                <div style="flex:1;min-width:220px">
+                  <label>Sheet editable</label>
+                  <select id="d1EditableSheetKey" onchange="loadD1EditableSheet()" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem;margin-top:6px">
+                    <option value="GURU">GURU</option>
+                    <option value="MURID">MURID</option>
+                    <option value="KEHADIRAN_GURU">KEHADIRAN_GURU</option>
+                    <option value="KEHADIRAN_MURID">KEHADIRAN_MURID</option>
+                    <option value="LAPORAN_KOKUM">LAPORAN_KOKUM</option>
+                    <option value="HARILAHIR">HARILAHIR</option>
+                  </select>
+                </div>
+                <button class="btn btn-secondary" onclick="loadD1EditableSheet()">Muat Editor</button>
+                <button class="btn btn-secondary" onclick="addD1EditorRow()">Tambah Baris</button>
+                <button class="btn btn-primary" onclick="saveD1EditableSheet()">Simpan Perubahan</button>
+                <button class="btn btn-secondary" onclick="resetD1Editor()">Reset</button>
+              </div>
+
+              <div class="d1-editor-toolbar d1-editor-toolbar--filters">
+                <div style="flex:1;min-width:220px">
+                  <label>Carian pantas</label>
+                  <input id="d1EditorSearch" type="text" placeholder="Cari nama, kelas, emel atau catatan" oninput="renderD1EditableSheet()" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem;margin-top:6px">
+                </div>
+                <div style="min-width:180px">
+                  <label>Penapis status</label>
+                  <select id="d1EditorStatusFilter" onchange="renderD1EditableSheet()" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem;margin-top:6px">
+                    <option value="">Semua status</option>
+                    <option value="Hadir">Hadir</option>
+                    <option value="Lewat">Lewat</option>
+                    <option value="Tidak Hadir">Tidak Hadir</option>
+                    <option value="Tidak Berada">Tidak Berada</option>
+                    <option value="Ponteng">Ponteng</option>
+                    <option value="Sakit">Sakit</option>
+                    <option value="MC">MC</option>
+                    <option value="Cuti">Cuti</option>
+                    <option value="Tanpa Kenyataan">Tanpa Kenyataan</option>
+                    <option value="Punch Out">Punch Out</option>
+                  </select>
+                </div>
+                <label style="display:inline-flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--border);border-radius:12px;background:#fff;font-weight:600;font-size:0.86rem;cursor:pointer">
+                  <input id="d1EditorShowTechnical" type="checkbox" onchange="renderD1EditableSheet()">
+                  Tunjuk data teknikal
+                </label>
+                <button class="btn btn-secondary" onclick="clearD1EditorFilters()">Kosongkan Penapis</button>
+              </div>
+
+              <div id="d1EditorStatus" style="margin:0 0 12px;padding:10px 12px;border-radius:12px;background:#f8fafc;color:var(--muted);font-size:0.88rem">Sedia untuk mengedit.</div>
+              <div id="d1EditorDraftMeta" style="display:flex;flex-wrap:wrap;gap:8px;margin:-2px 0 12px"></div>
+
+              <div id="d1EditorTableWrap" class="table-wrap d1-editor-table-wrap">
+                <table style="min-width:100%">
+                  <thead id="d1EditorHead"></thead>
+                  <tbody id="d1EditorBody"></tbody>
+                </table>
+              </div>
+              <div id="d1EditorCardList" class="d1-editor-card-list"></div>
+            </div>
+
+            <div style="display:grid;gap:12px;align-content:start">
+              <div style="border:1px solid rgba(15,23,42,.08);border-radius:16px;padding:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.05)">
+                <div style="font-weight:700;color:var(--blue);margin-bottom:10px">Kawalan Ringkas</div>
+                <p style="font-size:0.84rem;color:var(--muted);margin:0 0 10px;line-height:1.5">Tindakan ini kekal pada sheet yang dipilih dalam editor.</p>
+                <div style="display:flex;flex-wrap:wrap;gap:10px">
+                  <button class="btn btn-secondary" style="flex:1;min-width:120px" onclick="clearD1SelectedSheet()">Kosongkan Sheet</button>
+                  <button class="btn btn-danger" style="flex:1;min-width:120px" onclick="clearD1AllData()">Kosongkan Semua D1</button>
+                </div>
+              </div>
+
+              <div style="border:1px solid var(--border);border-radius:16px;padding:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.05)">
+                <div style="font-weight:700;color:var(--blue);margin-bottom:10px">Ringkasan D1</div>
+                <p style="font-size:0.84rem;color:var(--muted);margin:0 0 10px;line-height:1.5">Paparan ringkas data yang sudah berada dalam D1.</p>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Sheet</th><th>Bilangan Rekod</th></tr></thead>
+                    <tbody id="d1SummaryBody"></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1566,35 +3286,17 @@ _SK Kiandongo_</textarea>
           </div>
         </div>
 
-        <!-- Config Telegram & Fonnte (pre-filled dari BDReminder) -->
+        <!-- Konfigurasi Hari Lahir dipusatkan di modul Konfigurasi -->
         <div class="card" style="margin-bottom:20px">
           <div class="section-header"><h2>Konfigurasi Notifikasi Hari Lahir</h2>
-            <span class="badge badge-green">Pre-filled dari BDReminder</span>
+            <span class="badge badge-blue">Dikawal dari Konfigurasi</span>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Telegram Bot Token</label>
-              <input id="hl-tg-bot" type="text" value="8438571330:AAHKj7XFJK80bOgiqUNMzTVhRDjaCNNMMjc" placeholder="bot token">
-            </div>
-            <div class="form-group">
-              <label>Telegram Chat ID</label>
-              <input id="hl-tg-chat" type="text" value="-1002152935710" placeholder="-100xxxxxxx">
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:12px">
-            <div class="form-group">
-              <label>Telegram Topic ID</label>
-              <input id="hl-tg-topic" type="text" value="9391" placeholder="topic id">
-            </div>
-            <div class="form-group">
-              <label>Fonnte Group (WhatsApp)</label>
-              <input id="hl-fonnte-group" type="text" value="60148608242-1434600192@g.us" placeholder="group id">
-            </div>
-          </div>
+          <p style="font-size:0.9rem;color:var(--muted);margin:0;line-height:1.7">
+            Semua tetapan Telegram, token Fonnte, group guru dan group kelas kini diuruskan dalam modul <strong>Konfigurasi</strong> supaya semakan dan pengesahan notifikasi lebih jelas.
+          </p>
           <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="simpanKonfigHariLahir()">💾 Simpan Konfigurasi</button>
+            <button class="btn btn-primary" onclick="showModule('konfigurasi'); setTimeout(function(){ var el = document.getElementById('config-birthday-card'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }, 120)">Buka Konfigurasi Hari Lahir</button>
             <button class="btn btn-success" onclick="hantarUcapanHariIni()">🎉 Hantar Ucapan Hari Ini</button>
-            <button class="btn btn-secondary" onclick="testTelegram()">🧪 Test Telegram</button>
           </div>
         </div>
 
@@ -1650,110 +3352,12 @@ _SK Kiandongo_</textarea>
         </div>
       </div>
 
-      <!-- ══ GEOFENCE DAFTAR KEHADIRAN GURU (migrate dari GeoSmart) ══ -->
-      <div id="mod-geofence" class="module" style="display:none">
-        <div class="page-header">
-          <div>
-            <h1>Daftar Kehadiran Guru</h1>
-            <p>Geofence GPS + Anti-Spoofing — SK Kiandongo</p>
-          </div>
-        </div>
 
-        <!-- Status GPS -->
-        <div class="card-grid card-grid-3" style="margin-bottom:20px">
-          <div class="stat-card">
-            <div class="stat-icon" id="geo-status-icon" style="background:rgba(245,158,11,0.12)">📡</div>
-            <div class="stat-info">
-              <small>Status GPS</small>
-              <strong id="geo-status-text">Belum diperiksa</strong>
-              <span id="geo-status-sub"></span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon blue">📏</div>
-            <div class="stat-info">
-              <small>Jarak dari Sekolah</small>
-              <strong id="geo-jarak">—</strong>
-              <span>Radius: 200m</span>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon" id="geo-waktu-icon" style="background:rgba(16,185,129,0.10)">⏰</div>
-            <div class="stat-info">
-              <small>Status Waktu</small>
-              <strong id="geo-waktu-status">—</strong>
-              <span id="geo-masa-sekarang"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Anti-spoof report -->
-        <div class="card" id="geoSpoofCard" style="display:none;margin-bottom:20px;border-left:4px solid var(--red)">
-          <div class="section-header">
-            <h2 style="color:var(--red)">⚠️ Amaran GPS Spoofing Dikesan</h2>
-          </div>
-          <div id="geoSpoofDetails" style="font-size:0.85rem;line-height:1.8;color:var(--text)"></div>
-        </div>
-
-        <!-- Daftar masuk -->
-        <div class="card" style="margin-bottom:20px">
-          <div class="section-header"><h2>Daftar Kehadiran Hari Ini</h2></div>
-          <div style="display:grid;gap:14px">
-            <div class="form-group">
-              <label>Nama Guru</label>
-              <input id="geoNama" type="text" placeholder="Nama penuh">
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Jenis Kehadiran</label>
-                <select id="geoJenis">
-                  <option value="Hadir">✅ Hadir (dalam kawasan)</option>
-                  <option value="Lewat">⚠️ Lewat (selepas 7:30)</option>
-                  <option value="Cuti">📋 Cuti Diluluskan</option>
-                  <option value="CR">📝 CR - Cuti Rehat</option>
-                  <option value="CRK">📝 CRK - Cuti Rehat Khas</option>
-                  <option value="CS">📝 CS - Cuti Sakit</option>
-                  <option value="Tugas Luar">🚗 Bertugas Luar</option>
-                  <option value="Tidak Hadir">❌ Tidak Hadir / TK</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Catatan</label>
-                <input id="geoCatatan" type="text" placeholder="Destinasi / Butiran cuti">
-              </div>
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-primary" onclick="semakGPS()">📡 Semak Lokasi GPS</button>
-              <button class="btn btn-success" onclick="daftarKehadiran()">✅ Daftar Kehadiran</button>
-            </div>
-            <div id="geoResult" class="result-box" style="display:none"></div>
-          </div>
-        </div>
-
-        <!-- Waktu operasi info -->
-        <div class="card">
-          <div class="section-header"><h2>Jadual Waktu SK Kiandongo</h2></div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Waktu</th><th>Status</th><th>Tindakan Sistem</th></tr></thead>
-              <tbody>
-                <tr><td>7:00 — 7:29</td><td><span class="badge badge-green">Hadir</span></td><td>Daftar automatik — Hadir</td></tr>
-                <tr><td>7:30 — 7:59</td><td><span class="badge badge-amber">Lewat</span></td><td>Daftar automatik — Lewat</td></tr>
-                <tr><td>8:00 ke atas</td><td><span class="badge badge-red">Tidak Hadir</span></td><td>Alert admin — perlu kenyataan</td></tr>
-              </tbody>
-            </table>
-          </div>
-          <p style="font-size:0.8rem;color:var(--muted);margin-top:12px">
-            📍 Koordinat Sekolah: 5.3055655, 116.9633906 — Radius geofence: 200m
-          </p>
-        </div>
-      </div>
-
-      <!-- ══ LAPORAN OPR (migrate dari SmartOPR) ══ -->
+      <!-- ══ OPR (migrate dari SmartOPR) ══ -->
       <div id="mod-opr" class="module" style="display:none">
         <div class="page-header">
           <div>
-            <h1>Laporan OPR</h1>
+            <h1>OPR</h1>
             <p>Jana laporan program/aktiviti dengan bantuan AI DeepSeek</p>
           </div>
           <button class="btn btn-primary" onclick="cetakOPR()">🖨 Cetak / Eksport PDF</button>
@@ -1802,7 +3406,7 @@ _SK Kiandongo_</textarea>
           <div class="section-header"><h2>Maklumat Program / Aktiviti</h2></div>
           <div style="display:grid;gap:14px">
             <div class="form-group">
-              <label>Nama Program / Aktiviti <span style="color:var(--red)">*</span></label>
+              <label>Nama Program <span style="color:var(--red)">*</span></label>
               <input id="opr-nama" type="text" placeholder="contoh: Program Nilam Tahun 5">
             </div>
             <div class="form-row">
@@ -1868,7 +3472,176 @@ _SK Kiandongo_</textarea>
           </div>
         </div>
 
-        <div id="oprAIStatus" class="result-box" style="display:none"></div>
+      <div id="oprAIStatus" class="result-box" style="display:none"></div>
+      </div>
+
+      <!-- ══ PELAPORAN KOKUM ══ -->
+      <div id="mod-pelaporan-kokum" class="module" style="display:none">
+        <div class="page-header">
+          <div>
+            <h1>Pelaporan Kokum</h1>
+            <p>Modul pelaporan aktiviti kokurikulum untuk guru di bawah label Utiliti Guru</p>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-secondary" onclick="initPelaporanKokumModule(true)">Muat Semula</button>
+            <button class="btn btn-secondary" onclick="loadPelaporanKokumLatest()">Muat Laporan Terakhir</button>
+            <button class="btn btn-primary" onclick="simpanPelaporanKokum()">Simpan Laporan</button>
+            <button class="btn btn-secondary" onclick="cetakPelaporanKokum()">Cetak / Eksport PDF</button>
+          </div>
+        </div>
+
+        <div class="card-grid card-grid-4" style="margin-bottom:20px">
+          <div class="stat-card">
+            <div class="stat-icon blue">👥</div>
+            <div class="stat-info"><small>Jumlah Sasaran</small><strong id="kokumStatJumlah">0</strong></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">✅</div>
+            <div class="stat-info"><small>Jumlah Hadir</small><strong id="kokumStatHadir">0</strong></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red">📌</div>
+            <div class="stat-info"><small>Tidak Hadir</small><strong id="kokumStatTidak">0</strong></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber">📊</div>
+            <div class="stat-info"><small>Peratus Hadir</small><strong id="kokumStatPeratus">0%</strong></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="section-header">
+            <h2>Maklumat Pelaporan</h2>
+            <span class="badge badge-blue">Pra-isi guru aktif</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nama Guru Penasihat</label>
+              <input id="kokumNamaGuru" type="text" placeholder="Nama guru penasihat" readonly>
+            </div>
+            <div class="form-group">
+              <label>Emel Guru</label>
+              <input id="kokumEmailGuru" type="email" placeholder="emel guru" readonly>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Tarikh</label>
+              <input id="kokumTarikh" type="date">
+            </div>
+            <div class="form-group">
+              <label>Hari</label>
+              <input id="kokumHari" type="text" value="Rabu" readonly>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Kategori Kokum</label>
+              <select id="kokumKategori" onchange="renderKokumProgramOptions()">
+                <option value="">Pilih kategori</option>
+                <option value="UNIT BERUNIFORM">UNIT BERUNIFORM</option>
+                <option value="KELAB DAN PERSATUAN">KELAB DAN PERSATUAN</option>
+                <option value="SUKAN DAN PERMAINAN">SUKAN DAN PERMAINAN</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Unit Beruniform/Kelab dan Persatuan/Sukan dan Permainan</label>
+              <select id="kokumUnit" onfocus="renderKokumProgramOptions()">
+                <option value="">Pilih kategori</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Masa</label>
+              <select id="kokumMasa">
+                <option value="">Pilih masa</option>
+                <option value="PAGI 7.00-8.00 pagi">PAGI 7.00-8.00 pagi</option>
+                <option value="PETANG 1.00-1.45">PETANG 1.00-1.45</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tempat</label>
+              <select id="kokumTempat">
+                <option value="">Pilih unit kokum dahulu</option>
+              </select>
+              <input id="kokumTempatLain" type="text" placeholder="Isi tempat lain" style="display:none;margin-top:10px">
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="section-header"><h2>Perincian Aktiviti</h2></div>
+          <div style="display:grid;gap:14px">
+            <div class="form-group">
+              <label>Tajuk / Fokus Aktiviti <span style="color:var(--red)">*</span></label>
+              <input id="kokumTajuk" type="text" placeholder="Contoh: Latihan asas kawad kaki dan semakan kehadiran">
+            </div>
+            <div class="form-group">
+              <label>Objektif / Tujuan</label>
+              <textarea id="kokumObjektif" rows="3" placeholder="Nyatakan objektif aktiviti kokum ini."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Butiran Aktiviti / Pelaksanaan</label>
+              <textarea id="kokumButiran" rows="5" placeholder="Huraikan aktiviti yang dijalankan sepanjang sesi kokum."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="section-header"><h2>Kehadiran & Penglibatan Murid</h2></div>
+          <div style="margin-bottom:12px;font-size:0.83rem;color:var(--muted);line-height:1.7">
+            Kehadiran murid dipanggil automatik daripada modul Kehadiran Murid.
+            Sesi pagi: Tahun 3 hingga Tahun 6. Sesi petang: Tahun 5 hingga Tahun 6.
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Bilangan Lelaki</label>
+              <input id="kokumBilLelaki" type="number" min="0" step="1" placeholder="0" readonly>
+            </div>
+            <div class="form-group">
+              <label>Bilangan Perempuan</label>
+              <input id="kokumBilPerempuan" type="number" min="0" step="1" placeholder="0" readonly>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Jumlah Hadir</label>
+              <input id="kokumBilHadir" type="number" min="0" step="1" placeholder="0" readonly>
+            </div>
+            <div class="form-group">
+              <label>Jumlah Tidak Hadir</label>
+              <input id="kokumBilTidakHadir" type="number" min="0" step="1" placeholder="0" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div id="kokumStatusBox" class="result-box" style="display:none;margin-bottom:20px"></div>
+        <div id="kokumDraftMeta" style="display:flex;flex-wrap:wrap;gap:8px;margin:-6px 0 20px"></div>
+
+        <div class="card">
+          <div class="section-header">
+            <h2>Sejarah Laporan Terkini</h2>
+            <span class="badge badge-gray" id="kokumHistoryCount">0 rekod</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarikh</th>
+                  <th>Kategori</th>
+                  <th>Unit Beruniform/Kelab dan Persatuan/Sukan dan Permainan</th>
+                  <th>Guru Penasihat</th>
+                  <th>Kehadiran</th>
+                  <th>Kemaskini</th>
+                </tr>
+              </thead>
+              <tbody id="kokumHistoryBody">
+                <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Klik "Muat Semula" untuk memuatkan sejarah laporan kokum</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
 
@@ -1910,8 +3683,9 @@ _SK Kiandongo_</textarea>
         <div class="card" style="margin-bottom:20px">
           <div class="section-header"><h2>Import CSV</h2></div>
           <p style="font-size:0.83rem;color:var(--muted);margin-bottom:12px;line-height:1.7">
-            Format kolum CSV: <code>Nama, Emel, Jawatan, Kelas, No. Telefon, Status</code><br>
-            Contoh: <code>Cikgu Ali,ali@moe-dl.edu.my,Guru Kelas,4 MUTIARA,60123456789,Aktif</code>
+            Format kolum CSV: <code>Nama, Emel, Jawatan, Kelas, No. Telefon, Status, WhatsApp, Catatan</code><br>
+            Modul Hari Lahir diurus sepenuhnya dalam modul Hari Lahir dan tidak lagi dikendalikan dalam Data Guru.<br>
+            Contoh: <code>Cikgu Ali,ali@moe-dl.edu.my,Guru Kelas,4 MUTIARA,60123456789,Aktif,60123456789,Guru penasihat STEM</code>
           </p>
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <input type="file" id="guruCsvInput" accept=".csv" style="font-size:0.85rem;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;flex:1;min-width:200px">
@@ -2103,12 +3877,36 @@ _SK Kiandongo_</textarea>
 
 <!-- ─── MODAL: KEHADIRAN MURID KELAS PENUH ─── -->
 <div id="modalKehadiranMurid" class="modal-backdrop" style="display:none">
-  <div class="modal-box" style="width:min(680px,100%)">
+  <div class="modal-box murid-attendance-modal">
     <div class="modal-header">
       <h3>Daftar Kehadiran Murid</h3>
       <button class="modal-close" onclick="closeModal('modalKehadiranMurid')">✕</button>
     </div>
-    <div class="modal-body" style="gap:12px">
+    <div class="modal-body" style="gap:14px">
+      <div class="murid-attendance-intro">
+        <div>
+          <h4>Pengisian kelas yang lebih jelas dan cepat</h4>
+          <p>Pilih kelas, semak bilangan murid, kemudian gunakan tindakan pukal jika majoriti hadir. Anda masih boleh ubah status murid secara individu sebelum simpan.</p>
+        </div>
+        <div class="murid-attendance-summary">
+          <div class="murid-attendance-pill">
+            <small>Dipaparkan</small>
+            <strong id="muridAttendanceCountVisible">0</strong>
+          </div>
+          <div class="murid-attendance-pill">
+            <small>Hadir</small>
+            <strong id="muridAttendanceCountHadir">0</strong>
+          </div>
+          <div class="murid-attendance-pill">
+            <small>Tidak Hadir</small>
+            <strong id="muridAttendanceCountTidak">0</strong>
+          </div>
+          <div class="murid-attendance-pill">
+            <small>Lain-lain</small>
+            <strong id="muridAttendanceCountLain">0</strong>
+          </div>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>Kelas</label>
@@ -2125,18 +3923,27 @@ _SK Kiandongo_</textarea>
         </div>
       </div>
 
-      <!-- Quick set all -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <span style="font-size:0.82rem;color:var(--muted);font-weight:600">Tetapkan semua:</span>
-        <button class="btn btn-sm btn-success" onclick="setSemuaStatus('Hadir')">✅ Hadir</button>
-        <button class="btn btn-sm btn-danger"  onclick="setSemuaStatus('Tidak Hadir')">❌ Tidak Hadir</button>
-        <button class="btn btn-sm btn-secondary" onclick="setSemuaStatus('MC')">🏥 MC</button>
+      <div class="murid-attendance-toolbar">
+        <div class="murid-attendance-bulk">
+          <span>Tetapkan semua:</span>
+          <button class="btn btn-sm btn-success" onclick="setSemuaStatus('Hadir')">✅ Hadir</button>
+          <button class="btn btn-sm btn-danger"  onclick="setSemuaStatus('Tidak Hadir')">❌ Tidak Hadir</button>
+          <button class="btn btn-sm btn-secondary" onclick="setSemuaStatus('MC')">🏥 MC</button>
+        </div>
+        <div class="murid-attendance-search">
+          <label for="muridAttendanceSearch">Cari murid</label>
+          <input id="muridAttendanceSearch" type="text" placeholder="Contoh: Ali, Siti, atau nombor giliran">
+        </div>
       </div>
 
-      <!-- Senarai murid -->
-      <div id="senaraKelasContainer" style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:12px">
-        <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
-          <thead style="position:sticky;top:0;background:#fff;z-index:1">
+      <div class="murid-attendance-meta">
+        <div id="senaraKelasInfo">Pilih kelas untuk paparkan senarai murid</div>
+        <div class="murid-attendance-count">Jumlah rekod: <span id="muridAttendanceCountTotal">0</span></div>
+      </div>
+
+      <div id="senaraKelasContainer" class="murid-attendance-table">
+        <table>
+          <thead>
             <tr style="border-bottom:2px solid var(--border)">
               <th style="padding:10px 14px;text-align:left;font-size:0.75rem;color:var(--muted);text-transform:uppercase">#</th>
               <th style="padding:10px 14px;text-align:left;font-size:0.75rem;color:var(--muted);text-transform:uppercase">Nama Murid</th>
@@ -2151,11 +3958,13 @@ _SK Kiandongo_</textarea>
           </tbody>
         </table>
       </div>
-      <div id="senaraKelasInfo" style="font-size:0.82rem;color:var(--muted)"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modalKehadiranMurid')">Batal</button>
-      <button class="btn btn-primary" onclick="submitKehadiranKelas()">💾 Simpan Semua</button>
+      <div class="murid-attendance-footer-note">Semua perubahan hanya dihantar apabila butang simpan ditekan.</div>
+      <div class="murid-attendance-footer-actions">
+        <button class="btn btn-secondary" onclick="closeModal('modalKehadiranMurid')">Batal</button>
+        <button class="btn btn-primary" onclick="submitKehadiranKelas()">💾 Simpan Semua</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2222,19 +4031,13 @@ _SK Kiandongo_</textarea>
           <input id="g-wa" type="tel" placeholder="601xxxxxxxx">
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Tarikh Lahir</label>
-          <input id="g-tarikh-lahir" type="date">
-        </div>
-        <div class="form-group">
-          <label>Status</label>
-          <select id="g-status">
-            <option>Aktif</option>
-            <option>Bercuti</option>
-            <option>Tidak Aktif</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="g-status">
+          <option>Aktif</option>
+          <option>Bercuti</option>
+          <option>Tidak Aktif</option>
+        </select>
       </div>
       <div class="form-group">
         <label>Catatan</label>
@@ -2343,5 +4146,14 @@ _SK Kiandongo_</textarea>
 
 <script src="app.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer onload="typeof onGSIReady === 'function' && onGSIReady()"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./service-worker.js').catch(function(err) {
+      console.warn('Pendaftaran service worker gagal:', err);
+    });
+  });
+}
+</script>
 </body>
 </html>
