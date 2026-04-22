@@ -82,6 +82,16 @@ Repo ini telah dibersihkan untuk GitHub:
 - fail sensitif tempatan diabaikan melalui `.gitignore`
 - artifak jana semula seperti `apps-script/Code.gs` tidak dimasukkan ke repo
 
+## Security and Data Handling
+
+- Rujuk `SECURITY.md` sebelum berkongsi repo ini lebih luas.
+- Jangan simpan token hidup atau secret operasi terus dalam source code.
+- Repo ini masih menjejak fail data dan dokumen sekolah yang perlu dinilai semula jika repo ingin dijadikan awam.
+
+## License
+
+Repo ini menggunakan lesen konservatif `All Rights Reserved` setakat ini supaya kandungan kod, aset, dan data tidak diberi kebenaran penggunaan semula secara terbuka tanpa keputusan yang jelas.
+
 ## Nota Projek
 
 - Frontend utama masih berasaskan fail statik tunggal `index.html` + `app.js`
