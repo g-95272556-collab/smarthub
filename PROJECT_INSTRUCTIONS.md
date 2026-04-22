@@ -63,7 +63,8 @@ Notif murid tidak hadir : 9:00
 - `data_guru.csv` - data guru/staf
 - `data_murid.csv` - data murid
 - `data_harilahir.csv` - data hari lahir
-- `import_data.js` - bantuan import ke sheet
+- `import_data.js` - templat import selamat tanpa data sebenar
+- `sample-data/` - sample fixture untuk pembangunan dan demo
 
 ### Nota Penyelenggaraan
 - `Status & Output` dalam modul konfigurasi hanya untuk diagnostik sambungan.

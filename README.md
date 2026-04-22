@@ -31,6 +31,8 @@ SmartSchoolHub ialah aplikasi sekolah berasaskan SPA statik untuk pengurusan ope
   Sokongan PWA/offline.
 - `data_guru.csv`, `data_murid.csv`, `data_harilahir.csv`
   Data rujukan/import tempatan.
+- `sample-data/`
+  Fixture contoh yang selamat untuk demo, pembangunan, dan struktur import.
 
 ## Persediaan Tempatan
 
@@ -87,6 +89,7 @@ Repo ini telah dibersihkan untuk GitHub:
 - Rujuk `SECURITY.md` sebelum berkongsi repo ini lebih luas.
 - Jangan simpan token hidup atau secret operasi terus dalam source code.
 - Repo ini masih menjejak fail data dan dokumen sekolah yang perlu dinilai semula jika repo ingin dijadikan awam.
+- Rujuk `DATA_MIGRATION_PLAN.md` untuk laluan migrasi daripada data sebenar kepada sample/template.
 
 ## License
 
