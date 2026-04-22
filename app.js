@@ -52,10 +52,10 @@ let _geoProfile = null;
 let geoCoords = null;
 let hlData = normalizeStoredHLData(JSON.parse(localStorage.getItem('ssh_hl_data') || '[]'));
 let hlConfig = JSON.parse(localStorage.getItem('ssh_hl_config') || 'null') || {
-  tgBot: '8438571330:AAHKj7XFJK80bOgiqUNMzTVhRDjaCNNMMjc',
-  tgChat: '-1002152935710',
-  tgTopic: '9391',
-  fonnteGroup: '60148608242-1434600192@g.us'
+  tgBot: '',
+  tgChat: '',
+  tgTopic: '',
+  fonnteGroup: ''
 };
 let _guruData = [];
 let _muridData = [];
