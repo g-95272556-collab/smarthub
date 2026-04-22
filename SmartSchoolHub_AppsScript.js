@@ -81,9 +81,9 @@ function setupAllSheets() {
     ["FONNTE_TOKEN",""],["WORKER_SECRET",""],["ADMIN_EMAIL",""],
     ["SCHOOL_LAT", SCHOOL_LAT],["SCHOOL_LNG", SCHOOL_LNG],
     ["DEEPSEEK_API_KEY",""],
-    ["TELEGRAM_BOT","8438571330:AAHKj7XFJK80bOgiqUNMzTVhRDjaCNNMMjc"],
-    ["TELEGRAM_CHAT","-1002152935710"],["TELEGRAM_TOPIC","9391"],
-    ["FONNTE_GROUP","60148608242-1434600192@g.us"]
+    ["TELEGRAM_BOT",""],
+    ["TELEGRAM_CHAT",""],["TELEGRAM_TOPIC",""],
+    ["FONNTE_GROUP",""]
   ];
   defaults.forEach(([k,v]) => { if (!existing.includes(k)) configSheet.appendRow([k,v]); });
   return jsonResponse({ success: true, message: "Sheets ready" });
