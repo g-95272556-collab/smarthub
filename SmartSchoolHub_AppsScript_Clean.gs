@@ -10,6 +10,8 @@ const SCHOOL = {
   radius: 200
 };
 
+const SPREADSHEET_ID = "1NizJvSD9tL9XjX1PnqtFlVUUVKnGpnLGQjraGKos6Vk";
+
 const SHEETS = {
   GURU: "GURU",
   MURID: "MURID",
@@ -31,6 +33,21 @@ const HEADERS = {
   HARILAHIR: ["Nama","Peranan","Kelas","Tarikh Lahir","Telefon"],
   CONFIG: ["Kunci","Nilai"]
 };
+
+// Cache untuk data statik
+const CACHE_DURATION = 600; // 10 minit dalam saat
+const cache = CacheService.getScriptCache();
+
+function getCachedSheetData(sheetKey) {
+  const cacheKey = 'sheet_' + sheetKey;
+  let data = cache.get(cacheKey);
+  if (data) {
+    return JSON.parse(data);
+  }
+  const rows = readSheetRows(sheetKey);
+  cache.put(cacheKey, JSON.stringify(rows), CACHE_DURATION);
+  return rows;
+}
 
 function doGet() {
   return ContentService
@@ -65,6 +82,9 @@ function doPost(e) {
       case "appendRow":
         appendRow(data.sheetKey, data.row || []);
         return jsonResponse({ success: true });
+      case "appendRows":
+        appendRows(data.sheetKey, data.rows || []);
+        return jsonResponse({ success: true });
       case "replaceSheet":
         replaceSheet(data.sheetKey, data.rows || []);
         return jsonResponse({ success: true });
@@ -97,18 +117,19 @@ function handleBootstrapAction(data) {
 
 function pingPayload() {
   const cfg = getConfig();
+  const ss = getSpreadsheet_();
   return {
     success: true,
     service: "apps-script",
-    spreadsheetId: SpreadsheetApp.getActiveSpreadsheet().getId(),
-    spreadsheetName: SpreadsheetApp.getActiveSpreadsheet().getName(),
+    spreadsheetId: ss.getId(),
+    spreadsheetName: ss.getName(),
     hasWorkerSecret: Boolean(cfg.WORKER_SECRET || cfg.WORKER_TOKEN),
     timestamp: new Date().toISOString()
   };
 }
 
 function setupAllSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
   Object.keys(HEADERS).forEach(function(key) {
     const sheet = getOrCreateSheet_(SHEETS[key]);
     const header = HEADERS[key];
@@ -197,6 +218,29 @@ function appendRow(sheetKey, rowValues) {
   }
 
   sheet.appendRow(rowValues);
+}
+
+function appendRows(sheetKey, rows) {
+  const resolvedKey = resolveSheetName_(sheetKey);
+  const sheet = getOrCreateSheet_(resolvedKey);
+  ensureHeaderForSheet_(sheet, resolvedKey);
+  const safeRows = Array.isArray(rows) ? rows.filter(function(row) { return Array.isArray(row) && row.length; }) : [];
+  if (!safeRows.length) return;
+
+  const normalizedRows = safeRows.map(function(row) {
+    if (resolvedKey === SHEETS.KEHADIRAN_GURU) return normalizeKehadiranGuruRow_(row);
+    if (resolvedKey === SHEETS.KEHADIRAN_MURID) return normalizeKehadiranMuridRow_(row);
+    return row;
+  });
+  const width = normalizedRows.reduce(function(maxCols, row) {
+    return Math.max(maxCols, Array.isArray(row) ? row.length : 0);
+  }, 0);
+  const paddedRows = normalizedRows.map(function(row) {
+    return padRow_(row, width);
+  });
+  const startRow = Math.max(sheet.getLastRow(), 1) + 1;
+  sheet.getRange(startRow, 1, paddedRows.length, width).setValues(paddedRows);
+  SpreadsheetApp.flush(); // Paksa save data
 }
 
 function replaceSheet(sheetKey, rows) {
@@ -289,7 +333,7 @@ function normalizeKehadiranMuridRow_(rowValues) {
 function findGuruNameByEmail_(email) {
   const target = string_(email).toLowerCase();
   if (!target) return "";
-  const rows = readSheetRows("GURU");
+  const rows = getCachedSheetData("GURU");
   for (var i = 1; i < rows.length; i++) {
     if (string_(rows[i][1]).toLowerCase() === target) return string_(rows[i][0]);
   }
@@ -300,7 +344,7 @@ function findMuridMeta_(nama, kelas) {
   const targetNama = string_(nama).toLowerCase();
   const targetKelas = string_(kelas).toLowerCase();
   if (!targetNama) return { jantina: "", telefonWali: "" };
-  const rows = readSheetRows("MURID");
+  const rows = getCachedSheetData("MURID");
   for (var i = 1; i < rows.length; i++) {
     const rowNama = string_(rows[i][0]).toLowerCase();
     const rowKelas = string_(rows[i][1]).toLowerCase();
@@ -367,10 +411,14 @@ function resolveSheetName_(sheetKey) {
 }
 
 function getOrCreateSheet_(name) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
   let sheet = ss.getSheetByName(name);
   if (!sheet) sheet = ss.insertSheet(name);
   return sheet;
+}
+
+function getSpreadsheet_() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
 function styleHeader_(sheet, numCols) {

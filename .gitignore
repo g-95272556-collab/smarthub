@@ -1,0 +1,23 @@
+# Dependencies and package manager caches
+/node_modules/
+/.npm-cache/
+
+# Local Cloudflare and deployment state
+/.wrangler/
+/.clasp.json
+
+# Generated Apps Script deploy artifact
+/apps-script/Code.gs
+
+# Temporary browser profiles and extracted working files
+/.tmp-brave-profile/
+/.tmp-brave-profile-*/
+/temp_docx/
+/extracted_text.txt
+
+# Local test scratch files
+/_live_kehadiran_test.html
+
+# OS/editor noise
+Thumbs.db
+.DS_Store

@@ -1,0 +1,8 @@
+*
+!index.html
+!app.js
+!manifest.webmanifest
+!offline.html
+!service-worker.js
+!assets/
+!assets/**

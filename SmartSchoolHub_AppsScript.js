@@ -12,6 +12,7 @@
 const SCHOOL_LAT = 5.3055655;
 const SCHOOL_LNG = 116.9633906;
 const GEOFENCE_RADIUS = 200;
+const SPREADSHEET_ID = "1NizJvSD9tL9XjX1PnqtFlVUUVKnGpnLGQjraGKos6Vk";
 
 const SHEETS = {
   GURU:             "GURU",
@@ -43,16 +44,16 @@ const SEED_HARILAHIR = [["ADEEN ALFRED EDY","Murid","1 NILAM","2019/08/31","0178
 
 // ── Data Guru ─────────────────────────────────────────────
 const SEED_GURU = [
-  ["JIMMY PATRICK GANTOR","g-69272581@moe-dl.edu.my","Guru Besar","","60195363361","Aktif","60195363361","27/04/1982","","",""],
-  ["JEMSAN BIN SAKUNDING","g-03272560@moe-dl.edu.my","PK HEM","","60138547430","Aktif","60138547430","19/08/1984","","",""],
-  ["ALOHA BINTI IBIN","g-80272554@moe-dl.edu.my","Guru","3 KRISTAL","60135560671","Aktif","60135560671","23/11/1989","","",""],
-  ["AMRI IZZAD BIN TAHIR","g-87272555@moe-dl.edu.my","PK Kokurikulum","","60105838718","Aktif","60105838718","29/08/1989","","",""],
-  ["ANDREW BIN JUSTINE","g-95272556@moe-dl.edu.my","PK Pentadbiran","","60193386910","Aktif","60193386910","05/02/1980","","",""],
-  ["BETTY BINTI JIM","g-34564753@moe-dl.edu.my","Guru","4 MUTIARA","601124135966","Aktif","601124135966","13/04/1998","","",""],
-  ["OKTOVYANTI KOH","g-32510899@moe-dl.edu.my","Guru Mata Pelajaran","","60138665663","Aktif","60138665663","04/10/1996","","",""],
-  ["STENLEY DOMINIC","g-09563222@moe-dl.edu.my","Guru","6 BAIDURI","601135988995","Aktif","601135988995","18/09/1989","","",""],
-  ["MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","g-27568716@moe-dl.edu.my","Guru Agama","","601121792758","Aktif","601121792758","15/12/2001","","",""],
-  ["TAIMAH BINTI ILOK","g-56272514@moe-dl.edu.my","Guru","2 INTAN","601123607380","Aktif","601123607380","07/09/1973","","",""],
+  ["JIMMY PATRICK GANTOR","g-69272581@moe-dl.edu.my","Guru Besar","","60195363361","Aktif","60195363361","1982-04-27","","",""],
+  ["JEMSAN BIN SAKUNDING","g-03272560@moe-dl.edu.my","PK HEM","","60138547430","Aktif","60138547430","1984-08-19","","",""],
+  ["ALOHA BINTI IBIN","g-80272554@moe-dl.edu.my","Guru","3 KRISTAL","60135560671","Aktif","60135560671","1989-11-23","","",""],
+  ["AMRI IZZAD BIN TAHIR","g-87272555@moe-dl.edu.my","PK Kokurikulum","","60105838718","Aktif","60105838718","1989-08-29","","",""],
+  ["ANDREW BIN JUSTINE","g-95272556@moe-dl.edu.my","PK Pentadbiran","","60193386910","Aktif","60193386910","1980-02-05","","",""],
+  ["BETTY BINTI JIM","g-34564753@moe-dl.edu.my","Guru","4 MUTIARA","601124135966","Aktif","601124135966","1998-04-13","","",""],
+  ["OKTOVYANTI KOH","g-32510899@moe-dl.edu.my","Guru Mata Pelajaran","","60138665663","Aktif","60138665663","1996-10-04","","",""],
+  ["STENLEY DOMINIC","g-09563222@moe-dl.edu.my","Guru","6 BAIDURI","601135988995","Aktif","601135988995","1989-09-18","","",""],
+  ["MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","g-27568716@moe-dl.edu.my","Guru Agama","","601121792758","Aktif","601121792758","2001-12-15","","",""],
+  ["TAIMAH BINTI ILOK","g-56272514@moe-dl.edu.my","Guru","2 INTAN","601123607380","Aktif","601123607380","1973-09-07","","",""],
   ["JIDA MINSES","jidaminses@moe-dl.edu.my","Guru","5 DELIMA","601126605349","Aktif","601126605349","","","",""],
   ["FAZILAH BINTI ALI","g-36272623@moe-dl.edu.my","Guru","1 NILAM","60134461416","Aktif","60134461416","","","",""],
   ["JOHNABON SARINDOH","legfixwhy@send4.uk","Pembantu Operasi","","60148534999","Aktif","60148534999","","","",""]
@@ -163,6 +164,7 @@ function doPost(e) {
       case "getConfig":     return jsonResponse({ success: true, config: getConfig() });
       case "readSheet":     return jsonResponse({ success: true, rows: readSheetRows(data.sheetKey) });
       case "appendRow":     appendRow(data.sheetKey, data.row || []); return jsonResponse({ success: true });
+      case "appendRows":    appendRows(data.sheetKey, data.rows || []); return jsonResponse({ success: true });
       case "replaceSheet":  replaceSheet(data.sheetKey, data.rows || []); return jsonResponse({ success: true });
       case "setupAllSheets": return setupAllSheets();
       case "setConfig":     setConfig(data.config); return jsonResponse({ success: true });
@@ -182,10 +184,14 @@ function ensureSheets(ss) {
 
 function getSheet(nameOrKey) {
   const sheetName = SHEETS[nameOrKey] || nameOrKey;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet();
   let sheet = ss.getSheetByName(sheetName);
   if (!sheet) sheet = ss.insertSheet(sheetName);
   return sheet;
+}
+
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 
 function applyHeaderStyle(sheet, numCols) {
@@ -212,6 +218,26 @@ function appendRow(sheetKey, rowValues) {
     return;
   }
   getSheet(sheetKey).appendRow(rowValues);
+}
+
+function appendRows(sheetKey, rows) {
+  const sheet = getSheet(sheetKey);
+  const safeRows = Array.isArray(rows) ? rows.filter(function(row) { return Array.isArray(row) && row.length; }) : [];
+  if (!safeRows.length) return;
+
+  const normalizedRows = safeRows.map(function(row) {
+    if (sheetKey === "KEHADIRAN_GURU") return normalizeKehadiranGuruRow(row);
+    if (sheetKey === "KEHADIRAN_MURID") return normalizeKehadiranMuridRow(row);
+    return row;
+  });
+  const width = normalizedRows.reduce(function(maxCols, row) {
+    return Math.max(maxCols, Array.isArray(row) ? row.length : 0);
+  }, 0);
+  const paddedRows = normalizedRows.map(function(row) {
+    return padRow(row, width);
+  });
+  const startRow = Math.max(sheet.getLastRow(), 1) + 1;
+  sheet.getRange(startRow, 1, paddedRows.length, width).setValues(paddedRows);
 }
 
 function replaceSheet(sheetKey, rows) {

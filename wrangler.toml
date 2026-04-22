@@ -1,0 +1,23 @@
+name = "smartschoolhub-skkiandongo"
+main = "SmartSchoolHub_Worker.js"
+compatibility_date = "2026-04-20"
+workers_dev = true
+
+[assets]
+directory = "./"
+binding = "ASSETS"
+run_worker_first = ["/api/*", "/ai/*", "/token"]
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+
+[vars]
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxr6v_2qQavAuNqpVMpStgZbmK1HQeqgfsTtQZkZxkloGwQnmbeHpw7GFPJtLfFJLlf/exec"
+GOOGLE_API_CLIENT_ID = "553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com"
+GOOGLE_SHEETS_SPREADSHEET_ID = "1NizJvSD9tL9XjX1PnqtFlVUUVKnGpnLGQjraGKos6Vk"
+GOOGLE_SHEETS_BACKEND = "0"
+CLOUDFLARE_D1_BACKEND = "1"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "smartschoolhub-d1"
+database_id = "6a0b9c2a-848b-4126-9f0c-5e0907fdee7d"

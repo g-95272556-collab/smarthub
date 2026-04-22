@@ -1,0 +1,16 @@
+{
+  "name": "smartschoolhub-tooling",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Local tooling for SmartSchoolHub Worker and Apps Script deployment.",
+  "scripts": {
+    "apps:sync": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-apps-script.ps1",
+    "apps:push": "npm run apps:sync && clasp push",
+    "apps:deploy": "npm run apps:sync && clasp deploy",
+    "apps:status": "clasp status",
+    "apps:open": "clasp open"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.5.0"
+  }
+}
