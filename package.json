@@ -11,6 +11,6 @@
     "apps:open": "clasp open"
   },
   "devDependencies": {
-    "@google/clasp": "^2.5.0"
+    "@google/clasp": "^3.3.0"
   }
 }
