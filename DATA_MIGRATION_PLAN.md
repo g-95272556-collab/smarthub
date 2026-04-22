@@ -8,9 +8,6 @@ Kurangkan pendedahan data peribadi dalam repo tanpa mematikan aliran kerja Smart
 
 Repo masih menjejak:
 
-- `data_guru.csv`
-- `data_murid.csv`
-- `data_harilahir.csv`
 - beberapa fail `.xlsx`
 - beberapa fail `.docx`
 
@@ -20,15 +17,15 @@ Sebahagian fail ini mengandungi data peribadi sebenar.
 
 ### Fasa 1
 
-- kekalkan fail sebenar buat sementara untuk elak rosak aliran kerja semasa
 - tambah `sample-data/` untuk fixture pembangunan yang selamat
 - tukar util bantuan seperti `import_data.js` supaya tidak lagi menyimpan data sebenar dalam source
+- keluarkan CSV guru, murid, dan hari lahir daripada fail tracked di root repo
 
 ### Fasa 2
 
 - pindahkan data sebenar ke folder tempatan seperti `private-data/`
 - ubah dokumentasi dan proses operasi supaya import data sebenar datang dari storan selamat
-- gantikan fail repo dengan versi anonymized atau template
+- gunakan sample/template dalam repo untuk demo dan pembangunan
 
 ### Fasa 3
 
@@ -40,4 +37,3 @@ Sebahagian fail ini mengandungi data peribadi sebenar.
 - jangan padam sumber operasi sebenar secara mendadak jika modul masih bergantung padanya
 - sediakan template dan sample terlebih dahulu
 - pindahkan data sebenar hanya selepas laluan operasi baharu telah diuji
-

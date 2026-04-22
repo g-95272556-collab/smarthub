@@ -4857,7 +4857,6 @@ async function loadKokumMuridSourceRows() {
   }
   const csvCandidates = [
     'private-data/data_murid.csv',
-    'data_murid.csv',
     'sample-data/data_murid.sample.csv'
   ];
   let csvText = '';

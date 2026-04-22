@@ -29,8 +29,6 @@ SmartSchoolHub ialah aplikasi sekolah berasaskan SPA statik untuk pengurusan ope
   Konfigurasi Cloudflare Worker.
 - `manifest.webmanifest`, `service-worker.js`, `offline.html`
   Sokongan PWA/offline.
-- `data_guru.csv`, `data_murid.csv`, `data_harilahir.csv`
-  Fail root yang kini disanitasi sebagai template/fixture asas untuk repo.
 - `sample-data/`
   Fixture contoh yang selamat untuk demo, pembangunan, dan struktur import.
 
@@ -88,7 +86,7 @@ Repo ini telah dibersihkan untuk GitHub:
 
 - Rujuk `SECURITY.md` sebelum berkongsi repo ini lebih luas.
 - Jangan simpan token hidup atau secret operasi terus dalam source code.
-- Repo ini masih menjejak fail data dan dokumen sekolah yang perlu dinilai semula jika repo ingin dijadikan awam.
+- Repo ini masih menjejak beberapa fail dokumen sekolah yang perlu dinilai semula jika repo ingin dijadikan awam.
 - Rujuk `DATA_MIGRATION_PLAN.md` untuk laluan migrasi daripada data sebenar kepada sample/template.
 - Jika anda perlukan data sebenar untuk operasi tempatan, letakkan fail CSV di `private-data/` supaya modul tertentu boleh cuba membacanya tanpa menjejaknya dalam Git.
 
