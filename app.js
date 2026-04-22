@@ -4855,9 +4855,26 @@ async function loadKokumMuridSourceRows() {
     });
     return window._kokumMuridSourceRows;
   }
-  const response = await fetch('data_murid.csv', { cache: 'no-store' });
-  if (!response.ok) throw new Error('Gagal memuat data murid tempatan untuk penapisan kokum.');
-  const csvText = await response.text();
+  const csvCandidates = [
+    'private-data/data_murid.csv',
+    'data_murid.csv',
+    'sample-data/data_murid.sample.csv'
+  ];
+  let csvText = '';
+  let loadedFrom = '';
+  for (let i = 0; i < csvCandidates.length; i++) {
+    const candidate = csvCandidates[i];
+    try {
+      const response = await fetch(candidate, { cache: 'no-store' });
+      if (!response.ok) continue;
+      csvText = await response.text();
+      loadedFrom = candidate;
+      if (String(csvText || '').trim()) break;
+    } catch (e) {}
+  }
+  if (!String(csvText || '').trim()) {
+    throw new Error('Gagal memuat data murid tempatan untuk penapisan kokum.');
+  }
   const lines = String(csvText || '')
     .replace(/^\uFEFF/, '')
     .split(/\r?\n/)
@@ -4869,6 +4886,7 @@ async function loadKokumMuridSourceRows() {
     if (!parsed.length || !String(parsed[0] || '').trim()) continue;
     rows.push(padSheetRow(parsed, MURID_SHEET_HEADERS.length));
   }
+  window._kokumMuridSourcePath = loadedFrom;
   window._kokumMuridSourceRows = rows;
   return rows;
 }

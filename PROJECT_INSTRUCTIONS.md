@@ -60,9 +60,9 @@ Notif murid tidak hadir : 9:00
 - `SmartSchoolHub_AppsScript_Clean.gs` - backend aktif yang bersih
 - `SmartSchoolHub_AppsScript.js` - backend lama / legacy reference
 - `BACKEND_RESET_GUIDE.md` - panduan setup semula dari kosong
-- `data_guru.csv` - data guru/staf
-- `data_murid.csv` - data murid
-- `data_harilahir.csv` - data hari lahir
+- `data_guru.csv` - template data guru/staf yang telah disanitasi
+- `data_murid.csv` - template data murid yang telah disanitasi
+- `data_harilahir.csv` - template data hari lahir yang telah disanitasi
 - `import_data.js` - templat import selamat tanpa data sebenar
 - `sample-data/` - sample fixture untuk pembangunan dan demo
 
