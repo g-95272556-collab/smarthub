@@ -26,6 +26,7 @@ Sebahagian fail ini mengandungi data peribadi sebenar.
 - pindahkan data sebenar ke folder tempatan seperti `private-data/`
 - ubah dokumentasi dan proses operasi supaya import data sebenar datang dari storan selamat
 - gunakan sample/template dalam repo untuk demo dan pembangunan
+- keluarkan dokumen operasi sebenar seperti `.xlsx` dan `.docx` daripada fail tracked repo
 
 ### Fasa 3
 

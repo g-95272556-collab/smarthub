@@ -89,6 +89,7 @@ Repo ini telah dibersihkan untuk GitHub:
 - Repo ini masih menjejak beberapa fail dokumen sekolah yang perlu dinilai semula jika repo ingin dijadikan awam.
 - Rujuk `DATA_MIGRATION_PLAN.md` untuk laluan migrasi daripada data sebenar kepada sample/template.
 - Jika anda perlukan data sebenar untuk operasi tempatan, letakkan fail CSV di `private-data/` supaya modul tertentu boleh cuba membacanya tanpa menjejaknya dalam Git.
+- Jika anda perlukan dokumen operasi sebenar seperti eksport `.xlsx` atau sumber `.docx`, simpan secara tempatan di luar repo tracked.
 
 ## License
 
