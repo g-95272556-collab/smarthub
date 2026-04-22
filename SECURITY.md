@@ -44,9 +44,6 @@ Recommended actions:
 
 Before sharing this repository outside the trusted team, review tracked files such as:
 
-- `data_murid.csv`
-- `data_guru.csv`
-- `data_harilahir.csv`
 - `.xlsx` school exports
 - `.docx` source documents
 
@@ -62,4 +59,3 @@ If possible:
 - keep generated deploy artifacts out of Git
 - prefer empty defaults for notification settings in source code
 - store production configuration in approved backend/config channels
-
