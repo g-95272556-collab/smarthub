@@ -739,10 +739,26 @@ async function saveAttendanceNotificationConfig() {
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridClassGroupTemplate] = getInputTrimmed('attendanceTplMuridClassGroup', DEFAULT_ATTENDANCE_TEMPLATES.muridClassGroup);
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.note] = getInputTrimmed('attendanceNotifNote', '');
   populateAttendanceNotificationConfig(payload);
+  const result = document.getElementById('attendanceNotifConfigResult');
+  if (!APP.workerUrl) {
+    if (result) {
+      result.style.display = 'block';
+      result.textContent = 'Konfigurasi disimpan pada peranti ini. Worker URL belum disimpan, jadi belum diselaraskan ke backend.';
+    }
+    showToast('Konfigurasi kehadiran disimpan pada peranti ini.', 'success');
+    return;
+  }
+  if (!APP.user || !APP.user.idToken) {
+    if (result) {
+      result.style.display = 'block';
+      result.textContent = 'Konfigurasi disimpan pada peranti ini. Untuk simpan ke backend, sila log masuk semula sebagai pentadbir.';
+    }
+    showToast('Disimpan lokal. Log masuk pentadbir diperlukan untuk sync backend.', 'info');
+    return;
+  }
   try {
     const data = await callWorker({ action: 'setConfig', config: payload });
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan konfigurasi notifikasi kehadiran.');
-    const result = document.getElementById('attendanceNotifConfigResult');
     if (result) {
       result.style.display = 'block';
       result.textContent = 'Konfigurasi notifikasi kehadiran guru dan murid berjaya disimpan.';
@@ -750,12 +766,11 @@ async function saveAttendanceNotificationConfig() {
     showToast('Konfigurasi notifikasi kehadiran berjaya disimpan.', 'success');
     try { await loadConfig(); } catch (err) {}
   } catch (e) {
-    const result = document.getElementById('attendanceNotifConfigResult');
     if (result) {
       result.style.display = 'block';
-      result.textContent = 'Gagal menyimpan konfigurasi: ' + e.message;
+      result.textContent = 'Konfigurasi disimpan pada peranti ini, tetapi gagal sync ke backend: ' + e.message;
     }
-    showToast(e.message, 'error');
+    showToast('Disimpan lokal. Sync backend gagal: ' + e.message, 'info');
   }
 }
 
