@@ -153,7 +153,15 @@ function setupAllSheets() {
     ["TELEGRAM_BOT", ""],
     ["TELEGRAM_CHAT", ""],
     ["TELEGRAM_TOPIC", ""],
-    ["DEEPSEEK_API_KEY", ""]
+    ["DEEPSEEK_API_KEY", ""],
+    ["ATTENDANCE_GURU_NOTIF_ENABLED", "true"],
+    ["ATTENDANCE_GURU_REMINDER_TIME", "07:45"],
+    ["ATTENDANCE_MURID_NOTIF_ENABLED", "true"],
+    ["ATTENDANCE_MURID_CUTOFF_TIME", "09:00"],
+    ["ATTENDANCE_MURID_NOTIFY_GUARDIAN", "true"],
+    ["ATTENDANCE_MURID_NOTIFY_CLASS_GROUP", "true"],
+    ["ATTENDANCE_MURID_NOTIFY_TELEGRAM", "true"],
+    ["ATTENDANCE_NOTIF_NOTE", ""]
   ];
   ensureConfigDefaults_(defaults);
   return jsonResponse({ success: true, message: "Sheets dan CONFIG siap." });
