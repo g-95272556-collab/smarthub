@@ -739,6 +739,11 @@ async function d1SetupAllSheets(env) {
     ATTENDANCE_MURID_NOTIFY_GUARDIAN: "true",
     ATTENDANCE_MURID_NOTIFY_CLASS_GROUP: "true",
     ATTENDANCE_MURID_NOTIFY_TELEGRAM: "true",
+    ATTENDANCE_GURU_ADMIN_TEMPLATE: "Peringatan Kehadiran Guru\n\nGuru berikut belum mendaftar kehadiran pada {TARIKH}:\n\n{SENARAI}\n\nSila daftar segera.\n\n_{SEKOLAH}_",
+    ATTENDANCE_GURU_PERSONAL_TEMPLATE: "Peringatan\n\nCikgu {NAMA}, anda belum mendaftar kehadiran hari ini ({TARIKH}). Sila daftar segera.\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_GUARDIAN_TEMPLATE: "Makluman Kehadiran\n\nSelamat sejahtera,\n\nAnak jagaan tuan/puan, {NAMA} dari kelas {KELAS}, direkodkan {STATUS} pada {TARIKH}.\n\nSila hubungi pihak sekolah jika ada pertanyaan.\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_SUMMARY_TEMPLATE: "Makluman Kehadiran Murid\n\nTarikh: {TARIKH}\nKelas: {KELAS}\nBilangan: {BILANGAN}\n\n{SENARAI}\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_CLASS_GROUP_TEMPLATE: "Makluman Kehadiran - {KELAS}\n\nMurid tidak hadir pada {TARIKH}:\n\n{SENARAI}\n\n_{SEKOLAH}_",
     ATTENDANCE_NOTIF_NOTE: ""
   });
 }
@@ -1051,6 +1056,11 @@ async function googleSetupAllSheets(env) {
     ATTENDANCE_MURID_NOTIFY_GUARDIAN: "true",
     ATTENDANCE_MURID_NOTIFY_CLASS_GROUP: "true",
     ATTENDANCE_MURID_NOTIFY_TELEGRAM: "true",
+    ATTENDANCE_GURU_ADMIN_TEMPLATE: "Peringatan Kehadiran Guru\n\nGuru berikut belum mendaftar kehadiran pada {TARIKH}:\n\n{SENARAI}\n\nSila daftar segera.\n\n_{SEKOLAH}_",
+    ATTENDANCE_GURU_PERSONAL_TEMPLATE: "Peringatan\n\nCikgu {NAMA}, anda belum mendaftar kehadiran hari ini ({TARIKH}). Sila daftar segera.\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_GUARDIAN_TEMPLATE: "Makluman Kehadiran\n\nSelamat sejahtera,\n\nAnak jagaan tuan/puan, {NAMA} dari kelas {KELAS}, direkodkan {STATUS} pada {TARIKH}.\n\nSila hubungi pihak sekolah jika ada pertanyaan.\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_SUMMARY_TEMPLATE: "Makluman Kehadiran Murid\n\nTarikh: {TARIKH}\nKelas: {KELAS}\nBilangan: {BILANGAN}\n\n{SENARAI}\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_CLASS_GROUP_TEMPLATE: "Makluman Kehadiran - {KELAS}\n\nMurid tidak hadir pada {TARIKH}:\n\n{SENARAI}\n\n_{SEKOLAH}_",
     ATTENDANCE_NOTIF_NOTE: ""
   });
 }

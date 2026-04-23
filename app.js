@@ -455,7 +455,19 @@ var ATTENDANCE_NOTIF_CONFIG_KEYS = {
   muridNotifyGuardian: 'ATTENDANCE_MURID_NOTIFY_GUARDIAN',
   muridNotifyClassGroup: 'ATTENDANCE_MURID_NOTIFY_CLASS_GROUP',
   muridNotifyTelegram: 'ATTENDANCE_MURID_NOTIFY_TELEGRAM',
+  guruAdminTemplate: 'ATTENDANCE_GURU_ADMIN_TEMPLATE',
+  guruPersonalTemplate: 'ATTENDANCE_GURU_PERSONAL_TEMPLATE',
+  muridGuardianTemplate: 'ATTENDANCE_MURID_GUARDIAN_TEMPLATE',
+  muridSummaryTemplate: 'ATTENDANCE_MURID_SUMMARY_TEMPLATE',
+  muridClassGroupTemplate: 'ATTENDANCE_MURID_CLASS_GROUP_TEMPLATE',
   note: 'ATTENDANCE_NOTIF_NOTE'
+};
+var DEFAULT_ATTENDANCE_TEMPLATES = {
+  guruAdmin: 'Peringatan Kehadiran Guru\n\nGuru berikut belum mendaftar kehadiran pada {TARIKH}:\n\n{SENARAI}\n\nSila daftar segera.\n\n_{SEKOLAH}_',
+  guruPersonal: 'Peringatan\n\nCikgu {NAMA}, anda belum mendaftar kehadiran hari ini ({TARIKH}). Sila daftar segera.\n\n_{SEKOLAH}_',
+  muridGuardian: 'Makluman Kehadiran\n\nSelamat sejahtera,\n\nAnak jagaan tuan/puan, {NAMA} dari kelas {KELAS}, direkodkan {STATUS} pada {TARIKH}.\n\nSila hubungi pihak sekolah jika ada pertanyaan.\n\n_{SEKOLAH}_',
+  muridSummary: 'Makluman Kehadiran Murid\n\nTarikh: {TARIKH}\nKelas: {KELAS}\nBilangan: {BILANGAN}\n\n{SENARAI}\n\n_{SEKOLAH}_',
+  muridClassGroup: 'Makluman Kehadiran - {KELAS}\n\nMurid tidak hadir pada {TARIKH}:\n\n{SENARAI}\n\n_{SEKOLAH}_'
 };
 function getGroupKelas(k) { return GROUP_WA_KELAS[k] || ''; }
 function getGroupGuruFonnteId() { return String(hlConfig.fonnteGroup || '').trim(); }
@@ -654,6 +666,11 @@ function populateAttendanceNotificationConfig(config) {
   const guruTime = String(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.guruReminderTime] || localStorage.getItem('ssh_attendance_guru_reminder_time') || '07:45').trim();
   const muridTime = String(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridCutoffTime] || localStorage.getItem('ssh_attendance_murid_cutoff_time') || '09:00').trim();
   const note = String(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.note] || localStorage.getItem('ssh_attendance_notif_note') || '').trim();
+  const guruAdminTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.guruAdminTemplate], 'ssh_attendance_tpl_guru_admin', DEFAULT_ATTENDANCE_TEMPLATES.guruAdmin);
+  const guruPersonalTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.guruPersonalTemplate], 'ssh_attendance_tpl_guru_personal', DEFAULT_ATTENDANCE_TEMPLATES.guruPersonal);
+  const muridGuardianTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridGuardianTemplate], 'ssh_attendance_tpl_murid_guardian', getLegacyMuridGuardianTemplate());
+  const muridSummaryTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridSummaryTemplate], 'ssh_attendance_tpl_murid_summary', DEFAULT_ATTENDANCE_TEMPLATES.muridSummary);
+  const muridClassGroupTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridClassGroupTemplate], 'ssh_attendance_tpl_murid_class_group', DEFAULT_ATTENDANCE_TEMPLATES.muridClassGroup);
 
   localStorage.setItem('ssh_attendance_guru_notif_enabled', guruEnabled ? 'true' : 'false');
   localStorage.setItem('ssh_attendance_murid_notif_enabled', muridEnabled ? 'true' : 'false');
@@ -663,6 +680,11 @@ function populateAttendanceNotificationConfig(config) {
   localStorage.setItem('ssh_attendance_guru_reminder_time', guruTime || '07:45');
   localStorage.setItem('ssh_attendance_murid_cutoff_time', muridTime || '09:00');
   localStorage.setItem('ssh_attendance_notif_note', note);
+  localStorage.setItem('ssh_attendance_tpl_guru_admin', guruAdminTemplate);
+  localStorage.setItem('ssh_attendance_tpl_guru_personal', guruPersonalTemplate);
+  localStorage.setItem('ssh_attendance_tpl_murid_guardian', muridGuardianTemplate);
+  localStorage.setItem('ssh_attendance_tpl_murid_summary', muridSummaryTemplate);
+  localStorage.setItem('ssh_attendance_tpl_murid_class_group', muridClassGroupTemplate);
 
   setSelectValue('attendanceGuruNotifEnabled', guruEnabled ? 'true' : 'false');
   setSelectValue('attendanceMuridNotifEnabled', muridEnabled ? 'true' : 'false');
@@ -672,6 +694,11 @@ function populateAttendanceNotificationConfig(config) {
   setInputValue('attendanceGuruReminderTime', guruTime || '07:45');
   setInputValue('attendanceMuridCutoffTime', muridTime || '09:00');
   setInputValue('attendanceNotifNote', note);
+  setInputValue('attendanceTplGuruAdmin', guruAdminTemplate);
+  setInputValue('attendanceTplGuruPersonal', guruPersonalTemplate);
+  setInputValue('attendanceTplMuridGuardian', muridGuardianTemplate);
+  setInputValue('attendanceTplMuridSummary', muridSummaryTemplate);
+  setInputValue('attendanceTplMuridClassGroup', muridClassGroupTemplate);
   updateAttendanceNotificationStatusUI();
 }
 
@@ -705,6 +732,11 @@ async function saveAttendanceNotificationConfig() {
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyGuardian] = getSelectBoolean('attendanceMuridNotifyGuardian', true) ? 'true' : 'false';
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyClassGroup] = getSelectBoolean('attendanceMuridNotifyClassGroup', true) ? 'true' : 'false';
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyTelegram] = getSelectBoolean('attendanceMuridNotifyTelegram', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruAdminTemplate] = getInputTrimmed('attendanceTplGuruAdmin', DEFAULT_ATTENDANCE_TEMPLATES.guruAdmin);
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruPersonalTemplate] = getInputTrimmed('attendanceTplGuruPersonal', DEFAULT_ATTENDANCE_TEMPLATES.guruPersonal);
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridGuardianTemplate] = getInputTrimmed('attendanceTplMuridGuardian', DEFAULT_ATTENDANCE_TEMPLATES.muridGuardian);
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridSummaryTemplate] = getInputTrimmed('attendanceTplMuridSummary', DEFAULT_ATTENDANCE_TEMPLATES.muridSummary);
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridClassGroupTemplate] = getInputTrimmed('attendanceTplMuridClassGroup', DEFAULT_ATTENDANCE_TEMPLATES.muridClassGroup);
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.note] = getInputTrimmed('attendanceNotifNote', '');
   populateAttendanceNotificationConfig(payload);
   try {
@@ -1253,6 +1285,29 @@ function getInputTrimmed(id, fallback) {
   const el = document.getElementById(id);
   const value = el ? String(el.value || '').trim() : '';
   return value || fallback || '';
+}
+function getConfigText(configValue, localKey, fallback) {
+  const fromConfig = String(configValue == null ? '' : configValue).trim();
+  if (fromConfig) return fromConfig;
+  const fromLocal = String(localStorage.getItem(localKey) || '').trim();
+  return fromLocal || fallback || '';
+}
+function getLegacyMuridGuardianTemplate() {
+  const saved = String(localStorage.getItem('tpl_tidakHadir') || '').trim();
+  const el = document.getElementById('tplTidakHadir');
+  return saved || (el ? String(el.value || '').trim() : '') || DEFAULT_ATTENDANCE_TEMPLATES.muridGuardian;
+}
+function getAttendanceTemplate(localKey, fallback) {
+  return String(localStorage.getItem(localKey) || '').trim() || fallback || '';
+}
+function renderAttendanceTemplate(template, data) {
+  const values = data || {};
+  return String(template || '').replace(/{([A-Z_]+)}/g, function(match, key) {
+    return values[key] == null ? '' : String(values[key]);
+  });
+}
+function getSchoolTemplateName() {
+  return 'SK Kiandongo';
 }
 function normalizeConfigBoolean(value, fallback) {
   if (value === true || value === false) return value;
@@ -2508,14 +2563,23 @@ async function semakDanNotifGuruBelumIsi() {
       .filter(r => !['Pembantu Operasi'].includes(r[2] || ''));
     const belumIsi = guruList.filter(r => !sudahIsi.has(String(r[0] || '').toLowerCase()));
     if (!belumIsi.length) return;
-    const namaList = belumIsi.map(r => '• ' + r[0]).join('\n');
-    const mesej = '⏰ *Peringatan Kehadiran*\n\nGuru berikut belum mendaftar kehadiran (' + tarikh + '):\n\n' + namaList + '\n\nSila daftar sebelum jam 8:00 pagi.\n\n_SK Kiandongo_';
+    const namaList = belumIsi.map(r => '- ' + r[0]).join('\n');
+    const mesej = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_guru_admin', DEFAULT_ATTENDANCE_TEMPLATES.guruAdmin), {
+      TARIKH: tarikh,
+      BILANGAN: belumIsi.length,
+      SENARAI: namaList,
+      SEKOLAH: getSchoolTemplateName()
+    });
     await hantar_notif_gb_pk(mesej);
     localStorage.setItem(guardKey, '1');
     for (const g of belumIsi) {
       const tel = String(g[4] || '').trim();
       if (tel) {
-        const mesejGuru = '⏰ *Peringatan*\n\nCikgu ' + g[0] + ', anda belum mendaftar kehadiran hari ini. Sila daftar segera.\n\n_SK Kiandongo_';
+        const mesejGuru = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_guru_personal', DEFAULT_ATTENDANCE_TEMPLATES.guruPersonal), {
+          NAMA: g[0],
+          TARIKH: tarikh,
+          SEKOLAH: getSchoolTemplateName()
+        });
         try { await callFonnte(tel, mesejGuru); await sleep(400); } catch(e) {}
       }
     }
@@ -2536,14 +2600,26 @@ async function notifMuridTidakHadirJam9() {
       .filter(r => r.tarikh === tarikh && ['Tidak Hadir', 'Sakit', 'Ponteng'].includes(r.status))
       .map(r => ({ nama: r.nama, kelas: r.kelas, status: r.status, telefon: r.telefon || '' }));
     if (!tidakHadir.length) return;
-    const tpl = localStorage.getItem('tpl_tidakHadir') || '🔔 *Makluman Kehadiran*\n\nAnak anda *{NAMA}* (Kelas {KELAS}) didapati *{STATUS}* ke sekolah pada *{TARIKH}*.\n\n_SK Kiandongo_';
+    const tpl = getAttendanceTemplate('ssh_attendance_tpl_murid_guardian', getLegacyMuridGuardianTemplate());
     let sent = 0;
     const namaList = tidakHadir.map(m => '- ' + m.nama + ' (' + m.kelas + ')').join('\n');
-    const mesejTelegram = '📢 *Makluman Kehadiran Murid*\n\nTarikh: *' + tarikh + '*\nBilangan: *' + tidakHadir.length + '*\n\n' + namaList + '\n\n_SK Kiandongo_';
+    const mesejTelegram = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_murid_summary', DEFAULT_ATTENDANCE_TEMPLATES.muridSummary), {
+      TARIKH: tarikh,
+      KELAS: 'Semua Kelas',
+      BILANGAN: tidakHadir.length,
+      SENARAI: namaList,
+      SEKOLAH: getSchoolTemplateName()
+    });
     const tgOk = await sendTelegramLogged('Auto Tidak Hadir Murid', 'Telegram Admin', mesejTelegram);
     for (const m of tidakHadir) {
       if (!m.telefon) continue;
-      const mesej = tpl.replace(/{NAMA}/g, m.nama).replace(/{KELAS}/g, m.kelas).replace(/{STATUS}/g, m.status).replace(/{TARIKH}/g, tarikh);
+      const mesej = renderAttendanceTemplate(tpl, {
+        NAMA: m.nama,
+        KELAS: m.kelas,
+        STATUS: m.status,
+        TARIKH: tarikh,
+        SEKOLAH: getSchoolTemplateName()
+      });
       try { await callFonnte(m.telefon, mesej); logNotif('Auto Tidak Hadir Murid', m.telefon, mesej, 'Berjaya'); sent++; } catch(e) {}
       await sleep(500);
     }
@@ -3052,16 +3128,29 @@ async function submitKehadiranKelas() {
   closeModal('modalKehadiranMurid');
   showToast((usedLegacyFallback ? '✅ Mod serasi lama digunakan. ' : '✅ ') + rowsToSave.length + ' rekod disimpan.', 'success');
   if (tidakHadirList.length > 0 && isNotifAutoEnabled() && isMuridAttendanceNotifEnabled()) {
-    var guardMurid = 'ssh_notif_wali_' + tarikh + '_' + kelas.replace(/\s/g,'');
-    if (!localStorage.getItem(guardMurid)) {
+      var guardMurid = 'ssh_notif_wali_' + tarikh + '_' + kelas.replace(/\s/g,'');
+      if (!localStorage.getItem(guardMurid)) {
       var namaList = tidakHadirList.map(function(m){ return '- ' + m.nama; }).join('\n');
-      var mesejGroup = 'Makluman Kehadiran - ' + kelas + '\n\nMurid tidak hadir pada ' + tarikh + ':\n\n' + namaList + '\n\n_SK Kiandongo_';
+      var mesejGroup = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_murid_class_group', DEFAULT_ATTENDANCE_TEMPLATES.muridClassGroup), {
+        TARIKH: tarikh,
+        KELAS: kelas,
+        BILANGAN: tidakHadirList.length,
+        SENARAI: namaList,
+        SEKOLAH: getSchoolTemplateName()
+      });
       var groupTarget = getGroupKelas(kelas);
       var fonnteOK = false, tgOK = false;
       if (shouldNotifyMuridClassGroup() && groupTarget) {
         try { await callFonnte(groupTarget, mesejGroup); logNotif('Auto-Tidak Hadir', groupTarget, mesejGroup, 'Berjaya'); fonnteOK = true; } catch(e) {}
       }
-      var mesejTG = 'Rekod Kehadiran ' + kelas + '\nTarikh: ' + tarikh + '\nTidak Hadir: ' + tidakHadirList.length + ' murid\n\n' + namaList + '\n\nDirekod oleh: ' + (APP.user ? APP.user.name : 'Sistem') + '\n_SK Kiandongo_';
+      var mesejTG = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_murid_summary', DEFAULT_ATTENDANCE_TEMPLATES.muridSummary), {
+        TARIKH: tarikh,
+        KELAS: kelas,
+        BILANGAN: tidakHadirList.length,
+        SENARAI: namaList,
+        PEREKOD: APP.user ? APP.user.name : 'Sistem',
+        SEKOLAH: getSchoolTemplateName()
+      });
       if (shouldNotifyMuridTelegram()) {
         try { await hantarTelegram(mesejTG); tgOK = true; } catch(e) {}
       }
@@ -4252,8 +4341,14 @@ async function hantarNotifTidakHadir() {
     for (const r of rows) {
       const telefon = r.telefon;
       if (!telefon) { resultBox.textContent += '⚠ ' + r.nama + ' — tiada nombor\n'; continue; }
-      const tpl = localStorage.getItem('tpl_tidakHadir') || document.getElementById('tplTidakHadir').value;
-      const mesej = tpl.replace(/{NAMA}/g, r.nama).replace(/{KELAS}/g, r.kelas).replace(/{TARIKH}/g, tarikh);
+      const tpl = getAttendanceTemplate('ssh_attendance_tpl_murid_guardian', getLegacyMuridGuardianTemplate());
+      const mesej = renderAttendanceTemplate(tpl, {
+        NAMA: r.nama,
+        KELAS: r.kelas,
+        STATUS: r.status || 'Tidak Hadir',
+        TARIKH: tarikh,
+        SEKOLAH: getSchoolTemplateName()
+      });
       try {
         const resp = await callFonnte(telefon, mesej);
         if (resp.status === true || resp.status === 'true') { resultBox.textContent += '✅ ' + r.nama + ' → ' + telefon + '\n'; sent++; logNotif('Tidak Hadir', telefon, mesej, 'Berjaya'); }
@@ -4270,8 +4365,14 @@ async function notifSatuMurid(nama, kelas, tarikh, telefon) {
   if (!telefon) { showToast('Tiada nombor telefon untuk ' + nama, 'error'); return; }
   showModule('notifikasi');
   document.getElementById('notifTarget').value = telefon;
-  const tpl = localStorage.getItem('tpl_tidakHadir') || document.getElementById('tplTidakHadir').value;
-  document.getElementById('notifMesej').value = tpl.replace(/{NAMA}/g, nama).replace(/{KELAS}/g, kelas).replace(/{TARIKH}/g, tarikh);
+  const tpl = getAttendanceTemplate('ssh_attendance_tpl_murid_guardian', getLegacyMuridGuardianTemplate());
+  document.getElementById('notifMesej').value = renderAttendanceTemplate(tpl, {
+    NAMA: nama,
+    KELAS: kelas,
+    STATUS: 'Tidak Hadir',
+    TARIKH: tarikh,
+    SEKOLAH: getSchoolTemplateName()
+  });
   showToast('Mesej disediakan untuk ' + nama + '.', 'info');
 }
 
@@ -4291,22 +4392,34 @@ async function hantarTelegramTidakHadirMuridManual() {
     resultBox.textContent = 'Tiada saluran murid aktif. Aktifkan Telegram atau WhatsApp wali dalam konfigurasi.';
     showToast('Tiada saluran notifikasi murid aktif.', 'error');
     return;
-  }
-  resultBox.textContent = 'Memuat senarai murid tidak hadir...';
+    }
+    resultBox.textContent = 'Memuat senarai murid tidak hadir...';
   try {
     const rows = await getTidakHadirMuridList(tarikh, kelas);
     if (!rows.length) { resultBox.textContent = 'Tiada murid tidak hadir / sakit / ponteng.'; showToast('Tiada rekod untuk dihantar.', 'info'); return; }
     resultBox.textContent = 'Menghantar ke ' + [sendTelegram ? 'Telegram' : '', sendGuardian ? 'WhatsApp wali' : ''].filter(Boolean).join(' dan ') + '...\n';
     const namaList = rows.map(r => '- ' + r.nama + ' (' + r.kelas + ')').join('\n');
-    const mesejTelegram = '📢 *Makluman Kehadiran Murid*\n\nTarikh: *' + tarikh + '*\nKelas: *' + (kelas || 'Semua Kelas') + '*\nBilangan: *' + rows.length + '*\n\n' + namaList + '\n\n_SK Kiandongo_';
+    const mesejTelegram = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_murid_summary', DEFAULT_ATTENDANCE_TEMPLATES.muridSummary), {
+      TARIKH: tarikh,
+      KELAS: kelas || 'Semua Kelas',
+      BILANGAN: rows.length,
+      SENARAI: namaList,
+      SEKOLAH: getSchoolTemplateName()
+    });
     const tgOk = sendTelegram ? await sendTelegramLogged('Tidak Hadir Murid', 'Telegram Admin', mesejTelegram) : false;
     let sent = 0, failed = 0;
     if (sendGuardian) {
     for (const r of rows) {
       const telefon = r.telefon;
       if (!telefon) { resultBox.textContent += '⚠ ' + r.nama + ' — tiada nombor\n'; continue; }
-      const tpl = localStorage.getItem('tpl_tidakHadir') || document.getElementById('tplTidakHadir').value;
-      const mesej = tpl.replace(/{NAMA}/g, r.nama).replace(/{KELAS}/g, r.kelas).replace(/{TARIKH}/g, tarikh);
+      const tpl = getAttendanceTemplate('ssh_attendance_tpl_murid_guardian', getLegacyMuridGuardianTemplate());
+      const mesej = renderAttendanceTemplate(tpl, {
+        NAMA: r.nama,
+        KELAS: r.kelas,
+        STATUS: r.status || 'Tidak Hadir',
+        TARIKH: tarikh,
+        SEKOLAH: getSchoolTemplateName()
+      });
       try {
         const resp = await callFonnte(telefon, mesej);
         if (resp.status === true || resp.status === 'true') { sent++; logNotif('Tidak Hadir Murid', telefon, mesej, 'Berjaya'); resultBox.textContent += '✅ ' + r.nama + ' → ' + telefon + '\n'; }
@@ -4340,15 +4453,24 @@ async function hantarTelegramGuruTidakHadirManual() {
   try {
     const belumIsi = await getGuruBelumIsiList(today);
     if (!belumIsi.length) { resultBox.textContent = 'Tiada guru yang belum mendaftar kehadiran hari ini.'; showToast('Tiada rekod untuk dihantar.', 'info'); return; }
-    const namaList = belumIsi.map(r => '• ' + r[0]).join('\n');
-    const mesej = '⏰ *Peringatan Kehadiran Guru*\n\nGuru berikut belum mendaftar kehadiran (' + today + '):\n\n' + namaList + '\n\nSila daftar segera.\n\n_SK Kiandongo_';
+    const namaList = belumIsi.map(r => '- ' + r[0]).join('\n');
+    const mesej = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_guru_admin', DEFAULT_ATTENDANCE_TEMPLATES.guruAdmin), {
+      TARIKH: today,
+      BILANGAN: belumIsi.length,
+      SENARAI: namaList,
+      SEKOLAH: getSchoolTemplateName()
+    });
     resultBox.textContent = 'Menghantar ke Telegram dan WhatsApp guru...\n';
     const tgOk = await sendTelegramLogged('Tidak Hadir Guru', 'Telegram Admin', mesej);
     let sent = 0;
     for (const g of belumIsi) {
       const tel = String(g[4] || '').trim();
       if (!tel) continue;
-      const mesejGuru = '⏰ *Peringatan*\n\nCikgu ' + g[0] + ', anda belum mendaftar kehadiran hari ini. Sila daftar segera.\n\n_SK Kiandongo_';
+      const mesejGuru = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_guru_personal', DEFAULT_ATTENDANCE_TEMPLATES.guruPersonal), {
+        NAMA: g[0],
+        TARIKH: today,
+        SEKOLAH: getSchoolTemplateName()
+      });
       try { await callFonnte(tel, mesejGuru); logNotif('Tidak Hadir Guru', tel, mesejGuru, 'Berjaya'); sent++; await sleep(400); } catch (e) {}
     }
     resultBox.textContent += '\n─────\nBerjaya: ' + sent + '  |  Gagal: 0';
