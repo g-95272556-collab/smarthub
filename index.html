@@ -3070,6 +3070,76 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
+          <div style="margin-top:18px;padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+              <div>
+                <h3 style="margin:0 0 6px">Templat Mesej Kehadiran</h3>
+                <p style="margin:0;color:var(--muted);font-size:0.86rem;line-height:1.7">
+                  Token disokong: {NAMA}, {KELAS}, {STATUS}, {TARIKH}, {BILANGAN}, {SENARAI}, {SEKOLAH}.
+                </p>
+              </div>
+              <span class="badge badge-blue">Boleh diedit</span>
+            </div>
+            <div class="form-row" style="margin-top:14px">
+              <div class="form-group">
+                <label>Guru - Ringkasan Admin / Telegram</label>
+                <textarea id="attendanceTplGuruAdmin" rows="7" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">Peringatan Kehadiran Guru
+
+Guru berikut belum mendaftar kehadiran pada {TARIKH}:
+
+{SENARAI}
+
+Sila daftar segera.
+
+_{SEKOLAH}_</textarea>
+              </div>
+              <div class="form-group">
+                <label>Guru - Peringatan Individu WhatsApp</label>
+                <textarea id="attendanceTplGuruPersonal" rows="7" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">Peringatan
+
+Cikgu {NAMA}, anda belum mendaftar kehadiran hari ini ({TARIKH}). Sila daftar segera.
+
+_{SEKOLAH}_</textarea>
+              </div>
+            </div>
+            <div class="form-row" style="margin-top:12px">
+              <div class="form-group">
+                <label>Murid - Mesej Wali / Penjaga</label>
+                <textarea id="attendanceTplMuridGuardian" rows="8" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">Makluman Kehadiran
+
+Selamat sejahtera,
+
+Anak jagaan tuan/puan, {NAMA} dari kelas {KELAS}, direkodkan {STATUS} pada {TARIKH}.
+
+Sila hubungi pihak sekolah jika ada pertanyaan.
+
+_{SEKOLAH}_</textarea>
+              </div>
+              <div class="form-group">
+                <label>Murid - Ringkasan Telegram</label>
+                <textarea id="attendanceTplMuridSummary" rows="8" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">Makluman Kehadiran Murid
+
+Tarikh: {TARIKH}
+Kelas: {KELAS}
+Bilangan: {BILANGAN}
+
+{SENARAI}
+
+_{SEKOLAH}_</textarea>
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:12px">
+              <label>Murid - Mesej Group Kelas</label>
+              <textarea id="attendanceTplMuridClassGroup" rows="7" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">Makluman Kehadiran - {KELAS}
+
+Murid tidak hadir pada {TARIKH}:
+
+{SENARAI}
+
+_{SEKOLAH}_</textarea>
+            </div>
+          </div>
+
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
             <button class="btn btn-primary" onclick="saveAttendanceNotificationConfig()">Simpan Konfigurasi Kehadiran</button>
             <button class="btn btn-secondary" onclick="loadAttendanceNotificationConfig()">Muat Semula</button>
