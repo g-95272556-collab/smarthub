@@ -2732,6 +2732,7 @@ _SK Kiandongo_</textarea>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
             <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})">Worker & Apps Script</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})">Notifikasi Hari Lahir</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-attendance-notif-card').scrollIntoView({behavior:'smooth', block:'start'})">Notifikasi Kehadiran</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-group-card').scrollIntoView({behavior:'smooth', block:'start'})">Group Fonnte</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-kokum-card').scrollIntoView({behavior:'smooth', block:'start'})">Pelaporan Kokum</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-d1-card').scrollIntoView({behavior:'smooth', block:'start'})">Pengurusan D1</button>
@@ -2974,6 +2975,108 @@ _SK Kiandongo_</textarea>
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div class="card" id="config-attendance-notif-card" style="margin-top:20px;border:1px solid rgba(245,158,11,.2);background:linear-gradient(180deg,#ffffff 0%,#fffaf0 100%)">
+          <div class="section-header" style="align-items:flex-start;gap:14px">
+            <div style="flex:1;min-width:0">
+              <h2>Konfigurasi Notifikasi Kehadiran Guru & Murid</h2>
+              <p style="font-size:0.9rem;color:var(--muted);margin:8px 0 0;line-height:1.7">
+                Tetapkan kawalan notifikasi kehadiran guru dan murid di satu tempat. Tetapan ini menggunakan konfigurasi Telegram, Fonnte, group guru, dan group kelas yang sama.
+              </p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <span class="badge badge-amber">Kehadiran</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px">
+            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Notifikasi Guru</div>
+              <div id="attendanceGuruNotifStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
+              <div id="attendanceGuruNotifMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Status peringatan guru akan dipaparkan di sini.</div>
+            </div>
+            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Notifikasi Murid</div>
+              <div id="attendanceMuridNotifStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
+              <div id="attendanceMuridNotifMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Status makluman murid tidak hadir akan dipaparkan di sini.</div>
+            </div>
+            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Saluran Guru</div>
+              <div id="attendanceGuruChannelStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
+              <div id="attendanceGuruChannelMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Telegram dan Fonnte guru akan disemak di sini.</div>
+            </div>
+            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
+              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Saluran Murid</div>
+              <div id="attendanceMuridChannelStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
+              <div id="attendanceMuridChannelMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Wali, group kelas dan Telegram akan disemak di sini.</div>
+            </div>
+          </div>
+
+          <div class="form-row" style="margin-top:16px">
+            <div class="form-group">
+              <label>Status Notifikasi Guru</label>
+              <select id="attendanceGuruNotifEnabled">
+                <option value="true">Aktif</option>
+                <option value="false">Dinonaktifkan</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Masa Peringatan Guru</label>
+              <input id="attendanceGuruReminderTime" type="time" value="07:45">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Status Notifikasi Murid</label>
+              <select id="attendanceMuridNotifEnabled">
+                <option value="true">Aktif</option>
+                <option value="false">Dinonaktifkan</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Masa Sasaran Murid Tidak Hadir</label>
+              <input id="attendanceMuridCutoffTime" type="time" value="09:00">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Hantar Kepada Wali Murid</label>
+              <select id="attendanceMuridNotifyGuardian">
+                <option value="true">Ya</option>
+                <option value="false">Tidak</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Hantar Ke Group Kelas</label>
+              <select id="attendanceMuridNotifyClassGroup">
+                <option value="true">Ya</option>
+                <option value="false">Tidak</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group">
+              <label>Hantar Ringkasan Telegram Murid</label>
+              <select id="attendanceMuridNotifyTelegram">
+                <option value="true">Ya</option>
+                <option value="false">Tidak</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Nota Operasi</label>
+              <input id="attendanceNotifNote" type="text" placeholder="Contoh: Semak selepas 8:00 pagi">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+            <button class="btn btn-primary" onclick="saveAttendanceNotificationConfig()">Simpan Konfigurasi Kehadiran</button>
+            <button class="btn btn-secondary" onclick="loadAttendanceNotificationConfig()">Muat Semula</button>
+            <button class="btn btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar')">Uji Notifikasi Murid</button>
+            <button class="btn btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar'); setTimeout(function(){ var el=document.getElementById('notifGuruTarikh'); if(el) el.focus(); }, 150)">Uji Notifikasi Guru</button>
+          </div>
+          <div id="attendanceNotifConfigResult" class="result-box" style="display:none;margin-top:14px"></div>
         </div>
 
         <div class="card" style="margin-top:20px">

@@ -447,6 +447,16 @@ var BIRTHDAY_NOTIF_CONFIG_KEYS = {
   fonnteGuruGroup: 'HL_FONNTE_GROUP',
   fonnteTestGroup: 'FONNTE_TEST_GROUP'
 };
+var ATTENDANCE_NOTIF_CONFIG_KEYS = {
+  guruEnabled: 'ATTENDANCE_GURU_NOTIF_ENABLED',
+  guruReminderTime: 'ATTENDANCE_GURU_REMINDER_TIME',
+  muridEnabled: 'ATTENDANCE_MURID_NOTIF_ENABLED',
+  muridCutoffTime: 'ATTENDANCE_MURID_CUTOFF_TIME',
+  muridNotifyGuardian: 'ATTENDANCE_MURID_NOTIFY_GUARDIAN',
+  muridNotifyClassGroup: 'ATTENDANCE_MURID_NOTIFY_CLASS_GROUP',
+  muridNotifyTelegram: 'ATTENDANCE_MURID_NOTIFY_TELEGRAM',
+  note: 'ATTENDANCE_NOTIF_NOTE'
+};
 function getGroupKelas(k) { return GROUP_WA_KELAS[k] || ''; }
 function getGroupGuruFonnteId() { return String(hlConfig.fonnteGroup || '').trim(); }
 function buildGroupKelasConfigKey(kelas) {
@@ -630,6 +640,89 @@ async function simpanKonfigHariLahir() {
   } catch (e) {
     renderBirthdayNotifConfigSummary(payload);
     setBirthdayConfigCheckResult(e.message, true);
+    showToast(e.message, 'error');
+  }
+}
+
+function populateAttendanceNotificationConfig(config) {
+  const cfg = config || {};
+  const guruEnabled = normalizeConfigBoolean(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.guruEnabled], isGuruAttendanceNotifEnabled());
+  const muridEnabled = normalizeConfigBoolean(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridEnabled], isMuridAttendanceNotifEnabled());
+  const notifyGuardian = normalizeConfigBoolean(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyGuardian], shouldNotifyMuridGuardian());
+  const notifyClassGroup = normalizeConfigBoolean(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyClassGroup], shouldNotifyMuridClassGroup());
+  const notifyTelegram = normalizeConfigBoolean(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyTelegram], shouldNotifyMuridTelegram());
+  const guruTime = String(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.guruReminderTime] || localStorage.getItem('ssh_attendance_guru_reminder_time') || '07:45').trim();
+  const muridTime = String(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridCutoffTime] || localStorage.getItem('ssh_attendance_murid_cutoff_time') || '09:00').trim();
+  const note = String(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.note] || localStorage.getItem('ssh_attendance_notif_note') || '').trim();
+
+  localStorage.setItem('ssh_attendance_guru_notif_enabled', guruEnabled ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_murid_notif_enabled', muridEnabled ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_murid_notify_guardian', notifyGuardian ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_murid_notify_class_group', notifyClassGroup ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_murid_notify_telegram', notifyTelegram ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_guru_reminder_time', guruTime || '07:45');
+  localStorage.setItem('ssh_attendance_murid_cutoff_time', muridTime || '09:00');
+  localStorage.setItem('ssh_attendance_notif_note', note);
+
+  setSelectValue('attendanceGuruNotifEnabled', guruEnabled ? 'true' : 'false');
+  setSelectValue('attendanceMuridNotifEnabled', muridEnabled ? 'true' : 'false');
+  setSelectValue('attendanceMuridNotifyGuardian', notifyGuardian ? 'true' : 'false');
+  setSelectValue('attendanceMuridNotifyClassGroup', notifyClassGroup ? 'true' : 'false');
+  setSelectValue('attendanceMuridNotifyTelegram', notifyTelegram ? 'true' : 'false');
+  setInputValue('attendanceGuruReminderTime', guruTime || '07:45');
+  setInputValue('attendanceMuridCutoffTime', muridTime || '09:00');
+  setInputValue('attendanceNotifNote', note);
+  updateAttendanceNotificationStatusUI();
+}
+
+async function loadAttendanceNotificationConfig() {
+  try {
+    const data = await callWorker({ action: 'getConfig' });
+    if (!data.success) throw new Error(data.error || 'Gagal memuat konfigurasi notifikasi kehadiran.');
+    populateAttendanceNotificationConfig(data.config || {});
+    const result = document.getElementById('attendanceNotifConfigResult');
+    if (result) {
+      result.style.display = 'block';
+      result.textContent = 'Konfigurasi notifikasi kehadiran berjaya dimuat semula.';
+    }
+    showToast('Konfigurasi notifikasi kehadiran dimuatkan.', 'success');
+  } catch (e) {
+    const result = document.getElementById('attendanceNotifConfigResult');
+    if (result) {
+      result.style.display = 'block';
+      result.textContent = 'Gagal memuat konfigurasi: ' + e.message;
+    }
+    showToast(e.message, 'error');
+  }
+}
+
+async function saveAttendanceNotificationConfig() {
+  const payload = {};
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruEnabled] = getSelectBoolean('attendanceGuruNotifEnabled', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruReminderTime] = getInputTrimmed('attendanceGuruReminderTime', '07:45');
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridEnabled] = getSelectBoolean('attendanceMuridNotifEnabled', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridCutoffTime] = getInputTrimmed('attendanceMuridCutoffTime', '09:00');
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyGuardian] = getSelectBoolean('attendanceMuridNotifyGuardian', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyClassGroup] = getSelectBoolean('attendanceMuridNotifyClassGroup', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyTelegram] = getSelectBoolean('attendanceMuridNotifyTelegram', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.note] = getInputTrimmed('attendanceNotifNote', '');
+  populateAttendanceNotificationConfig(payload);
+  try {
+    const data = await callWorker({ action: 'setConfig', config: payload });
+    if (!data.success) throw new Error(data.error || 'Gagal menyimpan konfigurasi notifikasi kehadiran.');
+    const result = document.getElementById('attendanceNotifConfigResult');
+    if (result) {
+      result.style.display = 'block';
+      result.textContent = 'Konfigurasi notifikasi kehadiran guru dan murid berjaya disimpan.';
+    }
+    showToast('Konfigurasi notifikasi kehadiran berjaya disimpan.', 'success');
+    try { await loadConfig(); } catch (err) {}
+  } catch (e) {
+    const result = document.getElementById('attendanceNotifConfigResult');
+    if (result) {
+      result.style.display = 'block';
+      result.textContent = 'Gagal menyimpan konfigurasi: ' + e.message;
+    }
     showToast(e.message, 'error');
   }
 }
@@ -1084,6 +1177,26 @@ function renderBirthdayDashboard() {
 function isNotifAutoEnabled() {
   return localStorage.getItem('ssh_notif_auto_enabled') !== 'false';
 }
+function getLocalBooleanConfig(key, defaultValue) {
+  const value = localStorage.getItem(key);
+  if (value == null) return !!defaultValue;
+  return value !== 'false';
+}
+function isGuruAttendanceNotifEnabled() {
+  return getLocalBooleanConfig('ssh_attendance_guru_notif_enabled', true);
+}
+function isMuridAttendanceNotifEnabled() {
+  return getLocalBooleanConfig('ssh_attendance_murid_notif_enabled', true);
+}
+function shouldNotifyMuridGuardian() {
+  return getLocalBooleanConfig('ssh_attendance_murid_notify_guardian', true);
+}
+function shouldNotifyMuridClassGroup() {
+  return getLocalBooleanConfig('ssh_attendance_murid_notify_class_group', true);
+}
+function shouldNotifyMuridTelegram() {
+  return getLocalBooleanConfig('ssh_attendance_murid_notify_telegram', true);
+}
 function isHLNotifEnabled() {
   return localStorage.getItem('ssh_hl_notif_enabled') !== 'false';
 }
@@ -1111,6 +1224,7 @@ function updateNotifAutoStatusUI() {
   if (btn) btn.textContent = isNotifAutoEnabled() ? 'Matikan' : 'Aktifkan';
   var btn2 = document.getElementById('notifModuleToggle');
   if (btn2) btn2.textContent = isNotifAutoEnabled() ? 'Matikan' : 'Aktifkan';
+  updateAttendanceNotificationStatusUI();
 }
 function updateHLNotifStatusUI() {
   var status = isHLNotifEnabled() ? 'Aktif' : 'Dinonaktifkan';
@@ -1120,6 +1234,51 @@ function updateHLNotifStatusUI() {
   if (btn) btn.textContent = isHLNotifEnabled() ? 'Matikan' : 'Aktifkan';
   var btn2 = document.getElementById('hlModuleToggle');
   if (btn2) btn2.textContent = isHLNotifEnabled() ? 'Matikan' : 'Aktifkan';
+}
+
+function setSelectValue(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = String(value);
+}
+function setInputValue(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.value = value == null ? '' : String(value);
+}
+function getSelectBoolean(id, defaultValue) {
+  const el = document.getElementById(id);
+  if (!el || el.value === '') return !!defaultValue;
+  return el.value !== 'false';
+}
+function getInputTrimmed(id, fallback) {
+  const el = document.getElementById(id);
+  const value = el ? String(el.value || '').trim() : '';
+  return value || fallback || '';
+}
+function normalizeConfigBoolean(value, fallback) {
+  if (value === true || value === false) return value;
+  const text = String(value == null ? '' : value).trim().toLowerCase();
+  if (['true', '1', 'ya', 'yes', 'on', 'aktif'].includes(text)) return true;
+  if (['false', '0', 'tidak', 'no', 'off', 'dinonaktifkan'].includes(text)) return false;
+  return !!fallback;
+}
+function updateAttendanceNotificationStatusUI() {
+  const guruEnabled = isNotifAutoEnabled() && isGuruAttendanceNotifEnabled();
+  const muridEnabled = isNotifAutoEnabled() && isMuridAttendanceNotifEnabled();
+  const guruTime = localStorage.getItem('ssh_attendance_guru_reminder_time') || '07:45';
+  const muridTime = localStorage.getItem('ssh_attendance_murid_cutoff_time') || '09:00';
+  const telegramReady = !!(String(hlConfig.tgBot || '').trim() && String(hlConfig.tgChat || '').trim());
+  const fonnteReady = !!String(hlConfig.fonnteToken || '').trim();
+  const guruGroupReady = !!getGroupGuruFonnteId();
+  const classGroupCount = SENARAI_KELAS_MURID.filter(function(kelas) { return !!getGroupKelas(kelas); }).length;
+
+  setText('attendanceGuruNotifStatus', guruEnabled ? 'Aktif' : 'Dinonaktifkan');
+  setText('attendanceGuruNotifMeta', guruEnabled ? 'Peringatan guru dijadual sekitar ' + guruTime + '.' : 'Notifikasi guru tidak akan dihantar secara automatik.');
+  setText('attendanceMuridNotifStatus', muridEnabled ? 'Aktif' : 'Dinonaktifkan');
+  setText('attendanceMuridNotifMeta', muridEnabled ? 'Makluman murid tidak hadir disasarkan sekitar ' + muridTime + '.' : 'Notifikasi murid tidak akan dihantar secara automatik.');
+  setText('attendanceGuruChannelStatus', telegramReady || fonnteReady ? 'Sedia' : 'Belum lengkap');
+  setText('attendanceGuruChannelMeta', 'Telegram: ' + (telegramReady ? 'Aktif' : 'Belum lengkap') + ' | Fonnte: ' + (fonnteReady ? 'Aktif' : 'Belum lengkap') + ' | Group guru: ' + (guruGroupReady ? 'Ada' : 'Tiada'));
+  setText('attendanceMuridChannelStatus', classGroupCount + '/' + SENARAI_KELAS_MURID.length + ' group kelas');
+  setText('attendanceMuridChannelMeta', 'Wali: ' + (shouldNotifyMuridGuardian() ? 'Ya' : 'Tidak') + ' | Group kelas: ' + (shouldNotifyMuridClassGroup() ? 'Ya' : 'Tidak') + ' | Telegram: ' + (shouldNotifyMuridTelegram() ? 'Ya' : 'Tidak'));
 }
 
 function renderDashGuruTable(rows, isninStr, jumaatStr) {
@@ -1329,7 +1488,7 @@ function showModule(id) {
       btn.classList.add('active');
   });
   if (id === 'kehadiran-guru') setTimeout(function(){ initKehadiranGuruModule(); }, 300);
-  if (id === 'konfigurasi') { loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); }
+  if (id === 'konfigurasi') { loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); updateAttendanceNotificationStatusUI(); loadConfig(); }
   if (id === 'notifikasi') {
     updateNotifAutoStatusUI();
     var notifTarikhEl = document.getElementById('notifTarikh');
@@ -2160,6 +2319,7 @@ function tunjukHasil(teks, jenis) {
 }
 
 async function hantar_notif_gb_pk(mesej) {
+  if (!isNotifAutoEnabled() || !isGuruAttendanceNotifEnabled()) return;
   const targets = [GEO.gbTel, GEO.pkTel].filter(Boolean);
   for (const tel of targets) {
     try { await callFonnte(tel, mesej); logNotif('Guru Bertugas', tel, mesej, 'Berjaya'); await sleep(400); } catch(e) {}
@@ -2891,18 +3051,20 @@ async function submitKehadiranKelas() {
   }
   closeModal('modalKehadiranMurid');
   showToast((usedLegacyFallback ? '✅ Mod serasi lama digunakan. ' : '✅ ') + rowsToSave.length + ' rekod disimpan.', 'success');
-  if (tidakHadirList.length > 0) {
+  if (tidakHadirList.length > 0 && isNotifAutoEnabled() && isMuridAttendanceNotifEnabled()) {
     var guardMurid = 'ssh_notif_wali_' + tarikh + '_' + kelas.replace(/\s/g,'');
     if (!localStorage.getItem(guardMurid)) {
       var namaList = tidakHadirList.map(function(m){ return '- ' + m.nama; }).join('\n');
       var mesejGroup = 'Makluman Kehadiran - ' + kelas + '\n\nMurid tidak hadir pada ' + tarikh + ':\n\n' + namaList + '\n\n_SK Kiandongo_';
       var groupTarget = getGroupKelas(kelas);
       var fonnteOK = false, tgOK = false;
-      if (groupTarget) {
+      if (shouldNotifyMuridClassGroup() && groupTarget) {
         try { await callFonnte(groupTarget, mesejGroup); logNotif('Auto-Tidak Hadir', groupTarget, mesejGroup, 'Berjaya'); fonnteOK = true; } catch(e) {}
       }
       var mesejTG = 'Rekod Kehadiran ' + kelas + '\nTarikh: ' + tarikh + '\nTidak Hadir: ' + tidakHadirList.length + ' murid\n\n' + namaList + '\n\nDirekod oleh: ' + (APP.user ? APP.user.name : 'Sistem') + '\n_SK Kiandongo_';
-      try { await hantarTelegram(mesejTG); tgOK = true; } catch(e) {}
+      if (shouldNotifyMuridTelegram()) {
+        try { await hantarTelegram(mesejTG); tgOK = true; } catch(e) {}
+      }
       localStorage.setItem(guardMurid, '1');
       var st = fonnteOK && tgOK ? 'WhatsApp + Telegram berjaya!' : fonnteOK ? 'WhatsApp berjaya' : tgOK ? 'Telegram berjaya' : 'Gagal hantar notifikasi';
       showToast(kelas + ': ' + st, fonnteOK||tgOK ? 'success' : 'error');
@@ -4068,6 +4230,16 @@ async function hantarNotifTidakHadir() {
   const kelas = document.getElementById('notifKelas').value;
   if (!tarikh) { showToast('Sila pilih tarikh.', 'error'); return; }
   const resultBox = document.getElementById('notifResult');
+  if (!isMuridAttendanceNotifEnabled()) {
+    resultBox.textContent = 'Notifikasi kehadiran murid dinyahaktifkan dalam modul konfigurasi.';
+    showToast('Notifikasi murid dinyahaktifkan dalam konfigurasi.', 'error');
+    return;
+  }
+  if (!shouldNotifyMuridGuardian()) {
+    resultBox.textContent = 'WhatsApp wali murid dimatikan dalam konfigurasi.';
+    showToast('WhatsApp wali murid dimatikan dalam konfigurasi.', 'error');
+    return;
+  }
   resultBox.textContent = 'Memuat senarai murid tidak hadir...';
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
@@ -4108,15 +4280,28 @@ async function hantarTelegramTidakHadirMuridManual() {
   const kelas = document.getElementById('notifKelas').value;
   if (!tarikh) { showToast('Sila pilih tarikh.', 'error'); return; }
   const resultBox = document.getElementById('notifResult');
+  if (!isMuridAttendanceNotifEnabled()) {
+    resultBox.textContent = 'Notifikasi kehadiran murid dinyahaktifkan dalam modul konfigurasi.';
+    showToast('Notifikasi murid dinyahaktifkan dalam konfigurasi.', 'error');
+    return;
+  }
+  const sendTelegram = shouldNotifyMuridTelegram();
+  const sendGuardian = shouldNotifyMuridGuardian();
+  if (!sendTelegram && !sendGuardian) {
+    resultBox.textContent = 'Tiada saluran murid aktif. Aktifkan Telegram atau WhatsApp wali dalam konfigurasi.';
+    showToast('Tiada saluran notifikasi murid aktif.', 'error');
+    return;
+  }
   resultBox.textContent = 'Memuat senarai murid tidak hadir...';
   try {
     const rows = await getTidakHadirMuridList(tarikh, kelas);
     if (!rows.length) { resultBox.textContent = 'Tiada murid tidak hadir / sakit / ponteng.'; showToast('Tiada rekod untuk dihantar.', 'info'); return; }
-    resultBox.textContent = 'Menghantar ke Telegram dan WhatsApp...\n';
+    resultBox.textContent = 'Menghantar ke ' + [sendTelegram ? 'Telegram' : '', sendGuardian ? 'WhatsApp wali' : ''].filter(Boolean).join(' dan ') + '...\n';
     const namaList = rows.map(r => '- ' + r.nama + ' (' + r.kelas + ')').join('\n');
     const mesejTelegram = '📢 *Makluman Kehadiran Murid*\n\nTarikh: *' + tarikh + '*\nKelas: *' + (kelas || 'Semua Kelas') + '*\nBilangan: *' + rows.length + '*\n\n' + namaList + '\n\n_SK Kiandongo_';
-    const tgOk = await sendTelegramLogged('Tidak Hadir Murid', 'Telegram Admin', mesejTelegram);
+    const tgOk = sendTelegram ? await sendTelegramLogged('Tidak Hadir Murid', 'Telegram Admin', mesejTelegram) : false;
     let sent = 0, failed = 0;
+    if (sendGuardian) {
     for (const r of rows) {
       const telefon = r.telefon;
       if (!telefon) { resultBox.textContent += '⚠ ' + r.nama + ' — tiada nombor\n'; continue; }
@@ -4133,6 +4318,9 @@ async function hantarTelegramTidakHadirMuridManual() {
       await sleep(800);
     }
     resultBox.textContent += '\n─────\nBerjaya: ' + sent + '  |  Gagal: ' + failed;
+    } else {
+      resultBox.textContent += 'WhatsApp wali dimatikan dalam konfigurasi.\n';
+    }
     showToast('Notifikasi murid dihantar: ' + sent + '/' + rows.length, sent > 0 || tgOk ? 'success' : 'error');
   } catch (e) {
     resultBox.textContent = 'Ralat: ' + e.message;
@@ -4143,6 +4331,11 @@ async function hantarTelegramTidakHadirMuridManual() {
 async function hantarTelegramGuruTidakHadirManual() {
   const today = (document.getElementById('notifGuruTarikh') || {}).value || getTodayYMD();
   const resultBox = document.getElementById('notifResult');
+  if (!isGuruAttendanceNotifEnabled()) {
+    resultBox.textContent = 'Notifikasi kehadiran guru dinyahaktifkan dalam modul konfigurasi.';
+    showToast('Notifikasi guru dinyahaktifkan dalam konfigurasi.', 'error');
+    return;
+  }
   resultBox.textContent = 'Memuat senarai guru belum daftar...';
   try {
     const belumIsi = await getGuruBelumIsiList(today);
@@ -6555,6 +6748,7 @@ async function loadConfig() {
     if (data.success) {
       renderConfigTable(data.config);
       populateBirthdayNotifConfigInputs(data.config || {});
+      populateAttendanceNotificationConfig(data.config || {});
       showToast('Config dimuatkan.', 'success');
     }
     else throw new Error(data.error);
