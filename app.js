@@ -4691,6 +4691,17 @@ async function hantarUcapanHariIni() {
   showToast('Ucapan dihantar untuk ' + sent + ' orang!', 'success');
 }
 
+function resetNotifHariLahirHariIni() {
+  const todayYmd = getTodayYMD();
+  const key = 'ssh_notif_hl_' + todayYmd;
+  if (!localStorage.getItem(key)) {
+    showToast('Guard hari lahir untuk hari ini belum wujud.', 'info');
+    return;
+  }
+  localStorage.removeItem(key);
+  showToast('Guard notifikasi hari lahir hari ini berjaya direset.', 'success');
+}
+
 async function hantarUcapanSeorang(idx) {
   const p = hlData[idx]; if (!p) return;
   const umurNext = p.tahun ? hitungUmur(p.bulan, p.hari, p.tahun) + 1 : '';
