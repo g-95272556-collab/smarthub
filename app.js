@@ -4680,8 +4680,9 @@ async function hantarUcapanHariIni() {
     const mesej = buildUcapanHL(p, umurNext);
     let ok = false;
     try { await hantarTelegram(mesej); logNotif('Hari Lahir', p.nama, mesej, 'Berjaya'); ok = true; } catch(e) {}
-    if (p.telefon || hlConfig.fonnteGroup) {
-      try { await callFonnte(p.telefon || hlConfig.fonnteGroup, mesej); logNotif('Hari Lahir', p.telefon || hlConfig.fonnteGroup, mesej, 'Berjaya'); ok = true; } catch(e) {}
+    const fonnteTarget = getBirthdayFonnteTarget(p);
+    if (fonnteTarget) {
+      try { await callFonnte(fonnteTarget, mesej); logNotif('Hari Lahir', fonnteTarget, mesej, 'Berjaya'); ok = true; } catch(e) {}
     }
     if (ok) sent++;
     await sleep(500);
@@ -4694,7 +4695,14 @@ async function hantarUcapanSeorang(idx) {
   const p = hlData[idx]; if (!p) return;
   const umurNext = p.tahun ? hitungUmur(p.bulan, p.hari, p.tahun) + 1 : '';
   const mesej = buildUcapanHL(p, umurNext);
-  try { await hantarTelegram(mesej); logNotif('Hari Lahir', p.nama, mesej, 'Berjaya'); showToast('Ucapan dihantar!', 'success'); } catch(e) { showToast('Telegram gagal: ' + e.message, 'error'); }
+  let ok = false;
+  try { await hantarTelegram(mesej); logNotif('Hari Lahir', p.nama, mesej, 'Berjaya'); ok = true; } catch(e) {}
+  const fonnteTarget = getBirthdayFonnteTarget(p);
+  if (fonnteTarget) {
+    try { await callFonnte(fonnteTarget, mesej); logNotif('Hari Lahir', fonnteTarget, mesej, 'Berjaya'); ok = true; } catch(e) {}
+  }
+  if (ok) showToast('Ucapan dihantar!', 'success');
+  else showToast('Telegram / Fonnte gagal dihantar.', 'error');
 }
 
 async function semakNotifHariLahirAuto() {
@@ -4712,8 +4720,9 @@ async function semakNotifHariLahirAuto() {
     const mesej = buildUcapanHL(p, umurNext);
     let ok = false;
     try { await hantarTelegram(mesej); logNotif('Auto Hari Lahir', p.nama, mesej, 'Berjaya'); ok = true; } catch(e) {}
-    if (p.telefon || hlConfig.fonnteGroup) {
-      try { await callFonnte(p.telefon || hlConfig.fonnteGroup, mesej); logNotif('Auto Hari Lahir', p.telefon || hlConfig.fonnteGroup, mesej, 'Berjaya'); ok = true; } catch(e) {}
+    const fonnteTarget = getBirthdayFonnteTarget(p);
+    if (fonnteTarget) {
+      try { await callFonnte(fonnteTarget, mesej); logNotif('Auto Hari Lahir', fonnteTarget, mesej, 'Berjaya'); ok = true; } catch(e) {}
     }
     if (ok) sent++;
     await sleep(300);
@@ -4729,6 +4738,22 @@ function buildUcapanHL(p, umur) {
   const umurText = umur ? ' yang ke-*' + umur + '*' : '';
   if (isGuru) return '🎂 *Selamat Hari Lahir!*\n\nWarga SK Kiandongo mengucapkan *Selamat Hari Lahir' + umurText + '* kepada *' + p.nama + '*. Semoga sentiasa sihat dan bahagia! 🌟\n\n_SK Kiandongo_';
   return '🎉 *Happy Birthday!*\n\nGuru dan warga SK Kiandongo mengucapkan *Selamat Hari Lahir' + umurText + '* kepada *' + p.nama + '* (' + p.kelas + '). Semoga ceria dan berjaya! 📚✨\n\n_SK Kiandongo_';
+}
+
+function getBirthdayFonnteTarget(person) {
+  if (!person) return '';
+  if (String(person.peranan || '').trim() === 'Murid') {
+    var kelas = String(person.kelas || '').trim();
+    var directGroup = String(getGroupKelas(kelas) || '').trim();
+    if (directGroup) return directGroup;
+    var upper = kelas.toUpperCase();
+    var matchedKelas = SENARAI_KELAS_MURID.find(function(item) {
+      var target = String(item || '').toUpperCase();
+      return upper.indexOf(target) !== -1 || target.indexOf(upper) !== -1;
+    });
+    return String(getGroupKelas(matchedKelas) || '').trim() || String(person.telefon || '').trim();
+  }
+  return String(hlConfig.fonnteGroup || '').trim() || String(person.telefon || '').trim();
 }
 
 async function hantarTelegram(mesej) {
