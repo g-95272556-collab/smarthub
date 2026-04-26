@@ -70,6 +70,11 @@ let _d1EditorDraftTimer = null;
 let _d1EditorDraftBound = false;
 let _kokumDraftTimer = null;
 let _kokumProgramConfig = null;
+let _currentModuleId = '';
+let _kehadiranGuruLoading = false;
+let _kehadiranMuridLoading = false;
+
+const ATTENDANCE_LIVE_REFRESH_MS = 30000;
 
 const D1_EDITOR_DRAFT_KEY_PREFIX = 'ssh_d1_draft_';
 const KOKUM_DRAFT_STORAGE_KEY = 'ssh_kokum_draft';
@@ -143,6 +148,19 @@ function getTrimmedValue(id) {
 }
 function isStandalonePWA() {
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function isModuleVisible(id) {
+  const mod = $id('mod-' + id);
+  return !!(mod && mod.style.display !== 'none');
+}
+function refreshAttendanceModuleIfVisible(force) {
+  if (_currentModuleId === 'kehadiran-guru' && isModuleVisible('kehadiran-guru')) {
+    loadKehadiranGuru({ silent: !force, preserveTable: true, reason: force ? 'focus' : 'auto' });
+    return;
+  }
+  if (_currentModuleId === 'kehadiran-murid' && isModuleVisible('kehadiran-murid')) {
+    loadKehadiranMurid({ silent: !force, preserveTable: true, reason: force ? 'focus' : 'auto' });
+  }
 }
 function setPWABannerState(config) {
   const banner = $id('pwaBanner');
@@ -1179,14 +1197,40 @@ function renderWeeklyChart(todayRows) {
   wrap.innerHTML = bars;
 }
 
+function getNotificationLogs() {
+  return Array.isArray(APP.notifLog) ? APP.notifLog.filter(Boolean) : [];
+}
+function isSuccessfulNotifLog(log) {
+  return String(log && log.status || '').trim().toLowerCase() === 'berjaya';
+}
+function getNotifLogStatusBadge(log) {
+  const status = String(log && log.status || '-');
+  return '<span class="badge ' + (isSuccessfulNotifLog(log) ? 'badge-green' : 'badge-red') + '">' + escapeHtml(status) + '</span>';
+}
+function renderNotificationActivityItems(logs, limit) {
+  const items = (logs || []).slice(-limit).reverse();
+  if (!items.length) {
+    return '<div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Tiada aktiviti hari ini.</div>';
+  }
+  return items.map(function(l) {
+    return '<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">' +
+      '<span style="font-size:0.74rem;color:var(--muted);flex-shrink:0;min-width:112px">' + escapeHtml(l.time || '') + '</span>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:3px">' +
+          '<span class="badge badge-blue">' + escapeHtml(l.type || '-') + '</span>' +
+          getNotifLogStatusBadge(l) +
+        '</div>' +
+        '<div style="font-size:0.86rem;font-weight:700">' + escapeHtml(l.target || '-') + '</div>' +
+        '<div style="font-size:0.8rem;color:var(--muted);margin-top:2px">' + escapeHtml(l.preview || '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
 function renderAktivitiTerkini() {
   var el = document.getElementById('dash-aktiviti-list'); if(!el) return;
   var today = getTodayYMD();
-  var logs = (APP.notifLog||[]).filter(function(l){ return l.date===today; }).slice(-6).reverse();
-  if (!logs.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Tiada aktiviti hari ini.</div>'; return; }
-  el.innerHTML = logs.map(function(l) {
-    return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:0.72rem;color:var(--muted);flex-shrink:0">'+escapeHtml(l.time||'')+'</span><span style="font-size:0.82rem"><strong>'+escapeHtml(l.type||'')+'</strong> - '+escapeHtml((l.target||'').substring(0,25))+'</span></div>';
-  }).join('');
+  var logs = getNotificationLogs().filter(function(l){ return l.date === today; });
+  el.innerHTML = renderNotificationActivityItems(logs, 6);
 }
 
 function renderBirthdayDashboard() {
@@ -1399,8 +1443,7 @@ function initAuth() {
     try {
       const parsedUser = JSON.parse(savedUser);
       if (isValidStoredSession(parsedUser)) {
-        APP.user = parsedUser;
-        enterApp(APP.user);
+        verifyStoredGoogleSession(parsedUser);
         return;
       }
       localStorage.removeItem('ssh_user');
@@ -1409,16 +1452,28 @@ function initAuth() {
   showLoginPage();
 }
 
-function handleGoogleCredential(response) {
+async function handleGoogleCredential(response) {
   try {
     const payload = parseJWT(response.credential);
     if (!payload) { showToast('Token tidak sah.', 'error'); return; }
+    if (!APP.workerUrl) { showToast('Worker URL belum disimpan. Login selamat memerlukan backend aktif.', 'error'); return; }
     _geoProfile = null;
-    APP.user = { name: payload.name, email: payload.email, picture: payload.picture, sub: payload.sub, idToken: response.credential };
+    var tentativeUser = {
+      name: payload.name,
+      email: payload.email,
+      picture: payload.picture,
+      sub: payload.sub,
+      idToken: response.credential
+    };
+    const verifiedUser = await verifyGoogleSessionWithBackend(tentativeUser);
+    APP.user = verifiedUser;
     localStorage.setItem('ssh_user', JSON.stringify(APP.user));
     enterApp(APP.user);
-    showToast('Selamat datang, ' + payload.given_name + '!', 'success');
-  } catch(err) { showToast('Ralat log masuk: ' + err.message, 'error'); }
+    showToast('Selamat datang, ' + String((payload && payload.given_name) || verifiedUser.name || 'pengguna') + '!', 'success');
+  } catch(err) {
+    handleLogout(true);
+    showToast('Ralat log masuk: ' + err.message, 'error');
+  }
 }
 
 function parseJWT(token) {
@@ -1460,6 +1515,65 @@ function isValidStoredSession(user) {
   const payload = parseJWT(user.idToken);
   if (!payload || !payload.exp) return false;
   return Number(payload.exp) * 1000 > Date.now() + 60000;
+}
+
+async function verifyGoogleSessionWithBackend(user) {
+  if (!user || !user.idToken) throw new Error('Sesi Google tidak lengkap.');
+  if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
+  const url = APP.workerUrl.replace(/\/+$/, '') + '/api';
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        action: 'verifySession',
+        auth: {
+          idToken: user.idToken || '',
+          email: user.email || '',
+          name: user.name || '',
+          sub: user.sub || ''
+        }
+      })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success || !data.actor) {
+      var err = new Error((data && data.error) || 'Pengesahan sesi Google gagal.');
+      if (data && data.code) err.code = data.code;
+      throw err;
+    }
+    return {
+      name: String(data.actor.name || user.name || user.email || '').trim(),
+      email: String(data.actor.email || user.email || '').trim().toLowerCase(),
+      picture: String(user.picture || '').trim(),
+      sub: String(data.actor.sub || user.sub || '').trim(),
+      idToken: user.idToken,
+      role: String(data.actor.role || '').trim(),
+      jawatan: String(data.actor.jawatan || '').trim(),
+      kelas: String(data.actor.kelas || '').trim()
+    };
+  } catch (err) {
+    if (err && err.name === 'AbortError') throw new Error('Pengesahan sesi Google mengambil masa terlalu lama.');
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function verifyStoredGoogleSession(user) {
+  try {
+    const verifiedUser = await verifyGoogleSessionWithBackend(user);
+    APP.user = verifiedUser;
+    localStorage.setItem('ssh_user', JSON.stringify(APP.user));
+    enterApp(APP.user);
+  } catch (e) {
+    localStorage.removeItem('ssh_user');
+    APP.user = null;
+    showLoginPage();
+    showToast('Sesi Google tamat atau tidak dibenarkan. Sila log masuk semula.', 'info');
+  }
 }
 
 function renderSidebarUserIdentity(user) {
@@ -1530,18 +1644,19 @@ function applyKawalanAkses() {
   });
 }
 
-function handleLogout() {
+function handleLogout(silent) {
   if (_gsiReady && typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
   _geoProfile = null;
   APP.user = null;
   localStorage.removeItem('ssh_user');
   showLoginPage();
-  showToast('Anda telah log keluar.', 'info');
+  if (!silent) showToast('Anda telah log keluar.', 'info');
 }
 
 // ── NAVIGATION ─────────────────────────────────────────────────
 function showModule(id) {
   if (id === 'geofence') id = 'kehadiran-guru';
+  _currentModuleId = id;
   if (MODUL_PENTADBIR.includes(id) && !isPentadbir()) {
     showToast('Akses terhad - pentadbir sahaja.', 'error'); return;
   }
@@ -1579,8 +1694,15 @@ function showModule(id) {
   } else if (id === 'hari-lahir') {
     currentAutoRefreshInterval = setInterval(loadHariLahir, 600000); // 10 minutes
   } else if (id === 'kehadiran-guru') {
-    loadKehadiranGuru();
-    currentAutoRefreshInterval = setInterval(loadKehadiranGuru, 600000);
+    loadKehadiranGuru({ silent: true, preserveTable: false, reason: 'initial' });
+    currentAutoRefreshInterval = setInterval(function() {
+      loadKehadiranGuru({ silent: true, preserveTable: true, reason: 'auto' });
+    }, ATTENDANCE_LIVE_REFRESH_MS);
+  } else if (id === 'kehadiran-murid') {
+    loadKehadiranMurid({ silent: true, preserveTable: false, reason: 'initial' });
+    currentAutoRefreshInterval = setInterval(function() {
+      loadKehadiranMurid({ silent: true, preserveTable: true, reason: 'auto' });
+    }, ATTENDANCE_LIVE_REFRESH_MS);
   } else if (id === 'data-guru') {
     loadDataGuru();
     currentAutoRefreshInterval = setInterval(loadDataGuru, 600000);
@@ -1622,7 +1744,7 @@ function needsAuthenticatedWorkerAction(payload) {
   if (payload.action === 'readSheet') return true;
   if (payload.action === 'appendRow' || payload.action === 'appendRows' || payload.action === 'replaceSheet') return true;
   if (payload.action === 'getConfig' || payload.action === 'setConfig' || payload.action === 'setupAllSheets') return true;
-  if (payload.action === 'getSummary' || payload.action === 'clearSheet' || payload.action === 'clearAllData' || payload.action === 'migrateFromAppsScript') return true;
+  if (payload.action === 'getSummary' || payload.action === 'clearSheet' || payload.action === 'clearAllData') return true;
   return false;
 }
 
@@ -2767,10 +2889,15 @@ function isWithinAutoHadirWindow(now) {
 }
 
 // ── KEHADIRAN GURU — TABLE ─────────────────────────────────────
-async function loadKehadiranGuru() {
+async function loadKehadiranGuru(options) {
+  const opts = Object.assign({ silent: false, preserveTable: false, reason: 'manual' }, options || {});
   const tbody = document.getElementById('guruKehadiranBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">Memuat data...</td></tr>';
+  if (_kehadiranGuruLoading) return;
+  _kehadiranGuruLoading = true;
+  if (!opts.preserveTable || !tbody.children.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">Memuat data kehadiran guru secara langsung...</td></tr>';
+  }
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
     if (!data.success) throw new Error(data.error || 'Gagal');
@@ -2793,8 +2920,13 @@ async function loadKehadiranGuru() {
       const gpsHtml = (r.gpsMasuk ? '<span class="badge badge-blue">Masuk</span>' : '') + (r.gpsKeluar ? ' <span class="badge badge-green">Keluar</span>' : '');
       return '<tr><td><strong>' + escapeHtml(r.nama || '-') + '</strong></td><td>' + escapeHtml(r.tarikh || '-') + '</td><td>' + escapeHtml(r.masaMasuk || '-') + '</td><td>' + escapeHtml(r.masaKeluar || '-') + '</td><td>' + statusHtml + '</td><td style="color:var(--muted);font-size:0.82rem">' + escapeHtml(catatanGabung) + '</td><td>' + gpsHtml + '</td></tr>';
     }).join('');
-    showToast('Data guru dimuatkan.', 'success');
-  } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px">' + escapeHtml(e.message) + '</td></tr>'; showToast(e.message, 'error'); }
+    if (!opts.silent) showToast('Data kehadiran guru dikemas kini.', 'success');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--red);text-align:center;padding:20px">' + escapeHtml(e.message) + '</td></tr>';
+    showToast(opts.silent ? 'Paparan live kehadiran guru terganggu: ' + e.message : e.message, 'error');
+  } finally {
+    _kehadiranGuruLoading = false;
+  }
 }
 
 function filterByDate(jenis) {
@@ -2886,10 +3018,12 @@ function parseKehadiranMuridRow(r) {
     tbody.innerHTML = rows.map((item, i) => {
       return '<tr><td><strong>' + (item.nama || '—') + '</strong></td><td><span class="badge badge-blue">' + (item.kelas || '—') + '</span></td><td>' + (item.tarikh || '—') + '</td><td>' + statusBadge(item.status) + '</td><td style="font-size:0.82rem">' + (item.telefon || '—') + '</td><td style="display:flex;gap:6px;flex-wrap:wrap">' + (item.status === 'Tidak Hadir' ? '<button class="btn btn-sm btn-success" onclick=\'notifSatuMurid(' + JSON.stringify(item.nama || '') + ',' + JSON.stringify(item.kelas || '') + ',' + JSON.stringify(item.tarikh || '') + ',' + JSON.stringify(item.telefon || '') + ')\'>📩</button>' : '') + '</td></tr>';
     }).join('');
-    showToast(rows.length + ' rekod dimuatkan.', 'success');
+    if (!opts.silent) showToast(rows.length + ' rekod kehadiran murid dikemas kini.', 'success');
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px">' + escapeHtml(e.message) + '</td></tr>';
-    showToast(e.message, 'error');
+    showToast(opts.silent ? 'Paparan live kehadiran murid terganggu: ' + e.message : e.message, 'error');
+  } finally {
+    _kehadiranMuridLoading = false;
   }
 }
 */
@@ -4536,10 +4670,24 @@ function simpanTemplat(jenis) {
 async function loadNotifLog() {
   const tbody = document.getElementById('notifLogBody');
   if (!tbody) return;
-  if (!APP.notifLog.length) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Tiada log notifikasi.</td></tr>'; return; }
-  tbody.innerHTML = APP.notifLog.slice().reverse().map(l =>
-    '<tr><td style="font-size:0.78rem;white-space:nowrap">' + escapeHtml(l.time || '') + '</td><td><span class="badge badge-blue">' + escapeHtml(l.type || '') + '</span></td><td style="font-size:0.82rem">' + escapeHtml(l.target || '') + '</td><td><span class="badge ' + (l.status === 'Berjaya' ? 'badge-green' : 'badge-red') + '">' + escapeHtml(l.status || '') + '</span></td><td style="font-size:0.8rem;color:var(--muted)">' + escapeHtml(l.preview || '') + '</td></tr>'
-  ).join('');
+  const logs = getNotificationLogs();
+  const today = getTodayYMD();
+  const todayLogs = logs.filter(function(l) { return l.date === today; });
+  const successLogs = todayLogs.filter(isSuccessfulNotifLog);
+  const failedLogs = todayLogs.filter(function(l) { return !isSuccessfulNotifLog(l); });
+  const latest = logs.length ? logs[logs.length - 1] : null;
+  setText('notif-log-stat-today', todayLogs.length);
+  setText('notif-log-stat-success', successLogs.length);
+  setText('notif-log-stat-failed', failedLogs.length);
+  setText('notif-log-stat-latest', latest ? (latest.type || '-') : '-');
+  setHTML('notifLogActivityList', renderNotificationActivityItems(todayLogs, 8));
+  if (!logs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Tiada log notifikasi.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = logs.slice().reverse().map(function(l) {
+    return '<tr><td style="font-size:0.78rem;white-space:nowrap">' + escapeHtml(l.time || '') + '</td><td><span class="badge badge-blue">' + escapeHtml(l.type || '') + '</span></td><td style="font-size:0.82rem">' + escapeHtml(l.target || '') + '</td><td>' + getNotifLogStatusBadge(l) + '</td><td style="font-size:0.8rem;color:var(--muted)">' + escapeHtml(l.preview || '') + '</td></tr>';
+  }).join('');
 }
 
 function logNotif(type, target, mesej, status) {
@@ -4548,6 +4696,8 @@ function logNotif(type, target, mesej, status) {
   APP.notifLog.push(entry);
   if (APP.notifLog.length > 200) APP.notifLog.shift();
   localStorage.setItem('ssh_notif_log', JSON.stringify(APP.notifLog));
+  renderAktivitiTerkini();
+  if (isModuleVisible('notifikasi')) loadNotifLog();
 }
 
 // ── HARI LAHIR ─────────────────────────────────────────────────
@@ -6840,30 +6990,81 @@ async function updateWorkerStatus() {
         ? 'Cloudflare D1'
         : data.backendMode === 'google-sheets'
           ? 'Google Sheets'
-          : data.backendMode === 'apps-script'
-            ? 'Apps Script'
-            : 'Tidak diketahui';
+          : 'Tidak diketahui';
       const backendInfo = data.backendMode === 'cloudflare-d1'
-        ? ' | D1 aktif'
-        : data.appsScriptUrl
-          ? ' | Apps Script fallback: ' + data.appsScriptUrl
-          : ' | Apps Script belum dikonfigurasi';
+        ? ' | D1 aktif sepenuhnya'
+        : data.backendMode === 'google-sheets'
+          ? ' | Google Sheets aktif'
+          : ' | Backend belum dikonfigurasi';
       el.textContent = 'Tersambung (' + latency + 'ms) | Backend: ' + backendLabel + backendInfo;
       el.style.background = 'rgba(16,185,129,0.05)';
       el.style.borderColor = 'rgba(16,185,129,0.2)';
       el.style.color = 'var(--green)';
+      renderWorkerD1CapacityStatus(data);
     } else {
       el.textContent = 'Respons tidak dijangka';
       el.style.background = 'rgba(245,197,24,0.05)';
       el.style.borderColor = 'rgba(245,197,24,0.2)';
       el.style.color = 'var(--gold2)';
+      renderWorkerD1CapacityStatus(null, 'Respons ping tidak lengkap.');
     }
   } catch (e) {
     el.textContent = 'Gagal sambung: ' + e.message;
     el.style.background = 'rgba(239,68,68,0.05)';
     el.style.borderColor = 'rgba(239,68,68,0.2)';
     el.style.color = 'var(--red)';
+    renderWorkerD1CapacityStatus(null, 'Semakan kapasiti D1 gagal: ' + e.message);
   }
+}
+
+function formatStorageBytes(bytes) {
+  const safeBytes = Number(bytes) || 0;
+  if (safeBytes <= 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(Math.floor(Math.log(safeBytes) / Math.log(k)), sizes.length - 1);
+  return parseFloat((safeBytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function buildWorkerD1StatCard(label, value, color, compact) {
+  return '<div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 10px 24px rgba(15,23,42,.05)">' +
+    '<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">' + escapeHtml(label) + '</div>' +
+    '<div style="font-size:' + (compact ? '1rem' : '1.5rem') + ';font-weight:800;color:' + color + ';line-height:1.3">' + value + '</div>' +
+    '</div>';
+}
+
+function renderWorkerD1CapacityStatus(pingData, fallbackMessage) {
+  const stats = document.getElementById('workerD1CapacityStats');
+  const meta = document.getElementById('workerD1Meta');
+  const badge = document.getElementById('workerD1Badge');
+  if (!stats || !meta || !badge) return;
+  if (!pingData || pingData.backendMode !== 'cloudflare-d1') {
+    badge.className = 'badge badge-gray';
+    badge.textContent = 'Tiada data';
+    meta.textContent = fallbackMessage || 'Backend semasa bukan Cloudflare D1 atau data kapasiti belum tersedia.';
+    stats.innerHTML = '<div style="border:1px dashed rgba(148,163,184,.4);border-radius:14px;padding:14px;background:#fff;color:var(--muted);font-size:0.88rem;text-align:center">' + escapeHtml(fallbackMessage || 'Kapasiti D1 belum boleh dipaparkan.') + '</div>';
+    return;
+  }
+  if (!pingData.cloudflareD1Ready) {
+    badge.className = 'badge badge-red';
+    badge.textContent = 'Tidak sedia';
+    meta.textContent = pingData.cloudflareD1Error || 'Binding D1 dikesan tetapi belum bersedia.';
+    stats.innerHTML = '<div style="border:1px solid rgba(239,68,68,.14);border-radius:14px;padding:14px;background:#fff7f7;color:var(--red);font-size:0.88rem;text-align:center">' + escapeHtml(pingData.cloudflareD1Error || 'Semakan kapasiti D1 gagal.') + '</div>';
+    return;
+  }
+  const summary = pingData.cloudflareD1Summary || {};
+  const largestSheet = summary.largestSheet && summary.largestSheet.sheet_name
+    ? summary.largestSheet.sheet_name + ' (' + Number(summary.largestSheet.data_count || 0) + ' rekod)'
+    : '—';
+  badge.className = 'badge badge-green';
+  badge.textContent = 'Aktif';
+  meta.textContent = 'Backend Cloudflare D1 aktif. Semakan terakhir: ' + (summary.checkedAt ? new Date(summary.checkedAt).toLocaleString('ms-MY') : '—');
+  stats.innerHTML = [
+    buildWorkerD1StatCard('Anggaran Storan', formatStorageBytes(summary.sizeBytes || 0), '#ea580c'),
+    buildWorkerD1StatCard('Jumlah Sheet', String(Number(summary.sheetCount || 0)), 'var(--blue)'),
+    buildWorkerD1StatCard('Jumlah Rekod', String(Number(summary.totalRecords || 0)), '#0f766e'),
+    buildWorkerD1StatCard('Sheet Terbesar', escapeHtml(largestSheet), '#7c3aed', true)
+  ].join('');
 }
 
 async function checkWorkerStatus() {
@@ -6877,16 +7078,15 @@ async function checkWorkerStatus() {
         ? 'Cloudflare D1'
         : ping.backendMode === 'google-sheets'
           ? 'Google Sheets'
-          : ping.backendMode === 'apps-script'
-            ? 'Apps Script'
-            : 'Tidak diketahui';
+          : 'Tidak diketahui';
       const lines = [
         'Worker berjalan dengan baik.',
         '',
         'Worker URL: ' + (APP.workerUrl || '—'),
         'Backend aktif: ' + backendLabel,
-        'Apps Script URL: ' + (ping.appsScriptUrl || '—'),
-        'Apps Script dikonfigurasi: ' + (ping.appsScriptConfigured ? 'Ya' : 'Tidak'),
+        'Cloudflare D1 diset: ' + (ping.cloudflareD1Configured ? 'Ya' : 'Tidak'),
+        'Cloudflare D1 sedia: ' + (ping.cloudflareD1Ready ? 'Ya' : 'Tidak'),
+        'Google Sheets dikonfigurasi: ' + (ping.googleSheetsConfigured ? 'Ya' : 'Tidak'),
         'Bilangan kunci config: ' + configKeys.length,
         'Semakan: ' + (ping.timestamp || '—')
       ];
@@ -7751,6 +7951,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) refreshAttendanceModuleIfVisible(true);
+});
+window.addEventListener('focus', function() {
+  refreshAttendanceModuleIfVisible(true);
+});
 
 function statusBadge(status) {
   if (!status) return '<span class="badge badge-gray">-</span>';
@@ -7779,10 +7985,15 @@ function updateDashboardMurid(allMurid, today) {
   renderMuridTidakHadirDash(tidakHadir);
 }
 
-async function loadKehadiranMurid() {
+async function loadKehadiranMurid(options) {
+  const opts = Object.assign({ silent: false, preserveTable: false, reason: 'manual' }, options || {});
   const tbody = document.getElementById('muridKehadiranBody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Memuat data...</td></tr>';
+  if (_kehadiranMuridLoading) return;
+  _kehadiranMuridLoading = true;
+  if (!opts.preserveTable || !tbody.children.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Memuat data kehadiran murid secara langsung...</td></tr>';
+  }
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
     if (!data.success) throw new Error(data.error || 'Gagal');
@@ -7807,9 +8018,11 @@ async function loadKehadiranMurid() {
       const bolehNotif = ['Tidak Hadir', 'Ponteng'].includes(item.status);
       return '<tr><td><strong>' + (item.nama || '-') + '</strong></td><td><span class="badge badge-blue">' + (item.kelas || '-') + '</span></td><td>' + (item.tarikh || '-') + '</td><td>' + statusBadge(item.status) + '</td><td style="font-size:0.82rem">' + (item.telefon || '-') + '</td><td style="display:flex;gap:6px;flex-wrap:wrap">' + (bolehNotif ? '<button class="btn btn-sm btn-success" onclick=\'notifSatuMurid(' + JSON.stringify(item.nama || '') + ',' + JSON.stringify(item.kelas || '') + ',' + JSON.stringify(item.tarikh || '') + ',' + JSON.stringify(item.telefon || '') + ')\'>📩</button>' : '') + '</td></tr>';
     }).join('');
-    showToast(rows.length + ' rekod dimuatkan.', 'success');
+    if (!opts.silent) showToast(rows.length + ' rekod kehadiran murid dikemas kini.', 'success');
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px">' + escapeHtml(e.message) + '</td></tr>';
-    showToast(e.message, 'error');
+    showToast(opts.silent ? 'Paparan live kehadiran murid terganggu: ' + e.message : e.message, 'error');
+  } finally {
+    _kehadiranMuridLoading = false;
   }
 }
