@@ -70,6 +70,8 @@ let _d1EditorDraftTimer = null;
 let _d1EditorDraftBound = false;
 let _kokumDraftTimer = null;
 let _kokumProgramConfig = null;
+let _backendConfigCache = null;
+let _adminEmails = [];
 let _currentModuleId = '';
 let _kehadiranGuruLoading = false;
 let _kehadiranMuridLoading = false;
@@ -418,36 +420,11 @@ function scheduleIdleWork(fn) {
 // ════════════════════════════════════════
 
 // ── Jadual Guru Bertugas 2026 ────────────
-var JADUAL_BERTUGAS_2026 = [{"minggu":1,"isnin":"2026-01-12","guru":"BETTY BINTI JIM","telefon":"01124135966","pembantu":"FAZILAH BINTI ALI","telefonPembantu":"0134461416"},{"minggu":2,"isnin":"2026-01-19","guru":"FAZILAH BINTI ALI","telefon":"0134461416","pembantu":"OKTOVYANTI KOH","telefonPembantu":"0138665663"},{"minggu":3,"isnin":"2026-01-26","guru":"OKTOVYANTI KOH","telefon":"0138665663","pembantu":"STENLEY DOMINIC","telefonPembantu":"01135988995"},{"minggu":4,"isnin":"2026-02-02","guru":"STENLEY DOMINIC","telefon":"01135988995","pembantu":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefonPembantu":"01121792758"},{"minggu":5,"isnin":"2026-02-09","guru":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefon":"01121792758","pembantu":"TAIMAH BINTI ILOK","telefonPembantu":"01123607380"},{"minggu":6,"isnin":"2026-02-16","guru":"TAIMAH BINTI ILOK","telefon":"01123607380","pembantu":"ALOHA BINTI IBIN","telefonPembantu":"0135560671"},{"minggu":7,"isnin":"2026-02-23","guru":"ALOHA BINTI IBIN","telefon":"0135560671","pembantu":"JIDA MINSES","telefonPembantu":"01126605349"},{"minggu":8,"isnin":"2026-03-02","guru":"JIDA MINSES","telefon":"01126605349","pembantu":"BETTY BINTI JIM","telefonPembantu":"01124135966"},{"minggu":9,"isnin":"2026-03-09","guru":"BETTY BINTI JIM","telefon":"01124135966","pembantu":"FAZILAH BINTI ALI","telefonPembantu":"0134461416"},{"minggu":10,"isnin":"2026-03-16","guru":"FAZILAH BINTI ALI","telefon":"0134461416","pembantu":"OKTOVYANTI KOH","telefonPembantu":"0138665663"},{"minggu":12,"isnin":"2026-03-30","guru":"OKTOVYANTI KOH","telefon":"0138665663","pembantu":"STENLEY DOMINIC","telefonPembantu":"01135988995"},{"minggu":13,"isnin":"2026-04-06","guru":"STENLEY DOMINIC","telefon":"01135988995","pembantu":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefonPembantu":"01121792758"},{"minggu":14,"isnin":"2026-04-13","guru":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefon":"01121792758","pembantu":"TAIMAH BINTI ILOK","telefonPembantu":"01123607380"},{"minggu":15,"isnin":"2026-04-20","guru":"TAIMAH BINTI ILOK","telefon":"01123607380","pembantu":"ALOHA BINTI IBIN","telefonPembantu":"0135560671"},{"minggu":16,"isnin":"2026-04-27","guru":"ALOHA BINTI IBIN","telefon":"0135560671","pembantu":"JIDA MINSES","telefonPembantu":"01126605349"},{"minggu":17,"isnin":"2026-05-04","guru":"JIDA MINSES","telefon":"01126605349","pembantu":"BETTY BINTI JIM","telefonPembantu":"01124135966"},{"minggu":18,"isnin":"2026-05-11","guru":"BETTY BINTI JIM","telefon":"01124135966","pembantu":"FAZILAH BINTI ALI","telefonPembantu":"0134461416"},{"minggu":19,"isnin":"2026-05-18","guru":"FAZILAH BINTI ALI","telefon":"0134461416","pembantu":"OKTOVYANTI KOH","telefonPembantu":"0138665663"},{"minggu":22,"isnin":"2026-06-08","guru":"OKTOVYANTI KOH","telefon":"0138665663","pembantu":"STENLEY DOMINIC","telefonPembantu":"01135988995"},{"minggu":23,"isnin":"2026-06-15","guru":"STENLEY DOMINIC","telefon":"01135988995","pembantu":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefonPembantu":"01121792758"},{"minggu":24,"isnin":"2026-06-22","guru":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefon":"01121792758","pembantu":"TAIMAH BINTI ILOK","telefonPembantu":"01123607380"},{"minggu":25,"isnin":"2026-06-29","guru":"TAIMAH BINTI ILOK","telefon":"01123607380","pembantu":"ALOHA BINTI IBIN","telefonPembantu":"0135560671"},{"minggu":26,"isnin":"2026-07-06","guru":"ALOHA BINTI IBIN","telefon":"0135560671","pembantu":"JIDA MINSES","telefonPembantu":"01126605349"},{"minggu":27,"isnin":"2026-07-13","guru":"JIDA MINSES","telefon":"01126605349","pembantu":"BETTY BINTI JIM","telefonPembantu":"01124135966"},{"minggu":28,"isnin":"2026-07-20","guru":"BETTY BINTI JIM","telefon":"01124135966","pembantu":"FAZILAH BINTI ALI","telefonPembantu":"0134461416"},{"minggu":29,"isnin":"2026-07-27","guru":"FAZILAH BINTI ALI","telefon":"0134461416","pembantu":"OKTOVYANTI KOH","telefonPembantu":"0138665663"},{"minggu":30,"isnin":"2026-08-03","guru":"OKTOVYANTI KOH","telefon":"0138665663","pembantu":"STENLEY DOMINIC","telefonPembantu":"01135988995"},{"minggu":31,"isnin":"2026-08-10","guru":"STENLEY DOMINIC","telefon":"01135988995","pembantu":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefonPembantu":"01121792758"},{"minggu":32,"isnin":"2026-08-17","guru":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefon":"01121792758","pembantu":"TAIMAH BINTI ILOK","telefonPembantu":"01123607380"},{"minggu":33,"isnin":"2026-08-24","guru":"TAIMAH BINTI ILOK","telefon":"01123607380","pembantu":"ALOHA BINTI IBIN","telefonPembantu":"0135560671"},{"minggu":35,"isnin":"2026-09-07","guru":"ALOHA BINTI IBIN","telefon":"0135560671","pembantu":"JIDA MINSES","telefonPembantu":"01126605349"},{"minggu":36,"isnin":"2026-09-14","guru":"JIDA MINSES","telefon":"01126605349","pembantu":"BETTY BINTI JIM","telefonPembantu":"01124135966"},{"minggu":37,"isnin":"2026-09-21","guru":"BETTY BINTI JIM","telefon":"01124135966","pembantu":"FAZILAH BINTI ALI","telefonPembantu":"0134461416"},{"minggu":38,"isnin":"2026-09-28","guru":"FAZILAH BINTI ALI","telefon":"0134461416","pembantu":"OKTOVYANTI KOH","telefonPembantu":"0138665663"},{"minggu":39,"isnin":"2026-10-05","guru":"OKTOVYANTI KOH","telefon":"0138665663","pembantu":"STENLEY DOMINIC","telefonPembantu":"01135988995"},{"minggu":40,"isnin":"2026-10-12","guru":"STENLEY DOMINIC","telefon":"01135988995","pembantu":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefonPembantu":"01121792758"},{"minggu":41,"isnin":"2026-10-19","guru":"MOHAMAD KHAIRUL AIMAN BIN MOHAMAD YUSOF","telefon":"01121792758","pembantu":"TAIMAH BINTI ILOK","telefonPembantu":"01123607380"},{"minggu":42,"isnin":"2026-10-26","guru":"TAIMAH BINTI ILOK","telefon":"01123607380","pembantu":"ALOHA BINTI IBIN","telefonPembantu":"0135560671"},{"minggu":43,"isnin":"2026-11-02","guru":"ALOHA BINTI IBIN","telefon":"0135560671","pembantu":"JIDA MINSES","telefonPembantu":"01126605349"},{"minggu":44,"isnin":"2026-11-09","guru":"JIDA MINSES","telefon":"01126605349","pembantu":"BETTY BINTI JIM","telefonPembantu":"01124135966"},{"minggu":45,"isnin":"2026-11-16","guru":"BETTY BINTI JIM","telefon":"01124135966","pembantu":"FAZILAH BINTI ALI","telefonPembantu":"0134461416"},{"minggu":46,"isnin":"2026-11-23","guru":"FAZILAH BINTI ALI","telefon":"0134461416","pembantu":"OKTOVYANTI KOH","telefonPembantu":"0138665663"},{"minggu":47,"isnin":"2026-11-30","guru":"OKTOVYANTI KOH","telefon":"0138665663","pembantu":"STENLEY DOMINIC","telefonPembantu":"01135988995"}];
-
-var _jadualBertugas = (function() {
-  var base = JADUAL_BERTUGAS_2026.map(function(j){ return Object.assign({},j); });
-  try {
-    var s = localStorage.getItem('ssh_jadual_bertugas');
-    if (s) {
-      var p = JSON.parse(s);
-      if (p && p.length) {
-        p.forEach(function(item) {
-          if (!item.isnin || item.isnin.length !== 10) return;
-          var idx = base.findIndex(function(m){ return m.isnin === item.isnin; });
-          if (idx >= 0) base[idx] = Object.assign({}, base[idx], item);
-          else base.push(item);
-        });
-      }
-    }
-  } catch(e) {}
-  return base;
-})();
+var JADUAL_BERTUGAS_2026 = [];
+var _jadualBertugas = [];
 
 // ── Group WA Kelas ───────────────────────
-var GROUP_WA_KELAS = JSON.parse(localStorage.getItem('ssh_group_wa_kelas') || 'null') || {
-  '1 NILAM':   '120363408263111964@g.us',
-  '2 INTAN':   '120363307119469701@g.us',
-  '3 KRISTAL': '120363158710638763@g.us',
-  '4 MUTIARA': '120363047423182758@g.us',
-  '5 DELIMA':  '120363040172356242@g.us',
-  '6 BAIDURI': '60195327614-1585453088@g.us'
-};
+var GROUP_WA_KELAS = JSON.parse(localStorage.getItem('ssh_group_wa_kelas') || 'null') || {};
 var SENARAI_KELAS_MURID = ['1 NILAM','2 INTAN','3 KRISTAL','4 MUTIARA','5 DELIMA','6 BAIDURI'];
 var GROUP_WA_KELAS_FIELDS = {
   '1 NILAM':   { input: 'grp-1-nilam',   status: 'grp-1-nilam-status',   idBox: 'grp-1-nilam-id' },
@@ -506,6 +483,66 @@ function getBirthdayNotifInputValue(id) {
 function setBirthdayNotifInputValue(id, value) {
   var el = document.getElementById(id);
   if (el) el.value = value || '';
+}
+function parseJsonConfigValue(value, fallback) {
+  const text = String(value == null ? '' : value).trim();
+  if (!text) return fallback;
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return fallback;
+  }
+}
+function normalizeDutyScheduleRows(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.map(function(item, index) {
+    const row = Object.assign({}, item || {});
+    row.minggu = row.minggu || (index + 1);
+    row.isnin = String(row.isnin || '').trim();
+    row.guru = String(row.guru || '').trim();
+    row.telefon = String(row.telefon || '').trim();
+    row.pembantu = String(row.pembantu || '').trim();
+    row.telefonPembantu = String(row.telefonPembantu || '').trim();
+    return row;
+  }).filter(function(row) {
+    return row.isnin && row.guru;
+  });
+}
+function applyBackendOperationalConfig(config) {
+  const cfg = config || {};
+  _backendConfigCache = cfg;
+
+  const adminEmails = parseJsonConfigValue(cfg.ADMIN_EMAILS_JSON, []);
+  _adminEmails = Array.isArray(adminEmails) ? adminEmails.map(function(email) {
+    return String(email || '').trim().toLowerCase();
+  }).filter(Boolean) : [];
+
+  const groupConfig = parseJsonConfigValue(cfg.GROUP_WA_KELAS_JSON, null);
+  if (groupConfig && typeof groupConfig === 'object' && !Array.isArray(groupConfig)) {
+    GROUP_WA_KELAS = Object.assign({}, groupConfig);
+    localStorage.setItem('ssh_group_wa_kelas', JSON.stringify(GROUP_WA_KELAS));
+  }
+
+  const dutySchedule = parseJsonConfigValue(cfg.JADUAL_BERTUGAS_JSON, []);
+  _jadualBertugas = normalizeDutyScheduleRows(dutySchedule);
+
+  if (cfg.KOKUM_PROGRAM_OPTIONS_JSON) {
+    try {
+      saveLocalKokumProgramConfig(cloneKokumProgramOptions(JSON.parse(cfg.KOKUM_PROGRAM_OPTIONS_JSON)));
+    } catch (e) {}
+  }
+}
+async function loadBackendOperationalConfig(forceReload) {
+  if (!forceReload && _backendConfigCache) return _backendConfigCache;
+  if (!APP.workerUrl || !APP.user) return _backendConfigCache || {};
+  try {
+    const data = await callWorker({ action: 'getConfig' });
+    if (data && data.success) {
+      applyBackendOperationalConfig(data.config || {});
+      return _backendConfigCache || {};
+    }
+  } catch (e) {}
+  return _backendConfigCache || {};
 }
 function syncGroupGuruFonnteInputs(value) {
   ['hl-fonnte-group', 'config-fonnte-guru-group'].forEach(function(id) {
@@ -859,13 +896,13 @@ async function testAllBirthdayFonnteGroups() {
 }
 
 // ── Kawalan Akses ────────────────────────
-var DEFAULT_ADMIN_EMAILS = ['g-69272581@moe-dl.edu.my','g-95272556@moe-dl.edu.my','g-03272560@moe-dl.edu.my','g-87272555@moe-dl.edu.my'];
+var DEFAULT_ADMIN_EMAILS = [];
 var MODUL_PENTADBIR = ['data-guru','data-murid','konfigurasi','notifikasi','hari-lahir'];
 function getAdminEmails() {
-  var emails = [];
+  var emails = _adminEmails.slice();
   try {
     var stored = JSON.parse(localStorage.getItem('ssh_admin_emails') || 'null');
-    if (Array.isArray(stored)) emails = stored.slice();
+    if (!emails.length && Array.isArray(stored)) emails = stored.slice();
   } catch(e) {}
   DEFAULT_ADMIN_EMAILS.forEach(function(email) {
     if (!emails.some(function(e){ return e.toLowerCase() === email.toLowerCase(); })) emails.push(email);
@@ -874,9 +911,16 @@ function getAdminEmails() {
 }
 function saveAdminEmails(emails) {
   localStorage.setItem('ssh_admin_emails', JSON.stringify(emails));
+  _adminEmails = emails.slice();
+  if (APP.workerUrl) {
+    callWorker({ action: 'setConfig', config: { ADMIN_EMAILS_JSON: JSON.stringify(_adminEmails) } }).catch(function() {});
+  }
 }
 function isPentadbir() {
-  return APP.user && getAdminEmails().some(function(e){ return e.toLowerCase() === (APP.user.email||'').toLowerCase(); });
+  if (!APP.user) return false;
+  var roleText = String(APP.user.role || APP.user.jawatan || '').toLowerCase();
+  if (roleText.includes('admin') || roleText.includes('pentadbir') || roleText.includes('guru besar') || roleText.includes('penolong kanan')) return true;
+  return getAdminEmails().some(function(e){ return e.toLowerCase() === (APP.user.email||'').toLowerCase(); });
 }
 function addAdminEmail() {
   var input = document.getElementById('configAdminEmail');
@@ -917,7 +961,8 @@ function renderAdminList() {
            '</tr>';
   }).join('');
 }
-function loadAdminConfig() {
+async function loadAdminConfig() {
+  await loadBackendOperationalConfig(true);
   updateNotifAutoStatusUI();
   updateHLNotifStatusUI();
   renderGroupFonnteSetupUI();
@@ -1618,9 +1663,11 @@ function enterApp(user) {
   renderSidebarUserIdentity(user);
 
   setTodayDates();
-  scheduleIdleWork(function() {
+  scheduleIdleWork(async function() {
+    await loadBackendOperationalConfig(true);
     refreshDashboard();
     semakNotifGuruBertugasMingguDepan();
+    applyKawalanAkses();
   });
   initWorkerUrl();
   applyKawalanAkses();
@@ -7119,6 +7166,7 @@ async function loadConfig() {
   try {
     const data = await callWorker({ action: 'getConfig' });
     if (data.success) {
+      applyBackendOperationalConfig(data.config || {});
       renderConfigTable(data.config);
       populateBirthdayNotifConfigInputs(data.config || {});
       populateAttendanceNotificationConfig(data.config || {});
