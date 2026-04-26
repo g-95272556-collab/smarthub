@@ -181,12 +181,14 @@ async function handleAPI(request, env, corsHeaders) {
       success: true,
       worker: "ok",
       backendMode: diagnostics.backendMode,
+      cloudflareD1Configured: diagnostics.cloudflareD1Configured,
+      cloudflareD1Ready: diagnostics.cloudflareD1Ready,
+      cloudflareD1Error: diagnostics.cloudflareD1Error,
+      cloudflareD1Summary: diagnostics.cloudflareD1Summary,
       googleSheetsConfigured: diagnostics.googleSheetsConfigured,
       googleSheetsReady: diagnostics.googleSheetsReady,
       googleSheetsError: diagnostics.googleSheetsError,
       googleSheetsBindings: diagnostics.googleSheetsBindings,
-      appsScriptUrl: env.APPS_SCRIPT_URL || "",
-      appsScriptConfigured: Boolean(env.APPS_SCRIPT_URL),
       hasWorkerSecret: Boolean(env.WORKER_SECRET),
       timestamp: new Date().toISOString()
     }, 200, corsHeaders);
@@ -210,6 +212,18 @@ async function handleAPI(request, env, corsHeaders) {
   delete body.auth;
   body.token = workerToken;
 
+  if (body.action === "verifySession") {
+    try {
+      return jsonResp({ success: true, actor: await buildVerifiedSessionActor(body.requestUser, env, workerToken) }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp(
+        { success: false, error: err.message || "Akses tidak dibenarkan", code: err.code || "AUTH_FORBIDDEN" },
+        err.status || 403,
+        corsHeaders
+      );
+    }
+  }
+
   if (body.action === "getKokumAttendanceSummary") {
     try {
       return jsonResp({ success: true, summary: await buildKokumAttendanceSummary(env, body, workerToken) }, 200, corsHeaders);
@@ -224,10 +238,7 @@ async function handleAPI(request, env, corsHeaders) {
       const finalData = await maybeFilterReadSheetResponse(body, data, env, workerToken);
       return jsonResp(finalData, 200, corsHeaders);
     } catch (err) {
-      if (!env.APPS_SCRIPT_URL) {
-        return jsonResp({ success: false, error: err.message || "D1 backend gagal." }, 500, corsHeaders);
-      }
-      console.log("D1 backend fallback:", err.message || err);
+      return jsonResp({ success: false, error: err.message || "D1 backend gagal." }, err.status || 500, corsHeaders);
     }
   }
 
@@ -237,30 +248,11 @@ async function handleAPI(request, env, corsHeaders) {
       const finalData = await maybeFilterReadSheetResponse(body, data, env, workerToken);
       return jsonResp(finalData, 200, corsHeaders);
     } catch (err) {
-      if (!env.APPS_SCRIPT_URL) {
-        return jsonResp({ success: false, error: err.message || "Google Sheets backend gagal." }, 500, corsHeaders);
-      }
-      console.log("Google Sheets backend fallback:", err.message || err);
+      return jsonResp({ success: false, error: err.message || "Google Sheets backend gagal." }, err.status || 500, corsHeaders);
     }
   }
 
-  if (!env.APPS_SCRIPT_URL) {
-    return jsonResp({ success: false, error: "Tiada backend data dikonfigurasi." }, 500, corsHeaders);
-  }
-
-  const response = await fetch(env.APPS_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    redirect: "follow",
-  });
-
-  const data = await response.json();
-  const finalData = await maybeFilterReadSheetResponse(body, data, env, workerToken);
-  return new Response(JSON.stringify(finalData), {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return jsonResp({ success: false, error: "Tiada backend data dikonfigurasi." }, 500, corsHeaders);
 }
 
 function shouldUseGoogleSheets(env) {
@@ -283,18 +275,17 @@ function shouldUseCloudflareD1(env) {
 function getBackendMode(env) {
   if (shouldUseCloudflareD1(env)) return "cloudflare-d1";
   if (shouldUseGoogleSheets(env)) return "google-sheets";
-  if (env.APPS_SCRIPT_URL) return "apps-script";
   return "none";
 }
 
 async function readBackendSheetRows(env, sheetKey, workerToken) {
   if (shouldUseCloudflareD1(env)) {
-    return d1ReadSheetRows(env, sheetKey, workerToken);
+    return d1ReadSheetRows(env, sheetKey);
   }
   if (shouldUseGoogleSheets(env)) {
     return googleReadSheetRows(env, sheetKey);
   }
-  return appsScriptReadSheetRows(env, sheetKey, workerToken);
+  throw new Error("Tiada backend data aktif untuk pembacaan sheet.");
 }
 
 function parseKokumAllowedYears(value) {
@@ -441,6 +432,7 @@ async function getBackendDiagnostics(env) {
     cloudflareD1Configured: String(env.CLOUDFLARE_D1_BACKEND || "").trim() === "1",
     cloudflareD1Ready: false,
     cloudflareD1Error: "",
+    cloudflareD1Summary: null,
     googleSheetsConfigured: shouldUseGoogleSheets(env),
     googleSheetsReady: false,
     googleSheetsError: "",
@@ -455,6 +447,7 @@ async function getBackendDiagnostics(env) {
     try {
       await d1ReadSheetRows(env, DIRECT_SHEETS.CONFIG);
       diagnostics.cloudflareD1Ready = true;
+      diagnostics.cloudflareD1Summary = await getD1CapacitySummary(env);
     } catch (err) {
       diagnostics.cloudflareD1Error = err.message || String(err);
     }
@@ -521,7 +514,7 @@ async function handleD1Action(body, env) {
       invalidateGuruSheetCache();
       return { success: true, message: "D1 dan CONFIG siap." };
     case "readSheet":
-      return { success: true, rows: await d1ReadSheetRows(env, body.sheetKey, body.token) };
+      return { success: true, rows: await d1ReadSheetRows(env, body.sheetKey) };
     case "appendRow":
       await d1AppendRows(env, body.sheetKey, [body.row || []]);
       if (normalizeSheetKey(body.sheetKey) === DIRECT_SHEETS.GURU) invalidateGuruSheetCache();
@@ -535,23 +528,13 @@ async function handleD1Action(body, env) {
       if (normalizeSheetKey(body.sheetKey) === DIRECT_SHEETS.GURU) invalidateGuruSheetCache();
       return { success: true };
     case "clearSheet":
-      await appsScriptReplaceSheetRows(env, body.sheetKey, [], body.token);
       await d1ClearSheet(env, body.sheetKey);
       invalidateGuruSheetCache();
       return { success: true };
     case "clearAllData":
-      if (env.APPS_SCRIPT_URL) {
-        const uniqueSheets = Array.from(new Set(Object.values(DIRECT_SHEETS).map(normalizeSheetKey).filter(Boolean)));
-        for (const sheetName of uniqueSheets) {
-          await appsScriptReplaceSheetRows(env, sheetName, [], body.token);
-        }
-      }
       await d1ClearAllData(env);
       invalidateGuruSheetCache();
       return { success: true };
-    case "migrateFromAppsScript":
-      invalidateGuruSheetCache();
-      return { success: true, summary: await d1MigrateFromAppsScript(env, body.sheetKeys || null, body.token) };
     default:
       return { success: false, error: "Aksi tidak sah" };
   }
@@ -596,23 +579,14 @@ function d1ParseRowJson(rowJson) {
   }
 }
 
-async function d1ReadSheetRows(env, sheetKey, workerToken = "", allowSourceFallback = true) {
+async function d1ReadSheetRows(env, sheetKey) {
   const sheetName = normalizeSheetKey(sheetKey);
   if (!sheetName) return [];
   await ensureD1Schema(env);
   const result = await env.DB.prepare(
     "SELECT row_json FROM sheet_rows WHERE sheet_name = ? ORDER BY row_index ASC"
   ).bind(sheetName).all();
-  const rows = Array.isArray(result.results) ? result.results.map((item) => d1ParseRowJson(item.row_json)) : [];
-  if (rows.length || !allowSourceFallback || !env.APPS_SCRIPT_URL || !workerToken) {
-    return rows;
-  }
-  const sourceRows = await appsScriptReadSheetRows(env, sheetName, workerToken);
-  if (Array.isArray(sourceRows) && sourceRows.length) {
-    await d1ReplaceSheet(env, sheetName, sourceRows);
-    return sourceRows;
-  }
-  return rows;
+  return Array.isArray(result.results) ? result.results.map((item) => d1ParseRowJson(item.row_json)) : [];
 }
 
 async function d1ClearSheet(env, sheetKey) {
@@ -675,7 +649,7 @@ async function d1EnsureHeaderRow(env, sheetName, header) {
 }
 
 async function d1GetConfig(env, workerToken = "") {
-  const rows = await d1ReadSheetRows(env, DIRECT_SHEETS.CONFIG, workerToken);
+  const rows = await d1ReadSheetRows(env, DIRECT_SHEETS.CONFIG);
   const out = {};
   for (let i = 1; i < rows.length; i++) {
     const key = String(rows[i]?.[0] || "").trim();
@@ -748,6 +722,31 @@ async function d1SetupAllSheets(env) {
   });
 }
 
+async function getD1CapacitySummary(env) {
+  const summary = await d1GetSummary(env);
+  const sheets = Array.isArray(summary && summary.sheets) ? summary.sheets : [];
+  const sizeBytes = Number(summary && summary.sizeBytes) || 0;
+  const totalRecords = sheets.reduce((sum, item) => {
+    const count = Number(item && item.data_count);
+    return sum + (Number.isFinite(count) ? count : 0);
+  }, 0);
+  const largestSheet = sheets.slice().sort((a, b) => {
+    const countA = Number(a && a.data_count);
+    const countB = Number(b && b.data_count);
+    return (Number.isFinite(countB) ? countB : 0) - (Number.isFinite(countA) ? countA : 0);
+  })[0] || null;
+  return {
+    sizeBytes,
+    sheetCount: sheets.length,
+    totalRecords,
+    largestSheet: largestSheet ? {
+      sheet_name: largestSheet.sheet_name || "",
+      data_count: Number(largestSheet.data_count) || 0
+    } : null,
+    checkedAt: new Date().toISOString()
+  };
+}
+
 async function d1GetSummary(env) {
   await ensureD1Schema(env);
   const result = await env.DB.prepare(`
@@ -779,54 +778,6 @@ async function d1GetSummary(env) {
     sheets: Array.isArray(result.results) ? result.results : [],
     sizeBytes: sizeBytes
   };
-}
-
-async function appsScriptReadSheetRows(env, sheetKey, workerToken) {
-  if (!env.APPS_SCRIPT_URL) {
-    throw new Error("Tiada backend Apps Script dikonfigurasi.");
-  }
-  const response = await fetch(env.APPS_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "readSheet", sheetKey: String(sheetKey || ""), token: workerToken }),
-    redirect: "follow",
-  });
-  const data = await response.json();
-  if (!response.ok || !data.success) {
-    throw makeHttpError(502, data.error || "Gagal membaca sheet.", "APPS_SCRIPT_READ_FAILED");
-  }
-  return Array.isArray(data.rows) ? data.rows : [];
-}
-
-async function appsScriptReplaceSheetRows(env, sheetKey, rows, workerToken) {
-  if (!env.APPS_SCRIPT_URL) return;
-  const response = await fetch(env.APPS_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "replaceSheet",
-      sheetKey: String(sheetKey || ""),
-      rows: Array.isArray(rows) ? rows : [],
-      token: workerToken
-    }),
-    redirect: "follow",
-  });
-  const data = await response.json();
-  if (!response.ok || !data.success) {
-    throw makeHttpError(502, data.error || "Gagal mengosongkan sheet sumber.", "APPS_SCRIPT_CLEAR_FAILED");
-  }
-}
-
-async function d1MigrateFromAppsScript(env, sheetKeys, workerToken) {
-  const keys = Array.from(new Set((Array.isArray(sheetKeys) && sheetKeys.length ? sheetKeys : Object.values(DIRECT_SHEETS)).map(normalizeSheetKey).filter(Boolean)));
-  const summary = [];
-  for (const sheetKey of keys) {
-    const rows = await appsScriptReadSheetRows(env, sheetKey, workerToken);
-    await d1ReplaceSheet(env, sheetKey, rows);
-    summary.push({ sheetKey, rows: rows.length });
-  }
-  invalidateGuruSheetCache();
-  return summary;
 }
 
 async function getGoogleSheetsAccessToken(env) {
@@ -1684,6 +1635,23 @@ function getAllowedGoogleClientIds(env) {
   return configured.split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+function getAllowedGoogleIssuers() {
+  return ["accounts.google.com", "https://accounts.google.com"];
+}
+
+function getAllowedGoogleEmailDomains(env) {
+  const configured = String(env.GOOGLE_ALLOWED_EMAIL_DOMAINS || "").trim();
+  if (!configured) return ["moe-dl.edu.my"];
+  return configured.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
+}
+
+function isAllowedGoogleEmailDomain(email, env) {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!normalized || normalized.indexOf("@") === -1) return false;
+  const domain = normalized.split("@")[1];
+  return getAllowedGoogleEmailDomains(env).includes(domain);
+}
+
 async function verifyGoogleIdentity(auth, env) {
   const idToken = String((auth && auth.idToken) || "").trim();
   if (!idToken) {
@@ -1704,6 +1672,9 @@ async function verifyGoogleIdentity(auth, env) {
   if (!getAllowedGoogleClientIds(env).includes(String(data.aud || "").trim())) {
     throw makeHttpError(403, "Client Google tidak dibenarkan.", "AUTH_FORBIDDEN");
   }
+  if (!getAllowedGoogleIssuers().includes(String(data.iss || "").trim())) {
+    throw makeHttpError(403, "Penerbit token Google tidak sah.", "AUTH_FORBIDDEN");
+  }
   if (!(data.email_verified === true || data.email_verified === "true")) {
     throw makeHttpError(403, "Email Google belum disahkan.", "AUTH_FORBIDDEN");
   }
@@ -1721,9 +1692,30 @@ async function verifyGoogleIdentity(auth, env) {
   if (!actor.email) {
     throw makeHttpError(403, "Email pengguna tidak dapat disahkan.", "AUTH_FORBIDDEN");
   }
+  if (!isAllowedGoogleEmailDomain(actor.email, env)) {
+    throw makeHttpError(403, "Akaun Google di luar domain sekolah tidak dibenarkan.", "AUTH_FORBIDDEN");
+  }
 
   GOOGLE_TOKEN_CACHE.set(idToken, { actor, expiresAt });
   return actor;
+}
+
+async function buildVerifiedSessionActor(actor, env, workerToken) {
+  const guruRows = await getGuruSheetRows(env, workerToken);
+  const guru = findGuruByIdentity(guruRows, actor, true);
+  const isAdmin = isSystemAdminActor(actor, guru);
+  if (!guru && !isAdmin) {
+    throw makeHttpError(403, "Akaun ini tiada dalam senarai guru atau pentadbir sistem.", "AUTH_FORBIDDEN");
+  }
+  return {
+    email: String(actor.email || "").trim().toLowerCase(),
+    name: String((guru && guru.nama) || actor.name || actor.email || "").trim(),
+    sub: String(actor.sub || "").trim(),
+    picture: "",
+    role: isAdmin ? "admin" : "teacher",
+    jawatan: String((guru && guru.jawatan) || "").trim(),
+    kelas: String((guru && guru.kelas) || "").trim()
+  };
 }
 
 async function authorizeStudentAttendanceWrite(body, actor, env, workerToken) {
@@ -1936,20 +1928,13 @@ async function getGuruSheetRows(env, workerToken) {
   }
 
   if (shouldUseCloudflareD1(env)) {
-    try {
-      const rows = await d1ReadSheetRows(env, DIRECT_SHEETS.GURU);
-      GURU_SHEET_CACHE = {
-        rows: Array.isArray(rows) ? rows : [],
-        expiresAt: Date.now() + 60000,
-        backendMode: currentBackendMode
-      };
-      return GURU_SHEET_CACHE.rows;
-    } catch (err) {
-      if (!env.APPS_SCRIPT_URL) {
-        throw err;
-      }
-      console.log("D1 guru lookup fallback:", err.message || err);
-    }
+    const rows = await d1ReadSheetRows(env, DIRECT_SHEETS.GURU);
+    GURU_SHEET_CACHE = {
+      rows: Array.isArray(rows) ? rows : [],
+      expiresAt: Date.now() + 60000,
+      backendMode: currentBackendMode
+    };
+    return GURU_SHEET_CACHE.rows;
   }
 
   if (shouldUseGoogleSheets(env)) {
@@ -1962,20 +1947,10 @@ async function getGuruSheetRows(env, workerToken) {
       };
       return GURU_SHEET_CACHE.rows;
     } catch (err) {
-      if (!env.APPS_SCRIPT_URL) {
-        throw err;
-      }
-      console.log("Google Sheets guru lookup fallback:", err.message || err);
+      throw err;
     }
   }
-
-  const rows = await appsScriptReadSheetRows(env, DIRECT_SHEETS.GURU, workerToken);
-  GURU_SHEET_CACHE = {
-    rows: Array.isArray(rows) ? rows : [],
-    expiresAt: Date.now() + 60000,
-    backendMode: currentBackendMode
-  };
-  return GURU_SHEET_CACHE.rows;
+  throw new Error("Backend data guru tidak dikonfigurasi.");
 }
 
 function buildGuruRecord(row) {

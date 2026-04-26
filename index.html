@@ -2014,7 +2014,7 @@ table tbody tr:last-child td { border-bottom: none; }
             <p>Daftar kehadiran automatik melalui GPS — SK Kiandongo</p>
           </div>
           <div style="display:flex;gap:10px">
-            <button class="btn btn-secondary" onclick="loadKehadiranGuru()">↻ Muat Semula</button>
+            <button class="btn btn-secondary" onclick="loadKehadiranGuru({ preserveTable: true })">↻ Segar Sekarang</button>
             <button class="btn btn-secondary" onclick="punchOutManual()">🕐 Punch-Out Manual</button>
             <button class="btn btn-secondary" onclick="openTambahKehadiranGuru()">✏️ Daftar Manual</button>
           </div>
@@ -2048,7 +2048,7 @@ table tbody tr:last-child td { border-bottom: none; }
               <div id="geoStatusTeks" style="font-weight:700;font-size:0.95rem">Mendapatkan lokasi GPS...</div>
               <div id="geoStatusSub" style="font-size:0.8rem;color:var(--muted);margin-top:2px"></div>
             </div>
-            <button class="btn btn-sm btn-secondary" onclick="mulaAutoGPS()">🔄 Semak Semula</button>
+            <button class="btn btn-sm btn-secondary" onclick="mulaAutoGPS()">🔄 Semak GPS</button>
           </div>
           <div id="geoActionDalam" style="display:none;gap:10px">
             <button class="btn btn-primary btn-full btn-lg" onclick="autoHadir({ manual: true })" style="font-size:1rem;padding:16px">
@@ -2149,7 +2149,7 @@ table tbody tr:last-child td { border-bottom: none; }
                 <th>Status</th><th>Catatan</th><th>GPS</th>
               </tr></thead>
               <tbody id="guruKehadiranBody">
-                <tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px">Klik "Muat Semula" untuk memuatkan data</td></tr>
+                <tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px">Paparan kehadiran guru disegar secara automatik setiap 30 saat.</td></tr>
               </tbody>
             </table>
           </div>
@@ -2164,7 +2164,7 @@ table tbody tr:last-child td { border-bottom: none; }
             <p>Jejak dan lapor kehadiran murid mengikut kelas</p>
           </div>
           <div style="display:flex;gap:10px">
-            <button class="btn btn-secondary" onclick="loadKehadiranMurid()">↻ Muat Semula</button>
+            <button class="btn btn-secondary" onclick="loadKehadiranMurid({ preserveTable: true })">↻ Segar Sekarang</button>
             <button class="btn btn-primary" onclick="openTambahKehadiranMurid()">+ Tambah Rekod</button>
           </div>
         </div>
@@ -2207,7 +2207,7 @@ table tbody tr:last-child td { border-bottom: none; }
             </div>
           </div>
           <div style="margin-top:14px">
-            <button class="btn btn-primary" onclick="loadKehadiranMurid()">Cari Data</button>
+            <button class="btn btn-primary" onclick="loadKehadiranMurid({ preserveTable: true })">Segar Data</button>
           </div>
         </div>
 
@@ -2248,7 +2248,7 @@ table tbody tr:last-child td { border-bottom: none; }
                 </tr>
               </thead>
               <tbody id="muridKehadiranBody">
-                <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Klik "Cari Data" untuk memuatkan kehadiran murid</td></tr>
+                <tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">Paparan kehadiran murid disegar secara automatik setiap 30 saat.</td></tr>
               </tbody>
             </table>
           </div>
@@ -2690,10 +2690,39 @@ _SK Kiandongo_</textarea>
 
         <!-- TAB: LOG -->
         <div id="notif-tab-log" style="display:none">
+          <div class="card-grid card-grid-4" style="margin-bottom:20px">
+            <div class="stat-card">
+              <div class="stat-icon blue">📨</div>
+              <div class="stat-info"><small>Hari Ini</small><strong id="notif-log-stat-today">0</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon green">✅</div>
+              <div class="stat-info"><small>Berjaya</small><strong id="notif-log-stat-success">0</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon red">❌</div>
+              <div class="stat-info"><small>Gagal</small><strong id="notif-log-stat-failed">0</strong></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon amber">🕒</div>
+              <div class="stat-info"><small>Aktiviti Terakhir</small><strong id="notif-log-stat-latest" style="font-size:1rem">-</strong></div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:20px">
+            <div class="section-header">
+              <h2>Aktiviti Terkini Hari Ini</h2>
+              <button class="btn btn-sm btn-secondary" onclick="loadNotifLog()">Segar</button>
+            </div>
+            <div id="notifLogActivityList" style="display:grid;gap:8px">
+              <div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Tiada aktiviti hari ini.</div>
+            </div>
+          </div>
+
           <div class="card">
             <div class="section-header">
               <h2>Log Notifikasi Dihantar</h2>
-              <button class="btn btn-sm btn-secondary" onclick="loadNotifLog()">↻ Muat Semula</button>
+              <button class="btn btn-sm btn-secondary" onclick="loadNotifLog()">↻ Segar Semula</button>
             </div>
             <div class="table-wrap">
               <table>
@@ -2707,7 +2736,7 @@ _SK Kiandongo_</textarea>
                   </tr>
                 </thead>
                 <tbody id="notifLogBody">
-                  <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px">Log akan dipaparkan dari Google Sheet BIRTHDAY_LOG</td></tr>
+                  <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px">Log notifikasi akan dipaparkan di sini selepas penghantaran dibuat.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -2730,7 +2759,7 @@ _SK Kiandongo_</textarea>
             <span class="badge badge-blue">Pusat Tetapan</span>
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-            <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})">Worker & Apps Script</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})">Worker & Cloudflare D1</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})">Notifikasi Hari Lahir</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-attendance-notif-card').scrollIntoView({behavior:'smooth', block:'start'})">Notifikasi Kehadiran</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-group-card').scrollIntoView({behavior:'smooth', block:'start'})">Group Fonnte</button>
@@ -2742,7 +2771,7 @@ _SK Kiandongo_</textarea>
         <div class="config-grid">
           <div class="card" id="config-worker-card">
             <div class="section-header">
-              <h2>Worker & Apps Script</h2>
+              <h2>Worker & Cloudflare D1</h2>
               <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
             </div>
             <div style="display:grid;gap:14px">
@@ -2760,6 +2789,18 @@ _SK Kiandongo_</textarea>
               </div>
               <div id="workerStatus" style="margin-top:12px;padding:10px;border-radius:8px;background:rgba(26,79,160,0.05);border:1px solid rgba(26,79,160,0.2);font-size:0.85rem;color:var(--blue)">
                 🔄 Memeriksa sambungan...
+              </div>
+              <div style="border:1px solid rgba(37,99,235,.12);border-radius:16px;padding:16px;background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%)">
+                <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px">
+                  <div>
+                    <div style="font-weight:800;color:var(--blue);font-size:1rem">Status Kapasiti Cloudflare D1</div>
+                    <div id="workerD1Meta" style="font-size:0.84rem;color:var(--muted);margin-top:4px;line-height:1.6">Menunggu semakan sambungan backend.</div>
+                  </div>
+                  <span id="workerD1Badge" class="badge badge-gray">Belum disemak</span>
+                </div>
+                <div id="workerD1CapacityStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+                  <div style="border:1px dashed rgba(148,163,184,.4);border-radius:14px;padding:14px;background:#fff;color:var(--muted);font-size:0.88rem;text-align:center">Semakan kapasiti akan dipaparkan di sini.</div>
+                </div>
               </div>
             </div>
           </div>
