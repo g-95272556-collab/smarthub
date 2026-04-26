@@ -17,6 +17,31 @@ const ADMIN_ROLES = [
   "penolong kanan pentadbiran"
 ];
 const STUDENT_CLASSES = ["1 NILAM","2 INTAN","3 KRISTAL","4 MUTIARA","5 DELIMA","6 BAIDURI"];
+const DEFAULT_GROUP_WA_KELAS = {
+  "1 NILAM": "120363408263111964@g.us",
+  "2 INTAN": "120363307119469701@g.us",
+  "3 KRISTAL": "120363158710638763@g.us",
+  "4 MUTIARA": "120363047423182758@g.us",
+  "5 DELIMA": "120363040172356242@g.us",
+  "6 BAIDURI": "60195327614-1585453088@g.us"
+};
+const DEFAULT_KOKUM_PROGRAM_OPTIONS = {
+  "UNIT BERUNIFORM": [
+    "Kadet Remaja Sekolah (KRS)",
+    "Pengakap"
+  ],
+  "KELAB DAN PERSATUAN": [
+    "Kelab STEM",
+    "Kelab Seni Muzik"
+  ],
+  "SUKAN DAN PERMAINAN": [
+    "Bola Tampar",
+    "Catur",
+    "Sepak Takraw",
+    "Memanah",
+    "Olahraga"
+  ]
+};
 const TEACHER_READABLE_SHEETS = [
   "GURU",
   "MURID",
@@ -100,6 +125,39 @@ const DIRECT_HEADERS = {
   HARILAHIR: ["Nama","Peranan","Kelas","Tarikh Lahir","Telefon"],
   CONFIG: ["Kunci","Nilai"]
 };
+
+function getBackendConfigDefaults() {
+  return {
+    WORKER_SECRET: "",
+    ADMIN_EMAIL: "",
+    ADMIN_EMAILS_JSON: JSON.stringify(DEFAULT_ADMIN_EMAILS),
+    SCHOOL_LAT: "5.3055655",
+    SCHOOL_LNG: "116.9633906",
+    SCHOOL_RADIUS: "200",
+    FONNTE_TOKEN: "",
+    FONNTE_GROUP: "",
+    GROUP_WA_KELAS_JSON: JSON.stringify(DEFAULT_GROUP_WA_KELAS),
+    JADUAL_BERTUGAS_JSON: JSON.stringify(DUTY_SCHEDULE_2026),
+    KOKUM_PROGRAM_OPTIONS_JSON: JSON.stringify(DEFAULT_KOKUM_PROGRAM_OPTIONS),
+    TELEGRAM_BOT: "",
+    TELEGRAM_CHAT: "",
+    TELEGRAM_TOPIC: "",
+    DEEPSEEK_API_KEY: "",
+    ATTENDANCE_GURU_NOTIF_ENABLED: "true",
+    ATTENDANCE_GURU_REMINDER_TIME: "07:45",
+    ATTENDANCE_MURID_NOTIF_ENABLED: "true",
+    ATTENDANCE_MURID_CUTOFF_TIME: "09:00",
+    ATTENDANCE_MURID_NOTIFY_GUARDIAN: "true",
+    ATTENDANCE_MURID_NOTIFY_CLASS_GROUP: "true",
+    ATTENDANCE_MURID_NOTIFY_TELEGRAM: "true",
+    ATTENDANCE_GURU_ADMIN_TEMPLATE: "Peringatan Kehadiran Guru\n\nGuru berikut belum mendaftar kehadiran pada {TARIKH}:\n\n{SENARAI}\n\nSila daftar segera.\n\n_{SEKOLAH}_",
+    ATTENDANCE_GURU_PERSONAL_TEMPLATE: "Peringatan\n\nCikgu {NAMA}, anda belum mendaftar kehadiran hari ini ({TARIKH}). Sila daftar segera.\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_GUARDIAN_TEMPLATE: "Makluman Kehadiran\n\nSelamat sejahtera,\n\nAnak jagaan tuan/puan, {NAMA} dari kelas {KELAS}, direkodkan {STATUS} pada {TARIKH}.\n\nSila hubungi pihak sekolah jika ada pertanyaan.\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_SUMMARY_TEMPLATE: "Makluman Kehadiran Murid\n\nTarikh: {TARIKH}\nKelas: {KELAS}\nBilangan: {BILANGAN}\n\n{SENARAI}\n\n_{SEKOLAH}_",
+    ATTENDANCE_MURID_CLASS_GROUP_TEMPLATE: "Makluman Kehadiran - {KELAS}\n\nMurid tidak hadir pada {TARIKH}:\n\n{SENARAI}\n\n_{SEKOLAH}_",
+    ATTENDANCE_NOTIF_NOTE: ""
+  };
+}
 
 export default {
   async fetch(request, env) {
@@ -650,7 +708,7 @@ async function d1EnsureHeaderRow(env, sheetName, header) {
 
 async function d1GetConfig(env, workerToken = "") {
   const rows = await d1ReadSheetRows(env, DIRECT_SHEETS.CONFIG);
-  const out = {};
+  const out = { ...getBackendConfigDefaults() };
   for (let i = 1; i < rows.length; i++) {
     const key = String(rows[i]?.[0] || "").trim();
     if (key) out[key] = String(rows[i]?.[1] || "");
@@ -694,32 +752,7 @@ async function d1SetupAllSheets(env) {
   for (const sheetName of sheetNames) {
     await d1ReadSheetRows(env, sheetName);
   }
-  await d1EnsureConfigDefaults(env, {
-    WORKER_SECRET: "",
-    ADMIN_EMAIL: "",
-    SCHOOL_LAT: "5.3055655",
-    SCHOOL_LNG: "116.9633906",
-    SCHOOL_RADIUS: "200",
-    FONNTE_TOKEN: "",
-    FONNTE_GROUP: "",
-    TELEGRAM_BOT: "",
-    TELEGRAM_CHAT: "",
-    TELEGRAM_TOPIC: "",
-    DEEPSEEK_API_KEY: "",
-    ATTENDANCE_GURU_NOTIF_ENABLED: "true",
-    ATTENDANCE_GURU_REMINDER_TIME: "07:45",
-    ATTENDANCE_MURID_NOTIF_ENABLED: "true",
-    ATTENDANCE_MURID_CUTOFF_TIME: "09:00",
-    ATTENDANCE_MURID_NOTIFY_GUARDIAN: "true",
-    ATTENDANCE_MURID_NOTIFY_CLASS_GROUP: "true",
-    ATTENDANCE_MURID_NOTIFY_TELEGRAM: "true",
-    ATTENDANCE_GURU_ADMIN_TEMPLATE: "Peringatan Kehadiran Guru\n\nGuru berikut belum mendaftar kehadiran pada {TARIKH}:\n\n{SENARAI}\n\nSila daftar segera.\n\n_{SEKOLAH}_",
-    ATTENDANCE_GURU_PERSONAL_TEMPLATE: "Peringatan\n\nCikgu {NAMA}, anda belum mendaftar kehadiran hari ini ({TARIKH}). Sila daftar segera.\n\n_{SEKOLAH}_",
-    ATTENDANCE_MURID_GUARDIAN_TEMPLATE: "Makluman Kehadiran\n\nSelamat sejahtera,\n\nAnak jagaan tuan/puan, {NAMA} dari kelas {KELAS}, direkodkan {STATUS} pada {TARIKH}.\n\nSila hubungi pihak sekolah jika ada pertanyaan.\n\n_{SEKOLAH}_",
-    ATTENDANCE_MURID_SUMMARY_TEMPLATE: "Makluman Kehadiran Murid\n\nTarikh: {TARIKH}\nKelas: {KELAS}\nBilangan: {BILANGAN}\n\n{SENARAI}\n\n_{SEKOLAH}_",
-    ATTENDANCE_MURID_CLASS_GROUP_TEMPLATE: "Makluman Kehadiran - {KELAS}\n\nMurid tidak hadir pada {TARIKH}:\n\n{SENARAI}\n\n_{SEKOLAH}_",
-    ATTENDANCE_NOTIF_NOTE: ""
-  });
+  await d1EnsureConfigDefaults(env, getBackendConfigDefaults());
 }
 
 async function getD1CapacitySummary(env) {
@@ -988,32 +1021,7 @@ async function googleSetupAllSheets(env) {
     const sheetName = normalizeSheetKey(key);
     await googleEnsureHeaderRow(env, sheetName, header);
   }
-  await ensureGoogleConfigDefaults(env, {
-    WORKER_SECRET: "",
-    ADMIN_EMAIL: "",
-    SCHOOL_LAT: "5.3055655",
-    SCHOOL_LNG: "116.9633906",
-    SCHOOL_RADIUS: "200",
-    FONNTE_TOKEN: "",
-    FONNTE_GROUP: "",
-    TELEGRAM_BOT: "",
-    TELEGRAM_CHAT: "",
-    TELEGRAM_TOPIC: "",
-    DEEPSEEK_API_KEY: "",
-    ATTENDANCE_GURU_NOTIF_ENABLED: "true",
-    ATTENDANCE_GURU_REMINDER_TIME: "07:45",
-    ATTENDANCE_MURID_NOTIF_ENABLED: "true",
-    ATTENDANCE_MURID_CUTOFF_TIME: "09:00",
-    ATTENDANCE_MURID_NOTIFY_GUARDIAN: "true",
-    ATTENDANCE_MURID_NOTIFY_CLASS_GROUP: "true",
-    ATTENDANCE_MURID_NOTIFY_TELEGRAM: "true",
-    ATTENDANCE_GURU_ADMIN_TEMPLATE: "Peringatan Kehadiran Guru\n\nGuru berikut belum mendaftar kehadiran pada {TARIKH}:\n\n{SENARAI}\n\nSila daftar segera.\n\n_{SEKOLAH}_",
-    ATTENDANCE_GURU_PERSONAL_TEMPLATE: "Peringatan\n\nCikgu {NAMA}, anda belum mendaftar kehadiran hari ini ({TARIKH}). Sila daftar segera.\n\n_{SEKOLAH}_",
-    ATTENDANCE_MURID_GUARDIAN_TEMPLATE: "Makluman Kehadiran\n\nSelamat sejahtera,\n\nAnak jagaan tuan/puan, {NAMA} dari kelas {KELAS}, direkodkan {STATUS} pada {TARIKH}.\n\nSila hubungi pihak sekolah jika ada pertanyaan.\n\n_{SEKOLAH}_",
-    ATTENDANCE_MURID_SUMMARY_TEMPLATE: "Makluman Kehadiran Murid\n\nTarikh: {TARIKH}\nKelas: {KELAS}\nBilangan: {BILANGAN}\n\n{SENARAI}\n\n_{SEKOLAH}_",
-    ATTENDANCE_MURID_CLASS_GROUP_TEMPLATE: "Makluman Kehadiran - {KELAS}\n\nMurid tidak hadir pada {TARIKH}:\n\n{SENARAI}\n\n_{SEKOLAH}_",
-    ATTENDANCE_NOTIF_NOTE: ""
-  });
+  await ensureGoogleConfigDefaults(env, getBackendConfigDefaults());
 }
 
 async function googleEnsureHeaderRow(env, sheetName, header) {
@@ -1040,7 +1048,7 @@ async function googleEnsureHeaderRow(env, sheetName, header) {
 
 async function googleGetConfig(env) {
   const rows = await googleReadSheetRows(env, DIRECT_SHEETS.CONFIG);
-  const out = {};
+  const out = { ...getBackendConfigDefaults() };
   for (let i = 1; i < rows.length; i++) {
     const key = String(rows[i]?.[0] || "").trim();
     if (key) out[key] = String(rows[i]?.[1] || "");
