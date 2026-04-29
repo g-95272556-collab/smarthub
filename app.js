@@ -3,11 +3,61 @@
 // app.js — Main Application JavaScript
 // ═══════════════════════════════════════════════════════════════
 
+const DEFAULT_GOOGLE_CLIENT_ID = '553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com';
+
+function getRuntimeConfig() {
+  if (typeof window === 'undefined') return {};
+  const cfg = window.SMARTSCHOOLHUB_RUNTIME_CONFIG;
+  return cfg && typeof cfg === 'object' ? cfg : {};
+}
+
+function getQueryParamValue(keys) {
+  if (typeof window === 'undefined' || !window.location || !window.location.search) return '';
+  const params = new URLSearchParams(window.location.search);
+  for (let i = 0; i < keys.length; i++) {
+    const value = String(params.get(keys[i]) || '').trim();
+    if (value) return value;
+  }
+  return '';
+}
+
+function normalizeConfigUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    return new URL(raw).toString().replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+}
+
+function normalizeGoogleClientId(value) {
+  return String(value || '').trim();
+}
+
+function resolveInitialWorkerUrl() {
+  const queryValue = normalizeConfigUrl(getQueryParamValue(['workerUrl', 'worker']));
+  if (queryValue) return queryValue;
+  const storedValue = normalizeConfigUrl(localStorage.getItem('ssh_worker_url'));
+  if (storedValue) return storedValue;
+  const runtime = getRuntimeConfig();
+  return normalizeConfigUrl(runtime.workerUrl || runtime.workerURL || '');
+}
+
+function resolveInitialGoogleClientId() {
+  const queryValue = normalizeGoogleClientId(getQueryParamValue(['googleClientId', 'clientId']));
+  if (queryValue) return queryValue;
+  const storedValue = normalizeGoogleClientId(localStorage.getItem('ssh_google_client_id'));
+  if (storedValue) return storedValue;
+  const runtime = getRuntimeConfig();
+  return normalizeGoogleClientId(runtime.googleClientId || runtime.google_client_id || DEFAULT_GOOGLE_CLIENT_ID);
+}
+
 // ── STATE ──────────────────────────────────────────────────────
 const APP = {
   user: null,
-  workerUrl: localStorage.getItem('ssh_worker_url') || '',
-  googleClientId: '553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com',
+  workerUrl: resolveInitialWorkerUrl(),
+  googleClientId: resolveInitialGoogleClientId(),
   notifLog: JSON.parse(localStorage.getItem('ssh_notif_log') || '[]'),
   pwa: {
     installPrompt: null,
@@ -49,6 +99,7 @@ function escapeHtml(value) {
 let _gsiReady = false;
 let _domReady = false;
 let _geoProfile = null;
+let _authInitializedClientId = '';
 let geoCoords = null;
 let hlData = normalizeStoredHLData(JSON.parse(localStorage.getItem('ssh_hl_data') || '[]'));
 let hlConfig = JSON.parse(localStorage.getItem('ssh_hl_config') || 'null') || {
@@ -1463,9 +1514,142 @@ function onGSIReady() {
   if (_domReady) initAuth();
 }
 
+function getCurrentOriginLabel() {
+  if (typeof window === 'undefined' || !window.location || !window.location.origin) return 'origin semasa';
+  return window.location.origin;
+}
+
+function setLoginConfigStatus(message, type) {
+  const box = document.getElementById('loginConfigStatus');
+  if (!box) return;
+  const palette = {
+    info: {
+      background: 'rgba(26,79,160,0.12)',
+      border: 'rgba(96,165,250,0.35)',
+      color: '#dbeafe'
+    },
+    success: {
+      background: 'rgba(16,185,129,0.14)',
+      border: 'rgba(16,185,129,0.35)',
+      color: '#d1fae5'
+    },
+    error: {
+      background: 'rgba(239,68,68,0.14)',
+      border: 'rgba(248,113,113,0.35)',
+      color: '#fee2e2'
+    }
+  };
+  const tone = palette[type] || palette.info;
+  box.textContent = message;
+  box.style.background = tone.background;
+  box.style.borderColor = tone.border;
+  box.style.color = tone.color;
+}
+
+function syncBootstrapConfigInputs() {
+  const workerValue = APP.workerUrl || '';
+  const clientIdValue = APP.googleClientId || '';
+  const workerUrlField = document.getElementById('workerUrl');
+  const workerEndpointField = document.getElementById('workerEndpoint');
+  const loginWorkerUrlField = document.getElementById('loginWorkerUrl');
+  const loginGoogleClientIdField = document.getElementById('loginGoogleClientId');
+  const originField = document.getElementById('loginOriginValue');
+  if (workerUrlField) workerUrlField.value = workerValue;
+  if (workerEndpointField) workerEndpointField.value = workerValue ? workerValue + '/api' : '';
+  if (loginWorkerUrlField) loginWorkerUrlField.value = workerValue;
+  if (loginGoogleClientIdField) loginGoogleClientIdField.value = clientIdValue;
+  if (originField) originField.textContent = getCurrentOriginLabel();
+}
+
+function buildHostedOAuthHint() {
+  return 'Jika popup Google memaparkan ralat origin tidak dibenarkan, tambah ' + getCurrentOriginLabel() + ' dalam Authorized JavaScript origins untuk Client ID ini.';
+}
+
+function updateLoginReadinessMessage() {
+  if (!APP.workerUrl) {
+    setLoginConfigStatus('Masukkan dan simpan Worker URL dahulu. Tanpa backend aktif, sesi Google tidak boleh disahkan.', 'error');
+    return;
+  }
+  if (!_gsiReady || typeof google === 'undefined') {
+    setLoginConfigStatus('Memuatkan modul Log Masuk Google. Jika butang masih belum muncul, muat semula halaman.', 'info');
+    return;
+  }
+  setLoginConfigStatus('Backend sudah diset. Anda boleh log masuk. ' + buildHostedOAuthHint(), 'info');
+}
+
+function focusLoginConfig() {
+  const panel = document.getElementById('loginBootstrapConfig');
+  if (panel && typeof panel.scrollIntoView === 'function') {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  const input = document.getElementById('loginWorkerUrl');
+  if (input && typeof input.focus === 'function') input.focus();
+}
+
+function persistBootstrapConfig(workerUrl, googleClientId) {
+  const normalizedWorkerUrl = normalizeConfigUrl(workerUrl);
+  const normalizedClientId = normalizeGoogleClientId(googleClientId);
+  if (normalizedWorkerUrl) localStorage.setItem('ssh_worker_url', normalizedWorkerUrl);
+  else localStorage.removeItem('ssh_worker_url');
+  if (normalizedClientId && normalizedClientId !== DEFAULT_GOOGLE_CLIENT_ID) localStorage.setItem('ssh_google_client_id', normalizedClientId);
+  else localStorage.removeItem('ssh_google_client_id');
+  APP.workerUrl = normalizedWorkerUrl || normalizeConfigUrl(getRuntimeConfig().workerUrl || getRuntimeConfig().workerURL || '');
+  APP.googleClientId = normalizedClientId || resolveInitialGoogleClientId();
+  syncBootstrapConfigInputs();
+}
+
+async function savePreLoginConfig(checkWorkerAfterSave) {
+  const workerField = document.getElementById('loginWorkerUrl');
+  const clientField = document.getElementById('loginGoogleClientId');
+  const nextWorkerUrl = workerField ? workerField.value : APP.workerUrl;
+  const nextClientId = clientField ? clientField.value : APP.googleClientId;
+  if (workerField && String(workerField.value || '').trim() && !normalizeConfigUrl(workerField.value)) {
+    setLoginConfigStatus('Worker URL tidak sah. Gunakan URL penuh seperti https://xxx.workers.dev', 'error');
+    return;
+  }
+  persistBootstrapConfig(nextWorkerUrl, nextClientId);
+  updateLoginReadinessMessage();
+  if (_gsiReady) initAuth();
+  if (checkWorkerAfterSave) {
+    await checkLoginWorkerStatus();
+    return;
+  }
+  showToast('Konfigurasi login disimpan pada browser ini.', 'success');
+}
+
+async function checkLoginWorkerStatus() {
+  const statusEl = document.getElementById('loginWorkerStatus');
+  if (!statusEl) return;
+  if (!APP.workerUrl) {
+    statusEl.textContent = 'Masukkan Worker URL dahulu untuk semakan sambungan.';
+    statusEl.style.color = '#fca5a5';
+    return;
+  }
+  statusEl.textContent = 'Memeriksa sambungan backend...';
+  statusEl.style.color = '#fef3c7';
+  try {
+    const data = await callWorker({ action: 'ping' });
+    if (!data.success || data.worker !== 'ok') throw new Error('Respons ping backend tidak lengkap.');
+    const backendLabel = data.backendMode === 'cloudflare-d1'
+      ? 'Cloudflare D1'
+      : data.backendMode === 'google-sheets'
+        ? 'Google Sheets'
+        : 'Tidak diketahui';
+    statusEl.textContent = 'Backend aktif: ' + backendLabel + ' | Worker OK';
+    statusEl.style.color = '#bbf7d0';
+    setLoginConfigStatus('Sambungan backend berjaya. ' + buildHostedOAuthHint(), 'success');
+  } catch (err) {
+    statusEl.textContent = 'Gagal sambung ke backend: ' + err.message;
+    statusEl.style.color = '#fca5a5';
+    setLoginConfigStatus('Worker tidak dapat dihubungi. Semak URL backend sebelum cuba log masuk.', 'error');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   _domReady = true;
   initPWA();
+  syncBootstrapConfigInputs();
+  updateLoginReadinessMessage();
   requestAnimationFrame(() => {
     setTimeout(() => {
       const ls = $id('loadingScreen');
@@ -1476,13 +1660,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initAuth() {
-  google.accounts.id.initialize({
-    client_id: APP.googleClientId,
-    callback: handleGoogleCredential,
-    auto_select: false,
-    cancel_on_tap_outside: true,
-    ux_mode: 'popup'
-  });
+  syncBootstrapConfigInputs();
+  APP.googleClientId = resolveInitialGoogleClientId();
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+    showLoginPage();
+    updateLoginReadinessMessage();
+    return;
+  }
+  try {
+    google.accounts.id.initialize({
+      client_id: APP.googleClientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      ux_mode: 'popup'
+    });
+    _authInitializedClientId = APP.googleClientId;
+  } catch (err) {
+    showLoginPage();
+    setLoginConfigStatus('Google Sign-In gagal dimulakan. ' + buildHostedOAuthHint(), 'error');
+    console.error('Google Sign-In initialization failed:', err);
+    return;
+  }
   const savedUser = localStorage.getItem('ssh_user');
   if (savedUser) {
     try {
@@ -1533,6 +1732,12 @@ function renderGSIButton() {
   const container = document.getElementById('googleSignInBtn');
   if (!container) return;
   container.innerHTML = '';
+  if (!APP.workerUrl) {
+    container.innerHTML = '<button class="btn btn-primary btn-full" onclick="focusLoginConfig()">⚙️ Tetapkan Worker URL Dahulu</button>';
+    updateLoginReadinessMessage();
+    return;
+  }
+  if (_authInitializedClientId !== APP.googleClientId) initAuth();
   google.accounts.id.renderButton(container, {
     type: 'standard', shape: 'rectangular', theme: 'outline',
     size: 'large', text: 'signin_with', locale: 'ms'
@@ -1548,11 +1753,13 @@ function showLoginPage() {
   document.getElementById('loginPage').style.display = 'flex';
   const app = document.getElementById('appPage');
   if (app) { app.classList.remove('active'); app.style.display = 'none'; }
+  syncBootstrapConfigInputs();
   if (_gsiReady) renderGSIButton();
   else {
     const btn = document.getElementById('googleSignInBtn');
     if (btn) btn.innerHTML = '<button class="btn btn-primary btn-full" onclick="retryGSIRender()" style="margin-bottom:14px">🔄 Log Masuk dengan Google</button>';
   }
+  updateLoginReadinessMessage();
 }
 
 function isValidStoredSession(user) {
@@ -1773,10 +1980,7 @@ function showModule(id) {
 
 // ── WORKER API ─────────────────────────────────────────────────
 function initWorkerUrl() {
-  const inp = document.getElementById('workerUrl');
-  const ep = document.getElementById('workerEndpoint');
-  if (inp && APP.workerUrl) { inp.value = APP.workerUrl; }
-  if (ep && APP.workerUrl) { ep.value = APP.workerUrl + '/api'; }
+  syncBootstrapConfigInputs();
   // Auto-check status if URL is set
   if (APP.workerUrl) {
     updateWorkerStatus();
@@ -7031,9 +7235,9 @@ function saveWorkerUrl() {
   const url = (document.getElementById('workerUrl').value || '').trim();
   if (!url) { showToast('Sila masukkan URL Worker.', 'error'); return; }
   try {
-    const normalized = new URL(url).toString().replace(/\/+$/, '');
-    localStorage.setItem('ssh_worker_url', normalized);
-    APP.workerUrl = normalized;
+    const normalized = normalizeConfigUrl(url);
+    if (!normalized) throw new Error('URL tidak sah.');
+    persistBootstrapConfig(normalized, APP.googleClientId);
     const epEl = document.getElementById('workerEndpoint');
     if (epEl) epEl.value = normalized + '/api';
     setConfigStatus('✅ URL Worker disimpan: ' + normalized, true);

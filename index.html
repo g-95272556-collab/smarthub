@@ -1499,7 +1499,7 @@ table tbody tr:last-child td { border-bottom: none; }
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 28px;
   padding: 48px 44px;
-  width: min(440px, calc(100vw - 40px));
+  width: min(520px, calc(100vw - 40px));
   position: relative; z-index: 1;
   text-align: center;
 }
@@ -1543,6 +1543,71 @@ table tbody tr:last-child td { border-bottom: none; }
   display: flex;
   justify-content: center;
   margin-bottom: 14px;
+}
+.login-config-card {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(15,23,42,0.34);
+  border: 1px solid rgba(148,163,184,0.22);
+  text-align: left;
+}
+.login-config-card h3 {
+  margin: 0 0 8px;
+  font-size: 0.98rem;
+  color: #fff;
+}
+.login-config-card p {
+  margin: 0 0 14px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.68);
+}
+.login-config-grid {
+  display: grid;
+  gap: 12px;
+}
+.login-config-grid label {
+  display: block;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.72);
+  margin-bottom: 6px;
+}
+.login-config-grid input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.28);
+  background: rgba(15,23,42,0.5);
+  color: #fff;
+}
+.login-config-grid input::placeholder {
+  color: rgba(255,255,255,0.35);
+}
+.login-config-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.login-config-status {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(96,165,250,0.25);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.login-worker-status {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.72);
+}
+.login-origin {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.55);
+  word-break: break-word;
 }
 
 /* ─────────────────────────────────────────── */
@@ -1749,6 +1814,28 @@ table tbody tr:last-child td { border-bottom: none; }
     <!-- Real Google Sign-In Button -->
     <div class="g-sign-in-wrapper">
       <div id="googleSignInBtn"></div>
+    </div>
+
+    <div class="login-config-card" id="loginBootstrapConfig">
+      <h3>Konfigurasi Login untuk Hosting</h3>
+      <p>Jika aplikasi dibuka dari Netlify atau domain baru, backend dan Google Client ID mesti sepadan dengan origin semasa sebelum log masuk boleh berjaya.</p>
+      <div class="login-config-grid">
+        <div>
+          <label for="loginWorkerUrl">Cloudflare Worker URL</label>
+          <input id="loginWorkerUrl" type="url" placeholder="https://xxx.workers.dev">
+        </div>
+        <div>
+          <label for="loginGoogleClientId">Google Client ID</label>
+          <input id="loginGoogleClientId" type="text" placeholder="xxxxx.apps.googleusercontent.com">
+        </div>
+      </div>
+      <div class="login-config-actions">
+        <button class="btn btn-secondary" onclick="savePreLoginConfig(false)">💾 Simpan Konfigurasi</button>
+        <button class="btn btn-primary" onclick="savePreLoginConfig(true)">🔍 Simpan & Semak Backend</button>
+      </div>
+      <div id="loginConfigStatus" class="login-config-status">Masukkan Worker URL dahulu jika ini kali pertama aplikasi dibuka pada browser atau domain ini.</div>
+      <div id="loginWorkerStatus" class="login-worker-status">Status backend belum disemak.</div>
+      <div class="login-origin">Origin semasa: <strong id="loginOriginValue">-</strong></div>
     </div>
 
     <div class="school-info">
@@ -4362,6 +4449,13 @@ _{SEKOLAH}_</textarea>
 <div id="toast-container"></div>
 
 
+<script>
+window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
+  workerUrl: 'https://smartschoolhub-skkiandongo.g-95272556.workers.dev',
+  googleClientId: '553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com'
+}, window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {});
+</script>
+<script src="runtime-config.js" onerror="console.warn('runtime-config.js tidak dijumpai; menggunakan konfigurasi lalai terbenam.')"></script>
 <script src="app.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async defer onload="typeof onGSIReady === 'function' && onGSIReady()"></script>
 <script>
