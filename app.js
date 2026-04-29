@@ -1546,6 +1546,34 @@ function setLoginConfigStatus(message, type) {
   box.style.color = tone.color;
 }
 
+function setLoginDebugInfo(message, type) {
+  const box = document.getElementById('loginDebugBox');
+  if (!box) return;
+  const text = String(message || '').trim();
+  if (!text) {
+    box.style.display = 'none';
+    box.textContent = '';
+    return;
+  }
+  box.style.display = 'block';
+  box.textContent = text;
+  if (type === 'success') {
+    box.style.background = 'rgba(20,83,45,0.18)';
+    box.style.borderColor = 'rgba(74,222,128,0.35)';
+    box.style.color = '#dcfce7';
+    return;
+  }
+  if (type === 'info') {
+    box.style.background = 'rgba(30,64,175,0.16)';
+    box.style.borderColor = 'rgba(96,165,250,0.35)';
+    box.style.color = '#dbeafe';
+    return;
+  }
+  box.style.background = 'rgba(127,29,29,0.18)';
+  box.style.borderColor = 'rgba(248,113,113,0.35)';
+  box.style.color = '#fecaca';
+}
+
 function syncBootstrapConfigInputs() {
   const workerValue = APP.workerUrl || '';
   const clientIdValue = APP.googleClientId || '';
@@ -1588,6 +1616,21 @@ function bindLoginBootstrapActions() {
       savePreLoginConfig(true);
     });
   }
+}
+
+function renderPersistentLoginError(err) {
+  if (!err) {
+    setLoginDebugInfo('', 'info');
+    return;
+  }
+  const lines = ['Ralat login terakhir: ' + String(err.message || 'Tidak diketahui')];
+  if (err.code) lines.push('Kod backend: ' + String(err.code));
+  if (err.debugAuth) {
+    if (err.debugAuth.receivedEmail) lines.push('Email diterima backend: ' + String(err.debugAuth.receivedEmail));
+    if (err.debugAuth.receivedName) lines.push('Nama diterima backend: ' + String(err.debugAuth.receivedName));
+    lines.push('Padan admin lalai: ' + (err.debugAuth.adminMatchedByDefaultList ? 'ya' : 'tidak'));
+  }
+  setLoginDebugInfo(lines.join('\\n'), 'error');
 }
 
 function updateLoginReadinessMessage() {
@@ -1663,6 +1706,7 @@ async function checkLoginWorkerStatus() {
     statusEl.textContent = 'Backend aktif: ' + backendLabel + ' | Worker OK';
     statusEl.style.color = '#bbf7d0';
     setLoginConfigStatus('Sambungan backend berjaya. ' + buildHostedOAuthHint(), 'success');
+    setLoginDebugInfo('', 'info');
   } catch (err) {
     statusEl.textContent = 'Gagal sambung ke backend: ' + err.message;
     statusEl.style.color = '#fca5a5';
@@ -1743,6 +1787,7 @@ async function handleGoogleCredential(response) {
     showToast('Selamat datang, ' + String((payload && payload.given_name) || verifiedUser.name || 'pengguna') + '!', 'success');
   } catch(err) {
     handleLogout(true);
+    renderPersistentLoginError(err);
     showToast('Ralat log masuk: ' + err.message + formatLoginDebugMessage(err), 'error');
   }
 }
