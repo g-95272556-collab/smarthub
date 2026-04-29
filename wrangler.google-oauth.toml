@@ -1,0 +1,11 @@
+name = "smartschoolhub-google-oauth"
+main = "GoogleOAuth_Worker.js"
+compatibility_date = "2026-04-29"
+workers_dev = true
+
+[vars]
+# Comma-separated list is supported.
+GOOGLE_CLIENT_ID = "553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com"
+GOOGLE_ALLOWED_EMAIL_DOMAINS = "moe-dl.edu.my"
+# Example:
+# ALLOWED_ORIGINS = "http://localhost:3000,https://xbasmarthub.netlify.app,https://main--xbasmarthub.netlify.app"
