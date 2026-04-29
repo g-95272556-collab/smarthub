@@ -74,6 +74,52 @@ Nota:
 
 Semak konfigurasi dalam `wrangler.toml`, kemudian deploy ikut aliran kerja Cloudflare anda. Folder ini mengandungi kod Worker dan migrasi D1, tetapi rahsia/secret tempatan tidak disimpan dalam repo.
 
+## Worker Google OAuth Baharu
+
+Repo ini kini mengandungi worker OAuth berasingan yang boleh digunakan pada dua platform hosting:
+
+- `GoogleOAuth_Worker.js`
+  Entrypoint Cloudflare Worker khusus untuk verifikasi Google OAuth.
+- `workers/google-oauth-core.mjs`
+  Teras kongsi berasaskan Web Fetch API untuk Cloudflare dan Netlify.
+- `netlify/functions/google-oauth.mjs`
+  Netlify Function yang memetakan laluan yang sama supaya frontend boleh guna endpoint seragam.
+- `wrangler.google-oauth.toml`
+  Konfigurasi Cloudflare berasingan untuk deploy worker OAuth tanpa mengganggu `SmartSchoolHub_Worker.js`.
+
+Endpoint yang disediakan:
+
+- `POST /auth/google`
+- `POST /auth/google/verify`
+- `GET /auth/google/config`
+- `GET /auth/google/health`
+
+Body minimum untuk verifikasi:
+
+```json
+{
+  "credential": "<google_id_token>"
+}
+```
+
+Respons berjaya akan memulangkan profil ringkas pengguna yang telah disahkan seperti `email`, `name`, `sub`, `picture`, `hd`, `aud`, dan `iss`.
+
+Pembolehubah persekitaran yang disokong:
+
+- `GOOGLE_CLIENT_ID` atau `GOOGLE_CLIENT_IDS`
+- `GOOGLE_ALLOWED_EMAIL_DOMAINS`
+- `ALLOWED_ORIGINS`
+
+Contoh laluan penggunaan:
+
+- Cloudflare: deploy melalui `wrangler.google-oauth.toml`
+- Netlify: function akan tersedia pada laluan `/.netlify/functions/google-oauth` dan juga laluan tersuai `/auth/google`
+
+Nota keselamatan:
+
+- Worker ini mengesahkan tandatangan JWT Google menggunakan JWK Google dan memeriksa `aud`, `iss`, `exp`, `email_verified`, dan domain email yang dibenarkan.
+- Google menyarankan verifikasi tandatangan token di backend; implementasi ini ikut pendekatan itu dan tidak bergantung pada endpoint `tokeninfo` untuk aliran utama.
+
 ## GitHub Readiness
 
 Repo ini telah dibersihkan untuk GitHub:
