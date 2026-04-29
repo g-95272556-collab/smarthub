@@ -1621,7 +1621,7 @@ function syncBootstrapConfigInputs() {
 }
 
 function buildHostedOAuthHint() {
-  return 'Jika popup Google memaparkan ralat origin tidak dibenarkan, tambah ' + getCurrentOriginLabel() + ' dalam Authorized JavaScript origins untuk Client ID ini.';
+  return 'Jika log masuk masih gagal, buka Tetapan sambungan atau hubungi pentadbir sekolah.';
 }
 
 function exposeLoginBootstrapActions() {
@@ -1660,24 +1660,28 @@ function renderPersistentLoginError(err) {
     if (err.debugAuth.receivedEmail) lines.push('Email diterima backend: ' + String(err.debugAuth.receivedEmail));
     if (err.debugAuth.receivedName) lines.push('Nama diterima backend: ' + String(err.debugAuth.receivedName));
     lines.push('Padan admin lalai: ' + (err.debugAuth.adminMatchedByDefaultList ? 'ya' : 'tidak'));
+    if ('adminMatchedByConfiguredList' in err.debugAuth) {
+      lines.push('Padan admin konfigurasi: ' + (err.debugAuth.adminMatchedByConfiguredList ? 'ya' : 'tidak'));
+    }
   }
-  setLoginDebugInfo(lines.join('\\n'), 'error');
+  setLoginDebugInfo(lines.join('\n'), 'error');
 }
 
 function updateLoginReadinessMessage() {
   if (!APP.workerUrl) {
-    setLoginConfigStatus('Masukkan dan simpan Worker URL dahulu. Tanpa backend aktif, sesi Google tidak boleh disahkan.', 'error');
+    setLoginConfigStatus('Tetapan sambungan belum lengkap. Sila minta bantuan pentadbir sekolah.', 'error');
     return;
   }
   if (!_gsiReady || typeof google === 'undefined') {
-    setLoginConfigStatus('Memuatkan modul Log Masuk Google. Jika butang masih belum muncul, muat semula halaman.', 'info');
+    setLoginConfigStatus('Butang Google sedang dimuatkan. Sila tunggu sebentar.', 'info');
     return;
   }
-  setLoginConfigStatus('Backend sudah diset. Anda boleh log masuk. ' + buildHostedOAuthHint(), 'info');
+  setLoginConfigStatus('Sambungan sedia untuk digunakan.', 'success');
 }
 
 function focusLoginConfig() {
   const panel = document.getElementById('loginBootstrapConfig');
+  if (panel && typeof panel.open !== 'undefined') panel.open = true;
   if (panel && typeof panel.scrollIntoView === 'function') {
     panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -1703,7 +1707,7 @@ async function savePreLoginConfig(checkWorkerAfterSave) {
   const nextWorkerUrl = workerField ? workerField.value : APP.workerUrl;
   const nextClientId = clientField ? clientField.value : APP.googleClientId;
   if (workerField && String(workerField.value || '').trim() && !normalizeConfigUrl(workerField.value)) {
-    setLoginConfigStatus('Worker URL tidak sah. Gunakan URL penuh seperti https://xxx.workers.dev', 'error');
+    setLoginConfigStatus('Alamat sistem tidak sah. Sila semak semula alamat yang diberi oleh pentadbir.', 'error');
     return;
   }
   persistBootstrapConfig(nextWorkerUrl, nextClientId);
@@ -1720,12 +1724,12 @@ async function checkLoginWorkerStatus() {
   const statusEl = document.getElementById('loginWorkerStatus');
   if (!statusEl) return;
   if (!APP.workerUrl) {
-    statusEl.textContent = 'Masukkan Worker URL dahulu untuk semakan sambungan.';
-    statusEl.style.color = '#fca5a5';
+    statusEl.textContent = 'Tetapan sambungan belum lengkap.';
+    statusEl.style.color = '#b91c1c';
     return;
   }
-  statusEl.textContent = 'Memeriksa sambungan backend...';
-  statusEl.style.color = '#fef3c7';
+  statusEl.textContent = 'Memeriksa sambungan...';
+  statusEl.style.color = '#475569';
   try {
     const data = await callWorker({ action: 'ping' });
     if (!data.success || data.worker !== 'ok') throw new Error('Respons ping backend tidak lengkap.');
@@ -1734,14 +1738,14 @@ async function checkLoginWorkerStatus() {
       : data.backendMode === 'google-sheets'
         ? 'Google Sheets'
         : 'Tidak diketahui';
-    statusEl.textContent = 'Backend aktif: ' + backendLabel + ' | Worker OK';
-    statusEl.style.color = '#bbf7d0';
-    setLoginConfigStatus('Sambungan backend berjaya. ' + buildHostedOAuthHint(), 'success');
+    statusEl.textContent = 'Sambungan aktif: ' + backendLabel;
+    statusEl.style.color = '#15803d';
+    setLoginConfigStatus('Sambungan berjaya. Sila teruskan log masuk.', 'success');
     setLoginDebugInfo('', 'info');
   } catch (err) {
-    statusEl.textContent = 'Gagal sambung ke backend: ' + err.message;
-    statusEl.style.color = '#fca5a5';
-    setLoginConfigStatus('Worker tidak dapat dihubungi. Semak URL backend sebelum cuba log masuk.', 'error');
+    statusEl.textContent = 'Sambungan belum berjaya: ' + err.message;
+    statusEl.style.color = '#b91c1c';
+    setLoginConfigStatus('Sambungan belum berjaya. Sila semak tetapan atau minta bantuan pentadbir.', 'error');
   }
 }
 
@@ -1836,14 +1840,14 @@ function renderGSIButton() {
   if (!container) return;
   container.innerHTML = '';
   if (!APP.workerUrl) {
-    container.innerHTML = '<button class="btn btn-primary btn-full" onclick="focusLoginConfig()">⚙️ Tetapkan Worker URL Dahulu</button>';
+    container.innerHTML = '<button class="btn btn-primary btn-full" onclick="focusLoginConfig()">Semak Tetapan Sambungan</button>';
     updateLoginReadinessMessage();
     return;
   }
   if (_authInitializedClientId !== APP.googleClientId) initAuth();
   google.accounts.id.renderButton(container, {
-    type: 'standard', shape: 'rectangular', theme: 'outline',
-    size: 'large', text: 'signin_with', locale: 'ms'
+    type: 'standard', shape: 'pill', theme: 'filled_blue',
+    size: 'large', text: 'signin_with', locale: 'ms', width: 320
   });
 }
 
@@ -1862,7 +1866,7 @@ function showLoginPage() {
   if (_gsiReady) renderGSIButton();
   else {
     const btn = document.getElementById('googleSignInBtn');
-    if (btn) btn.innerHTML = '<button class="btn btn-primary btn-full" onclick="retryGSIRender()" style="margin-bottom:14px">🔄 Log Masuk dengan Google</button>';
+    if (btn) btn.innerHTML = '<button class="btn btn-primary btn-full" onclick="retryGSIRender()" style="margin-bottom:14px">Log Masuk dengan Google</button>';
   }
   updateLoginReadinessMessage();
 }
@@ -6844,11 +6848,44 @@ async function loadDataGuru() {
   } catch(e) { tbody.innerHTML = '<tr><td colspan="8" style="color:var(--red);text-align:center;padding:20px">' + escapeHtml(e.message) + '</td></tr>'; showToast(e.message, 'error'); }
 }
 
+async function loadDataMurid() {
+  const tbody = document.getElementById('dataMuridBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:20px">Memuat data murid...</td></tr>';
+  try {
+    const data = await callWorker({ action: 'readSheet', sheetKey: 'MURID' });
+    if (!data.success) throw new Error(data.error || 'Gagal memuatkan data murid.');
+    _muridData = (data.rows || []).filter(function(r) {
+      return r[0] && String(r[0]).toLowerCase() !== 'nama';
+    }).map(function(r) {
+      return normalizeMuridRow(r);
+    });
+    _muridCache = {};
+    window._kokumMuridSourceRows = _muridData.map(function(r) {
+      return normalizeMuridRow(r);
+    });
+    updateMuridStats();
+    filterDataMurid();
+    showToast('Data murid dimuatkan: ' + _muridData.length + ' rekod', 'success');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--red);text-align:center;padding:20px">' + escapeHtml(e.message) + '</td></tr>';
+    showToast(e.message, 'error');
+  }
+}
+
 function updateGuruStats() {
   setText('dg-total', _guruData.length);
   setText('dg-aktif', _guruData.filter(r => (r[5] || '') === 'Aktif').length);
   setText('dg-kelas', _guruData.filter(r => (r[2] || '').includes('Kelas')).length);
   setText('dg-admin', _guruData.filter(r => ['Guru Besar','Penolong Kanan HEM','Penolong Kanan Kokurikulum','Penolong Kanan Pentadbiran'].includes(r[2] || '')).length);
+}
+
+function updateMuridStats() {
+  setText('dm-total', _muridData.length);
+  setText('dm-lelaki', _muridData.filter(function(r) { return (r[2] || '') === 'Lelaki'; }).length);
+  setText('dm-perempuan', _muridData.filter(function(r) { return (r[2] || '') === 'Perempuan'; }).length);
+  var kelas = new Set(_muridData.map(function(r) { return String(r[1] || '').trim(); }).filter(Boolean));
+  setText('dm-kelas', kelas.size);
 }
 
 function filterDataGuru() {
@@ -6862,6 +6899,19 @@ function filterDataGuru() {
   renderGuruTable();
 }
 
+function filterDataMurid() {
+  const cari = ((document.getElementById('muridCari') || {}).value || '').toLowerCase();
+  const kelas = (document.getElementById('muridFilterKelasData') || {}).value || '';
+  const jantina = (document.getElementById('muridFilterJantina') || {}).value || '';
+  _muridFiltered = _muridData.filter(function(r) {
+    const matchCari = !cari || (r[0] || '').toLowerCase().includes(cari) || (r[5] || '').toLowerCase().includes(cari) || (r[4] || '').toLowerCase().includes(cari);
+    const matchKelas = !kelas || (r[1] || '') === kelas;
+    const matchJantina = !jantina || (r[2] || '') === jantina;
+    return matchCari && matchKelas && matchJantina;
+  });
+  renderMuridTable();
+}
+
 function renderGuruTable() {
   const tbody = document.getElementById('dataGuruBody');
   if (!tbody) return;
@@ -6869,7 +6919,7 @@ function renderGuruTable() {
   tbody.innerHTML = _guruFiltered.map(function(r, i) {
     const globalIdx = _guruData.indexOf(r);
     const st = (r[5] || 'Aktif') === 'Aktif' ? '<span class="badge badge-green">Aktif</span>' : (r[5] || '') === 'Bercuti' ? '<span class="badge badge-amber">Bercuti</span>' : '<span class="badge badge-gray">Tidak Aktif</span>';
-    return '<tr><td style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td><strong>' + escapeHtml(r[0] || 'â€”') + '</strong></td><td style="font-size:0.82rem;color:var(--muted)">' + escapeHtml(r[1] || 'â€”') + '</td><td><span class="badge badge-blue">' + escapeHtml(r[2] || 'â€”') + '</span></td><td>' + escapeHtml(r[3] || 'â€”') + '</td><td style="font-size:0.82rem">' + escapeHtml(r[4] || 'â€”') + '</td><td>' + st + '</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-secondary" onclick="editGuru(' + globalIdx + ')">âœï¸</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'guru\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">ðŸ—‘</button></td></tr>';
+    return '<tr><td style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td><strong>' + escapeHtml(r[0] || '-') + '</strong></td><td style="font-size:0.82rem;color:var(--muted)">' + escapeHtml(r[1] || '-') + '</td><td><span class="badge badge-blue">' + escapeHtml(r[2] || '-') + '</span></td><td>' + escapeHtml(r[3] || '-') + '</td><td style="font-size:0.82rem">' + escapeHtml(r[4] || '-') + '</td><td>' + st + '</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-secondary" onclick="editGuru(' + globalIdx + ')">Edit</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'guru\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">Padam</button></td></tr>';
   }).join('');
 }
 
@@ -6880,7 +6930,8 @@ function renderMuridTable() {
   tbody.innerHTML = _muridFiltered.map(function(r, i) {
     const globalIdx = _muridData.indexOf(r);
     const st = (r[7] || 'Aktif') === 'Aktif' ? '<span class="badge badge-green">Aktif</span>' : (r[7] || '') === 'Berpindah' ? '<span class="badge badge-amber">Berpindah</span>' : '<span class="badge badge-gray">Tidak Aktif</span>';
-    return '<tr><td style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td><strong>' + escapeHtml(r[0] || 'â€”') + '</strong></td><td><span class="badge badge-blue">' + escapeHtml(r[1] || 'â€”') + '</span></td><td>' + (r[2] === 'Lelaki' ? 'ðŸ‘¦' : 'ðŸ‘§') + ' ' + escapeHtml(r[2] || 'â€”') + '</td><td style="font-size:0.82rem">' + escapeHtml(formatTarikhDisplay(r[3])) + '</td><td style="font-size:0.82rem">' + escapeHtml(r[5] || 'â€”') + '<br><span style="color:var(--muted)">' + escapeHtml(r[4] || '') + '</span></td><td>' + st + '</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-secondary" onclick="editMurid(' + globalIdx + ')">âœï¸</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'murid\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">ðŸ—‘</button></td></tr>';
+    var jantinaLabel = r[2] === 'Lelaki' ? 'Lelaki' : r[2] === 'Perempuan' ? 'Perempuan' : '-';
+    return '<tr><td style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td><strong>' + escapeHtml(r[0] || '-') + '</strong></td><td><span class="badge badge-blue">' + escapeHtml(r[1] || '-') + '</span></td><td>' + escapeHtml(jantinaLabel) + '</td><td style="font-size:0.82rem">' + escapeHtml(formatTarikhDisplay(r[3])) + '</td><td style="font-size:0.82rem">' + escapeHtml(r[5] || '-') + '<br><span style="color:var(--muted)">' + escapeHtml(r[4] || '') + '</span></td><td>' + st + '</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-secondary" onclick="editMurid(' + globalIdx + ')">Edit</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'murid\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">Padam</button></td></tr>';
   }).join('');
 }
 
@@ -7069,6 +7120,10 @@ function refreshBirthdayViews() {
 
 function normalizeGuruRow(row) {
   return padSheetRow(row, GURU_SHEET_HEADERS.length);
+}
+
+function normalizeMuridRow(row) {
+  return padSheetRow(row, MURID_SHEET_HEADERS.length);
 }
 
 const GURU_SHEET_HEADERS = ['Nama','Emel','Jawatan','Kelas','Telefon','Status','WhatsApp','Tarikh Lahir','Catatan','Kokum Unit Beruniform','Kokum Kelab Dan Persatuan','Kokum Sukan Dan Permainan','Dikemaskini','Oleh'];
