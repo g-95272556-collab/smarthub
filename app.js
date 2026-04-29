@@ -1565,6 +1565,31 @@ function buildHostedOAuthHint() {
   return 'Jika popup Google memaparkan ralat origin tidak dibenarkan, tambah ' + getCurrentOriginLabel() + ' dalam Authorized JavaScript origins untuk Client ID ini.';
 }
 
+function exposeLoginBootstrapActions() {
+  if (typeof window === 'undefined') return;
+  window.focusLoginConfig = focusLoginConfig;
+  window.savePreLoginConfig = savePreLoginConfig;
+  window.checkLoginWorkerStatus = checkLoginWorkerStatus;
+  window.retryGSIRender = retryGSIRender;
+}
+
+function bindLoginBootstrapActions() {
+  const saveBtn = document.getElementById('loginSaveConfigBtn');
+  const checkBtn = document.getElementById('loginCheckBackendBtn');
+  if (saveBtn && !saveBtn.dataset.bound) {
+    saveBtn.dataset.bound = '1';
+    saveBtn.addEventListener('click', function() {
+      savePreLoginConfig(false);
+    });
+  }
+  if (checkBtn && !checkBtn.dataset.bound) {
+    checkBtn.dataset.bound = '1';
+    checkBtn.addEventListener('click', function() {
+      savePreLoginConfig(true);
+    });
+  }
+}
+
 function updateLoginReadinessMessage() {
   if (!APP.workerUrl) {
     setLoginConfigStatus('Masukkan dan simpan Worker URL dahulu. Tanpa backend aktif, sesi Google tidak boleh disahkan.', 'error');
@@ -1647,6 +1672,8 @@ async function checkLoginWorkerStatus() {
 
 document.addEventListener('DOMContentLoaded', () => {
   _domReady = true;
+  exposeLoginBootstrapActions();
+  bindLoginBootstrapActions();
   initPWA();
   syncBootstrapConfigInputs();
   updateLoginReadinessMessage();
@@ -1753,6 +1780,8 @@ function showLoginPage() {
   document.getElementById('loginPage').style.display = 'flex';
   const app = document.getElementById('appPage');
   if (app) { app.classList.remove('active'); app.style.display = 'none'; }
+  exposeLoginBootstrapActions();
+  bindLoginBootstrapActions();
   syncBootstrapConfigInputs();
   if (_gsiReady) renderGSIButton();
   else {

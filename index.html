@@ -1830,8 +1830,8 @@ table tbody tr:last-child td { border-bottom: none; }
         </div>
       </div>
       <div class="login-config-actions">
-        <button class="btn btn-secondary" onclick="savePreLoginConfig(false)">💾 Simpan Konfigurasi</button>
-        <button class="btn btn-primary" onclick="savePreLoginConfig(true)">🔍 Simpan & Semak Backend</button>
+        <button id="loginSaveConfigBtn" class="btn btn-secondary" type="button" onclick="savePreLoginConfig(false)">💾 Simpan Konfigurasi</button>
+        <button id="loginCheckBackendBtn" class="btn btn-primary" type="button" onclick="savePreLoginConfig(true)">🔍 Simpan & Semak Backend</button>
       </div>
       <div id="loginConfigStatus" class="login-config-status">Masukkan Worker URL dahulu jika ini kali pertama aplikasi dibuka pada browser atau domain ini.</div>
       <div id="loginWorkerStatus" class="login-worker-status">Status backend belum disemak.</div>
