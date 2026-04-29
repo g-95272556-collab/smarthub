@@ -1743,7 +1743,7 @@ async function handleGoogleCredential(response) {
     showToast('Selamat datang, ' + String((payload && payload.given_name) || verifiedUser.name || 'pengguna') + '!', 'success');
   } catch(err) {
     handleLogout(true);
-    showToast('Ralat log masuk: ' + err.message, 'error');
+    showToast('Ralat log masuk: ' + err.message + formatLoginDebugMessage(err), 'error');
   }
 }
 
@@ -1823,6 +1823,7 @@ async function verifyGoogleSessionWithBackend(user) {
     if (!response.ok || !data.success || !data.actor) {
       var err = new Error((data && data.error) || 'Pengesahan sesi Google gagal.');
       if (data && data.code) err.code = data.code;
+      if (data && data.debugAuth) err.debugAuth = data.debugAuth;
       throw err;
     }
     return {
@@ -1841,6 +1842,17 @@ async function verifyGoogleSessionWithBackend(user) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+function formatLoginDebugMessage(err) {
+  if (!err || !err.debugAuth) return '';
+  const debug = err.debugAuth;
+  const parts = [];
+  if (debug.receivedEmail) parts.push('email=' + debug.receivedEmail);
+  if (debug.receivedName) parts.push('nama=' + debug.receivedName);
+  if (err.code) parts.push('kod=' + err.code);
+  parts.push('adminLalai=' + (debug.adminMatchedByDefaultList ? 'ya' : 'tidak'));
+  return parts.length ? ' [' + parts.join(' | ') + ']' : '';
 }
 
 async function verifyStoredGoogleSession(user) {

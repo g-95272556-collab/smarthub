@@ -274,8 +274,14 @@ async function handleAPI(request, env, corsHeaders) {
     try {
       return jsonResp({ success: true, actor: await buildVerifiedSessionActor(body.requestUser, env, workerToken) }, 200, corsHeaders);
     } catch (err) {
+      const debugAuth = {
+        receivedEmail: String(body.requestUser && body.requestUser.email || "").trim().toLowerCase(),
+        receivedName: String(body.requestUser && body.requestUser.name || "").trim(),
+        receivedSub: String(body.requestUser && body.requestUser.sub || "").trim(),
+        adminMatchedByDefaultList: isSystemAdminActor(body.requestUser, null)
+      };
       return jsonResp(
-        { success: false, error: err.message || "Akses tidak dibenarkan", code: err.code || "AUTH_FORBIDDEN" },
+        { success: false, error: err.message || "Akses tidak dibenarkan", code: err.code || "AUTH_FORBIDDEN", debugAuth },
         err.status || 403,
         corsHeaders
       );
