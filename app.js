@@ -2624,6 +2624,56 @@ async function sendTelegramLogged(type, target, mesej) {
   }
 }
 
+function getGuruReminderIdentity(row) {
+  const guru = Array.isArray(row) ? row : [];
+  const phone = normalizePhoneKey(guru[4] || guru[6] || '');
+  const email = normalizeGuruKey(guru[1] || '');
+  const name = normalizeGuruKey(guru[0] || '');
+  return phone || email || name;
+}
+
+function getGuruReminderGuardKey(tarikh, row) {
+  const identity = getGuruReminderIdentity(row);
+  return identity ? 'ssh_notif_guru_personal_' + tarikh + '_' + identity : '';
+}
+
+function dedupeGuruReminderRows(rows) {
+  const seen = new Set();
+  return (rows || []).filter(function(row) {
+    const key = getGuruReminderIdentity(row);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function sendGuruAttendancePersonalReminderOnce(row, tarikh, resultBox) {
+  const guardKey = getGuruReminderGuardKey(tarikh, row);
+  if (!guardKey || localStorage.getItem(guardKey)) {
+    return { skipped: true };
+  }
+  const tel = String((row && (row[4] || row[6])) || '').trim();
+  if (!tel) return { skipped: true, missingTarget: true };
+  const mesejGuru = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_guru_personal', DEFAULT_ATTENDANCE_TEMPLATES.guruPersonal), {
+    NAMA: row[0],
+    TARIKH: tarikh,
+    SEKOLAH: getSchoolTemplateName()
+  });
+  localStorage.setItem(guardKey, new Date().toISOString());
+  try {
+    await callFonnte(tel, mesejGuru);
+    logNotif('Tidak Hadir Guru', tel, mesejGuru, 'Berjaya');
+    if (resultBox) resultBox.textContent += 'Berjaya: ' + row[0] + ' -> ' + tel + '\n';
+    await sleep(400);
+    return { sent: true };
+  } catch (e) {
+    localStorage.removeItem(guardKey);
+    logNotif('Tidak Hadir Guru', tel, mesejGuru, 'Gagal');
+    if (resultBox) resultBox.textContent += 'Gagal: ' + row[0] + ' - ' + e.message + '\n';
+    return { failed: true };
+  }
+}
+
 async function getTidakHadirMuridList(tarikh, kelas) {
   const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
   if (!data.success) throw new Error(data.error || 'Gagal');
@@ -2649,7 +2699,7 @@ async function getGuruBelumIsiList(tarikh) {
   const guruList = (guruData.rows || [])
     .filter(r => r[0] && String(r[0]).toLowerCase() !== 'nama')
     .filter(r => !['Pembantu Operasi'].includes(r[2] || ''));
-  return guruList.filter(r => !sudahIsi.has(String(r[0] || '').toLowerCase()));
+  return dedupeGuruReminderRows(guruList.filter(r => !sudahIsi.has(String(r[0] || '').toLowerCase())));
 }
 
 async function openTambahKehadiranGuru() {
@@ -2745,7 +2795,7 @@ async function semakDanNotifGuruBelumIsi() {
     const guruList = (guruData.rows || [])
       .filter(r => r[0] && String(r[0]).toLowerCase() !== 'nama')
       .filter(r => !['Pembantu Operasi'].includes(r[2] || ''));
-    const belumIsi = guruList.filter(r => !sudahIsi.has(String(r[0] || '').toLowerCase()));
+    const belumIsi = dedupeGuruReminderRows(guruList.filter(r => !sudahIsi.has(String(r[0] || '').toLowerCase())));
     if (!belumIsi.length) return;
     const namaList = belumIsi.map(r => '- ' + r[0]).join('\n');
     const mesej = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_guru_admin', DEFAULT_ATTENDANCE_TEMPLATES.guruAdmin), {
@@ -2757,15 +2807,7 @@ async function semakDanNotifGuruBelumIsi() {
     await hantar_notif_gb_pk(mesej);
     localStorage.setItem(guardKey, '1');
     for (const g of belumIsi) {
-      const tel = String(g[4] || '').trim();
-      if (tel) {
-        const mesejGuru = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_guru_personal', DEFAULT_ATTENDANCE_TEMPLATES.guruPersonal), {
-          NAMA: g[0],
-          TARIKH: tarikh,
-          SEKOLAH: getSchoolTemplateName()
-        });
-        try { await callFonnte(tel, mesejGuru); await sleep(400); } catch(e) {}
-      }
+      await sendGuruAttendancePersonalReminderOnce(g, tarikh);
     }
   } catch(e) {}
 }
@@ -4659,17 +4701,15 @@ async function hantarTelegramGuruTidakHadirManual() {
     resultBox.textContent = 'Menghantar ke Telegram dan WhatsApp guru...\n';
     const tgOk = await sendTelegramLogged('Tidak Hadir Guru', 'Telegram Admin', mesej);
     let sent = 0;
+    let skipped = 0;
+    let failed = 0;
     for (const g of belumIsi) {
-      const tel = String(g[4] || '').trim();
-      if (!tel) continue;
-      const mesejGuru = renderAttendanceTemplate(getAttendanceTemplate('ssh_attendance_tpl_guru_personal', DEFAULT_ATTENDANCE_TEMPLATES.guruPersonal), {
-        NAMA: g[0],
-        TARIKH: today,
-        SEKOLAH: getSchoolTemplateName()
-      });
-      try { await callFonnte(tel, mesejGuru); logNotif('Tidak Hadir Guru', tel, mesejGuru, 'Berjaya'); sent++; await sleep(400); } catch (e) {}
+      const result = await sendGuruAttendancePersonalReminderOnce(g, today, resultBox);
+      if (result.sent) sent++;
+      else if (result.failed) failed++;
+      else skipped++;
     }
-    resultBox.textContent += '\n─────\nBerjaya: ' + sent + '  |  Gagal: 0';
+    resultBox.textContent += '\n-----\nBerjaya: ' + sent + '  |  Dilangkau: ' + skipped + '  |  Gagal: ' + failed;
     showToast('Peringatan guru dihantar: ' + sent + '/' + belumIsi.length, sent > 0 || tgOk ? 'success' : 'error');
   } catch (e) {
     resultBox.textContent = 'Ralat: ' + e.message;
