@@ -4,6 +4,7 @@
 // ============================================================
 
 const DEFAULT_GOOGLE_CLIENT_ID = "553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com";
+const WORKER_BUILD_ID = "authfix-verify-session-20260429-2232";
 const DEFAULT_ADMIN_EMAILS = [
   "g-69272581@moe-dl.edu.my",
   "g-95272556@moe-dl.edu.my",
@@ -248,6 +249,7 @@ async function handleAPI(request, env, corsHeaders) {
       googleSheetsError: diagnostics.googleSheetsError,
       googleSheetsBindings: diagnostics.googleSheetsBindings,
       hasWorkerSecret: Boolean(env.WORKER_SECRET),
+      buildId: WORKER_BUILD_ID,
       timestamp: new Date().toISOString()
     }, 200, corsHeaders);
   }
@@ -274,11 +276,13 @@ async function handleAPI(request, env, corsHeaders) {
     try {
       return jsonResp({ success: true, actor: await buildVerifiedSessionActor(body.requestUser, env, workerToken) }, 200, corsHeaders);
     } catch (err) {
+      const configuredAdminEmails = await getConfiguredAdminEmails(env, workerToken);
       const debugAuth = {
         receivedEmail: String(body.requestUser && body.requestUser.email || "").trim().toLowerCase(),
         receivedName: String(body.requestUser && body.requestUser.name || "").trim(),
         receivedSub: String(body.requestUser && body.requestUser.sub || "").trim(),
-        adminMatchedByDefaultList: isSystemAdminActor(body.requestUser, null)
+        adminMatchedByDefaultList: isSystemAdminActor(body.requestUser, null),
+        adminMatchedByConfiguredList: isSystemAdminActor(body.requestUser, null, configuredAdminEmails)
       };
       return jsonResp(
         { success: false, error: err.message || "Akses tidak dibenarkan", code: err.code || "AUTH_FORBIDDEN", debugAuth },
@@ -1302,6 +1306,7 @@ function jsonResp(data, status = 200, corsHeaders = {}) {
 
 function needsAuthenticatedRequest(body) {
   if (!body) return false;
+  if (body.action === "verifySession") return true;
   if (body.action === "readSheet") return true;
   if (body.action === "getKokumAttendanceSummary") return true;
   if (body.action === "appendRow" && (body.sheetKey === "KEHADIRAN_MURID" || body.sheetKey === "KEHADIRAN_GURU")) return true;
@@ -1717,7 +1722,8 @@ async function verifyGoogleIdentity(auth, env) {
 async function buildVerifiedSessionActor(actor, env, workerToken) {
   const guruRows = await getGuruSheetRows(env, workerToken);
   const guru = findGuruByIdentity(guruRows, actor, true);
-  const isAdmin = isSystemAdminActor(actor, guru);
+  const adminEmails = await getConfiguredAdminEmails(env, workerToken);
+  const isAdmin = isSystemAdminActor(actor, guru, adminEmails);
   if (!guru && !isAdmin) {
     throw makeHttpError(403, "Akaun ini tiada dalam senarai guru atau pentadbir sistem.", "AUTH_FORBIDDEN");
   }
@@ -1744,11 +1750,12 @@ async function authorizeStudentAttendanceWrite(body, actor, env, workerToken) {
 
   const guruRows = await getGuruSheetRows(env, workerToken);
   const guru = findGuruByIdentity(guruRows, actor, true);
-  if (!guru && !isSystemAdminActor(actor, null)) {
+  const adminEmails = await getConfiguredAdminEmails(env, workerToken);
+  if (!guru && !isSystemAdminActor(actor, null, adminEmails)) {
     throw makeHttpError(403, "Akaun ini tiada dalam senarai guru.", "TEACHER_NOT_FOUND");
   }
 
-  if (!isSystemAdminActor(actor, guru) && !isTeacherAllowedAllClasses(guru) && !isCurrentDutyTeacher(guru)) {
+  if (!isSystemAdminActor(actor, guru, adminEmails) && !isTeacherAllowedAllClasses(guru) && !isCurrentDutyTeacher(guru)) {
     const allowedClasses = normalizeClassList(guru.kelas);
     if (!allowedClasses.length) {
       throw makeHttpError(403, "Tiada kelas ditetapkan untuk akaun ini.", "NO_ASSIGNED_CLASS");
@@ -1854,7 +1861,8 @@ async function authorizeTeacherKokumBatchWrite(body, actor, env, workerToken) {
 async function authorizeTeacherRead(body, actor, env, workerToken) {
   const guruRows = await getGuruSheetRows(env, workerToken);
   const guru = findGuruByIdentity(guruRows, actor, true);
-  if (!guru && !isSystemAdminActor(actor, null)) {
+  const adminEmails = await getConfiguredAdminEmails(env, workerToken);
+  if (!guru && !isSystemAdminActor(actor, null, adminEmails)) {
     throw makeHttpError(403, "Akaun ini tiada dalam senarai guru.", "TEACHER_NOT_FOUND");
   }
 }
@@ -1862,7 +1870,8 @@ async function authorizeTeacherRead(body, actor, env, workerToken) {
 async function authorizeAdminRequest(body, actor, env, workerToken) {
   const guruRows = await getGuruSheetRows(env, workerToken);
   const guru = findGuruByIdentity(guruRows, actor, true);
-  const isAdmin = isSystemAdminActor(actor, guru);
+  const adminEmails = await getConfiguredAdminEmails(env, workerToken);
+  const isAdmin = isSystemAdminActor(actor, guru, adminEmails);
   if (!isAdmin) {
     throw makeHttpError(403, "Akses pentadbir diperlukan untuk tindakan ini.", "ADMIN_REQUIRED");
   }
@@ -1883,8 +1892,10 @@ async function filterReadSheetRowsForActor(env, sheetKey, rows, actor, workerTok
 
   const guruRows = await getGuruSheetRows(env, workerToken);
   const guru = findGuruByIdentity(guruRows, actor, true);
+  const adminEmails = await getConfiguredAdminEmails(env, workerToken);
+  if (isSystemAdminActor(actor, guru, adminEmails)) return rows;
   if (!guru) return rows;
-  if (isSystemAdminActor(actor, guru) || isTeacherAllowedAllClasses(guru) || isCurrentDutyTeacher(guru)) {
+  if (isTeacherAllowedAllClasses(guru) || isCurrentDutyTeacher(guru)) {
     return rows;
   }
 
@@ -1913,8 +1924,42 @@ async function filterReadSheetRowsForActor(env, sheetKey, rows, actor, workerTok
 
   return rows;
 }
-function isSystemAdminActor(actor, guru) {
-  return DEFAULT_ADMIN_EMAILS.includes(String(actor && actor.email || "").trim().toLowerCase()) || Boolean(guru && isTeacherAllowedAllClasses(guru));
+async function getConfiguredAdminEmails(env, workerToken) {
+  const emails = new Set(DEFAULT_ADMIN_EMAILS.map(normalizeAdminEmail).filter(Boolean));
+  try {
+    const config = shouldUseCloudflareD1(env)
+      ? await d1GetConfig(env, workerToken)
+      : await googleGetConfig(env);
+    collectAdminEmailsFromConfig(config, emails);
+  } catch {
+    // Keep login usable with the embedded admin bootstrap list if CONFIG is unavailable.
+  }
+  return Array.from(emails);
+}
+
+function collectAdminEmailsFromConfig(config, emails) {
+  const primaryEmail = normalizeAdminEmail(config && config.ADMIN_EMAIL);
+  if (primaryEmail) emails.add(primaryEmail);
+
+  const rawJson = String((config && config.ADMIN_EMAILS_JSON) || "").trim();
+  if (!rawJson) return;
+  try {
+    const parsed = JSON.parse(rawJson);
+    if (Array.isArray(parsed)) {
+      parsed.map(normalizeAdminEmail).filter(Boolean).forEach((email) => emails.add(email));
+    }
+  } catch {
+    rawJson.split(",").map(normalizeAdminEmail).filter(Boolean).forEach((email) => emails.add(email));
+  }
+}
+
+function normalizeAdminEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isSystemAdminActor(actor, guru, adminEmails = DEFAULT_ADMIN_EMAILS) {
+  const email = normalizeAdminEmail(actor && actor.email);
+  return adminEmails.map(normalizeAdminEmail).includes(email) || Boolean(guru && isTeacherAllowedAllClasses(guru));
 }
 
 function isTeacherAllowedAllClasses(guru) {
