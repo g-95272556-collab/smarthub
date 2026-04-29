@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 const DEFAULT_GOOGLE_CLIENT_ID = '553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com';
+const DEFAULT_GOOGLE_AUTH_URL = 'https://smartschoolhub-google-oauth.g-95272556.workers.dev';
 
 function getRuntimeConfig() {
   if (typeof window === 'undefined') return {};
@@ -53,11 +54,41 @@ function resolveInitialGoogleClientId() {
   return normalizeGoogleClientId(runtime.googleClientId || runtime.google_client_id || DEFAULT_GOOGLE_CLIENT_ID);
 }
 
+function resolveInitialGoogleAuthUrl() {
+  const queryValue = normalizeConfigUrl(getQueryParamValue(['googleAuthUrl', 'authUrl']));
+  if (queryValue) return queryValue;
+  const storedValue = normalizeConfigUrl(localStorage.getItem('ssh_google_auth_url'));
+  if (storedValue) return storedValue;
+  const runtime = getRuntimeConfig();
+  return normalizeConfigUrl(runtime.googleAuthUrl || runtime.google_auth_url || DEFAULT_GOOGLE_AUTH_URL);
+}
+
+function getCurrentOriginBaseUrl() {
+  if (typeof window === 'undefined' || !window.location || !window.location.origin) return '';
+  const protocol = String(window.location.protocol || '').toLowerCase();
+  if (protocol !== 'http:' && protocol !== 'https:') return '';
+  return normalizeConfigUrl(window.location.origin);
+}
+
+function buildGoogleAuthBaseUrlCandidates() {
+  const candidates = [];
+  const pushCandidate = (value) => {
+    const normalized = normalizeConfigUrl(value);
+    if (!normalized || candidates.includes(normalized)) return;
+    candidates.push(normalized);
+  };
+  pushCandidate(getCurrentOriginBaseUrl());
+  pushCandidate(APP.googleAuthUrl);
+  pushCandidate(APP.workerUrl);
+  return candidates;
+}
+
 // ── STATE ──────────────────────────────────────────────────────
 const APP = {
   user: null,
   workerUrl: resolveInitialWorkerUrl(),
   googleClientId: resolveInitialGoogleClientId(),
+  googleAuthUrl: resolveInitialGoogleAuthUrl(),
   notifLog: JSON.parse(localStorage.getItem('ssh_notif_log') || '[]'),
   pwa: {
     installPrompt: null,
@@ -1845,41 +1876,83 @@ function isValidStoredSession(user) {
 
 async function verifyGoogleSessionWithBackend(user) {
   if (!user || !user.idToken) throw new Error('Sesi Google tidak lengkap.');
-  if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
-  const url = APP.workerUrl.replace(/\/+$/, '') + '/api';
+  const authCandidates = buildGoogleAuthBaseUrlCandidates();
+  if (!authCandidates.length && !APP.workerUrl) throw new Error('Worker URL belum disimpan.');
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        action: 'verifySession',
-        auth: {
-          idToken: user.idToken || '',
-          email: user.email || '',
-          name: user.name || '',
-          sub: user.sub || ''
+    let oauthActor = null;
+    let oauthError = null;
+    for (let i = 0; i < authCandidates.length; i++) {
+      const authUrl = authCandidates[i].replace(/\/+$/, '') + '/auth/google/verify';
+      try {
+        const oauthResponse = await fetch(authUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            credential: user.idToken || '',
+            idToken: user.idToken || '',
+            email: user.email || '',
+            name: user.name || '',
+            sub: user.sub || ''
+          })
+        });
+        const oauthData = await oauthResponse.json();
+        if (!oauthResponse.ok || !oauthData.success || !oauthData.actor) {
+          const currentError = new Error((oauthData && oauthData.error) || 'Pengesahan Google OAuth gagal.');
+          currentError.code = oauthData && oauthData.code ? oauthData.code : '';
+          oauthError = currentError;
+          continue;
         }
-      })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success || !data.actor) {
-      var err = new Error((data && data.error) || 'Pengesahan sesi Google gagal.');
-      if (data && data.code) err.code = data.code;
-      if (data && data.debugAuth) err.debugAuth = data.debugAuth;
-      throw err;
+        oauthActor = oauthData.actor;
+        break;
+      } catch (authErr) {
+        oauthError = authErr;
+      }
     }
+
+    let actor = oauthActor;
+    if (APP.workerUrl) {
+      const response = await fetch(APP.workerUrl.replace(/\/+$/, '') + '/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          action: 'verifySession',
+          auth: {
+            idToken: user.idToken || '',
+            email: user.email || '',
+            name: user.name || '',
+            sub: user.sub || ''
+          }
+        })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success || !data.actor) {
+        var err = new Error((data && data.error) || 'Pengesahan sesi Google gagal.');
+        if (data && data.code) err.code = data.code;
+        if (data && data.debugAuth) err.debugAuth = data.debugAuth;
+        throw err;
+      }
+      actor = data.actor;
+    } else if (!actor && oauthError) {
+      throw oauthError;
+    }
+
+    if (!actor) {
+      throw oauthError || new Error('Pengesahan sesi Google gagal.');
+    }
+
     return {
-      name: String(data.actor.name || user.name || user.email || '').trim(),
-      email: String(data.actor.email || user.email || '').trim().toLowerCase(),
-      picture: String(user.picture || '').trim(),
-      sub: String(data.actor.sub || user.sub || '').trim(),
+      name: String(actor.name || user.name || user.email || '').trim(),
+      email: String(actor.email || user.email || '').trim().toLowerCase(),
+      picture: String(actor.picture || user.picture || '').trim(),
+      sub: String(actor.sub || user.sub || '').trim(),
       idToken: user.idToken,
-      role: String(data.actor.role || '').trim(),
-      jawatan: String(data.actor.jawatan || '').trim(),
-      kelas: String(data.actor.kelas || '').trim()
+      role: String(actor.role || '').trim(),
+      jawatan: String(actor.jawatan || '').trim(),
+      kelas: String(actor.kelas || '').trim()
     };
   } catch (err) {
     if (err && err.name === 'AbortError') throw new Error('Pengesahan sesi Google mengambil masa terlalu lama.');
