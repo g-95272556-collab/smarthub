@@ -21,6 +21,11 @@
 # Local test scratch files
 /_live_kehadiran_test.html
 
+# OAuth handoff files copied into tracked deployment paths
+/deploy-oauth.ps1
+/google-oauth-core.mjs
+/google-oauth-netlify-function.mjs
+
 # OS/editor noise
 Thumbs.db
 .DS_Store
