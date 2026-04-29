@@ -1,4 +1,4 @@
-const CACHE_NAME = "ssh-pwa-v2";
+const CACHE_NAME = "ssh-pwa-v3-authfix";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -50,13 +50,17 @@ self.addEventListener("fetch", function(event) {
   const url = new URL(request.url);
   const isSameOrigin = url.origin === self.location.origin;
   const isGoogleFontAsset = /fonts\.(googleapis|gstatic)\.com$/i.test(url.hostname);
+  const isFreshAsset = isSameOrigin && (
+    request.mode === "navigate" ||
+    /\/(?:index\.html|app\.js|runtime-config\.js|service-worker\.js)$/.test(url.pathname)
+  );
 
-  if (request.mode === "navigate") {
+  if (isFreshAsset) {
     event.respondWith(
       fetch(request).then(function(response) {
         const copy = response.clone();
         caches.open(CACHE_NAME).then(function(cache) {
-          cache.put("./index.html", copy);
+          cache.put(request.mode === "navigate" ? "./index.html" : request, copy);
         });
         return response;
       }).catch(function() {

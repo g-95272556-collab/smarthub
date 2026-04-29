@@ -1,14 +1,11 @@
 import { handleGoogleOAuthRequest } from "../../workers/google-oauth-core.mjs";
 
 export default async (request) => {
-  return handleGoogleOAuthRequest(request, readNetlifyEnv(), {
+  const normalizedRequest = normalizeNetlifyFunctionRequest(request);
+  return handleGoogleOAuthRequest(normalizedRequest, readNetlifyEnv(), {
     platform: "netlify",
     basePath: "/auth/google"
   });
-};
-
-export const config = {
-  path: ["/auth/google", "/auth/google/*"]
 };
 
 function readNetlifyEnv() {
@@ -34,4 +31,14 @@ function readNetlifyEnv() {
     }
   }
   return env;
+}
+
+function normalizeNetlifyFunctionRequest(request) {
+  const url = new URL(request.url);
+  const functionBasePath = "/.netlify/functions/google-oauth";
+  if (!url.pathname.startsWith(functionBasePath)) return request;
+
+  const suffix = url.pathname.slice(functionBasePath.length);
+  url.pathname = "/auth/google" + (suffix || "");
+  return new Request(url.toString(), request);
 }

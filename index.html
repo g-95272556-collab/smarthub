@@ -1473,95 +1473,163 @@ table tbody tr:last-child td { border-bottom: none; }
 #loginPage {
   min-height: 100vh;
   display: none;
-  background: linear-gradient(160deg, #060f1d 0%, #0c1f3a 50%, #071326 100%);
+  background:
+    linear-gradient(180deg, rgba(248,253,255,0.80), rgba(243,250,247,0.94)),
+    url('assets/sk-kiandongo-logo.png') center 8vh / min(390px, 70vw) no-repeat,
+    linear-gradient(135deg, #eaf6ff 0%, #eefaf3 52%, #fff7d6 100%);
   align-items: center; justify-content: center;
-  position: relative; overflow: hidden;
+  position: relative; overflow: auto;
+  padding: 28px 16px;
 }
 #loginPage.active { display: flex; }
 #loginPage::before {
   content: '';
   position: absolute;
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(245,197,24,0.08) 0%, transparent 60%);
-  top: -200px; right: -200px;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.82) 44%, rgba(255,255,255,0.97)),
+    linear-gradient(90deg, rgba(26,79,160,0.08), rgba(16,185,129,0.08));
+  pointer-events: none;
 }
 #loginPage::after {
   content: '';
   position: absolute;
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(26,79,160,0.12) 0%, transparent 60%);
-  bottom: -100px; left: -100px;
+  left: 0; right: 0; bottom: 0;
+  height: 8px;
+  background: linear-gradient(90deg, #1a4fa0, #10b981, #f5c518);
 }
 
 .login-card {
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 28px;
-  padding: 48px 44px;
-  width: min(520px, calc(100vw - 40px));
+  background: rgba(255,255,255,0.96);
+  border: 1px solid rgba(26,79,160,0.10);
+  border-radius: 18px;
+  padding: 32px 34px 28px;
+  width: min(480px, calc(100vw - 32px));
   position: relative; z-index: 1;
   text-align: center;
+  box-shadow: 0 24px 65px rgba(8,21,43,0.13);
 }
 .login-logo {
-  width: 72px; height: 72px;
-  background: linear-gradient(135deg, var(--gold), var(--gold2));
-  border-radius: 22px;
-  display: grid; place-items: center;
-  margin: 0 auto 24px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700; font-size: 1.3rem;
-  color: var(--navy);
-  box-shadow: 0 12px 35px rgba(245,197,24,0.3);
+  width: 86px; height: 86px;
+  background: #fff url('assets/sk-kiandongo-logo.png') center / 76px 76px no-repeat;
+  border-radius: 50%;
+  display: block;
+  margin: 0 auto 16px;
+  color: transparent;
+  border: 1px solid rgba(26,79,160,0.12);
+  box-shadow: 0 10px 28px rgba(8,21,43,0.10);
 }
 .login-card h1 {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.5rem; font-weight: 700;
-  color: #fff; margin-bottom: 8px;
+  font-size: 1.75rem; font-weight: 700;
+  color: #102a43; margin-bottom: 8px;
 }
 .login-card p {
-  color: rgba(255,255,255,0.45);
-  font-size: 0.9rem; margin-bottom: 36px;
-  line-height: 1.7;
+  color: #52657a;
+  font-size: 0.95rem; margin-bottom: 16px;
+  line-height: 1.65;
 }
 .login-card .school-info {
-  background: rgba(245,197,24,0.06);
-  border: 1px solid rgba(245,197,24,0.15);
+  background: linear-gradient(135deg, #f8fbff, #f3fbf6);
+  border: 1px solid rgba(26,79,160,0.09);
   border-radius: 12px;
-  padding: 14px 16px;
-  color: rgba(255,255,255,0.6);
+  padding: 13px 16px;
+  color: #475569;
   font-size: 0.82rem;
-  margin-top: 24px;
+  margin-top: 16px;
   line-height: 1.8;
+}
+.login-welcome-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto 18px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: rgba(16,185,129,0.12);
+  color: #0f766e;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.login-help-text {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.login-action-panel {
+  margin: 18px auto 0;
+  padding: 18px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f6fbff, #f5fbf7);
+  border: 1px solid rgba(26,79,160,0.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.login-action-title {
+  margin-bottom: 12px;
+  color: #334155;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 /* Google Sign-In Button Override */
 #googleSignInBtn {
   width: 100% !important;
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
 }
 .g-sign-in-wrapper {
   display: flex;
   justify-content: center;
-  margin-bottom: 14px;
+  margin: 0;
+}
+.g-sign-in-wrapper > div,
+#googleSignInBtn > div,
+#googleSignInBtn iframe {
+  max-width: 100% !important;
 }
 .login-config-card {
-  margin-top: 18px;
-  padding: 18px;
-  border-radius: 18px;
-  background: rgba(15,23,42,0.34);
-  border: 1px solid rgba(148,163,184,0.22);
+  margin-top: 16px;
+  padding: 0;
+  border-radius: 14px;
+  background: #fbfdff;
+  border: 1px solid rgba(26,79,160,0.10);
   text-align: left;
+  overflow: hidden;
 }
-.login-config-card h3 {
-  margin: 0 0 8px;
-  font-size: 0.98rem;
-  color: #fff;
+.login-config-card summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 15px 16px;
+  color: #1e3a5f;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.login-config-card summary::-webkit-details-marker { display: none; }
+.login-config-card summary::after {
+  content: '+';
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(16,185,129,0.10);
+  color: #0f766e;
+  font-weight: 800;
+}
+.login-config-card[open] summary::after { content: '-'; }
+.login-config-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid rgba(26,79,160,0.08);
 }
 .login-config-card p {
-  margin: 0 0 14px;
+  margin: 14px 0;
   font-size: 0.82rem;
   line-height: 1.6;
-  color: rgba(255,255,255,0.68);
+  color: #64748b;
 }
 .login-config-grid {
   display: grid;
@@ -1570,19 +1638,20 @@ table tbody tr:last-child td { border-bottom: none; }
 .login-config-grid label {
   display: block;
   font-size: 0.78rem;
-  color: rgba(255,255,255,0.72);
+  color: #475569;
   margin-bottom: 6px;
+  font-weight: 700;
 }
 .login-config-grid input {
   width: 100%;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(148,163,184,0.28);
-  background: rgba(15,23,42,0.5);
-  color: #fff;
+  border: 1px solid rgba(26,79,160,0.16);
+  background: #f8fbff;
+  color: var(--text);
 }
 .login-config-grid input::placeholder {
-  color: rgba(255,255,255,0.35);
+  color: #94a3b8;
 }
 .login-config-actions {
   display: flex;
@@ -1593,7 +1662,7 @@ table tbody tr:last-child td { border-bottom: none; }
 .login-config-status {
   margin-top: 12px;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid rgba(96,165,250,0.25);
   font-size: 0.82rem;
   line-height: 1.6;
@@ -1601,7 +1670,7 @@ table tbody tr:last-child td { border-bottom: none; }
 .login-worker-status {
   margin-top: 10px;
   font-size: 0.8rem;
-  color: rgba(255,255,255,0.72);
+  color: #64748b;
 }
 .login-debug-box {
   margin-top: 12px;
@@ -1618,8 +1687,29 @@ table tbody tr:last-child td { border-bottom: none; }
 .login-origin {
   margin-top: 10px;
   font-size: 0.78rem;
-  color: rgba(255,255,255,0.55);
+  color: #64748b;
   word-break: break-word;
+}
+@media (max-width: 520px) {
+  #loginPage {
+    align-items: flex-start;
+    padding: 18px 12px 28px;
+    background-size: min(300px, 82vw), auto, auto;
+  }
+  .login-card {
+    padding: 24px 16px 20px;
+    border-radius: 16px;
+  }
+  .login-card h1 {
+    font-size: 1.45rem;
+  }
+  .login-config-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .login-action-panel {
+    padding: 14px;
+  }
 }
 
 /* ─────────────────────────────────────────── */
@@ -1821,40 +1911,46 @@ table tbody tr:last-child td { border-bottom: none; }
   <div class="login-card">
     <div class="login-logo">SK</div>
     <h1>Smart School Hub</h1>
-    <p>Platform pengurusan sekolah digital<br>SK Kiandongo — PPD Telupid-Tongod</p>
+    <p>Selamat datang warga SK Kiandongo.<br>Log masuk menggunakan akaun Google sekolah.</p>
+    <div class="login-welcome-note">Akses rasmi sekolah</div>
 
-    <!-- Real Google Sign-In Button -->
-    <div class="g-sign-in-wrapper">
-      <div id="googleSignInBtn"></div>
+    <div class="login-action-panel">
+      <div class="login-action-title">Masuk ke sistem sekolah</div>
+      <!-- Real Google Sign-In Button -->
+      <div class="g-sign-in-wrapper">
+        <div id="googleSignInBtn"></div>
+      </div>
+      <div class="login-help-text">Gunakan email Google yang telah didaftarkan oleh pihak sekolah.</div>
     </div>
 
-    <div class="login-config-card" id="loginBootstrapConfig">
-      <h3>Konfigurasi Login untuk Hosting</h3>
-      <p>Jika aplikasi dibuka dari Netlify atau domain baru, backend dan Google Client ID mesti sepadan dengan origin semasa sebelum log masuk boleh berjaya.</p>
-      <div class="login-config-grid">
-        <div>
-          <label for="loginWorkerUrl">Cloudflare Worker URL</label>
-          <input id="loginWorkerUrl" type="url" placeholder="https://xxx.workers.dev">
+    <details class="login-config-card" id="loginBootstrapConfig">
+      <summary>Tetapan sambungan</summary>
+      <div class="login-config-body">
+        <p>Bahagian ini biasanya tidak perlu diubah. Gunakan hanya jika pentadbir sekolah meminta semakan sambungan.</p>
+        <div class="login-config-grid">
+          <div>
+            <label for="loginWorkerUrl">Alamat sistem sekolah</label>
+            <input id="loginWorkerUrl" type="url" placeholder="https://xxx.workers.dev">
+          </div>
+          <div>
+            <label for="loginGoogleClientId">Kod Google sekolah</label>
+            <input id="loginGoogleClientId" type="text" placeholder="xxxxx.apps.googleusercontent.com">
+          </div>
         </div>
-        <div>
-          <label for="loginGoogleClientId">Google Client ID</label>
-          <input id="loginGoogleClientId" type="text" placeholder="xxxxx.apps.googleusercontent.com">
+        <div class="login-config-actions">
+          <button id="loginSaveConfigBtn" class="btn btn-secondary" type="button" onclick="savePreLoginConfig(false)">Simpan Tetapan</button>
+          <button id="loginCheckBackendBtn" class="btn btn-primary" type="button" onclick="savePreLoginConfig(true)">Semak Sambungan</button>
         </div>
+        <div id="loginConfigStatus" class="login-config-status">Sambungan sedia untuk digunakan.</div>
+        <div id="loginWorkerStatus" class="login-worker-status">Status sambungan belum disemak.</div>
+        <div id="loginDebugBox" class="login-debug-box" style="display:none"></div>
+        <div class="login-origin">Laman semasa: <strong id="loginOriginValue">-</strong></div>
       </div>
-      <div class="login-config-actions">
-        <button id="loginSaveConfigBtn" class="btn btn-secondary" type="button" onclick="savePreLoginConfig(false)">💾 Simpan Konfigurasi</button>
-        <button id="loginCheckBackendBtn" class="btn btn-primary" type="button" onclick="savePreLoginConfig(true)">🔍 Simpan & Semak Backend</button>
-      </div>
-      <div id="loginConfigStatus" class="login-config-status">Masukkan Worker URL dahulu jika ini kali pertama aplikasi dibuka pada browser atau domain ini.</div>
-      <div id="loginWorkerStatus" class="login-worker-status">Status backend belum disemak.</div>
-      <div id="loginDebugBox" class="login-debug-box" style="display:none"></div>
-      <div class="login-origin">Origin semasa: <strong id="loginOriginValue">-</strong></div>
-    </div>
+    </details>
 
     <div class="school-info">
-      🏫 SK Kiandongo, Tongod, Sabah<br>
-      🔒 Akses terhad kepada warga sekolah sahaja<br>
-      📧 Guna akaun Google yang didaftarkan
+      SK Kiandongo, Tongod, Sabah<br>
+      Akses terhad kepada warga sekolah sahaja
     </div>
   </div>
 </div>
