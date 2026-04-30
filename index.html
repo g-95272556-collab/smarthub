@@ -1981,6 +1981,7 @@ table tbody tr:last-child td { border-bottom: none; }
   color: var(--navy);
   max-height: 280px;
   overflow-y: auto;
+  word-break: break-all;
 }
 
 /* ─────────────────────────────────────────── */
@@ -1988,7 +1989,7 @@ table tbody tr:last-child td { border-bottom: none; }
 /* ─────────────────────────────────────────── */
 @media (max-width: 900px) {
   .app-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
   body.mobile-nav-open {
     overflow: hidden;
@@ -2148,10 +2149,20 @@ table tbody tr:last-child td { border-bottom: none; }
     width: 100%;
   }
   .d1-editor-table-wrap { max-height: 65vh; }
+  
+  /* Centralized Menu Fix */
+  #mod-konfigurasi .card div[style*="display:grid"] {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  }
 }
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .card-grid-4 { grid-template-columns: 1fr; }
   .card-grid-3 { grid-template-columns: 1fr; }
+  
+  /* Force 1 column for config menu on mobile */
+  #mod-konfigurasi .card div[style*="display:grid"] {
+    grid-template-columns: 1fr !important;
+  }
   .mobile-app-bar {
     top: calc(8px + var(--safe-top));
     margin-bottom: 14px;
@@ -2198,9 +2209,16 @@ table tbody tr:last-child td { border-bottom: none; }
     width: 100%;
   }
   .responsive-mobile-table tbody {
-    display: grid;
-    gap: 12px;
+    display: block;
   }
+  .pwa-banner-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .pwa-banner-actions .btn {
+    width: 100%;
+  }
+}
   .responsive-mobile-table tr {
     border: 1px solid rgba(15,23,42,0.08);
     border-radius: 16px;
@@ -3335,13 +3353,13 @@ _SK Kiandongo_</textarea>
             <h2>Menu Konfigurasi</h2>
             <span class="badge badge-blue">Pusat Tetapan</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-            <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})">Worker & Cloudflare D1</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})">Notifikasi Hari Lahir</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-attendance-notif-card').scrollIntoView({behavior:'smooth', block:'start'})">Notifikasi Kehadiran</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-group-card').scrollIntoView({behavior:'smooth', block:'start'})">Group Fonnte</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-kokum-card').scrollIntoView({behavior:'smooth', block:'start'})">Pelaporan Kokum</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-d1-card').scrollIntoView({behavior:'smooth', block:'start'})">Pengurusan D1</button>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+            <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="database" size="16"></i> Pangkalan Data (D1)</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-comm-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="message-square" size="16"></i> Komunikasi (WA & TG)</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="gift" size="16"></i> Notifikasi Modul</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-kokum-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="award" size="16"></i> Konfigurasi Kokum</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-admin-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="shield-check" size="16"></i> Pentadbiran & Akses</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-monitor-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="activity" size="16"></i> Pemantauan & Log</button>
           </div>
         </div>
 
@@ -3382,128 +3400,141 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
+          <div class="card" id="config-comm-card" style="border:1px solid rgba(26,79,160,0.14);background:linear-gradient(180deg,#ffffff 0%,#f0f4ff 100%)">
+            <div class="section-header">
+              <h2>Komunikasi (WhatsApp & Telegram)</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
+            </div>
+            <div style="display:grid;gap:14px">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Telegram Bot Token</label>
+                  <input id="hl-tg-bot" type="text" placeholder="bot token Telegram">
+                </div>
+                <div class="form-group">
+                  <label>Telegram Chat ID</label>
+                  <input id="hl-tg-chat" type="text" placeholder="-100xxxxxxx">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Telegram Topic ID</label>
+                  <input id="hl-tg-topic" type="text" placeholder="topic id (jika ada)">
+                </div>
+                <div class="form-group">
+                  <label>Fonnte API Token</label>
+                  <input id="hl-fonnte-token" type="text" placeholder="token Fonnte">
+                </div>
+              </div>
+              <hr style="border:0;border-top:1px dashed var(--border);margin:8px 0">
+              <div class="form-row">
+                <div class="form-group">
+                  <label style="display:flex;justify-content:space-between">ID Test Group (Fonnte) <span id="config-fonnte-test-status" class="badge badge-gray">-</span></label>
+                  <input id="config-fonnte-test-group" type="text" placeholder="contoh: 120363423994004887@g.us">
+                  <div id="config-fonnte-test-id" style="margin-top:4px;font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
+                </div>
+                <div class="form-group">
+                  <label style="display:flex;justify-content:space-between">ID Group Guru (Fonnte) <span id="config-fonnte-guru-status" class="badge badge-gray">-</span></label>
+                  <input id="config-fonnte-guru-group" type="text" placeholder="contoh: 60148608242-1434600192@g.us" oninput="syncGroupGuruFonnteInputsFrom('config-fonnte-guru-group')">
+                  <div id="config-fonnte-guru-id" style="margin-top:4px;font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+                <button class="btn btn-primary" onclick="simpanKonfigHariLahir()"><i data-lucide="save" size="16"></i> Simpan Semua Tetapan Komunikasi</button>
+                <button class="btn btn-secondary" onclick="loadConfig()"><i data-lucide="refresh-cw" size="16"></i> Muat Semula</button>
+              </div>
+            </div>
+          </div>
+
           <div class="card">
             <div class="section-header">
-              <h2>Konfigurasi Kunci</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <h2>Konfigurasi Kunci (Lanjutan)</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
             </div>
             <div style="display:grid;gap:14px">
               <div class="form-group">
                 <label>Nama Kunci</label>
-                <input id="configKey" type="text" placeholder="contoh: FONNTE_TOKEN">
+                <input id="configKey" type="text" placeholder="contoh: GLOBAL_NOTE">
               </div>
               <div class="form-group">
                 <label>Nilai</label>
                 <input id="configValue" type="text" placeholder="nilai kunci...">
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <button class="btn btn-primary" onclick="saveConfig()">💾 Simpan Config</button>
-                <button class="btn btn-secondary" onclick="loadConfig()">📥 Muat Config</button>
-                <button class="btn btn-secondary" onclick="setupSheets()">🏗 Setup Sheets</button>
+                <button class="btn btn-primary" onclick="saveConfig()">💾 Simpan Kunci</button>
+                <button class="btn btn-secondary" onclick="setupSheets()">🏗 Inisialisasi Sheets</button>
               </div>
             </div>
           </div>
 
           <div class="card" id="config-group-card">
             <div class="section-header">
-              <h2>Setup Group Fonnte</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <h2>Setup Group WhatsApp Kelas</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
             </div>
             <p style="font-size:0.9rem;color:var(--muted);margin-bottom:14px;line-height:1.7">
-              Semak status group guru dan group kelas. Jika group wujud, ID group akan dipaparkan terus di sini supaya setup lebih jelas dan mudah disemak.
+              ID Group Kelas digunakan untuk menghantar notifikasi kehadiran murid dan ucapan hari lahir kepada group kelas masing-masing.
             </p>
             <div style="display:grid;gap:16px">
-              <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
-                <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
-                  <div>
-                    <div style="font-weight:700">Test Group (Fonnte)</div>
-                    <div style="font-size:0.85rem;color:var(--muted)">Digunakan untuk menerima mesej ujian Fonnte bagi mengelak gangguan ke group sebenar.</div>
-                  </div>
-                  <span id="config-fonnte-test-status" class="badge badge-gray">Memuat...</span>
-                </div>
-                <div class="form-group" style="margin-top:12px">
-                  <label>ID Test Group</label>
-                  <input id="config-fonnte-test-group" type="text" placeholder="contoh: 120363423994004887@g.us">
-                </div>
-                <div id="config-fonnte-test-id" style="margin-top:8px;font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
-                <button class="btn btn-sm btn-primary" style="margin-top:12px" onclick="simpanTestGroupFonnte()">Simpan Test Group</button>
-              </div>
-
-              <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
-                <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
-                  <div>
-                    <div style="font-weight:700">Group Guru (Fonnte)</div>
-                    <div style="font-size:0.85rem;color:var(--muted)">Digunakan oleh notifikasi yang berkaitan dengan guru / hari lahir.</div>
-                  </div>
-                  <span id="config-fonnte-guru-status" class="badge badge-gray">Memuat...</span>
-                </div>
-                <div class="form-group" style="margin-top:12px">
-                  <label>ID Group Guru</label>
-              <input id="config-fonnte-guru-group" type="text" placeholder="contoh: 60148608242-1434600192@g.us" oninput="syncGroupGuruFonnteInputsFrom('config-fonnte-guru-group')">
-                </div>
-                <div id="config-fonnte-guru-id" style="margin-top:8px;font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
-                <button class="btn btn-sm btn-primary" style="margin-top:12px" onclick="simpanGroupGuruFonnte()">Simpan Group Guru</button>
-              </div>
               <div>
                 <div class="section-header" style="margin-bottom:10px">
-                  <h3 style="font-size:1rem;margin:0">Group Kelas</h3>
+                  <h3 style="font-size:1rem;margin:0">Senarai Group Kelas (Fonnte ID)</h3>
                   <span id="config-group-kelas-summary" class="badge badge-blue">Memuat...</span>
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
                   <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
                     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
                       <div style="font-weight:700">1 NILAM</div>
-                      <span id="grp-1-nilam-status" class="badge badge-gray">Memuat...</span>
+                      <span id="grp-1-nilam-status" class="badge badge-gray">-</span>
                     </div>
-                    <input id="grp-1-nilam" type="text" placeholder="ID group kelas 1 NILAM">
-                    <div id="grp-1-nilam-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                    <input id="grp-1-nilam" type="text" placeholder="ID group">
+                    <div id="grp-1-nilam-id" style="font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
                   </div>
                   <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
                     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
                       <div style="font-weight:700">2 INTAN</div>
-                      <span id="grp-2-intan-status" class="badge badge-gray">Memuat...</span>
+                      <span id="grp-2-intan-status" class="badge badge-gray">-</span>
                     </div>
-                    <input id="grp-2-intan" type="text" placeholder="ID group kelas 2 INTAN">
-                    <div id="grp-2-intan-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                    <input id="grp-2-intan" type="text" placeholder="ID group">
+                    <div id="grp-2-intan-id" style="font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
                   </div>
                   <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
                     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
                       <div style="font-weight:700">3 KRISTAL</div>
-                      <span id="grp-3-kristal-status" class="badge badge-gray">Memuat...</span>
+                      <span id="grp-3-kristal-status" class="badge badge-gray">-</span>
                     </div>
-                    <input id="grp-3-kristal" type="text" placeholder="ID group kelas 3 KRISTAL">
-                    <div id="grp-3-kristal-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                    <input id="grp-3-kristal" type="text" placeholder="ID group">
+                    <div id="grp-3-kristal-id" style="font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
                   </div>
                   <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
                     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
                       <div style="font-weight:700">4 MUTIARA</div>
-                      <span id="grp-4-mutiara-status" class="badge badge-gray">Memuat...</span>
+                      <span id="grp-4-mutiara-status" class="badge badge-gray">-</span>
                     </div>
-                    <input id="grp-4-mutiara" type="text" placeholder="ID group kelas 4 MUTIARA">
-                    <div id="grp-4-mutiara-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                    <input id="grp-4-mutiara" type="text" placeholder="ID group">
+                    <div id="grp-4-mutiara-id" style="font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
                   </div>
                   <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
                     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
                       <div style="font-weight:700">5 DELIMA</div>
-                      <span id="grp-5-delima-status" class="badge badge-gray">Memuat...</span>
+                      <span id="grp-5-delima-status" class="badge badge-gray">-</span>
                     </div>
-                    <input id="grp-5-delima" type="text" placeholder="ID group kelas 5 DELIMA">
-                    <div id="grp-5-delima-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                    <input id="grp-5-delima" type="text" placeholder="ID group">
+                    <div id="grp-5-delima-id" style="font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
                   </div>
                   <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;display:grid;gap:10px">
                     <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
                       <div style="font-weight:700">6 BAIDURI</div>
-                      <span id="grp-6-baiduri-status" class="badge badge-gray">Memuat...</span>
+                      <span id="grp-6-baiduri-status" class="badge badge-gray">-</span>
                     </div>
-                    <input id="grp-6-baiduri" type="text" placeholder="ID group kelas 6 BAIDURI">
-                    <div id="grp-6-baiduri-id" style="font-family:monospace;font-size:0.8rem;color:var(--muted);word-break:break-all">Tiada group disimpan.</div>
+                    <input id="grp-6-baiduri" type="text" placeholder="ID group">
+                    <div id="grp-6-baiduri-id" style="font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
                   </div>
                 </div>
               </div>
             </div>
             <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-primary" onclick="simpanGroupGuruFonnte()">Simpan Group Guru</button>
-              <button class="btn btn-secondary" onclick="simpanSemuaGroupKelas()">Simpan Group Kelas</button>
+              <button class="btn btn-primary" onclick="simpanSemuaGroupKelas()"><i data-lucide="save" size="16"></i> Simpan Group Kelas</button>
             </div>
           </div>
 
@@ -3546,34 +3577,15 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
-          <div class="form-row" style="margin-top:16px">
-            <div class="form-group">
-              <label>Telegram Bot Token</label>
-              <input id="hl-tg-bot" type="text" placeholder="bot token Telegram">
-            </div>
-            <div class="form-group">
-              <label>Telegram Chat ID</label>
-              <input id="hl-tg-chat" type="text" placeholder="-100xxxxxxx">
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:12px">
-            <div class="form-group">
-              <label>Telegram Topic ID</label>
-              <input id="hl-tg-topic" type="text" placeholder="topic id">
-            </div>
-            <div class="form-group">
-              <label>Fonnte Token</label>
-              <input id="hl-fonnte-token" type="text" placeholder="token Fonnte">
-            </div>
-          </div>
-
+          <p style="font-size:0.9rem;color:var(--muted);margin:14px 0;line-height:1.7">
+            Gunakan tetapan Komunikasi di atas untuk menguruskan token dan ID group. Di sini anda boleh menyemak status dan menguji penghantaran notifikasi.
+          </p>
+          
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-            <button class="btn btn-primary" onclick="simpanKonfigHariLahir()">Simpan Konfigurasi Hari Lahir</button>
-            <button class="btn btn-secondary" onclick="loadBirthdayNotificationConfig()">Muat Semula Konfigurasi</button>
+            <button class="btn btn-primary" onclick="loadConfig()"><i data-lucide="refresh-cw" size="16"></i> Muat Semula Status</button>
             <button class="btn btn-secondary" onclick="testBirthdayTelegramConfig()">Uji Telegram</button>
             <button class="btn btn-secondary" onclick="testBirthdayFonnteTarget('guru')">Uji Group Guru</button>
             <button class="btn btn-secondary" onclick="testAllBirthdayFonnteGroups()">Uji Semua Group Fonnte</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-group-card').scrollIntoView({behavior:'smooth', block:'start'})">Semak Semua Group Kelas</button>
           </div>
 
           <div id="birthdayNotifConfigCheckResult" class="result-box" style="display:none;margin-top:14px"></div>
@@ -3760,74 +3772,92 @@ _{SEKOLAH}_</textarea>
 
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
             <button class="btn btn-primary" onclick="saveAttendanceNotificationConfig()">Simpan Konfigurasi Kehadiran</button>
-            <button class="btn btn-secondary" onclick="loadAttendanceNotificationConfig()">Muat Semula</button>
+            <button class="btn btn-secondary" onclick="loadConfig()">Muat Semula</button>
             <button class="btn btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar')">Uji Notifikasi Murid</button>
             <button class="btn btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar'); setTimeout(function(){ var el=document.getElementById('notifGuruTarikh'); if(el) el.focus(); }, 150)">Uji Notifikasi Guru</button>
           </div>
           <div id="attendanceNotifConfigResult" class="result-box" style="display:none;margin-top:14px"></div>
         </div>
 
-        <div class="card" style="margin-top:20px">
-          <div class="section-header">
-            <h2>Akses & Notifikasi Admin</h2>
-            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
-          </div>
-          <div style="display:grid;gap:14px">
-            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-              <div style="flex:1;min-width:260px">
-                <label>Status Notifikasi Auto</label>
-                <div id="config-notif-auto-status" style="font-weight:700;color:var(--blue)">Memuat...</div>
+          <div class="card" id="config-admin-card" style="margin-top:20px">
+            <div class="section-header">
+              <h2>Pentadbiran & Akses</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
+            </div>
+            
+            <div style="background:rgba(26,79,160,0.03);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
+                <div>
+                  <div style="font-weight:700;font-size:1rem">Notifikasi Automatik</div>
+                  <div id="config-notif-auto-status" style="font-size:0.85rem;color:var(--muted);margin-top:4px">Memuat status...</div>
+                </div>
+                <button id="config-notif-auto-toggle" class="btn btn-secondary" onclick="toggleNotifAutoEnabled()">Togol Status</button>
               </div>
-              <button id="config-notif-auto-toggle" class="btn btn-secondary" onclick="toggleNotifAutoEnabled()">Togol Notifikasi</button>
-              <button class="btn btn-sm btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar')">Buka Notifikasi</button>
+            </div>
+
+            <div style="display:grid;gap:16px">
+              <div>
+                <h3 style="font-size:1rem;margin:0 0 10px">Pengurusan Admin</h3>
+                <p style="font-size:0.85rem;color:var(--muted);margin-bottom:14px">Admin lalai (PK Pentadbiran) mempunyai akses penuh. Tambah email admin tambahan di bawah.</p>
+                <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+                  <div style="flex:1;min-width:240px">
+                    <label>Tambah Email Admin</label>
+                    <input id="configAdminEmail" type="email" placeholder="email@moe-dl.edu.my" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem">
+                  </div>
+                  <button class="btn btn-primary" onclick="addAdminEmail()">Tambah Admin</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Email Admin</th><th>Peranan</th><th>Tindakan</th></tr></thead>
+                  <tbody id="adminListBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="card" style="margin-top:20px">
-          <div class="section-header">
-            <h2>Pengurusan Admin</h2>
-            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
-          </div>
-          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:14px">Admin lalai: PK Pentadbiran. Tambah admin lain untuk berkongsi akses konfigurasi dan notifikasi.</p>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
-            <div style="flex:1;min-width:240px">
-              <label>Tambah Email Admin</label>
-              <input id="configAdminEmail" type="email" placeholder="email pentadbiran" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem">
+          <div class="card" id="config-monitor-card" style="margin-top:20px;border:1px solid rgba(148,163,184,0.2)">
+            <div class="section-header">
+              <h2>Pemantauan & Log</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
             </div>
-            <button class="btn btn-primary" onclick="addAdminEmail()">Tambah Admin</button>
-          </div>
-          <div class="table-wrap" style="margin-top:16px">
-            <table>
-              <thead><tr><th>Email Admin</th><th>Status</th><th>Aksi</th></tr></thead>
-              <tbody id="adminListBody"></tbody>
-            </table>
-          </div>
-        </div>
+            
+            <div style="display:grid;gap:16px">
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                  <h3 style="font-size:1rem;margin:0">Log Operasi</h3>
+                  <button class="btn btn-sm btn-secondary" onclick="clearConfigStatus()">Kosongkan</button>
+                </div>
+                <div id="configStatus" class="result-box" style="height:150px;overflow-y:auto;font-family:monospace;font-size:0.8rem">Sedia.</div>
+              </div>
 
-        <div class="card" style="margin-top:20px">
-          <div class="section-header">
-            <h2>Status & Output</h2>
-            <div class="section-filter-row" style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
-              <button class="btn btn-sm btn-secondary" onclick="clearConfigStatus()">Kosongkan</button>
+              <div style="border-top:1px solid var(--border);padding-top:16px">
+                <h3 style="font-size:1rem;margin:0 0 10px">Semak Data Sheet</h3>
+                <div style="display:flex;gap:10px;margin-bottom:14px">
+                  <input id="sheetKey" type="text" placeholder="GURU / MURID / KEHADIRAN_GURU" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.88rem">
+                  <button class="btn btn-secondary" onclick="loadSheetData()">📊 Lihat</button>
+                </div>
+                <div id="sheetPreview" style="display:none">
+                  <div class="table-wrap">
+                    <table id="sheetTable">
+                      <thead id="sheetTableHead"></thead>
+                      <tbody id="sheetTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div id="configPreviewCard" style="border-top:1px solid var(--border);padding-top:16px;display:none">
+                <h3 style="font-size:1rem;margin:0 0 10px">Config Semasa (D1/Sheet)</h3>
+                <div class="table-wrap">
+                  <table id="configTable">
+                    <thead><tr><th>Kunci</th><th>Nilai</th></tr></thead>
+                    <tbody id="configTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
-          <div id="configStatus" class="result-box">Status akan dipaparkan di sini.</div>
-        </div>
-
-        <div class="card" id="configPreviewCard" style="margin-top:20px;display:none">
-          <div class="section-header">
-            <h2>Config Semasa (dari Google Sheet)</h2>
-            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
-          </div>
-          <div class="table-wrap">
-            <table id="configTable">
-              <thead><tr><th>Kunci</th><th>Nilai</th></tr></thead>
-              <tbody id="configTableBody"></tbody>
-            </table>
-          </div>
-        </div>
 
         <div class="card" id="config-kokum-card" style="margin-top:20px;border:1px solid rgba(16,185,129,.16);background:linear-gradient(180deg,#ffffff 0%,#f7fffb 100%)">
           <div class="section-header" style="align-items:flex-start;gap:12px">
@@ -3897,25 +3927,6 @@ _{SEKOLAH}_</textarea>
           </div>
         </div>
 
-        <div class="card" style="margin-top:20px">
-          <div class="section-header">
-            <h2>Paparkan Sheet Data</h2>
-            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
-          </div>
-          <div style="display:flex;gap:10px;margin-bottom:14px">
-            <input id="sheetKey" type="text" placeholder="Contoh: GURU / MURID / KEHADIRAN_GURU / KEHADIRAN_MURID" style="flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.88rem">
-            <button class="btn btn-secondary" onclick="loadSheetData()">📊 Paparkan</button>
-          </div>
-          <div id="sheetPreview" style="display:none">
-            <div id="sheetPreviewTitle" style="font-weight:700;margin-bottom:10px;color:var(--blue)">Pratonton Sheet</div>
-            <div class="table-wrap">
-              <table id="sheetTable">
-                <thead id="sheetTableHead"></thead>
-                <tbody id="sheetTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
         <div class="card" id="config-d1-card" style="margin-top:20px;border:1px solid rgba(37,99,235,.14);background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);box-shadow:0 18px 40px rgba(15,23,42,.08)">
           <div class="section-header" style="align-items:flex-start;gap:14px;margin-bottom:8px">
