@@ -50,13 +50,31 @@
 [[headers]]
   for = "/manifest.webmanifest"
   [headers.values]
-    Content-Type = "application/manifest+json"
+    Content-Type = "application/manifest+json; charset=utf-8"
     Cache-Control = "public, max-age=604800"
 
 [[headers]]
   for = "/service-worker.js"
   [headers.values]
-    Content-Type = "application/javascript"
+    Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Content-Type = "text/css; charset=utf-8"
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=3600"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=3600"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Content-Type = "text/html; charset=utf-8"
     Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
