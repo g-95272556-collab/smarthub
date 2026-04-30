@@ -1,4 +1,4 @@
-const CACHE_NAME = "ssh-pwa-v3-authfix";
+const CACHE_NAME = "ssh-pwa-v4-mobilefix";
 const APP_SHELL = [
   "./",
   "./index.html",
