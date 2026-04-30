@@ -794,16 +794,6 @@ function populateBirthdayNotifConfigInputs(config) {
   renderBirthdayNotifConfigSummary(config);
 }
 
-async function loadBirthdayNotificationConfig() {
-  var config = {};
-  try {
-    if (APP.workerUrl) {
-      var data = await callWorker({ action: 'getConfig' });
-      if (data && data.success) config = data.config || {};
-    }
-  } catch (e) {}
-  populateBirthdayNotifConfigInputs(config);
-}
 
 async function simpanKonfigHariLahir() {
   var telegramBot = getBirthdayNotifInputValue('hl-tg-bot');
@@ -897,26 +887,6 @@ function populateAttendanceNotificationConfig(config) {
   updateAttendanceNotificationStatusUI();
 }
 
-async function loadAttendanceNotificationConfig() {
-  try {
-    const data = await callWorker({ action: 'getConfig' });
-    if (!data.success) throw new Error(data.error || 'Gagal memuat konfigurasi notifikasi kehadiran.');
-    populateAttendanceNotificationConfig(data.config || {});
-    const result = document.getElementById('attendanceNotifConfigResult');
-    if (result) {
-      result.style.display = 'block';
-      result.textContent = 'Konfigurasi notifikasi kehadiran berjaya dimuat semula.';
-    }
-    showToast('Konfigurasi notifikasi kehadiran dimuatkan.', 'success');
-  } catch (e) {
-    const result = document.getElementById('attendanceNotifConfigResult');
-    if (result) {
-      result.style.display = 'block';
-      result.textContent = 'Gagal memuat konfigurasi: ' + e.message;
-    }
-    showToast(e.message, 'error');
-  }
-}
 
 async function saveAttendanceNotificationConfig() {
   const payload = {};
@@ -1202,36 +1172,7 @@ function loadGroupKelasUI() {
   renderGroupFonnteSetupUI();
 }
 
-async function simpanTestGroupFonnte() {
-  var input = document.getElementById('config-fonnte-test-group');
-  if (input) {
-    hlConfig.fonnteTestGroup = input.value.trim();
-    localStorage.setItem('ssh_hl_config', JSON.stringify(hlConfig));
-  }
-  renderGroupFonnteSetupUI();
-  try {
-    if (APP.workerUrl) await simpanKonfigHariLahir();
-    else showToast('Test Group disimpan pada peranti ini.', 'success');
-  } catch (e) {
-    showToast('Test Group disimpan secara tempatan sahaja.', 'info');
-  }
-}
 
-async function simpanGroupGuruFonnte() {
-  var input = document.getElementById('config-fonnte-guru-group');
-  if (input) {
-    hlConfig.fonnteGroup = input.value.trim();
-    localStorage.setItem('ssh_hl_config', JSON.stringify(hlConfig));
-  }
-  syncGroupGuruFonnteInputs(hlConfig.fonnteGroup || '');
-  renderGroupFonnteSetupUI();
-  try {
-    if (APP.workerUrl) await simpanKonfigHariLahir();
-    else showToast('Group guru disimpan pada peranti ini.', 'success');
-  } catch (e) {
-    showToast('Group guru disimpan secara tempatan sahaja.', 'info');
-  }
-}
 
 // ── Dashboard Functions ───────────────────
 async function muatCuaca() {
