@@ -11,6 +11,8 @@
     "apps:open": "clasp open"
   },
   "devDependencies": {
-    "@google/clasp": "^3.3.0"
+    "@google/clasp": "^3.3.0",
+    "lucide": "^1.14.0",
+    "terser": "^5.46.2"
   }
 }
