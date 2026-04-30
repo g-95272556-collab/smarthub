@@ -163,16 +163,16 @@ html, body {
   .desktop-nav-toggle {
     display: flex;
     align-items: center; justify-content: center;
-    width: 28px; height: 28px;
+    width: 40px; height: 40px;
     border-radius: 50%;
     background: #fff;
     color: var(--navy);
     border: 1px solid var(--border);
     cursor: pointer;
     position: absolute;
-    right: -14px; top: 38px;
+    right: -20px; top: 38px;
     z-index: 60;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     transition: transform 0.3s;
   }
   .desktop-nav-toggle:hover {
@@ -357,7 +357,7 @@ html, body {
   text-overflow: ellipsis;
 }
 .mobile-nav-toggle {
-  width: 44px; height: 44px;
+  width: 48px; height: 48px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: #fff;
