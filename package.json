@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "description": "Local tooling for SmartSchoolHub Worker and Apps Script deployment.",
   "scripts": {
+    "build:web": "node scripts/build-icons.js && terser app.js -o app.min.js -c -m",
+    "build:android": "npm run build:web && npx cap sync android",
     "apps:sync": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-apps-script.ps1",
     "apps:push": "npm run apps:sync && clasp push",
     "apps:deploy": "npm run apps:sync && clasp deploy",
