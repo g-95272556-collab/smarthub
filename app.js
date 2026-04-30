@@ -1931,10 +1931,17 @@ function renderGSIButton() {
     return;
   }
   if (_gsiButtonRenderedClientId === APP.googleClientId && container.childElementCount) return;
+
+  // Kira lebar responsif: lalai 320px, tetapi kecilkan pada skrin kecil (< 420px)
+  let targetWidth = 320;
+  if (window.innerWidth < 420) {
+    targetWidth = Math.max(200, Math.min(320, window.innerWidth - 80));
+  }
+
   container.innerHTML = '';
   google.accounts.id.renderButton(container, {
     type: 'standard', shape: 'pill', theme: 'filled_blue',
-    size: 'large', text: 'signin_with', locale: 'ms', width: 320
+    size: 'large', text: 'signin_with', locale: 'ms', width: targetWidth
   });
   _gsiButtonRenderedClientId = APP.googleClientId;
 }
