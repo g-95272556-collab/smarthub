@@ -7073,7 +7073,7 @@ function updateGuruStats() {
   setText('dg-total', _guruData.length);
   setText('dg-aktif', _guruData.filter(r => (r[5] || '') === 'Aktif').length);
   setText('dg-kelas', _guruData.filter(r => (r[2] || '').includes('Kelas')).length);
-  setText('dg-admin', _guruData.filter(r => ['Guru Besar','Penolong Kanan HEM','Penolong Kanan Kokurikulum','Penolong Kanan Pentadbiran'].includes(r[2] || '')).length);
+  setText('dg-admin', _guruData.filter(r => ['Guru Besar','Penolong Kanan Pentadbiran','Penolong Kanan HEM','Penolong Kanan Kokum'].includes(r[2] || '')).length);
 }
 
 function updateMuridStats() {
@@ -7460,7 +7460,7 @@ function buildGuruRowPayload(values, existingRow) {
   return [
     values.nama || '',
     values.emel || '',
-    values.jawatan || 'Guru Kelas',
+    values.jawatan || 'Guru Akademik Biasa',
     values.kelas || '',
     values.telefon || '',
     values.status || 'Aktif',
@@ -7479,7 +7479,7 @@ function openModalGuru() {
   document.getElementById('modalGuruTitle').textContent = 'Tambah Guru';
   document.getElementById('guruEditIdx').value = '';
   ['g-nama','g-emel','g-telefon','g-wa','g-catatan'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  setValue('g-jawatan', 'Guru Kelas');
+  setValue('g-jawatan', 'Guru Akademik Biasa');
   setValue('g-kelas', '');
   setValue('g-status', 'Aktif');
   openModal('modalGuru');
@@ -7489,7 +7489,7 @@ function editGuru(idx) {
   const r = _guruData[idx]; if (!r) return;
   document.getElementById('modalGuruTitle').textContent = 'Edit Guru';
   document.getElementById('guruEditIdx').value = idx;
-  setValue('g-nama', r[0]); setValue('g-emel', r[1]); setValue('g-jawatan', r[2] || 'Guru Kelas');
+  setValue('g-nama', r[0]); setValue('g-emel', r[1]); setValue('g-jawatan', r[2] || 'Guru Akademik Biasa');
   setValue('g-kelas', r[3]); setValue('g-telefon', r[4]); setValue('g-wa', r[6]);
   setValue('g-status', r[5] || 'Aktif'); setValue('g-catatan', r[8]);
   openModal('modalGuru');
