@@ -11,8 +11,14 @@
     "apps:open": "clasp open"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@google/clasp": "^3.3.0",
     "lucide": "^1.14.0",
     "terser": "^5.46.2"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1"
   }
 }

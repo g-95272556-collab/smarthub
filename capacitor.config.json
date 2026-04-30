@@ -1,0 +1,12 @@
+{
+  "appId": "com.sshub.premium",
+  "appName": "SmartSchoolHub",
+  "webDir": "www",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 3000,
+      "backgroundColor": "#08152B",
+      "androidScaleType": "CENTER_CROP"
+    }
+  }
+}

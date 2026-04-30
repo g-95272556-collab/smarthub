@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SmartSchoolHub</string>
+    <string name="title_activity_main">SmartSchoolHub</string>
+    <string name="package_name">com.sshub.premium</string>
+    <string name="custom_url_scheme">com.sshub.premium</string>
+</resources>
