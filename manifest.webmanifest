@@ -1,18 +1,16 @@
 {
   "name": "Smart School Hub SK Kiandongo",
-  "id": "/",
-  "short_name": "SmartSchoolHub",
-  "description": "Platform pengurusan sekolah untuk kehadiran, laporan, notifikasi, dan operasi harian SK Kiandongo.",
+  "short_name": "SmartHub",
+  "id": "/index.html",
+  "description": "Platform pengurusan sekolah pintar SK Kiandongo.",
   "lang": "ms",
   "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
-  "display_override": ["window-controls-overlay", "standalone"],
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#F0F4FB",
   "theme_color": "#08152B",
-  "categories": ["education", "productivity", "utilities"],
   "icons": [
     {
       "src": "assets/icon-192.png",
@@ -38,5 +36,6 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": ["education", "productivity"]
 }
