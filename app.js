@@ -1755,6 +1755,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindLoginBootstrapActions();
   initPWA();
   syncBootstrapConfigInputs();
+  showLoginPage();
   updateLoginReadinessMessage();
   requestAnimationFrame(() => {
     setTimeout(() => {

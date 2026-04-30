@@ -4655,7 +4655,7 @@ window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
 </script>
 <script src="runtime-config.js" onerror="console.warn('runtime-config.js tidak dijumpai; menggunakan konfigurasi lalai terbenam.')"></script>
 <script src="app.js" defer></script>
-<script src="https://accounts.google.com/gsi/client" async defer onload="typeof onGSIReady === 'function' && onGSIReady()"></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="typeof onGSIReady === 'function' && onGSIReady()" onerror="typeof showLoginPage === 'function' && showLoginPage()"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
