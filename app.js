@@ -1203,8 +1203,8 @@ async function muatCuaca() {
     setText('dash-cuaca-rasa', Math.round(c.apparent_temperature));
     var ic = $id('dash-cuaca-icon'); 
     if(ic) {
-      ic.innerHTML = '<i data-lucide="' + iconName + '" size="44"></i>';
-      if(window.lucide) lucide.createIcons({attrs:{'stroke-width': 2}});
+      ic.innerHTML = '<svg class="lucide-icon" width="44" height="44"><use href="#lucide-' + iconName + '"></use></svg>';
+      
     }
   } catch(e) { setText('dash-cuaca-desc','Gagal'); }
 }
@@ -1243,7 +1243,7 @@ async function muatWaktuSolat() {
     var html = senarai.map(function(s) {
       var p = s.masa.split(':'), wm = p.length>=2 ? parseInt(p[0])*60+parseInt(p[1]) : 9999;
       var st = isNext ? 'font-weight:700;color:#FFD700' : 'opacity:0.88';
-      var marker = isNext ? '<i data-lucide="play" size="12" style="fill:currentColor;display:inline-block;margin-right:4px"></i> ' : '';
+      var marker = isNext ? '<svg class="lucide-icon" width="12" height="12" style="fill:currentColor;display:inline-block;margin-right:4px"><use href="#lucide-play"></use></svg> ' : '';
       return '<div style="display:flex;justify-content:space-between;'+st+';padding:3px 0"><span>'+marker+s.nama+'</span><span>'+s.masa+'</span></div>';
     }).join('');
     var le = document.getElementById('dash-solat-list'); if(le) le.innerHTML = html;
@@ -1255,7 +1255,7 @@ async function muatWaktuSolat() {
     var h2 = fb.map(function(s){ 
       var p=s.m.split(':'),wm=parseInt(p[0])*60+parseInt(p[1]),isN=!nxt&&wm>nm2; if(isN)nxt=s; 
       var st=isN?'font-weight:700;color:#FFD700':'opacity:0.88'; 
-      var marker = isN ? '<i data-lucide="play" size="12" style="fill:currentColor;display:inline-block;margin-right:4px"></i> ' : '';
+      var marker = isN ? '<svg class="lucide-icon" width="12" height="12" style="fill:currentColor;display:inline-block;margin-right:4px"><use href="#lucide-play"></use></svg> ' : '';
       return '<div style="display:flex;justify-content:space-between;'+st+';padding:3px 0"><span>'+marker+s.n+'</span><span>'+s.m+'</span></div>'; 
     }).join('');
     var le = document.getElementById('dash-solat-list'); if(le) le.innerHTML = h2 + '<div style="font-size:0.65rem;opacity:0.5;margin-top:4px">Anggaran (offline)</div>';
@@ -1402,7 +1402,7 @@ function renderBirthdayDashboard() {
     el.innerHTML = todayList.map(function(item) {
       return '<div style="padding:14px;border-radius:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);">' +
              '<strong>' + item.nama + '</strong> • ' + (item.peranan || '-') + ' • ' + (item.kelas || '-') +
-             '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;color:var(--green);font-weight:700"><i data-lucide="party-popper" size="16"></i> Hari lahir hari ini!</div>' +
+             '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;color:var(--green);font-weight:700"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-party-popper"></use></svg> Hari lahir hari ini!</div>' +
              '</div>';
     }).join('');
     return;

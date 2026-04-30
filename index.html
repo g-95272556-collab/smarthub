@@ -13,16 +13,337 @@
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icon-192.png">
 <title>Smart School Hub v2.0 — SK Kiandongo</title>
-<meta name="description" content="SmartSchoolHub v2.0 - Sistem pengurusan sekolah pintar SK Kiandongo untuk guru dan murid.">
+<meta name="description" content="SmartSchoolHub v2.0 — Sistem pengurusan sekolah pintar SK Kiandongo. Log masuk untuk mengurus kehadiran, jadual dan laporan guru serta murid.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="style.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js" defer></script>
 <link rel="stylesheet" href="style.min.css">
 
 
 </head>
 <body>
+
+<!-- SVG Sprite for Lucide Icons -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <defs>
+    <symbol id="lucide-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path>
+    </symbol>
+    <symbol id="lucide-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path>
+      <path d="M12 9v4"></path>
+      <path d="M12 17h.01"></path>
+    </symbol>
+    <symbol id="lucide-award" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path>
+      <circle cx="12" cy="8" r="6"></circle>
+    </symbol>
+    <symbol id="lucide-bar-chart-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
+      <path d="M18 17V9"></path>
+      <path d="M13 17V5"></path>
+      <path d="M8 17v-3"></path>
+    </symbol>
+    <symbol id="lucide-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.268 21a2 2 0 0 0 3.464 0"></path>
+      <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path>
+    </symbol>
+    <symbol id="lucide-cake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"></path>
+      <path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"></path>
+      <path d="M2 21h20"></path>
+      <path d="M7 8v3"></path>
+      <path d="M12 8v3"></path>
+      <path d="M17 8v3"></path>
+      <path d="M7 4h.01"></path>
+      <path d="M12 4h.01"></path>
+      <path d="M17 4h.01"></path>
+    </symbol>
+    <symbol id="lucide-calendar-days" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 2v4"></path>
+      <path d="M16 2v4"></path>
+      <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+      <path d="M3 10h18"></path>
+      <path d="M8 14h.01"></path>
+      <path d="M12 14h.01"></path>
+      <path d="M16 14h.01"></path>
+      <path d="M8 18h.01"></path>
+      <path d="M12 18h.01"></path>
+      <path d="M16 18h.01"></path>
+    </symbol>
+    <symbol id="lucide-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path>
+      <circle cx="7" cy="17" r="2"></circle>
+      <path d="M9 17h6"></path>
+      <circle cx="17" cy="17" r="2"></circle>
+    </symbol>
+    <symbol id="lucide-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21.801 10A10 10 0 1 1 17 3.335"></path>
+      <path d="m9 11 3 3L22 4"></path>
+    </symbol>
+    <symbol id="lucide-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m15 18-6-6 6-6"></path>
+    </symbol>
+    <symbol id="lucide-clipboard-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+      <path d="m9 14 2 2 4-4"></path>
+    </symbol>
+    <symbol id="lucide-clipboard-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+      <path d="M12 11h4"></path>
+      <path d="M12 16h4"></path>
+      <path d="M8 11h.01"></path>
+      <path d="M8 16h.01"></path>
+    </symbol>
+    <symbol id="lucide-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <path d="M12 6v6l4 2"></path>
+    </symbol>
+    <symbol id="lucide-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+    </symbol>
+    <symbol id="lucide-cloud-drizzle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+      <path d="M8 19v1"></path>
+      <path d="M8 14v1"></path>
+      <path d="M16 19v1"></path>
+      <path d="M16 14v1"></path>
+      <path d="M12 21v1"></path>
+      <path d="M12 16v1"></path>
+    </symbol>
+    <symbol id="lucide-cloud-fog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+      <path d="M16 17H7"></path>
+      <path d="M17 21H9"></path>
+    </symbol>
+    <symbol id="lucide-cloud-lightning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"></path>
+      <path d="m13 12-3 5h4l-3 5"></path>
+    </symbol>
+    <symbol id="lucide-cloud-rain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+      <path d="M16 14v6"></path>
+      <path d="M8 14v6"></path>
+      <path d="M12 16v6"></path>
+    </symbol>
+    <symbol id="lucide-cloud-rain-wind" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+      <path d="m9.2 22 3-7"></path>
+      <path d="m9 13-3 7"></path>
+      <path d="m17 13-3 7"></path>
+    </symbol>
+    <symbol id="lucide-cloud-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2v2"></path>
+      <path d="m4.93 4.93 1.41 1.41"></path>
+      <path d="M20 12h2"></path>
+      <path d="m19.07 4.93-1.41 1.41"></path>
+      <path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"></path>
+      <path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"></path>
+    </symbol>
+    <symbol id="lucide-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z"></path>
+    </symbol>
+    <symbol id="lucide-contact" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 2v2"></path>
+      <path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"></path>
+      <path d="M8 2v2"></path>
+      <circle cx="12" cy="11" r="3"></circle>
+      <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+    </symbol>
+    <symbol id="lucide-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+      <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+      <path d="M3 12A9 3 0 0 0 21 12"></path>
+    </symbol>
+    <symbol id="lucide-droplets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"></path>
+      <path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"></path>
+    </symbol>
+    <symbol id="lucide-edit-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 21h8"></path>
+      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path>
+    </symbol>
+    <symbol id="lucide-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path>
+      <path d="M14 2v5a1 1 0 0 0 1 1h5"></path>
+      <path d="M10 9H8"></path>
+      <path d="M16 13H8"></path>
+      <path d="M16 17H8"></path>
+    </symbol>
+    <symbol id="lucide-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 7v14"></path>
+      <path d="M20 11v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8"></path>
+      <path d="M7.5 7a1 1 0 0 1 0-5A4.8 8 0 0 1 12 7a4.8 8 0 0 1 4.5-5 1 1 0 0 1 0 5"></path>
+      <rect x="3" y="7" width="18" height="4" rx="1"></rect>
+    </symbol>
+    <symbol id="lucide-graduation-cap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"></path>
+      <path d="M22 10v6"></path>
+      <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"></path>
+    </symbol>
+    <symbol id="lucide-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+      <path d="M3 3v5h5"></path>
+      <path d="M12 7v5l4 2"></path>
+    </symbol>
+    <symbol id="lucide-layout-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+      <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+      <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+      <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+    </symbol>
+    <symbol id="lucide-log-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m16 17 5-5-5-5"></path>
+      <path d="M21 12H9"></path>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+    </symbol>
+    <symbol id="lucide-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"></path>
+      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+    </symbol>
+    <symbol id="lucide-mail-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"></path>
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+      <path d="m16 19 2 2 4-4"></path>
+    </symbol>
+    <symbol id="lucide-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path>
+      <circle cx="12" cy="10" r="3"></circle>
+    </symbol>
+    <symbol id="lucide-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 5h16"></path>
+      <path d="M4 12h16"></path>
+      <path d="M4 19h16"></path>
+    </symbol>
+    <symbol id="lucide-message-square" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path>
+    </symbol>
+    <symbol id="lucide-party-popper" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.8 11.3 2 22l10.7-3.79"></path>
+      <path d="M4 3h.01"></path>
+      <path d="M22 8h.01"></path>
+      <path d="M15 2h.01"></path>
+      <path d="M22 20h.01"></path>
+      <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"></path>
+      <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"></path>
+      <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"></path>
+      <path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"></path>
+    </symbol>
+    <symbol id="lucide-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"></path>
+    </symbol>
+    <symbol id="lucide-refresh-cw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+      <path d="M21 3v5h-5"></path>
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+      <path d="M8 16H3v5"></path>
+    </symbol>
+    <symbol id="lucide-satellite-dish" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 10a7.31 7.31 0 0 0 10 10Z"></path>
+      <path d="m9 15 3-3"></path>
+      <path d="M17 13a6 6 0 0 0-6-6"></path>
+      <path d="M21 13A10 10 0 0 0 11 3"></path>
+    </symbol>
+    <symbol id="lucide-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
+      <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path>
+      <path d="M7 3v4a1 1 0 0 0 1 1h7"></path>
+    </symbol>
+    <symbol id="lucide-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m21 21-4.34-4.34"></path>
+      <circle cx="11" cy="11" r="8"></circle>
+    </symbol>
+    <symbol id="lucide-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path>
+      <path d="m21.854 2.147-10.94 10.939"></path>
+    </symbol>
+    <symbol id="lucide-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </symbol>
+    <symbol id="lucide-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path>
+      <path d="m9 12 2 2 4-4"></path>
+    </symbol>
+    <symbol id="lucide-snowflake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m10 20-1.25-2.5L6 18"></path>
+      <path d="M10 4 8.75 6.5 6 6"></path>
+      <path d="m14 20 1.25-2.5L18 18"></path>
+      <path d="m14 4 1.25 2.5L18 6"></path>
+      <path d="m17 21-3-6h-4"></path>
+      <path d="m17 3-3 6 1.5 3"></path>
+      <path d="M2 12h6.5L10 9"></path>
+      <path d="m20 10-1.5 2 1.5 2"></path>
+      <path d="M22 12h-6.5L14 15"></path>
+      <path d="m4 10 1.5 2L4 14"></path>
+      <path d="m7 21 3-6-1.5-3"></path>
+      <path d="m7 3 3 6h4"></path>
+    </symbol>
+    <symbol id="lucide-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path>
+      <path d="M20 2v4"></path>
+      <path d="M22 4h-4"></path>
+      <circle cx="4" cy="20" r="2"></circle>
+    </symbol>
+    <symbol id="lucide-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="4"></circle>
+      <path d="M12 2v2"></path>
+      <path d="M12 20v2"></path>
+      <path d="m4.93 4.93 1.41 1.41"></path>
+      <path d="m17.66 17.66 1.41 1.41"></path>
+      <path d="M2 12h2"></path>
+      <path d="M20 12h2"></path>
+      <path d="m6.34 17.66-1.41 1.41"></path>
+      <path d="m19.07 4.93-1.41 1.41"></path>
+    </symbol>
+    <symbol id="lucide-thermometer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path>
+    </symbol>
+    <symbol id="lucide-toggle-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="9" cy="12" r="3"></circle>
+      <rect width="20" height="14" x="2" y="5" rx="7"></rect>
+    </symbol>
+    <symbol id="lucide-trash-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 11v6"></path>
+      <path d="M14 11v6"></path>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+      <path d="M3 6h18"></path>
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    </symbol>
+    <symbol id="lucide-user-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m16 11 2 2 4-4"></path>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+    </symbol>
+    <symbol id="lucide-user-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <line x1="17" x2="22" y1="8" y2="13"></line>
+      <line x1="22" x2="17" y1="8" y2="13"></line>
+    </symbol>
+    <symbol id="lucide-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <path d="M16 3.128a4 4 0 0 1 0 7.744"></path>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+    </symbol>
+    <symbol id="lucide-wind" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12.8 19.6A2 2 0 1 0 14 16H2"></path>
+      <path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"></path>
+      <path d="M9.8 4.4A2 2 0 1 1 11 8H2"></path>
+    </symbol>
+    <symbol id="lucide-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <path d="m15 9-6 6"></path>
+      <path d="m9 9 6 6"></path>
+    </symbol>
+  </defs>
+</svg>
+
 
 <!-- ─── LOADING SCREEN ─── -->
 <div id="loadingScreen">
@@ -32,7 +353,7 @@
 </div>
 
 <!-- ─── LOGIN PAGE ─── -->
-<main id="loginPage">
+<div id="loginPage" role="region" aria-label="Halaman Log Masuk">
   <div class="login-card">
     <div class="login-logo" role="img" aria-label="Logo Rasmi SK Kiandongo">SK</div>
     <h1>Smart School Hub</h1>
@@ -78,7 +399,7 @@
       Akses terhad kepada warga sekolah sahaja
     </div>
   </div>
-</main>
+</div>
 
 <!-- ─── MAIN APP ─── -->
 <div id="appPage" class="page">
@@ -88,7 +409,7 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" id="appSidebar">
       <button class="desktop-nav-toggle" type="button" aria-label="Toggle Desktop Menu" onclick="toggleDesktopNav()">
-        <i data-lucide="chevron-left" size="16"></i>
+        <svg class="lucide-icon" width="16" height="16"><use href="#lucide-chevron-left"></use></svg>
       </button>
       <button class="mobile-nav-close" type="button" aria-label="Tutup menu" onclick="closeMobileNav()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -103,51 +424,51 @@
 
       <div class="nav-section-label">Utama</div>
       <button class="nav-item c-blue active" onclick="showModule('dashboard')">
-        <span class="nav-icon"><i data-lucide="layout-dashboard" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-layout-dashboard"></use></svg></span>
         <span>Papan Pemuka</span>
       </button>
 
       <div class="nav-section-label">Kehadiran</div>
       <button class="nav-item c-green" onclick="showModule('kehadiran-guru')">
-        <span class="nav-icon"><i data-lucide="users" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-users"></use></svg></span>
         <span>Kehadiran Guru</span>
       </button>
       <button class="nav-item c-cyan" onclick="showModule('kehadiran-murid')">
-        <span class="nav-icon"><i data-lucide="graduation-cap" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-graduation-cap"></use></svg></span>
         <span>Kehadiran Murid</span>
       </button>
 
       <div class="nav-section-label">Utiliti Guru</div>
       <button class="nav-item c-orange" onclick="showModule('opr')">
-        <span class="nav-icon"><i data-lucide="file-text" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-file-text"></use></svg></span>
         <span>OPR</span>
       </button>
       <button class="nav-item c-purple" onclick="showModule('laporan-kelas')">
-        <span class="nav-icon"><i data-lucide="clipboard-list" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-clipboard-list"></use></svg></span>
         <span>Laporan Guru Bertugas Mingguan</span>
       </button>
       <button class="nav-item c-rose" onclick="showModule('pelaporan-kokum')">
-        <span class="nav-icon"><i data-lucide="award" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-award"></use></svg></span>
         <span>Pelaporan Kokum</span>
       </button>
 
       <div class="nav-section-label" data-admin-label="true">Pengurusan Data</div>
       <button class="nav-item c-teal" data-admin-nav="true" onclick="showModule('data-guru')">
-        <span class="nav-icon"><i data-lucide="database" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-database"></use></svg></span>
         <span>Data Guru</span>
       </button>
       <button class="nav-item c-blue" data-admin-nav="true" onclick="showModule('data-murid')">
-        <span class="nav-icon"><i data-lucide="contact" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-contact"></use></svg></span>
         <span>Data Murid</span>
       </button>
       <button class="nav-item c-amber" data-admin-nav="true" onclick="showModule('hari-lahir')">
-        <span class="nav-icon"><i data-lucide="cake" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-cake"></use></svg></span>
         <span>Data Hari Lahir</span>
       </button>
 
       <div class="nav-section-label" data-admin-label="true">Sistem</div>
       <button class="nav-item c-teal" data-admin-nav="true" onclick="showModule('konfigurasi')">
-        <span class="nav-icon"><i data-lucide="settings" size="18"></i></span>
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-settings"></use></svg></span>
         <span>Konfigurasi</span>
       </button>
 
@@ -160,7 +481,7 @@
             <span id="userRoleBadge" class="badge badge-blue">Guru</span>
           </div>
           <div class="user-actions">
-            <button class="logout-btn" onclick="handleLogout()" title="Log keluar"><i data-lucide="log-out" size="14"></i> Log Keluar</button>
+            <button class="logout-btn" onclick="handleLogout()" title="Log keluar"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-log-out"></use></svg> Log Keluar</button>
           </div>
         </div>
       </div>
@@ -170,7 +491,7 @@
     <main class="main-content">
       <div class="mobile-app-bar">
         <button class="mobile-nav-toggle" type="button" aria-label="Buka menu" aria-controls="appSidebar" aria-expanded="false" onclick="toggleMobileNav()">
-          <i data-lucide="menu"></i>
+          <svg class="lucide-icon" width="24" height="24"><use href="#lucide-menu"></use></svg>
         </button>
         <div class="mobile-app-bar-copy">
           <small>Modul Aktif</small>
@@ -193,16 +514,16 @@
       <div id="mod-dashboard" class="module active">
         <div class="page-header">
           <div>
-            <h1 style="display:flex;align-items:center;gap:12px"><i data-lucide="layout-dashboard" size="28"></i> Papan Pemuka</h1>
+            <h1 style="display:flex;align-items:center;gap:12px"><svg class="lucide-icon" width="28" height="28"><use href="#lucide-layout-dashboard"></use></svg> Papan Pemuka</h1>
             <p id="todayDateLabel">Memuat tarikh...</p>
           </div>
-          <button class="btn btn-primary" onclick="refreshDashboard()"><i data-lucide="refresh-cw" size="18"></i> Muat Semula</button>
+          <button class="btn btn-primary" onclick="refreshDashboard()"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-refresh-cw"></use></svg> Muat Semula</button>
         </div>
 
         <!-- Stat Cards -->
         <div class="card-grid card-grid-4" style="margin-bottom:18px">
           <div class="stat-card">
-            <div class="stat-icon blue"><i data-lucide="graduation-cap"></i></div>
+            <div class="stat-icon blue"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-graduation-cap"></use></svg></div>
             <div class="stat-info">
               <small>Murid Hadir</small>
               <strong id="dash-murid-hadir">—</strong>
@@ -210,7 +531,7 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon red"><i data-lucide="user-x"></i></div>
+            <div class="stat-icon red"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-user-x"></use></svg></div>
             <div class="stat-info">
               <small>Tidak Hadir</small>
               <strong id="dash-tidak-hadir">—</strong>
@@ -218,7 +539,7 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon gold"><i data-lucide="users"></i></div>
+            <div class="stat-icon gold"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-users"></use></svg></div>
             <div class="stat-info">
               <small>Guru Hadir</small>
               <strong id="dash-guru-hadir">—</strong>
@@ -226,7 +547,7 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon green"><i data-lucide="mail-check"></i></div>
+            <div class="stat-icon green"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-mail-check"></use></svg></div>
             <div class="stat-info">
               <small>Notif Dihantar</small>
               <strong id="dash-notif">—</strong>
@@ -243,27 +564,27 @@
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
               <div>
                 <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;opacity:0.75;font-weight:700;letter-spacing:0.05em">
-                  <i data-lucide="cloud-sun" size="14"></i> CUACA SEKARANG
+                  <svg class="lucide-icon" width="14" height="14"><use href="#lucide-cloud-sun"></use></svg> CUACA SEKARANG
                 </div>
                 <div style="font-size:0.7rem;opacity:0.6;margin-top:2px">Tongod, Sabah</div>
               </div>
               <div id="dash-cuaca-icon" style="font-size:2.8rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2))">
-                <i data-lucide="sun" size="44"></i>
+                <svg class="lucide-icon" width="44" height="44"><use href="#lucide-sun"></use></svg>
               </div>
             </div>
             <div id="dash-cuaca-suhu" style="font-size:2.6rem;font-weight:800;line-height:1;margin-bottom:4px">—°C</div>
             <div id="dash-cuaca-desc" style="font-size:0.88rem;opacity:0.85;margin-bottom:14px;font-weight:500">Memuat...</div>
             <div style="display:flex;gap:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.2);font-size:0.78rem;opacity:0.85">
-              <span style="display:flex;align-items:center;gap:4px"><i data-lucide="droplets" size="14"></i> <span id="dash-cuaca-lembap">—</span>%</span>
-              <span style="display:flex;align-items:center;gap:4px"><i data-lucide="wind" size="14"></i> <span id="dash-cuaca-angin">—</span> km/j</span>
-              <span style="display:flex;align-items:center;gap:4px"><i data-lucide="thermometer" size="14"></i> <span id="dash-cuaca-rasa">—</span>°C</span>
+              <span style="display:flex;align-items:center;gap:4px"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-droplets"></use></svg> <span id="dash-cuaca-lembap">—</span>%</span>
+              <span style="display:flex;align-items:center;gap:4px"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-wind"></use></svg> <span id="dash-cuaca-angin">—</span> km/j</span>
+              <span style="display:flex;align-items:center;gap:4px"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-thermometer"></use></svg> <span id="dash-cuaca-rasa">—</span>°C</span>
             </div>
           </div>
 
           <!-- Waktu Solat -->
           <div class="card" style="background:linear-gradient(135deg,#064e3b 0%,#065f46 100%);color:#fff;border:none">
             <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;opacity:0.75;font-weight:700;letter-spacing:0.05em;margin-bottom:12px">
-              <i data-lucide="clock" size="14"></i> WAKTU SOLAT — TONGOD (SBH07)
+              <svg class="lucide-icon" width="14" height="14"><use href="#lucide-clock"></use></svg> WAKTU SOLAT — TONGOD (SBH07)
             </div>
             <div id="dash-solat-list" style="display:grid;gap:5px;font-size:0.85rem">
               <div style="opacity:0.6;font-size:0.82rem">Memuat waktu solat...</div>
@@ -274,7 +595,7 @@
           <!-- Guru Bertugas -->
           <div class="card" style="background:linear-gradient(135deg,#5b21b6 0%,#7c3aed 100%);color:#fff;border:none">
             <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;opacity:0.75;font-weight:700;letter-spacing:0.05em;margin-bottom:4px">
-              <i data-lucide="clipboard-check" size="14"></i> GURU BERTUGAS
+              <svg class="lucide-icon" width="14" height="14"><use href="#lucide-clipboard-check"></use></svg> GURU BERTUGAS
             </div>
             <div id="dash-bertugas-minggu" style="font-size:0.68rem;opacity:0.6;margin-bottom:12px">Minggu ini</div>
             <div id="dash-bertugas-nama" style="font-size:1rem;font-weight:700;line-height:1.4;margin-bottom:4px">—</div>
@@ -290,8 +611,8 @@
         <div class="card-grid card-grid-2" style="margin-bottom:18px">
           <div class="card">
             <div class="section-header">
-              <h2 style="display:flex;align-items:center;gap:8px"><i data-lucide="bar-chart-3" size="20"></i> Kehadiran Minggu Ini (%)</h2>
-              <button class="btn btn-sm btn-secondary" onclick="refreshDashboard()"><i data-lucide="refresh-cw" size="14"></i></button>
+              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-bar-chart-3"></use></svg> Kehadiran Minggu Ini (%)</h2>
+              <button class="btn btn-sm btn-secondary" onclick="refreshDashboard()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-refresh-cw"></use></svg></button>
             </div>
             <div id="dashChartWrap" style="display:flex;align-items:flex-end;gap:6px;height:80px;padding:8px 0 0">
               <div style="color:var(--muted);font-size:0.82rem">Memuat...</div>
@@ -302,7 +623,7 @@
           </div>
           <div class="card">
             <div class="section-header">
-              <h2 style="display:flex;align-items:center;gap:8px"><i data-lucide="bell" size="20"></i> Aktiviti Terkini</h2>
+              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-bell"></use></svg> Aktiviti Terkini</h2>
               <button class="btn btn-sm btn-secondary" onclick="showModule('notifikasi')">Lihat Semua</button>
             </div>
             <div id="dash-aktiviti-list" style="max-height:130px;overflow-y:auto">
@@ -314,7 +635,7 @@
         <!-- Status Kehadiran Guru Minggu Ini -->
         <div class="card" style="margin-bottom:18px">
           <div class="section-header">
-            <h2 style="display:flex;align-items:center;gap:8px"><i data-lucide="users" size="20"></i> Kehadiran Guru Minggu Ini</h2>
+            <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-users"></use></svg> Kehadiran Guru Minggu Ini</h2>
             <button class="btn btn-sm btn-secondary" onclick="showModule('kehadiran-guru')">Lihat Semua</button>
           </div>
           <div class="table-wrap">
@@ -324,7 +645,7 @@
               </thead>
               <tbody id="dashGuruBody">
                 <tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">
-                  Klik <i data-lucide="refresh-cw" size="14" style="display:inline-block;vertical-align:middle"></i> Muat Semula atau pastikan Worker URL telah disimpan dalam Konfigurasi
+                  Klik <svg class="lucide-icon" width="14" height="14" style="display:inline-block;vertical-align:middle"><use href="#lucide-refresh-cw"></use></svg> Muat Semula atau pastikan Worker URL telah disimpan dalam Konfigurasi
                 </td></tr>
               </tbody>
             </table>
@@ -334,7 +655,7 @@
         <!-- Murid Tidak Hadir -->
         <div class="card">
           <div class="section-header">
-            <h2 style="display:flex;align-items:center;gap:8px"><i data-lucide="user-x" size="20"></i> Murid Tidak Hadir Hari Ini</h2>
+            <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-user-x"></use></svg> Murid Tidak Hadir Hari Ini</h2>
             <button class="btn btn-sm btn-secondary" onclick="showModule('kehadiran-murid')">Lihat Semua</button>
           </div>
           <div id="dash-murid-tidak-hadir-list" style="min-height:60px">
@@ -344,7 +665,7 @@
 
         <div class="card" style="margin-bottom:18px">
           <div class="section-header">
-            <h2 style="display:flex;align-items:center;gap:8px"><i data-lucide="cake" size="20"></i> Makluman Hari Lahir</h2>
+            <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-cake"></use></svg> Makluman Hari Lahir</h2>
             <button class="btn btn-sm btn-secondary" onclick="showModule('hari-lahir')">Lihat Semua</button>
           </div>
           <div id="dash-birthday-list" style="min-height:80px;display:grid;gap:10px">
@@ -358,20 +679,20 @@
       <div id="mod-kehadiran-guru" class="module" style="display:none">
         <div class="page-header">
           <div>
-            <h1 style="display:flex;align-items:center;gap:12px"><i data-lucide="users" size="28"></i> Kehadiran Guru</h1>
+            <h1 style="display:flex;align-items:center;gap:12px"><svg class="lucide-icon" width="28" height="28"><use href="#lucide-users"></use></svg> Kehadiran Guru</h1>
             <p>Daftar kehadiran automatik melalui GPS — SK Kiandongo</p>
           </div>
           <div style="display:flex;gap:10px">
-            <button class="btn btn-secondary" onclick="loadKehadiranGuru({ preserveTable: true })"><i data-lucide="refresh-cw" size="16"></i> Segar Sekarang</button>
-            <button class="btn btn-secondary" onclick="punchOutManual()"><i data-lucide="clock" size="16"></i> Punch-Out Manual</button>
-            <button class="btn btn-secondary" onclick="openTambahKehadiranGuru()"><i data-lucide="edit-3" size="16"></i> Daftar Manual</button>
+            <button class="btn btn-secondary" onclick="loadKehadiranGuru({ preserveTable: true })"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-refresh-cw"></use></svg> Segar Sekarang</button>
+            <button class="btn btn-secondary" onclick="punchOutManual()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-clock"></use></svg> Punch-Out Manual</button>
+            <button class="btn btn-secondary" onclick="openTambahKehadiranGuru()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-edit-3"></use></svg> Daftar Manual</button>
           </div>
         </div>
 
         <!-- GPS Auto-Daftar Panel -->
         <div class="card" style="margin-bottom:20px;border:2px solid var(--border)" id="geoAutoPanel">
           <div class="section-header">
-            <h2 style="display:flex;align-items:center;gap:8px"><i data-lucide="map-pin" size="20"></i> Daftar Kehadiran Saya</h2>
+            <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-map-pin"></use></svg> Daftar Kehadiran Saya</h2>
             <div id="geoWaktuBadge" class="badge badge-gray">Semak masa...</div>
           </div>
 
@@ -391,19 +712,19 @@
 
           <!-- GPS Status -->
           <div id="geoStatusPanel" class="geo-status-panel" style="border-radius:14px;padding:18px;margin-bottom:16px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);display:flex;align-items:center;gap:14px">
-            <div id="geoStatusEmoji" style="font-size:2rem"><i data-lucide="satellite-dish" size="32"></i></div>
+            <div id="geoStatusEmoji" style="font-size:2rem"><svg class="lucide-icon" width="32" height="32"><use href="#lucide-satellite-dish"></use></svg></div>
             <div style="flex:1">
               <div id="geoStatusTeks" style="font-weight:700;font-size:0.95rem">Mendapatkan lokasi GPS...</div>
               <div id="geoStatusSub" style="font-size:0.8rem;color:var(--muted);margin-top:2px"></div>
             </div>
-            <button class="btn btn-sm btn-secondary" onclick="mulaAutoGPS()"><i data-lucide="refresh-cw" size="14"></i> Semak GPS</button>
+            <button class="btn btn-sm btn-secondary" onclick="mulaAutoGPS()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-refresh-cw"></use></svg> Semak GPS</button>
           </div>
           <div id="geoActionDalam" style="display:none;gap:10px">
             <button class="btn btn-primary btn-full btn-lg" onclick="autoHadir({ manual: true })" style="font-size:1rem;padding:16px">
-              <i data-lucide="check-circle" size="20" style="vertical-align:middle;margin-right:8px"></i> Daftar Hadir Sekarang
+              <svg class="lucide-icon" width="20" height="20" style="vertical-align:middle;margin-right:8px"><use href="#lucide-check-circle"></use></svg> Daftar Hadir Sekarang
             </button>
             <button class="btn btn-secondary btn-full" onclick="punchOutManual()" style="font-size:0.95rem;padding:14px">
-              <i data-lucide="clock" size="18" style="vertical-align:middle;margin-right:8px"></i> Punch-Out Sekarang
+              <svg class="lucide-icon" width="18" height="18" style="vertical-align:middle;margin-right:8px"><use href="#lucide-clock"></use></svg> Punch-Out Sekarang
             </button>
             <p style="font-size:0.78rem;color:var(--muted);text-align:center;margin-top:4px">Punch-out automatik akan cuba direkod pada 13:00 (Isnin–Khamis) atau 11:30 (Jumaat) jika anda berada dalam geofence sekolah.</p>
           </div>
@@ -412,25 +733,25 @@
             <p style="font-size:0.85rem;font-weight:600;color:var(--text);margin:0">Anda berada di luar kawasan sekolah. Pilih kenyataan:</p>
             <div class="geo-action-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
               <button class="btn btn-secondary" style="padding:14px;font-size:0.88rem" onclick="showKenyataanLuar()">
-                <i data-lucide="car" size="18" style="vertical-align:middle;margin-right:8px"></i> Bertugas Di Luar
+                <svg class="lucide-icon" width="18" height="18" style="vertical-align:middle;margin-right:8px"><use href="#lucide-car"></use></svg> Bertugas Di Luar
               </button>
               <button class="btn btn-secondary" style="padding:14px;font-size:0.88rem" onclick="showPilihanCuti()">
-                <i data-lucide="clipboard-list" size="18" style="vertical-align:middle;margin-right:8px"></i> Mohon Cuti
+                <svg class="lucide-icon" width="18" height="18" style="vertical-align:middle;margin-right:8px"><use href="#lucide-clipboard-list"></use></svg> Mohon Cuti
               </button>
             </div>
             <button class="btn btn-danger" style="padding:12px;font-size:0.85rem" onclick="logTanpaKenyataan()">
-              <i data-lucide="alert-triangle" size="18" style="vertical-align:middle;margin-right:8px"></i> Tiada Kenyataan (Rekod Automatik)
+              <svg class="lucide-icon" width="18" height="18" style="vertical-align:middle;margin-right:8px"><use href="#lucide-alert-triangle"></use></svg> Tiada Kenyataan (Rekod Automatik)
             </button>
           </div>
 
           <div id="geoActionGagal" style="display:none">
             <p style="font-size:0.83rem;color:var(--muted);margin-bottom:12px">GPS tidak dapat dikesan. Daftar secara manual:</p>
-            <button class="btn btn-secondary btn-full" onclick="openTambahKehadiranGuru()"><i data-lucide="edit-3" size="18" style="vertical-align:middle;margin-right:8px"></i> Daftar Manual</button>
+            <button class="btn btn-secondary btn-full" onclick="openTambahKehadiranGuru()"><svg class="lucide-icon" width="18" height="18" style="vertical-align:middle;margin-right:8px"><use href="#lucide-edit-3"></use></svg> Daftar Manual</button>
           </div>
 
           <!-- Sub-panels -->
           <div id="panelKenyataanLuar" style="display:none;margin-top:14px;padding:16px;background:rgba(26,79,160,0.04);border-radius:12px;border:1px solid var(--border)">
-            <p style="font-size:0.85rem;font-weight:600;margin-bottom:12px"><i data-lucide="clipboard-list" size="16"></i> Butiran Bertugas Di Luar:</p>
+            <p style="font-size:0.85rem;font-weight:600;margin-bottom:12px"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-clipboard-list"></use></svg> Butiran Bertugas Di Luar:</p>
             <div class="form-group" style="margin-bottom:10px">
               <label>Jenis Tugas</label>
               <select id="jenisLuar">
@@ -446,13 +767,13 @@
               <input id="destinasiLuar" type="text" placeholder="cth: PPD Telupid, Mesyuarat JKSS">
             </div>
             <div style="display:flex;gap:8px">
-              <button class="btn btn-primary" onclick="submitBertugasLuar()"><i data-lucide="check-circle" size="16"></i> Hantar & Rekod</button>
+              <button class="btn btn-primary" onclick="submitBertugasLuar()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-check-circle"></use></svg> Hantar & Rekod</button>
               <button class="btn btn-secondary" onclick="document.getElementById('panelKenyataanLuar').style.display='none'">Batal</button>
             </div>
           </div>
 
           <div id="panelPilihanCuti" style="display:none;margin-top:14px;padding:16px;background:rgba(245,158,11,0.06);border-radius:12px;border:1px solid rgba(245,158,11,0.2)">
-            <p style="font-size:0.85rem;font-weight:600;margin-bottom:12px"><i data-lucide="calendar-days" size="16"></i> Jenis Cuti:</p>
+            <p style="font-size:0.85rem;font-weight:600;margin-bottom:12px"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-calendar-days"></use></svg> Jenis Cuti:</p>
             <div style="display:grid;gap:8px">
               <button class="btn btn-secondary" style="justify-content:flex-start;padding:12px 16px" onclick="submitCuti('CR','Cuti Rehat')">CR — Cuti Rehat</button>
               <button class="btn btn-secondary" style="justify-content:flex-start;padding:12px 16px" onclick="submitCuti('CRK','Cuti Rehat Khas')">CRK — Cuti Rehat Khas</button>
@@ -469,15 +790,15 @@
         <!-- Stats -->
         <div class="card-grid card-grid-3" style="margin-bottom:20px">
           <div class="stat-card">
-            <div class="stat-icon green"><i data-lucide="user-check"></i></div>
+            <div class="stat-icon green"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-user-check"></use></svg></div>
             <div class="stat-info"><small>Hadir</small><strong id="guru-stat-hadir">0</strong></div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon red"><i data-lucide="user-x"></i></div>
+            <div class="stat-icon red"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-user-x"></use></svg></div>
             <div class="stat-info"><small>Tidak Berada / TK</small><strong id="guru-stat-tidak">0</strong></div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon amber"><i data-lucide="clipboard-list"></i></div>
+            <div class="stat-icon amber"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-clipboard-list"></use></svg></div>
             <div class="stat-info"><small>Cuti</small><strong id="guru-stat-cuti">0</strong></div>
           </div>
         </div>
@@ -508,11 +829,11 @@
       <div id="mod-kehadiran-murid" class="module" style="display:none">
         <div class="page-header">
           <div>
-            <h1 style="display:flex;align-items:center;gap:12px"><i data-lucide="graduation-cap" size="28"></i> Kehadiran Murid</h1>
+            <h1 style="display:flex;align-items:center;gap:12px"><svg class="lucide-icon" width="28" height="28"><use href="#lucide-graduation-cap"></use></svg> Kehadiran Murid</h1>
             <p>Jejak dan lapor kehadiran murid mengikut kelas</p>
           </div>
           <div style="display:flex;gap:10px">
-            <button class="btn btn-secondary" onclick="loadKehadiranMurid({ preserveTable: true })"><i data-lucide="refresh-cw" size="16"></i> Segar Sekarang</button>
+            <button class="btn btn-secondary" onclick="loadKehadiranMurid({ preserveTable: true })"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-refresh-cw"></use></svg> Segar Sekarang</button>
             <button class="btn btn-primary" onclick="openTambahKehadiranMurid()">+ Tambah Rekod</button>
           </div>
         </div>
@@ -520,7 +841,7 @@
         <!-- Peringatan guru bertanggungjawab -->
         <div class="card" style="margin-bottom:20px;border-left:4px solid var(--gold)" id="muridTanggungjawabCard">
           <div style="display:flex;align-items:flex-start;gap:12px">
-            <span style="font-size:1.4rem"><i data-lucide="clipboard-list" size="24" style="color:var(--gold)"></i></span>
+            <span style="font-size:1.4rem"><svg class="lucide-icon" width="24" height="24" style="color:var(--gold)"><use href="#lucide-clipboard-list"></use></svg></span>
             <div style="flex:1">
               <strong style="font-size:0.9rem">Tanggungjawab Pengisian Kehadiran Murid</strong>
               <p style="font-size:0.82rem;color:var(--muted);margin:6px 0 0;line-height:1.7">
@@ -529,7 +850,7 @@
               </p>
             </div>
             <button class="btn btn-primary" onclick="openTambahKehadiranMurid()" style="flex-shrink:0">
-              <i data-lucide="edit-3" size="16" style="vertical-align:middle;margin-right:8px"></i> Daftar Kehadiran Kelas
+              <svg class="lucide-icon" width="16" height="16" style="vertical-align:middle;margin-right:8px"><use href="#lucide-edit-3"></use></svg> Daftar Kehadiran Kelas
             </button>
           </div>
         </div>
@@ -561,27 +882,27 @@
 
         <div class="card-grid card-grid-4" style="margin-bottom:20px">
           <div class="stat-card">
-            <div class="stat-icon green"><i data-lucide="user-check"></i></div>
+            <div class="stat-icon green"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-user-check"></use></svg></div>
             <div class="stat-info"><small>Hadir</small><strong id="murid-stat-hadir">0</strong></div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon red"><i data-lucide="user-x"></i></div>
+            <div class="stat-icon red"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-user-x"></use></svg></div>
             <div class="stat-info"><small>Tidak Hadir</small><strong id="murid-stat-tidak">0</strong></div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon amber"><i data-lucide="clipboard-list"></i></div>
+            <div class="stat-icon amber"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-clipboard-list"></use></svg></div>
             <div class="stat-info"><small>Cuti/Sakit</small><strong id="murid-stat-cuti">0</strong></div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon blue"><i data-lucide="bar-chart-3"></i></div>
+            <div class="stat-icon blue"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-bar-chart-3"></use></svg></div>
             <div class="stat-info"><small>Peratus Hadir</small><strong id="murid-stat-pct">—</strong></div>
           </div>
         </div>
 
         <div class="card">
           <div class="section-header">
-            <h2 style="display:flex;align-items:center;gap:8px"><i data-lucide="graduation-cap" size="20"></i> Rekod Kehadiran Murid</h2>
-            <button class="btn btn-sm btn-success" onclick="notifTidakHadirBatch()"><i data-lucide="send" size="14"></i> Notif Semua Tidak Hadir</button>
+            <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-graduation-cap"></use></svg> Rekod Kehadiran Murid</h2>
+            <button class="btn btn-sm btn-success" onclick="notifTidakHadirBatch()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-send"></use></svg> Notif Semua Tidak Hadir</button>
           </div>
           <div class="table-wrap">
             <table class="responsive-mobile-table">
@@ -607,7 +928,7 @@
       <div id="mod-laporan-kelas" class="module" style="display:none">
         <div class="page-header">
           <div>
-            <h1 style="display:flex;align-items:center;gap:12px"><i data-lucide="clipboard-list" size="28"></i> Laporan Guru Bertugas Mingguan</h1>
+            <h1 style="display:flex;align-items:center;gap:12px"><svg class="lucide-icon" width="28" height="28"><use href="#lucide-clipboard-list"></use></svg> Laporan Guru Bertugas Mingguan</h1>
             <p>Borang laporan mingguan mengikut format dokumen sekolah</p>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -684,9 +1005,9 @@
           <div class="weekly-report-note weekly-report-guided-note">Isi sekurang-kurangnya 3 aktiviti/butiran, dan boleh tambah sehingga 6 jika perlu. Gunakan kategori ringkas seperti Akademik, Ko-Kurikulum, Sukan/PJ, PdPc dan Lain-lain supaya laporan lebih kemas.</div>
           <div class="weekly-report-field-card weekly-report-activity-panel">
             <div class="weekly-report-activity-strip">
-              <div class="weekly-report-activity-chip"><i data-lucide="compass" size="14" style="vertical-align:middle;margin-right:4px"></i> <strong>Minimum 3</strong> aktiviti wajib</div>
-              <div class="weekly-report-activity-chip"><i data-lucide="sparkles" size="14" style="vertical-align:middle;margin-right:4px"></i> ✨ Disyorkan 4-6 butiran ringkas</div>
-              <div class="weekly-report-activity-chip"><i data-lucide="edit-3" size="14" style="vertical-align:middle;margin-right:4px"></i> Satu baris = satu peristiwa utama</div>
+              <div class="weekly-report-activity-chip"><svg class="lucide-icon" width="14" height="14" style="vertical-align:middle;margin-right:4px"><use href="#lucide-compass"></use></svg> <strong>Minimum 3</strong> aktiviti wajib</div>
+              <div class="weekly-report-activity-chip"><svg class="lucide-icon" width="14" height="14" style="vertical-align:middle;margin-right:4px"><use href="#lucide-sparkles"></use></svg> ✨ Disyorkan 4-6 butiran ringkas</div>
+              <div class="weekly-report-activity-chip"><svg class="lucide-icon" width="14" height="14" style="vertical-align:middle;margin-right:4px"><use href="#lucide-edit-3"></use></svg> Satu baris = satu peristiwa utama</div>
             </div>
             <div class="table-wrap weekly-report-activity-table">
               <table>
@@ -909,7 +1230,7 @@
       <div id="mod-notifikasi" class="module" style="display:none">
         <div class="page-header">
           <div>
-            <h1 style="display:flex;align-items:center;gap:12px"><i data-lucide="bell" size="28"></i> Notifikasi Automatik</h1>
+            <h1 style="display:flex;align-items:center;gap:12px"><svg class="lucide-icon" width="28" height="28"><use href="#lucide-bell"></use></svg> Notifikasi Automatik</h1>
             <p>Hantar makluman kepada ibu bapa melalui WhatsApp (Fonnte)</p>
           </div>
         </div>
@@ -921,16 +1242,16 @@
               <div style="font-size:0.85rem;color:var(--muted);margin-bottom:6px">Notifikasi Auto</div>
               <div id="notif-module-status" style="font-weight:700;color:var(--blue)">Memuat...</div>
             </div>
-            <button class="btn btn-secondary" onclick="toggleNotifAutoEnabled()" id="notifModuleToggle"><i data-lucide="toggle-left" size="16"></i> Togol Notifikasi</button>
-            <button class="btn btn-secondary" onclick="testTelegram()"><i data-lucide="send" size="16"></i> Uji Telegram</button>
-            <button class="btn btn-secondary" onclick="testFonnte()"><i data-lucide="message-square" size="16"></i> Uji Fonnte</button>
+            <button class="btn btn-secondary" onclick="toggleNotifAutoEnabled()" id="notifModuleToggle"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-toggle-left"></use></svg> Togol Notifikasi</button>
+            <button class="btn btn-secondary" onclick="testTelegram()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-send"></use></svg> Uji Telegram</button>
+            <button class="btn btn-secondary" onclick="testFonnte()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-message-square"></use></svg> Uji Fonnte</button>
           </div>
         </div>
 
         <div class="tabs">
-          <button class="tab-btn active" onclick="switchNotifTab('hantar')"><i data-lucide="send" size="16"></i> Hantar Notifikasi</button>
-          <button class="tab-btn" onclick="switchNotifTab('templat')"><i data-lucide="file-text" size="16"></i> Templat Mesej</button>
-          <button class="tab-btn" onclick="switchNotifTab('log')"><i data-lucide="history" size="16"></i> Log Dihantar</button>
+          <button class="tab-btn active" onclick="switchNotifTab('hantar')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-send"></use></svg> Hantar Notifikasi</button>
+          <button class="tab-btn" onclick="switchNotifTab('templat')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-file-text"></use></svg> Templat Mesej</button>
+          <button class="tab-btn" onclick="switchNotifTab('log')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-history"></use></svg> Log Dihantar</button>
         </div>
 
         <!-- TAB: HANTAR -->
@@ -954,7 +1275,7 @@
                   <option>5 DELIMA</option><option>6 BAIDURI</option>
                 </select>
               </div>
-              <button class="btn btn-primary btn-full" onclick="hantarTelegramTidakHadirMuridManual()"><i data-lucide="send" size="18"></i> Hantar Telegram & WhatsApp</button>
+              <button class="btn btn-primary btn-full" onclick="hantarTelegramTidakHadirMuridManual()"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-send"></use></svg> Hantar Telegram & WhatsApp</button>
             </div>
 
             <div class="card">
@@ -967,7 +1288,7 @@
                 <label>Mesej</label>
                 <textarea id="notifMesej" rows="5" placeholder="Taip mesej di sini..."></textarea>
               </div>
-              <button class="btn btn-primary btn-full" onclick="hantarNotifTersuai()"><i data-lucide="send" size="18"></i> Hantar Mesej</button>
+              <button class="btn btn-primary btn-full" onclick="hantarNotifTersuai()"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-send"></use></svg> Hantar Mesej</button>
             </div>
 
             <div class="card">
@@ -983,7 +1304,7 @@
                 <label>Nota</label>
                 <div id="notifGuruTarikhPreview" style="font-size:0.85rem;color:var(--muted)">Gunakan tarikh hari ini jika kosong.</div>
               </div>
-              <button class="btn btn-primary btn-full" onclick="hantarTelegramGuruTidakHadirManual()"><i data-lucide="send" size="18"></i> Hantar Peringatan Guru</button>
+              <button class="btn btn-primary btn-full" onclick="hantarTelegramGuruTidakHadirManual()"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-send"></use></svg> Hantar Peringatan Guru</button>
             </div>
           </div>
 
@@ -1040,19 +1361,19 @@ _SK Kiandongo_</textarea>
         <div id="notif-tab-log" style="display:none">
           <div class="card-grid card-grid-4" style="margin-bottom:20px">
             <div class="stat-card">
-              <div class="stat-icon blue"><i data-lucide="mail"></i></div>
+              <div class="stat-icon blue"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-mail"></use></svg></div>
               <div class="stat-info"><small>Hari Ini</small><strong id="notif-log-stat-today">0</strong></div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon green"><i data-lucide="check-circle"></i></div>
+              <div class="stat-icon green"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-check-circle"></use></svg></div>
               <div class="stat-info"><small>Berjaya</small><strong id="notif-log-stat-success">0</strong></div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon red"><i data-lucide="x-circle"></i></div>
+              <div class="stat-icon red"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-x-circle"></use></svg></div>
               <div class="stat-info"><small>Gagal</small><strong id="notif-log-stat-failed">0</strong></div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon amber"><i data-lucide="clock"></i></div>
+              <div class="stat-icon amber"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-clock"></use></svg></div>
               <div class="stat-info"><small>Aktiviti Terakhir</small><strong id="notif-log-stat-latest" style="font-size:1rem">-</strong></div>
             </div>
           </div>
@@ -1070,7 +1391,7 @@ _SK Kiandongo_</textarea>
           <div class="card">
             <div class="section-header">
               <h2>Log Notifikasi Dihantar</h2>
-              <button class="btn btn-sm btn-secondary" onclick="loadNotifLog()"><i data-lucide="refresh-cw" size="14"></i> Segar Semula</button>
+              <button class="btn btn-sm btn-secondary" onclick="loadNotifLog()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-refresh-cw"></use></svg> Segar Semula</button>
             </div>
             <div class="table-wrap">
               <table>
@@ -1096,7 +1417,7 @@ _SK Kiandongo_</textarea>
       <div id="mod-konfigurasi" class="module" style="display:none">
         <div class="page-header">
           <div>
-            <h1 style="display:flex;align-items:center;gap:12px"><i data-lucide="settings" size="28"></i> Konfigurasi Sistem</h1>
+            <h1 style="display:flex;align-items:center;gap:12px"><svg class="lucide-icon" width="28" height="28"><use href="#lucide-settings"></use></svg> Konfigurasi Sistem</h1>
             <p>Urus sambungan Cloudflare Worker dan kunci API</p>
           </div>
         </div>
@@ -1107,12 +1428,12 @@ _SK Kiandongo_</textarea>
             <span class="badge badge-blue">Pusat Tetapan</span>
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
-            <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="database" size="16"></i> Pangkalan Data (D1)</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-comm-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="message-square" size="16"></i> Komunikasi (WA & TG)</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="gift" size="16"></i> Notifikasi Modul</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-kokum-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="award" size="16"></i> Konfigurasi Kokum</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-admin-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="shield-check" size="16"></i> Pentadbiran & Akses</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-monitor-card').scrollIntoView({behavior:'smooth', block:'start'})"><i data-lucide="activity" size="16"></i> Pemantauan & Log</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pangkalan Data (D1)</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-comm-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-message-square"></use></svg> Komunikasi (WA & TG)</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-gift"></use></svg> Notifikasi Modul</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-kokum-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-award"></use></svg> Konfigurasi Kokum</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-admin-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-shield-check"></use></svg> Pentadbiran & Akses</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('config-monitor-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-activity"></use></svg> Pemantauan & Log</button>
           </div>
         </div>
 
@@ -1132,11 +1453,11 @@ _SK Kiandongo_</textarea>
                 <input id="workerEndpoint" type="text" disabled placeholder="/api/">
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <button class="btn btn-primary" onclick="saveWorkerUrl()"><i data-lucide="save" size="16"></i> Simpan URL</button>
-                <button class="btn btn-secondary" onclick="checkWorkerStatus()"><i data-lucide="search" size="16"></i> Semak Status</button>
+                <button class="btn btn-primary" onclick="saveWorkerUrl()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-save"></use></svg> Simpan URL</button>
+                <button class="btn btn-secondary" onclick="checkWorkerStatus()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-search"></use></svg> Semak Status</button>
               </div>
               <div id="workerStatus" style="margin-top:12px;padding:10px;border-radius:8px;background:rgba(26,79,160,0.05);border:1px solid rgba(26,79,160,0.2);font-size:0.85rem;color:var(--blue)">
-                <i data-lucide="refresh-cw" size="14" style="display:inline-block;vertical-align:middle;margin-right:4px"></i> Memeriksa sambungan...
+                <svg class="lucide-icon" width="14" height="14" style="display:inline-block;vertical-align:middle;margin-right:4px"><use href="#lucide-refresh-cw"></use></svg> Memeriksa sambungan...
               </div>
               <div style="border:1px solid rgba(37,99,235,.12);border-radius:16px;padding:16px;background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%)">
                 <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px">
@@ -1193,8 +1514,8 @@ _SK Kiandongo_</textarea>
                 </div>
               </div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-                <button class="btn btn-primary" onclick="simpanKonfigHariLahir()"><i data-lucide="save" size="16"></i> Simpan Semua Tetapan Komunikasi</button>
-                <button class="btn btn-secondary" onclick="loadConfig()"><i data-lucide="refresh-cw" size="16"></i> Muat Semula</button>
+                <button class="btn btn-primary" onclick="simpanKonfigHariLahir()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-save"></use></svg> Simpan Semua Tetapan Komunikasi</button>
+                <button class="btn btn-secondary" onclick="loadConfig()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-refresh-cw"></use></svg> Muat Semula</button>
               </div>
             </div>
           </div>
@@ -1287,7 +1608,7 @@ _SK Kiandongo_</textarea>
               </div>
             </div>
             <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-primary" onclick="simpanSemuaGroupKelas()"><i data-lucide="save" size="16"></i> Simpan Group Kelas</button>
+              <button class="btn btn-primary" onclick="simpanSemuaGroupKelas()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-save"></use></svg> Simpan Group Kelas</button>
             </div>
           </div>
 
@@ -1335,7 +1656,7 @@ _SK Kiandongo_</textarea>
           </p>
           
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-            <button class="btn btn-primary" onclick="loadConfig()"><i data-lucide="refresh-cw" size="16"></i> Muat Semula Status</button>
+            <button class="btn btn-primary" onclick="loadConfig()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-refresh-cw"></use></svg> Muat Semula Status</button>
             <button class="btn btn-secondary" onclick="testBirthdayTelegramConfig()">Uji Telegram</button>
             <button class="btn btn-secondary" onclick="testBirthdayFonnteTarget('guru')">Uji Group Guru</button>
             <button class="btn btn-secondary" onclick="testAllBirthdayFonnteGroups()">Uji Semua Group Fonnte</button>
@@ -2429,7 +2750,7 @@ _{SEKOLAH}_</textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalKehadiranGuru')">Batal</button>
-      <button class="btn btn-primary" onclick="submitKehadiranGuru()"><i data-lucide="check-circle" size="16"></i> Daftar Kehadiran Saya</button>
+      <button class="btn btn-primary" onclick="submitKehadiranGuru()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-check-circle"></use></svg> Daftar Kehadiran Saya</button>
     </div>
   </div>
 </div>
@@ -2522,7 +2843,7 @@ _{SEKOLAH}_</textarea>
       <div class="murid-attendance-footer-note">Semua perubahan hanya dihantar apabila butang simpan ditekan.</div>
       <div class="murid-attendance-footer-actions">
         <button class="btn btn-secondary" onclick="closeModal('modalKehadiranMurid')">Batal</button>
-        <button class="btn btn-primary" onclick="submitKehadiranKelas()"><i data-lucide="save" size="16"></i> Simpan Semua</button>
+        <button class="btn btn-primary" onclick="submitKehadiranKelas()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-save"></use></svg> Simpan Semua</button>
       </div>
     </div>
   </div>
@@ -2608,7 +2929,7 @@ _{SEKOLAH}_</textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalGuru')">Batal</button>
-      <button class="btn btn-primary" onclick="submitGuru()"><i data-lucide="save" size="16"></i> Simpan</button>
+      <button class="btn btn-primary" onclick="submitGuru()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-save"></use></svg> Simpan</button>
     </div>
   </div>
 </div>
@@ -2680,7 +3001,7 @@ _{SEKOLAH}_</textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalMurid')">Batal</button>
-      <button class="btn btn-primary" onclick="submitMurid()"><i data-lucide="save" size="16"></i> Simpan</button>
+      <button class="btn btn-primary" onclick="submitMurid()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-save"></use></svg> Simpan</button>
     </div>
   </div>
 </div>
@@ -2697,7 +3018,7 @@ _{SEKOLAH}_</textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalPadam')">Batal</button>
-      <button class="btn btn-danger" id="modalPadamConfirm"><i data-lucide="trash-2" size="16"></i> Padam</button>
+      <button class="btn btn-danger" id="modalPadamConfirm"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-trash-2"></use></svg> Padam</button>
     </div>
   </div>
 </div>
@@ -2715,12 +3036,6 @@ window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
 </script>
 <script src="app.min.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async defer onload="typeof onGSIReady === 'function' && onGSIReady()" onerror="typeof showLoginPage === 'function' && showLoginPage()"></script>
-<script>
-  // Initialize Lucide Icons
-  document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-  });
-</script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
