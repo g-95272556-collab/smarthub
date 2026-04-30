@@ -1545,6 +1545,10 @@ function onGSIReady() {
   if (_domReady) initAuth();
 }
 
+function hasGoogleSignInClient() {
+  return typeof google !== 'undefined' && !!(google.accounts && google.accounts.id);
+}
+
 function getCurrentOriginLabel() {
   if (typeof window === 'undefined' || !window.location || !window.location.origin) return 'origin semasa';
   return window.location.origin;
@@ -1757,6 +1761,13 @@ document.addEventListener('DOMContentLoaded', () => {
   syncBootstrapConfigInputs();
   showLoginPage();
   updateLoginReadinessMessage();
+  if (!_gsiReady && hasGoogleSignInClient()) {
+    onGSIReady();
+  } else if (!_gsiReady) {
+    setTimeout(() => {
+      if (!_gsiReady && hasGoogleSignInClient()) onGSIReady();
+    }, 800);
+  }
   requestAnimationFrame(() => {
     setTimeout(() => {
       const ls = $id('loadingScreen');
@@ -1853,8 +1864,12 @@ function renderGSIButton() {
 }
 
 function retryGSIRender() {
+  if (!_gsiReady && hasGoogleSignInClient()) {
+    onGSIReady();
+    return;
+  }
   if (_gsiReady) initAuth();
-  else showToast('Sila muat semula halaman.', 'error');
+  else showToast('Google Sign-In belum siap dimuat. Tunggu sebentar dan cuba lagi.', 'error');
 }
 
 function showLoginPage() {
