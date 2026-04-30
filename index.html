@@ -1417,6 +1417,9 @@ table tbody tr:last-child td { border-bottom: none; }
   background: var(--surface);
   border-radius: var(--r-lg);
   width: min(500px, 100%);
+  max-height: min(92vh, 840px);
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 40px 80px rgba(8,21,43,0.22);
   overflow: hidden;
 }
@@ -1435,11 +1438,19 @@ table tbody tr:last-child td { border-bottom: none; }
   transition: background 0.15s;
 }
 .modal-close:hover { background: rgba(239,68,68,0.08); color: var(--red); }
-.modal-body { padding: 24px 26px; display: grid; gap: 16px; }
+.modal-body { 
+  padding: 24px 26px; 
+  display: grid; 
+  gap: 16px; 
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+}
 .modal-footer {
   padding: 18px 26px;
   border-top: 1px solid var(--border);
   display: flex; justify-content: flex-end; gap: 10px;
+  flex: 0 0 auto;
 }
 .murid-attendance-modal {
   width: min(920px, 100%);
@@ -1595,12 +1606,14 @@ table tbody tr:last-child td { border-bottom: none; }
   }
 }
 @media (max-width: 640px) {
-  .murid-attendance-modal .modal-header,
-  .murid-attendance-modal .modal-body,
-  .murid-attendance-modal .modal-footer {
+  .modal-header,
+  .modal-body,
+  .modal-footer {
     padding-left: 18px;
     padding-right: 18px;
   }
+  .modal-body { padding-top: 18px; padding-bottom: 18px; }
+  .modal-footer { padding-top: 14px; padding-bottom: 14px; }
   .murid-attendance-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4676,7 +4689,7 @@ _{SEKOLAH}_</textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalKehadiranGuru')">Batal</button>
-      <button class="btn btn-primary" onclick="submitKehadiranGuru()">✅ Daftar Kehadiran Saya</button>
+      <button class="btn btn-primary" onclick="submitKehadiranGuru()"><i data-lucide="check-circle" size="16"></i> Daftar Kehadiran Saya</button>
     </div>
   </div>
 </div>
@@ -4769,7 +4782,7 @@ _{SEKOLAH}_</textarea>
       <div class="murid-attendance-footer-note">Semua perubahan hanya dihantar apabila butang simpan ditekan.</div>
       <div class="murid-attendance-footer-actions">
         <button class="btn btn-secondary" onclick="closeModal('modalKehadiranMurid')">Batal</button>
-        <button class="btn btn-primary" onclick="submitKehadiranKelas()">💾 Simpan Semua</button>
+        <button class="btn btn-primary" onclick="submitKehadiranKelas()"><i data-lucide="save" size="16"></i> Simpan Semua</button>
       </div>
     </div>
   </div>
@@ -4855,7 +4868,7 @@ _{SEKOLAH}_</textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalGuru')">Batal</button>
-      <button class="btn btn-primary" onclick="submitGuru()">💾 Simpan</button>
+      <button class="btn btn-primary" onclick="submitGuru()"><i data-lucide="save" size="16"></i> Simpan</button>
     </div>
   </div>
 </div>
