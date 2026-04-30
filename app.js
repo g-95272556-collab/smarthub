@@ -189,7 +189,8 @@ function setMobileNavOpen(isOpen) {
   var appPage = document.getElementById('appPage');
   var toggleBtn = document.querySelector('.mobile-nav-toggle');
   if (!appPage) return;
-  var shouldOpen = !!isOpen && isMobileViewport();
+  
+  var shouldOpen = !!isOpen;
   appPage.classList.toggle('mobile-nav-open', shouldOpen);
   document.body.classList.toggle('mobile-nav-open', shouldOpen);
   if (toggleBtn) toggleBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
@@ -1230,17 +1231,33 @@ async function muatCuaca() {
   try {
     var res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=5.3055655&longitude=116.9633906&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=Asia%2FKuala_Lumpur');
     var d = await res.json(); var c = d.current;
-    var icons = {0:'☀️',1:'⛅',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',61:'🌧️',71:'❄️',80:'🌧️',95:'⛈️'};
+    var icons = {
+      0: 'sun',
+      1: 'cloud-sun',
+      2: 'cloud-sun',
+      3: 'cloud',
+      45: 'cloud-fog',
+      48: 'cloud-fog',
+      51: 'cloud-drizzle',
+      61: 'cloud-rain',
+      71: 'snowflake',
+      80: 'cloud-rain-wind',
+      95: 'cloud-lightning'
+    };
     var descs = {0:'Cerah',1:'Sebahagian berawan',2:'Sebahagian berawan',3:'Berawan',45:'Berkabut',48:'Berkabut',51:'Hujan renyai',61:'Hujan',71:'Salji',80:'Hujan lebat',95:'Ribut petir'};
     var code = c.weather_code||0;
-    var icon = icons[code] || (code<=2?'⛅':code<=3?'☁️':code<=49?'🌫️':code<=69?'🌧️':code<=99?'⛈️':'🌤️');
+    var iconName = icons[code] || (code<=2?'cloud-sun':code<=3?'cloud':code<=49?'cloud-fog':code<=69?'cloud-rain':code<=99?'cloud-lightning':'sun');
     var desc = descs[code] || (code<=2?'Sebahagian berawan':code<=3?'Berawan':code<=49?'Berkabut':code<=69?'Hujan':'Ribut');
     setText('dash-cuaca-suhu', Math.round(c.temperature_2m)+'C');
     setText('dash-cuaca-desc', desc);
     setText('dash-cuaca-lembap', c.relative_humidity_2m);
     setText('dash-cuaca-angin', Math.round(c.wind_speed_10m));
     setText('dash-cuaca-rasa', Math.round(c.apparent_temperature));
-    var ic = $id('dash-cuaca-icon'); if(ic) ic.textContent = icon;
+    var ic = $id('dash-cuaca-icon'); 
+    if(ic) {
+      ic.innerHTML = '<i data-lucide="' + iconName + '" size="44"></i>';
+      if(window.lucide) lucide.createIcons({attrs:{'stroke-width': 2}});
+    }
   } catch(e) { setText('dash-cuaca-desc','Gagal'); }
 }
 
@@ -1277,9 +1294,9 @@ async function muatWaktuSolat() {
     var next = null;
     var html = senarai.map(function(s) {
       var p = s.masa.split(':'), wm = p.length>=2 ? parseInt(p[0])*60+parseInt(p[1]) : 9999;
-      var isNext = !next && wm > nm; if(isNext) next = s;
       var st = isNext ? 'font-weight:700;color:#FFD700' : 'opacity:0.88';
-      return '<div style="display:flex;justify-content:space-between;'+st+';padding:3px 0"><span>'+(isNext?'&#9658; ':'')+s.nama+'</span><span>'+s.masa+'</span></div>';
+      var marker = isNext ? '<i data-lucide="play" size="12" style="fill:currentColor;display:inline-block;margin-right:4px"></i> ' : '';
+      return '<div style="display:flex;justify-content:space-between;'+st+';padding:3px 0"><span>'+marker+s.nama+'</span><span>'+s.masa+'</span></div>';
     }).join('');
     var le = document.getElementById('dash-solat-list'); if(le) le.innerHTML = html;
     var ne = document.getElementById('dash-solat-seterusnya');
@@ -1287,7 +1304,12 @@ async function muatWaktuSolat() {
   } catch(e) {
     var fb = [{n:'Subuh',m:'05:42'},{n:'Zohor',m:'12:58'},{n:'Asar',m:'16:18'},{n:'Maghrib',m:'18:52'},{n:'Isyak',m:'20:02'}];
     var now2 = new Date(), nm2 = getCurrentTotalMinutes(now2), nxt = null;
-    var h2 = fb.map(function(s){ var p=s.m.split(':'),wm=parseInt(p[0])*60+parseInt(p[1]),isN=!nxt&&wm>nm2; if(isN)nxt=s; var st=isN?'font-weight:700;color:#FFD700':'opacity:0.88'; return '<div style="display:flex;justify-content:space-between;'+st+';padding:3px 0"><span>'+(isN?'&#9658; ':'')+s.n+'</span><span>'+s.m+'</span></div>'; }).join('');
+    var h2 = fb.map(function(s){ 
+      var p=s.m.split(':'),wm=parseInt(p[0])*60+parseInt(p[1]),isN=!nxt&&wm>nm2; if(isN)nxt=s; 
+      var st=isN?'font-weight:700;color:#FFD700':'opacity:0.88'; 
+      var marker = isN ? '<i data-lucide="play" size="12" style="fill:currentColor;display:inline-block;margin-right:4px"></i> ' : '';
+      return '<div style="display:flex;justify-content:space-between;'+st+';padding:3px 0"><span>'+marker+s.n+'</span><span>'+s.m+'</span></div>'; 
+    }).join('');
     var le = document.getElementById('dash-solat-list'); if(le) le.innerHTML = h2 + '<div style="font-size:0.65rem;opacity:0.5;margin-top:4px">Anggaran (offline)</div>';
     var ne = document.getElementById('dash-solat-seterusnya'); if(ne) ne.textContent = nxt ? 'Seterusnya: '+nxt.n+' - '+nxt.m : 'Semua telah berlalu';
   }
@@ -1429,7 +1451,7 @@ function renderBirthdayDashboard() {
     el.innerHTML = todayList.map(function(item) {
       return '<div style="padding:14px;border-radius:12px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);">' +
              '<strong>' + item.nama + '</strong> • ' + (item.peranan || '-') + ' • ' + (item.kelas || '-') +
-             '<div style="margin-top:6px;color:var(--green);font-weight:700">🎉 Hari lahir hari ini!</div>' +
+             '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;color:var(--green);font-weight:700"><i data-lucide="party-popper" size="16"></i> Hari lahir hari ini!</div>' +
              '</div>';
     }).join('');
     return;
@@ -6972,9 +6994,16 @@ async function loadDataGuru() {
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'GURU' });
     if (!data.success) throw new Error(data.error || 'Gagal');
-    _guruData = (data.rows || []).filter(r => r[0] && String(r[0]).toLowerCase() !== 'nama').map(function(r) {
-      return normalizeGuruRow(r);
-    });
+    var seenGuru = {};
+    _guruData = (data.rows || [])
+      .filter(r => r[0] && String(r[0]).toLowerCase() !== 'nama')
+      .map(function(r) { return normalizeGuruRow(r); })
+      .filter(function(r) {
+        var key = (String(r[0] || '').trim() + '|' + String(r[1] || '').trim()).toLowerCase();
+        if (seenGuru[key]) return false;
+        seenGuru[key] = true;
+        return true;
+      });
     window._guruCache = _guruData.map(function(r) {
       return {
         nama: r[0],
@@ -7000,11 +7029,16 @@ async function loadDataMurid() {
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'MURID' });
     if (!data.success) throw new Error(data.error || 'Gagal memuatkan data murid.');
-    _muridData = (data.rows || []).filter(function(r) {
-      return r[0] && String(r[0]).toLowerCase() !== 'nama';
-    }).map(function(r) {
-      return normalizeMuridRow(r);
-    });
+    var seenMurid = {};
+    _muridData = (data.rows || [])
+      .filter(function(r) { return r[0] && String(r[0]).toLowerCase() !== 'nama'; })
+      .map(function(r) { return normalizeMuridRow(r); })
+      .filter(function(r) {
+        var key = (String(r[0] || '').trim() + '|' + String(r[1] || '').trim()).toLowerCase();
+        if (seenMurid[key]) return false;
+        seenMurid[key] = true;
+        return true;
+      });
     _muridCache = {};
     window._kokumMuridSourceRows = _muridData.map(function(r) {
       return normalizeMuridRow(r);
