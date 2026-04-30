@@ -159,6 +159,52 @@ let _kehadiranGuruLoading = false;
 let _kehadiranMuridLoading = false;
 
 const ATTENDANCE_LIVE_REFRESH_MS = 30000;
+const MOBILE_NAV_BREAKPOINT = 900;
+
+function isMobileViewport() {
+  return typeof window !== 'undefined' && window.innerWidth <= MOBILE_NAV_BREAKPOINT;
+}
+
+function updateMobileNavTitle(moduleId) {
+  var titleEl = document.getElementById('mobileNavTitle');
+  if (!titleEl) return;
+  var activeBtn = null;
+  if (moduleId) {
+    activeBtn = Array.from(document.querySelectorAll('.nav-item')).find(function(btn) {
+      var handler = btn.getAttribute('onclick') || '';
+      return handler.indexOf("'" + moduleId + "'") !== -1 || handler.indexOf('"' + moduleId + '"') !== -1;
+    });
+  }
+  if (!activeBtn) activeBtn = document.querySelector('.nav-item.active');
+  var labels = activeBtn ? activeBtn.querySelectorAll('span') : [];
+  var text = labels && labels.length ? labels[labels.length - 1].textContent : '';
+  titleEl.textContent = text || 'Smart School Hub';
+}
+
+function setMobileNavOpen(isOpen) {
+  var appPage = document.getElementById('appPage');
+  var toggleBtn = document.querySelector('.mobile-nav-toggle');
+  if (!appPage) return;
+  var shouldOpen = !!isOpen && isMobileViewport();
+  appPage.classList.toggle('mobile-nav-open', shouldOpen);
+  document.body.classList.toggle('mobile-nav-open', shouldOpen);
+  if (toggleBtn) toggleBtn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+}
+
+function closeMobileNav() {
+  setMobileNavOpen(false);
+}
+
+function toggleMobileNav() {
+  var appPage = document.getElementById('appPage');
+  if (!appPage) return;
+  setMobileNavOpen(!appPage.classList.contains('mobile-nav-open'));
+}
+
+function syncResponsiveAppChrome() {
+  updateMobileNavTitle(_currentModuleId);
+  if (!isMobileViewport()) closeMobileNav();
+}
 
 const D1_EDITOR_DRAFT_KEY_PREFIX = 'ssh_d1_draft_';
 const KOKUM_DRAFT_STORAGE_KEY = 'ssh_kokum_draft';
@@ -1758,6 +1804,8 @@ document.addEventListener('DOMContentLoaded', () => {
   exposeLoginBootstrapActions();
   bindLoginBootstrapActions();
   initPWA();
+  syncResponsiveAppChrome();
+  window.addEventListener('resize', syncResponsiveAppChrome);
   syncBootstrapConfigInputs();
   showLoginPage();
   updateLoginReadinessMessage();
@@ -2105,6 +2153,8 @@ function showModule(id) {
     if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(id))
       btn.classList.add('active');
   });
+  updateMobileNavTitle(id);
+  if (isMobileViewport()) closeMobileNav();
   if (id === 'kehadiran-guru') setTimeout(function(){ initKehadiranGuruModule(); }, 300);
   if (id === 'konfigurasi') { loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); updateAttendanceNotificationStatusUI(); loadConfig(); }
   if (id === 'notifikasi') {
@@ -3649,7 +3699,7 @@ async function loadSenaraKelas() {
     return;
   }
   tbody.innerHTML = murid.map((m, i) =>
-    '<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 14px;color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td style="padding:10px 14px"><strong style="font-size:0.88rem">' + m.nama + '</strong><div style="font-size:0.75rem;color:var(--muted)">' + (m.wali ? 'Wali: ' + m.wali : '') + '</div></td><td style="padding:8px 10px"><select id="status_' + i + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;background:#fff;width:100%"><option value="Hadir">✅ Hadir</option><option value="Tidak Hadir">❌ Tidak Hadir</option><option value="MC">🏥 MC</option><option value="Cuti">📋 Cuti</option></select></td><td style="padding:8px 10px"><input id="catatan_' + i + '" type="text" placeholder="catatan..." style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;width:100%;background:#fff"></td></tr>'
+    '<tr style="border-bottom:1px solid var(--border)"><td data-label="#" style="padding:10px 14px;color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama Murid" style="padding:10px 14px"><strong style="font-size:0.88rem">' + m.nama + '</strong><div style="font-size:0.75rem;color:var(--muted)">' + (m.wali ? 'Wali: ' + m.wali : '') + '</div></td><td data-label="Status" style="padding:8px 10px"><select id="status_' + i + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;background:#fff;width:100%"><option value="Hadir">✅ Hadir</option><option value="Tidak Hadir">❌ Tidak Hadir</option><option value="MC">🏥 MC</option><option value="Cuti">📋 Cuti</option></select></td><td data-label="Catatan" style="padding:8px 10px"><input id="catatan_' + i + '" type="text" placeholder="catatan..." style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;width:100%;background:#fff"></td></tr>'
   ).join('');
   if (infoEl) infoEl.textContent = murid.length + ' murid dalam ' + kelas + ' • ' + (access.mesej || '');
   window._senaraKelasData = murid;
@@ -6935,7 +6985,7 @@ function renderGuruTable() {
   tbody.innerHTML = _guruFiltered.map(function(r, i) {
     const globalIdx = _guruData.indexOf(r);
     const st = (r[5] || 'Aktif') === 'Aktif' ? '<span class="badge badge-green">Aktif</span>' : (r[5] || '') === 'Bercuti' ? '<span class="badge badge-amber">Bercuti</span>' : '<span class="badge badge-gray">Tidak Aktif</span>';
-    return '<tr><td style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td><strong>' + escapeHtml(r[0] || '-') + '</strong></td><td style="font-size:0.82rem;color:var(--muted)">' + escapeHtml(r[1] || '-') + '</td><td><span class="badge badge-blue">' + escapeHtml(r[2] || '-') + '</span></td><td>' + escapeHtml(r[3] || '-') + '</td><td style="font-size:0.82rem">' + escapeHtml(r[4] || '-') + '</td><td>' + st + '</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-secondary" onclick="editGuru(' + globalIdx + ')">Edit</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'guru\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">Padam</button></td></tr>';
+    return '<tr><td data-label="#" style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama"><strong>' + escapeHtml(r[0] || '-') + '</strong></td><td data-label="Emel" style="font-size:0.82rem;color:var(--muted)">' + escapeHtml(r[1] || '-') + '</td><td data-label="Jawatan"><span class="badge badge-blue">' + escapeHtml(r[2] || '-') + '</span></td><td data-label="Kelas">' + escapeHtml(r[3] || '-') + '</td><td data-label="No. Telefon" style="font-size:0.82rem">' + escapeHtml(r[4] || '-') + '</td><td data-label="Status">' + st + '</td><td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-sm btn-secondary" onclick="editGuru(' + globalIdx + ')">Edit</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'guru\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">Padam</button></td></tr>';
   }).join('');
 }
 
@@ -6947,7 +6997,7 @@ function renderMuridTable() {
     const globalIdx = _muridData.indexOf(r);
     const st = (r[7] || 'Aktif') === 'Aktif' ? '<span class="badge badge-green">Aktif</span>' : (r[7] || '') === 'Berpindah' ? '<span class="badge badge-amber">Berpindah</span>' : '<span class="badge badge-gray">Tidak Aktif</span>';
     var jantinaLabel = r[2] === 'Lelaki' ? 'Lelaki' : r[2] === 'Perempuan' ? 'Perempuan' : '-';
-    return '<tr><td style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td><strong>' + escapeHtml(r[0] || '-') + '</strong></td><td><span class="badge badge-blue">' + escapeHtml(r[1] || '-') + '</span></td><td>' + escapeHtml(jantinaLabel) + '</td><td style="font-size:0.82rem">' + escapeHtml(formatTarikhDisplay(r[3])) + '</td><td style="font-size:0.82rem">' + escapeHtml(r[5] || '-') + '<br><span style="color:var(--muted)">' + escapeHtml(r[4] || '') + '</span></td><td>' + st + '</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-secondary" onclick="editMurid(' + globalIdx + ')">Edit</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'murid\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">Padam</button></td></tr>';
+    return '<tr><td data-label="#" style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama"><strong>' + escapeHtml(r[0] || '-') + '</strong></td><td data-label="Kelas"><span class="badge badge-blue">' + escapeHtml(r[1] || '-') + '</span></td><td data-label="Jantina">' + escapeHtml(jantinaLabel) + '</td><td data-label="Tarikh Lahir" style="font-size:0.82rem">' + escapeHtml(formatTarikhDisplay(r[3])) + '</td><td data-label="Wali / Telefon" style="font-size:0.82rem">' + escapeHtml(r[5] || '-') + '<br><span style="color:var(--muted)">' + escapeHtml(r[4] || '') + '</span></td><td data-label="Status">' + st + '</td><td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-sm btn-secondary" onclick="editMurid(' + globalIdx + ')">Edit</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'murid\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">Padam</button></td></tr>';
   }).join('');
 }
 
@@ -7716,7 +7766,7 @@ function renderD1Summary(summary) {
   tbody.innerHTML = rows.map(function(item) {
     var sheet = escapeHtml(item.sheet_name || item.sheetKey || item.sheet || '—');
     var count = item.data_count != null ? item.data_count : (item.row_count != null ? item.row_count : (item.rows != null ? item.rows : '0'));
-    return '<tr><td><strong>' + sheet + '</strong></td><td>' + count + '</td></tr>';
+    return '<tr><td data-label="Sheet"><strong>' + sheet + '</strong></td><td data-label="Bilangan Rekod">' + count + '</td></tr>';
   }).join('');
 }
 
