@@ -1,4 +1,4 @@
-
+﻿
 /* ─────────────────────────────────────────── */
 /* DESIGN TOKENS                               */
 /* ─────────────────────────────────────────── */
@@ -2250,4 +2250,15 @@ table tbody tr:last-child td { border-bottom: none; }
   .murid-attendance-table table {
     min-width: 0;
   }
+}
+
+/* SVG Lucide Icons */
+.lucide-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: inline-block;
+  vertical-align: middle;
 }
