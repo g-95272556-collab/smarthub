@@ -1533,7 +1533,7 @@ function renderDashGuruTable(rows, isninStr, jumaatStr) {
     var t = String(r.tarikh || '').split('T')[0];
     var parsedDate = parseLocalDateYMD(t);
     var h = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'][parsedDate ? parsedDate.getDay() : 0];
-    return '<tr><td><strong>'+(r.nama||'-')+'</strong></td><td>'+statusBadge(r.status)+'</td><td style="font-size:0.8rem;color:var(--muted)">'+h+' '+t+'</td><td>'+(r.masa||'-')+'</td><td style="font-size:0.78rem;color:var(--muted)">'+(r.catatan||'')+'</td></tr>';
+    return '<tr><td data-label="Nama Guru"><strong>'+(r.nama||'-')+'</strong></td><td data-label="Status">'+statusBadge(r.status)+'</td><td data-label="Hari / Tarikh" style="font-size:0.8rem;color:var(--muted)">'+h+' '+t+'</td><td data-label="Masa">'+(r.masa||'-')+'</td><td data-label="Catatan" style="font-size:0.78rem;color:var(--muted)">'+(r.catatan||'')+'</td></tr>';
   }).join('');
 }
 
@@ -3374,7 +3374,7 @@ async function loadKehadiranGuru(options) {
       const sourceBadges = buildAttendanceSourceBadges(r);
       const statusHtml = statusBadge(r.status || '-') + (r.masaKeluar ? ' <span class="badge badge-blue">Punch Out</span>' : '') + (sourceBadges ? ' ' + sourceBadges : '');
       const gpsHtml = (r.gpsMasuk ? '<span class="badge badge-blue">Masuk</span>' : '') + (r.gpsKeluar ? ' <span class="badge badge-green">Keluar</span>' : '');
-      return '<tr><td><strong>' + escapeHtml(r.nama || '-') + '</strong></td><td>' + escapeHtml(r.tarikh || '-') + '</td><td>' + escapeHtml(r.masaMasuk || '-') + '</td><td>' + escapeHtml(r.masaKeluar || '-') + '</td><td>' + statusHtml + '</td><td style="color:var(--muted);font-size:0.82rem">' + escapeHtml(catatanGabung) + '</td><td>' + gpsHtml + '</td></tr>';
+      return '<tr><td data-label="Nama"><strong>' + escapeHtml(r.nama || '-') + '</strong></td><td data-label="Tarikh">' + escapeHtml(r.tarikh || '-') + '</td><td data-label="Masa Masuk">' + escapeHtml(r.masaMasuk || '-') + '</td><td data-label="Masa Keluar">' + escapeHtml(r.masaKeluar || '-') + '</td><td data-label="Status">' + statusHtml + '</td><td data-label="Catatan" style="color:var(--muted);font-size:0.82rem">' + escapeHtml(catatanGabung) + '</td><td data-label="GPS">' + gpsHtml + '</td></tr>';
     }).join('');
     if (!opts.silent) showToast('Data kehadiran guru dikemas kini.', 'success');
   } catch(e) {
@@ -5189,7 +5189,7 @@ function loadHariLahir() {
     const days = daysUntilBirthday(p.bulan, p.hari);
     const umur = hitungUmur(p.bulan, p.hari, p.tahun);
     const daysLbl = days === 0 ? '<span class="badge" style="background:rgba(245,197,24,0.2);color:#b45309">🎂 HARI INI!</span>' : days <= 7 ? '<span class="badge badge-amber">' + days + ' hari lagi</span>' : '<span style="color:var(--muted);font-size:0.82rem">' + days + ' hari</span>';
-    return '<tr><td><strong>' + p.nama + '</strong></td><td><span class="badge ' + (p.peranan === 'Murid' ? 'badge-blue' : 'badge-green') + '">' + p.peranan + '</span></td><td>' + (p.kelas || '—') + '</td><td>' + p.hari + ' ' + BULAN[p.bulan] + ' ' + (p.tahun || '') + '</td><td>' + (umur ? umur + ' thn' : '—') + '</td><td>' + daysLbl + '</td><td style="font-size:0.82rem">' + (p.telefon || '—') + '</td><td style="display:flex;gap:5px">' + (days === 0 ? '<button class="btn btn-sm btn-success" onclick="hantarUcapanSeorang(' + i + ')">🎉</button>' : '') + '<button class="btn btn-sm btn-danger" onclick="hapusHL(' + i + ')">✕</button></td></tr>';
+    return '<tr><td data-label="Nama"><strong>' + p.nama + '</strong></td><td data-label="Peranan"><span class="badge ' + (p.peranan === 'Murid' ? 'badge-blue' : 'badge-green') + '">' + p.peranan + '</span></td><td data-label="Kelas">' + (p.kelas || '—') + '</td><td data-label="Tarikh Lahir">' + p.hari + ' ' + BULAN[p.bulan] + ' ' + (p.tahun || '') + '</td><td data-label="Umur">' + (umur ? umur + ' thn' : '—') + '</td><td data-label="Hari Tinggal">' + daysLbl + '</td><td data-label="No. Telefon" style="font-size:0.82rem">' + (p.telefon || '—') + '</td><td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap">' + (days === 0 ? '<button class="btn btn-sm btn-success" onclick="hantarUcapanSeorang(' + i + ')">🎉</button>' : '') + '<button class="btn btn-sm btn-danger" onclick="hapusHL(' + i + ')">✕</button></td></tr>';
   }).join('');
 }
 
@@ -8522,7 +8522,7 @@ async function loadKehadiranMurid(options) {
     }
     tbody.innerHTML = rows.map((item) => {
       const bolehNotif = ['Tidak Hadir', 'Ponteng'].includes(item.status);
-      return '<tr><td><strong>' + (item.nama || '-') + '</strong></td><td><span class="badge badge-blue">' + (item.kelas || '-') + '</span></td><td>' + (item.tarikh || '-') + '</td><td>' + statusBadge(item.status) + '</td><td style="font-size:0.82rem">' + (item.telefon || '-') + '</td><td style="display:flex;gap:6px;flex-wrap:wrap">' + (bolehNotif ? '<button class="btn btn-sm btn-success" onclick=\'notifSatuMurid(' + JSON.stringify(item.nama || '') + ',' + JSON.stringify(item.kelas || '') + ',' + JSON.stringify(item.tarikh || '') + ',' + JSON.stringify(item.telefon || '') + ')\'>📩</button>' : '') + '</td></tr>';
+      return '<tr><td data-label="Nama Murid"><strong>' + (item.nama || '-') + '</strong></td><td data-label="Kelas"><span class="badge badge-blue">' + (item.kelas || '-') + '</span></td><td data-label="Tarikh">' + (item.tarikh || '-') + '</td><td data-label="Status">' + statusBadge(item.status) + '</td><td data-label="No. Telefon Wali" style="font-size:0.82rem">' + (item.telefon || '-') + '</td><td data-label="Tindakan" style="display:flex;gap:6px;flex-wrap:wrap">' + (bolehNotif ? '<button class="btn btn-sm btn-success" onclick=\'notifSatuMurid(' + JSON.stringify(item.nama || '') + ',' + JSON.stringify(item.kelas || '') + ',' + JSON.stringify(item.tarikh || '') + ',' + JSON.stringify(item.telefon || '') + ')\'>📩</button>' : '') + '</td></tr>';
     }).join('');
     if (!opts.silent) showToast(rows.length + ' rekod kehadiran murid dikemas kini.', 'success');
   } catch(e) {
