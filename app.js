@@ -206,6 +206,13 @@ function toggleMobileNav() {
   setMobileNavOpen(!appPage.classList.contains('mobile-nav-open'));
 }
 
+function toggleDesktopNav() {
+  var sidebar = document.getElementById('appSidebar');
+  var appLayout = document.querySelector('.app-layout');
+  if (sidebar) sidebar.classList.toggle('collapsed');
+  if (appLayout) appLayout.classList.toggle('collapsed');
+}
+
 function syncResponsiveAppChrome() {
   updateMobileNavTitle(_currentModuleId);
   if (!isMobileViewport()) closeMobileNav();
@@ -1376,7 +1383,7 @@ function renderMuridTidakHadirDash(rows) {
   }).join('') + '</div>';
 }
 
-function renderWeeklyChart(todayRows) {
+function renderWeeklyChart(allRows) {
   var wrap = document.getElementById('dashChartWrap'); if(!wrap) return;
   var todayStr = getTodayYMD();
   var isnin = new Date(getIsninMingguIni()+'T00:00:00');
@@ -1385,10 +1392,13 @@ function renderWeeklyChart(todayRows) {
     var d = new Date(isnin); d.setDate(isnin.getDate()+i);
     var ds = formatDateYMD(d);
     var isToday = ds === todayStr, pct = 0;
-    if (isToday && todayRows && todayRows.length) {
-      var h = todayRows.filter(function(r){ return (r.status||r[3])==='Hadir'; }).length;
-      pct = Math.round((h/todayRows.length)*100);
-    } else if (ds < todayStr) { pct = Math.floor(Math.random()*15)+82; }
+    if (allRows && allRows.length) {
+      var dayRows = allRows.filter(function(r){ return (r.tarikh||r[2]) === ds; });
+      if (dayRows.length > 0) {
+        var h = dayRows.filter(function(r){ return (r.status||r[3])==='Hadir'; }).length;
+        pct = Math.round((h/dayRows.length)*100);
+      }
+    }
     var height = pct ? Math.round((pct/100)*72) : 4;
     var col = pct>=90?'var(--green)':pct>=80?'var(--gold2)':pct>0?'var(--red)':'var(--border)';
     bars += '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><div style="font-size:0.68rem;color:var(--muted);font-weight:600">'+(pct>0?pct+'%':'')+'</div><div style="width:100%;height:'+height+'px;background:'+col+';border-radius:6px 6px 0 0;transition:height 0.3s'+(isToday?';outline:2px solid var(--gold);outline-offset:2px':'')+'"></div></div>';
@@ -2323,6 +2333,13 @@ async function callWorker(payload) {
     if (e.name === 'AbortError') throw new Error('Sambungan timeout (10s)');
     throw e;
   }
+}
+
+async function pushFullSheet(sheetKey, headers, dataRows) {
+  const rows = [headers].concat(dataRows);
+  const data = await callWorker({ action: 'replaceSheet', sheetKey: sheetKey, rows: rows });
+  if (!data.success) throw new Error(data.error || 'Gagal menyimpan rekod.');
+  return data;
 }
 
 /* legacy removed: legacyOldUpdateWorkerStatus
@@ -7438,6 +7455,76 @@ function padSheetRow(row, expectedLength) {
   return normalized;
 }
 
+function buildGuruRowPayload(values, existingRow) {
+  var preserved = padSheetRow(existingRow, GURU_SHEET_HEADERS.length);
+  return [
+    values.nama || '',
+    values.emel || '',
+    values.jawatan || 'Guru Kelas',
+    values.kelas || '',
+    values.telefon || '',
+    values.status || 'Aktif',
+    values.wa || '',
+    preserved[7] || '',
+    values.catatan || '',
+    preserved[9] || '',
+    preserved[10] || '',
+    preserved[11] || '',
+    new Date().toISOString(),
+    APP.user ? APP.user.email : ''
+  ];
+}
+
+function openModalGuru() {
+  document.getElementById('modalGuruTitle').textContent = 'Tambah Guru';
+  document.getElementById('guruEditIdx').value = '';
+  ['g-nama','g-emel','g-telefon','g-wa','g-catatan'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  setValue('g-jawatan', 'Guru Kelas');
+  setValue('g-kelas', '');
+  setValue('g-status', 'Aktif');
+  openModal('modalGuru');
+}
+
+function editGuru(idx) {
+  const r = _guruData[idx]; if (!r) return;
+  document.getElementById('modalGuruTitle').textContent = 'Edit Guru';
+  document.getElementById('guruEditIdx').value = idx;
+  setValue('g-nama', r[0]); setValue('g-emel', r[1]); setValue('g-jawatan', r[2] || 'Guru Kelas');
+  setValue('g-kelas', r[3]); setValue('g-telefon', r[4]); setValue('g-wa', r[6]);
+  setValue('g-status', r[5] || 'Aktif'); setValue('g-catatan', r[8]);
+  openModal('modalGuru');
+}
+
+async function submitGuru() {
+  const nama = getTrimmedValue('g-nama');
+  if (!nama) { showToast('Nama wajib diisi.', 'error'); return; }
+  const editIdx = document.getElementById('guruEditIdx').value;
+  try {
+    const existingRow = editIdx !== '' ? _guruData[parseInt(editIdx)] : null;
+    const row = buildGuruRowPayload({
+      nama: nama,
+      emel: getTrimmedValue('g-emel'),
+      jawatan: getTrimmedValue('g-jawatan'),
+      kelas: getTrimmedValue('g-kelas'),
+      telefon: getTrimmedValue('g-telefon'),
+      status: getTrimmedValue('g-status'),
+      wa: getTrimmedValue('g-wa'),
+      catatan: getTrimmedValue('g-catatan')
+    }, existingRow);
+    if (editIdx !== '') {
+      _guruData[parseInt(editIdx)] = row;
+      await pushFullSheet('GURU', GURU_SHEET_HEADERS, _guruData);
+      showToast('Data guru dikemaskini.', 'success');
+    } else {
+      const data = await callWorker({ action: 'appendRow', sheetKey: 'GURU', row: row });
+      if (!data.success) throw new Error(data.error);
+      _guruData.push(row);
+      showToast('Guru berjaya ditambah!', 'success');
+    }
+    closeModal('modalGuru'); updateGuruStats(); filterDataGuru();
+  } catch(e) { showToast('Ralat: ' + e.message, 'error'); }
+}
+
 function buildMuridRowPayload(values, existingRow) {
   var preserved = padSheetRow(existingRow, MURID_SHEET_HEADERS.length);
   return [
@@ -8790,7 +8877,7 @@ function updateDashboardMurid(allMurid, today) {
   setText('dash-murid-hadir', hadir);
   setText('dash-tidak-hadir', tidakHadir.length);
   setText('dash-murid-pct', total ? pct + '% hadir' : '');
-  renderWeeklyChart(todayMurid);
+  renderWeeklyChart(allMurid);
   renderMuridTidakHadirDash(tidakHadir);
 }
 

@@ -115,9 +115,9 @@ html, body {
 /* SIDEBAR + MAIN LAYOUT                       */
 /* ─────────────────────────────────────────── */
 .app-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
+  display: flex;
   min-height: 100vh;
+  transition: all 0.3s ease;
 }
 .mobile-nav-backdrop,
 .mobile-app-bar,
@@ -134,9 +134,66 @@ html, body {
   padding: 32px 20px;
   display: flex; flex-direction: column;
   gap: 12px;
-  position: sticky; top: 0; height: 100vh;
+  position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
+  overflow-x: hidden;
   overflow-y: auto;
   border-right: 1px solid rgba(255,255,255,0.05);
+  z-index: 50;
+  transition: all 0.3s ease;
+}
+
+/* Sidebar collapsed state */
+.sidebar.collapsed {
+  width: 88px;
+  padding: 32px 14px;
+}
+.sidebar.collapsed .brand-text,
+.sidebar.collapsed .nav-section-label,
+.sidebar.collapsed .nav-item span:not(.nav-icon),
+.sidebar.collapsed .user-info {
+  display: none;
+}
+.sidebar.collapsed .sidebar-logo {
+  padding: 0 0 32px 0;
+  justify-content: center;
+}
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+.sidebar.collapsed .sidebar-user {
+  padding: 16px 0;
+  justify-content: center;
+}
+.app-layout.collapsed .main-content {
+  margin-left: 88px;
+}
+
+.desktop-nav-toggle {
+  display: none;
+}
+@media (min-width: 901px) {
+  .desktop-nav-toggle {
+    display: flex;
+    align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--navy);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    position: absolute;
+    right: -14px; top: 38px;
+    z-index: 60;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+  }
+  .desktop-nav-toggle:hover {
+    background: var(--gold);
+  }
+  .sidebar.collapsed .desktop-nav-toggle {
+    transform: rotate(180deg);
+  }
 }
 
 .sidebar-logo {
@@ -210,9 +267,18 @@ html, body {
   flex-shrink: 0;
   transition: inherit;
 }
+.nav-item.c-blue .nav-icon { color: #60a5fa; background: rgba(96,165,250,0.15); }
+.nav-item.c-green .nav-icon { color: #34d399; background: rgba(52,211,153,0.15); }
+.nav-item.c-cyan .nav-icon { color: #22d3ee; background: rgba(34,211,238,0.15); }
+.nav-item.c-orange .nav-icon { color: #fb923c; background: rgba(251,146,60,0.15); }
+.nav-item.c-purple .nav-icon { color: #c084fc; background: rgba(192,132,252,0.15); }
+.nav-item.c-rose .nav-icon { color: #fb7185; background: rgba(251,113,133,0.15); }
+.nav-item.c-teal .nav-icon { color: #2dd4bf; background: rgba(45,212,191,0.15); }
+.nav-item.c-amber .nav-icon { color: #fcd34d; background: rgba(252,211,77,0.15); }
+
 .nav-item.active .nav-icon {
-  background: var(--gold);
-  color: var(--navy);
+  background: var(--gold) !important;
+  color: var(--navy) !important;
   transform: scale(1.1);
 }
 
@@ -267,6 +333,9 @@ html, body {
   padding: 40px;
   overflow-y: auto;
   min-width: 0;
+  margin-left: 260px;
+  flex: 1;
+  transition: all 0.3s ease;
 }
 
 .mobile-app-bar {
@@ -1993,6 +2062,8 @@ table tbody tr:last-child td { border-bottom: none; }
     padding: 16px;
   }
   .main-content {
+    margin-left: 0;
+    flex: none;
     padding:
       calc(16px + var(--safe-top))
       calc(18px + var(--safe-right))
@@ -2245,6 +2316,9 @@ table tbody tr:last-child td { border-bottom: none; }
 
     <!-- SIDEBAR -->
     <aside class="sidebar" id="appSidebar">
+      <button class="desktop-nav-toggle" type="button" aria-label="Toggle Desktop Menu" onclick="toggleDesktopNav()">
+        <i data-lucide="chevron-left" size="16"></i>
+      </button>
       <button class="mobile-nav-close" type="button" aria-label="Tutup menu" onclick="closeMobileNav()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
@@ -2257,51 +2331,51 @@ table tbody tr:last-child td { border-bottom: none; }
       </div>
 
       <div class="nav-section-label">Utama</div>
-      <button class="nav-item active" onclick="showModule('dashboard')">
+      <button class="nav-item c-blue active" onclick="showModule('dashboard')">
         <span class="nav-icon"><i data-lucide="layout-dashboard" size="18"></i></span>
         <span>Papan Pemuka</span>
       </button>
 
       <div class="nav-section-label">Kehadiran</div>
-      <button class="nav-item" onclick="showModule('kehadiran-guru')">
+      <button class="nav-item c-green" onclick="showModule('kehadiran-guru')">
         <span class="nav-icon"><i data-lucide="users" size="18"></i></span>
         <span>Kehadiran Guru</span>
       </button>
-      <button class="nav-item" onclick="showModule('kehadiran-murid')">
+      <button class="nav-item c-cyan" onclick="showModule('kehadiran-murid')">
         <span class="nav-icon"><i data-lucide="graduation-cap" size="18"></i></span>
         <span>Kehadiran Murid</span>
       </button>
 
       <div class="nav-section-label">Utiliti Guru</div>
-      <button class="nav-item" onclick="showModule('opr')">
+      <button class="nav-item c-orange" onclick="showModule('opr')">
         <span class="nav-icon"><i data-lucide="file-text" size="18"></i></span>
         <span>OPR</span>
       </button>
-      <button class="nav-item" onclick="showModule('laporan-kelas')">
+      <button class="nav-item c-purple" onclick="showModule('laporan-kelas')">
         <span class="nav-icon"><i data-lucide="clipboard-list" size="18"></i></span>
         <span>Laporan Guru Bertugas Mingguan</span>
       </button>
-      <button class="nav-item" onclick="showModule('pelaporan-kokum')">
+      <button class="nav-item c-rose" onclick="showModule('pelaporan-kokum')">
         <span class="nav-icon"><i data-lucide="award" size="18"></i></span>
         <span>Pelaporan Kokum</span>
       </button>
 
       <div class="nav-section-label" data-admin-label="true">Pengurusan Data</div>
-      <button class="nav-item" data-admin-nav="true" onclick="showModule('data-guru')">
+      <button class="nav-item c-teal" data-admin-nav="true" onclick="showModule('data-guru')">
         <span class="nav-icon"><i data-lucide="database" size="18"></i></span>
         <span>Data Guru</span>
       </button>
-      <button class="nav-item" data-admin-nav="true" onclick="showModule('data-murid')">
+      <button class="nav-item c-blue" data-admin-nav="true" onclick="showModule('data-murid')">
         <span class="nav-icon"><i data-lucide="contact" size="18"></i></span>
         <span>Data Murid</span>
       </button>
-      <button class="nav-item" data-admin-nav="true" onclick="showModule('hari-lahir')">
+      <button class="nav-item c-amber" data-admin-nav="true" onclick="showModule('hari-lahir')">
         <span class="nav-icon"><i data-lucide="cake" size="18"></i></span>
         <span>Data Hari Lahir</span>
       </button>
 
       <div class="nav-section-label" data-admin-label="true">Sistem</div>
-      <button class="nav-item" data-admin-nav="true" onclick="showModule('konfigurasi')">
+      <button class="nav-item c-teal" data-admin-nav="true" onclick="showModule('konfigurasi')">
         <span class="nav-icon"><i data-lucide="settings" size="18"></i></span>
         <span>Konfigurasi</span>
       </button>
