@@ -131,6 +131,8 @@ let _gsiReady = false;
 let _domReady = false;
 let _geoProfile = null;
 let _authInitializedClientId = '';
+let _gsiButtonRenderedClientId = '';
+let _storedSessionRestoreAttempted = false;
 let geoCoords = null;
 let hlData = normalizeStoredHLData(JSON.parse(localStorage.getItem('ssh_hl_data') || '[]'));
 let hlConfig = JSON.parse(localStorage.getItem('ssh_hl_config') || 'null') || {
@@ -1587,6 +1589,11 @@ function renderDashGuruTable(rows, isninStr, jumaatStr) {
 
 // ── GOOGLE AUTH ────────────────────────────────────────────────
 function onGSIReady() {
+  if (_gsiReady) {
+    updateLoginReadinessMessage();
+    if (_domReady) renderGSIButton();
+    return;
+  }
   _gsiReady = true;
   if (_domReady) initAuth();
 }
@@ -1833,31 +1840,37 @@ function initAuth() {
     updateLoginReadinessMessage();
     return;
   }
-  try {
-    google.accounts.id.initialize({
-      client_id: APP.googleClientId,
-      callback: handleGoogleCredential,
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      ux_mode: 'popup'
-    });
-    _authInitializedClientId = APP.googleClientId;
-  } catch (err) {
-    showLoginPage();
-    setLoginConfigStatus('Google Sign-In gagal dimulakan. ' + buildHostedOAuthHint(), 'error');
-    console.error('Google Sign-In initialization failed:', err);
-    return;
-  }
-  const savedUser = localStorage.getItem('ssh_user');
-  if (savedUser) {
+  if (_authInitializedClientId !== APP.googleClientId) {
     try {
-      const parsedUser = JSON.parse(savedUser);
-      if (isValidStoredSession(parsedUser)) {
-        verifyStoredGoogleSession(parsedUser);
-        return;
-      }
-      localStorage.removeItem('ssh_user');
-    } catch(e) { localStorage.removeItem('ssh_user'); }
+      google.accounts.id.initialize({
+        client_id: APP.googleClientId,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        ux_mode: 'popup'
+      });
+      _authInitializedClientId = APP.googleClientId;
+      _gsiButtonRenderedClientId = '';
+    } catch (err) {
+      showLoginPage();
+      setLoginConfigStatus('Google Sign-In gagal dimulakan. ' + buildHostedOAuthHint(), 'error');
+      console.error('Google Sign-In initialization failed:', err);
+      return;
+    }
+  }
+  if (!_storedSessionRestoreAttempted) {
+    _storedSessionRestoreAttempted = true;
+    const savedUser = localStorage.getItem('ssh_user');
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        if (isValidStoredSession(parsedUser)) {
+          verifyStoredGoogleSession(parsedUser);
+          return;
+        }
+        localStorage.removeItem('ssh_user');
+      } catch(e) { localStorage.removeItem('ssh_user'); }
+    }
   }
   showLoginPage();
 }
@@ -1898,17 +1911,23 @@ function renderGSIButton() {
   if (!_gsiReady || typeof google === 'undefined') return;
   const container = document.getElementById('googleSignInBtn');
   if (!container) return;
-  container.innerHTML = '';
   if (!APP.workerUrl) {
     container.innerHTML = '<button class="btn btn-primary btn-full" onclick="focusLoginConfig()">Semak Tetapan Sambungan</button>';
+    _gsiButtonRenderedClientId = '';
     updateLoginReadinessMessage();
     return;
   }
-  if (_authInitializedClientId !== APP.googleClientId) initAuth();
+  if (_authInitializedClientId !== APP.googleClientId) {
+    initAuth();
+    return;
+  }
+  if (_gsiButtonRenderedClientId === APP.googleClientId && container.childElementCount) return;
+  container.innerHTML = '';
   google.accounts.id.renderButton(container, {
     type: 'standard', shape: 'pill', theme: 'filled_blue',
     size: 'large', text: 'signin_with', locale: 'ms', width: 320
   });
+  _gsiButtonRenderedClientId = APP.googleClientId;
 }
 
 function retryGSIRender() {

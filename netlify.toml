@@ -13,6 +13,16 @@
 
 # CORS and Security Headers
 [[headers]]
+  for = "/"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+
+[[headers]]
   for = "/*"
   [headers.values]
     # CORS
