@@ -133,6 +133,8 @@ let _geoProfile = null;
 let _authInitializedClientId = '';
 let _gsiButtonRenderedClientId = '';
 let _storedSessionRestoreAttempted = false;
+let _birthdayHydrationPromise = null;
+let _birthdayHydratedOnce = false;
 let geoCoords = null;
 let hlData = normalizeStoredHLData(JSON.parse(localStorage.getItem('ssh_hl_data') || '[]'));
 let hlConfig = JSON.parse(localStorage.getItem('ssh_hl_config') || 'null') || {
@@ -1412,6 +1414,13 @@ function renderBirthdayDashboard() {
   var el = document.getElementById('dash-birthday-list'); if (!el) return;
   if (!hlData || !hlData.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:16px;text-align:center">Tiada rekod hari lahir.</div>';
+    if (APP.workerUrl && !_birthdayHydratedOnce) {
+      hydrateHariLahirFromBackend(false).then(function() {
+        renderBirthdayDashboard();
+      }).catch(function(err) {
+        console.warn('Hydrasi dashboard Hari Lahir gagal:', err);
+      });
+    }
     return;
   }
   var todayParts = getMalaysiaDateParts(new Date()), todayM = todayParts.month, todayD = todayParts.day;
@@ -2186,7 +2195,7 @@ function showModule(id) {
     var notifGuruTarikhPreview = document.getElementById('notifGuruTarikhPreview');
     if (notifGuruTarikhPreview) notifGuruTarikhPreview.textContent = 'Gunakan tarikh hari ini jika kosong.';
   }
-  if (id === 'hari-lahir') { updateHLNotifStatusUI(); loadHariLahir(); }
+  if (id === 'hari-lahir') { updateHLNotifStatusUI(); loadHariLahir(true); }
 
   // Auto-refresh setup
   if (currentAutoRefreshInterval) clearInterval(currentAutoRefreshInterval);
@@ -5240,7 +5249,7 @@ function logNotif(type, target, mesej, status) {
 }
 
 // ── HARI LAHIR ─────────────────────────────────────────────────
-function loadHariLahir() {
+async function loadHariLahir(forceHydrate) {
   hlData = normalizeStoredHLData(hlData);
   const fields = ['hl-tg-bot','hl-tg-chat','hl-tg-topic'];
   const keys = ['tgBot','tgChat','tgTopic'];
@@ -5269,13 +5278,33 @@ function loadHariLahir() {
   filtered.sort(function(a, b) { return daysUntilBirthday(a.bulan, a.hari) - daysUntilBirthday(b.bulan, b.hari); });
   const tbody = document.getElementById('hlBody');
   if (!tbody) return;
-  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px">Tiada rekod. Import CSV atau tambah manual.</td></tr>'; return; }
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px">Tiada rekod. Import CSV atau tambah manual.</td></tr>';
+    if (APP.workerUrl && (forceHydrate || !_birthdayHydratedOnce)) {
+      try {
+        await hydrateHariLahirFromBackend(!!forceHydrate);
+        return loadHariLahir(false);
+      } catch (e) {
+        console.warn('Hydrasi Hari Lahir gagal:', e);
+      }
+    }
+    return;
+  }
   tbody.innerHTML = filtered.map(function(p, i) {
     const days = daysUntilBirthday(p.bulan, p.hari);
     const umur = hitungUmur(p.bulan, p.hari, p.tahun);
     const daysLbl = days === 0 ? '<span class="badge" style="background:rgba(245,197,24,0.2);color:#b45309">🎂 HARI INI!</span>' : days <= 7 ? '<span class="badge badge-amber">' + days + ' hari lagi</span>' : '<span style="color:var(--muted);font-size:0.82rem">' + days + ' hari</span>';
     return '<tr><td data-label="Nama"><strong>' + p.nama + '</strong></td><td data-label="Peranan"><span class="badge ' + (p.peranan === 'Murid' ? 'badge-blue' : 'badge-green') + '">' + p.peranan + '</span></td><td data-label="Kelas">' + (p.kelas || '—') + '</td><td data-label="Tarikh Lahir">' + p.hari + ' ' + BULAN[p.bulan] + ' ' + (p.tahun || '') + '</td><td data-label="Umur">' + (umur ? umur + ' thn' : '—') + '</td><td data-label="Hari Tinggal">' + daysLbl + '</td><td data-label="No. Telefon" style="font-size:0.82rem">' + (p.telefon || '—') + '</td><td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap">' + (days === 0 ? '<button class="btn btn-sm btn-success" onclick="hantarUcapanSeorang(' + i + ')">🎉</button>' : '') + '<button class="btn btn-sm btn-danger" onclick="hapusHL(' + i + ')">✕</button></td></tr>';
   }).join('');
+  if (APP.workerUrl && (forceHydrate || !_birthdayHydratedOnce)) {
+    try {
+      await hydrateHariLahirFromBackend(!!forceHydrate);
+      renderBirthdayDashboard();
+      if (forceHydrate) return loadHariLahir(false);
+    } catch (e) {
+      console.warn('Hydrasi Hari Lahir gagal:', e);
+    }
+  }
 }
 
 function daysUntilBirthday(bulan, hari) {
@@ -5324,6 +5353,11 @@ function importHLCSV() {
       if (didChange) added++;
     });
     localStorage.setItem('ssh_hl_data', JSON.stringify(hlData));
+    if (APP.workerUrl && APP.user && APP.user.idToken) {
+      saveHariLahirToBackend().catch(function(err) {
+        console.warn('Simpan backend Hari Lahir selepas import gagal:', err);
+      });
+    }
     const resultEl = document.getElementById('hlImportResult');
     if (resultEl) resultEl.textContent = '✅ ' + added + ' rekod diimport. ' + skipped + ' dilangkau.';
     showToast(added + ' rekod berjaya diimport!', 'success');
@@ -5332,7 +5366,16 @@ function importHLCSV() {
   reader.readAsText(file);
 }
 
-function hapusHL(idx) { hlData.splice(idx, 1); localStorage.setItem('ssh_hl_data', JSON.stringify(hlData)); loadHariLahir(); }
+async function hapusHL(idx) {
+  hlData.splice(idx, 1);
+  localStorage.setItem('ssh_hl_data', JSON.stringify(hlData));
+  try {
+    await saveHariLahirToBackend();
+  } catch (e) {
+    showToast('Data tempatan dikemaskini tetapi backend Hari Lahir gagal disimpan: ' + e.message, 'error');
+  }
+  loadHariLahir(false);
+}
 function openModalHariLahir() {
   const nama = prompt('Nama:'); if (!nama) return;
   const peranan = prompt('Peranan (Guru/Murid):') || 'Guru';
@@ -5353,8 +5396,18 @@ function openModalHariLahir() {
     return item.nama === normalized.nama && item.peranan === normalized.peranan && item.kelas === normalized.kelas;
   });
   localStorage.setItem('ssh_hl_data', JSON.stringify(hlData));
-  showToast(nama + ' ditambah.', 'success');
-  loadHariLahir();
+  var finalize = function() {
+    showToast(nama + ' ditambah.', 'success');
+    loadHariLahir(false);
+  };
+  if (APP.workerUrl && APP.user && APP.user.idToken) {
+    saveHariLahirToBackend().then(finalize).catch(function(e) {
+      showToast('Rekod ditambah pada browser ini tetapi backend Hari Lahir gagal disimpan: ' + e.message, 'error');
+      loadHariLahir(false);
+    });
+    return;
+  }
+  finalize();
 }
 
 async function hantarUcapanHariIni() {
@@ -7190,6 +7243,130 @@ function upsertHLRecord(record, matchFn) {
     hlData = normalizeStoredHLData(hlData);
   }
   return changed;
+}
+
+const HARILAHIR_SHEET_HEADERS = ['Nama','Peranan','Kelas','Tarikh Lahir','Telefon'];
+
+function buildHariLahirSheetRow(record) {
+  var normalized = normalizeStoredHLRecord(record);
+  if (!normalized) return null;
+  var day = String(normalized.hari).padStart(2, '0');
+  var month = String(normalized.bulan).padStart(2, '0');
+  var year = normalized.tahun ? String(normalized.tahun) : '';
+  return [
+    normalized.nama,
+    normalized.peranan,
+    normalized.kelas,
+    year ? (day + '/' + month + '/' + year) : (day + '/' + month + '/'),
+    normalized.telefon || ''
+  ];
+}
+
+function normalizeHariLahirSheetRows(rows) {
+  return normalizeStoredHLData((Array.isArray(rows) ? rows : []).map(function(row) {
+    return {
+      nama: row && row[0],
+      peranan: row && row[1],
+      kelas: row && row[2],
+      tarikh: row && row[3],
+      telefon: row && row[4]
+    };
+  }));
+}
+
+function mergeBirthdayRecords(baseRecords, extraRecords) {
+  var merged = normalizeStoredHLData(baseRecords);
+  (Array.isArray(extraRecords) ? extraRecords : []).forEach(function(record) {
+    var normalized = normalizeStoredHLRecord(record);
+    if (!normalized) return;
+    var idx = merged.findIndex(function(item) {
+      return item.nama === normalized.nama && item.peranan === normalized.peranan && item.kelas === normalized.kelas;
+    });
+    if (idx === -1) merged.push(normalized);
+    else merged[idx] = Object.assign({}, merged[idx], normalized);
+  });
+  return normalizeStoredHLData(merged);
+}
+
+function deriveBirthdayRecordsFromGuruRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map(function(row) {
+    var normalizedRow = normalizeGuruRow(row);
+    var parts = parseBirthdayParts(normalizedRow[7]);
+    if (!normalizedRow[0] || !parts) return null;
+    return {
+      nama: normalizedRow[0],
+      peranan: 'Guru',
+      kelas: normalizedRow[3] || '',
+      hari: parts.day,
+      bulan: parts.month,
+      tahun: parts.year || null,
+      telefon: normalizedRow[4] || ''
+    };
+  }).filter(Boolean);
+}
+
+function deriveBirthdayRecordsFromMuridRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map(function(row) {
+    var normalizedRow = normalizeMuridRow(row);
+    var parts = parseBirthdayParts(normalizedRow[3]);
+    if (!normalizedRow[0] || !parts) return null;
+    return {
+      nama: normalizedRow[0],
+      peranan: 'Murid',
+      kelas: normalizedRow[1] || '',
+      hari: parts.day,
+      bulan: parts.month,
+      tahun: parts.year || null,
+      telefon: normalizedRow[4] || ''
+    };
+  }).filter(Boolean);
+}
+
+async function saveHariLahirToBackend() {
+  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return false;
+  var rows = [HARILAHIR_SHEET_HEADERS].concat(normalizeStoredHLData(hlData).map(function(record) {
+    return buildHariLahirSheetRow(record);
+  }).filter(Boolean));
+  var data = await callWorker({ action: 'replaceSheet', sheetKey: 'HARILAHIR', rows: rows });
+  if (!data.success) throw new Error(data.error || 'Gagal menyimpan data Hari Lahir.');
+  return true;
+}
+
+async function hydrateHariLahirFromBackend(force) {
+  if (!APP.workerUrl || (!force && _birthdayHydratedOnce)) return hlData;
+  if (_birthdayHydrationPromise && !force) return _birthdayHydrationPromise;
+  _birthdayHydrationPromise = (async function() {
+    var results = await Promise.allSettled([
+      callWorker({ action: 'readSheet', sheetKey: 'HARILAHIR' }),
+      callWorker({ action: 'readSheet', sheetKey: 'GURU' }),
+      callWorker({ action: 'readSheet', sheetKey: 'MURID' })
+    ]);
+    var merged = hlData.slice();
+    var hariLahirRes = results[0];
+    if (hariLahirRes.status === 'fulfilled' && hariLahirRes.value && hariLahirRes.value.success) {
+      var rows = (hariLahirRes.value.rows || []).filter(function(row) {
+        return row[0] && String(row[0]).toLowerCase() !== 'nama';
+      });
+      merged = normalizeHariLahirSheetRows(rows);
+    }
+    var guruRes = results[1];
+    if (guruRes.status === 'fulfilled' && guruRes.value && guruRes.value.success) {
+      merged = mergeBirthdayRecords(merged, deriveBirthdayRecordsFromGuruRows(guruRes.value.rows || []));
+    }
+    var muridRes = results[2];
+    if (muridRes.status === 'fulfilled' && muridRes.value && muridRes.value.success) {
+      merged = mergeBirthdayRecords(merged, deriveBirthdayRecordsFromMuridRows(muridRes.value.rows || []));
+    }
+    hlData = normalizeStoredHLData(merged);
+    localStorage.setItem('ssh_hl_data', JSON.stringify(hlData));
+    _birthdayHydratedOnce = true;
+    return hlData;
+  })();
+  try {
+    return await _birthdayHydrationPromise;
+  } finally {
+    _birthdayHydrationPromise = null;
+  }
 }
 
 function refreshBirthdayViews() {
