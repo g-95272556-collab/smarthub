@@ -4475,7 +4475,7 @@ _{SEKOLAH}_</textarea>
         <div class="card" style="margin-bottom:20px">
           <div class="section-header"><h2>Import CSV</h2></div>
           <p style="font-size:0.83rem;color:var(--muted);margin-bottom:12px;line-height:1.7">
-            Format kolum CSV: <code>Nama, Emel, Jawatan, Kelas, No. Telefon, Status, WhatsApp, Catatan</code><br>
+            Format kolum CSV: <code>Nama, Emel, Jawatan, Guru Kelas, No. Telefon, Status, WhatsApp, Catatan</code><br>
             Modul Hari Lahir diurus sepenuhnya dalam modul Hari Lahir dan tidak lagi dikendalikan dalam Data Guru.<br>
             Contoh: <code>Cikgu Ali,ali@moe-dl.edu.my,Guru Kelas,4 MUTIARA,60123456789,Aktif,60123456789,Guru penasihat STEM</code>
           </p>
@@ -4510,7 +4510,7 @@ _{SEKOLAH}_</textarea>
             <table class="responsive-mobile-table">
               <thead><tr>
                 <th>#</th><th>Nama</th><th>Emel</th><th>Jawatan</th>
-                <th>Kelas</th><th>No. Telefon</th><th>Status</th><th>Tindakan</th>
+                <th>Guru Kelas</th><th>No. Telefon</th><th>Status</th><th>Tindakan</th>
               </tr></thead>
               <tbody id="dataGuruBody">
                 <tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px">
@@ -4804,9 +4804,9 @@ _{SEKOLAH}_</textarea>
           </select>
         </div>
         <div class="form-group">
-          <label>Kelas Diajar</label>
+          <label>Guru Kelas</label>
           <select id="g-kelas">
-            <option value="">— Tiada Kelas Tetap —</option>
+            <option value="">— Bukan Guru Kelas —</option>
             <option>1 NILAM</option><option>2 INTAN</option>
             <option>3 KRISTAL</option><option>4 MUTIARA</option>
             <option>5 DELIMA</option><option>6 BAIDURI</option>

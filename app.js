@@ -7115,7 +7115,7 @@ function renderGuruTable() {
   tbody.innerHTML = _guruFiltered.map(function(r, i) {
     const globalIdx = _guruData.indexOf(r);
     const st = (r[5] || 'Aktif') === 'Aktif' ? '<span class="badge badge-green">Aktif</span>' : (r[5] || '') === 'Bercuti' ? '<span class="badge badge-amber">Bercuti</span>' : '<span class="badge badge-gray">Tidak Aktif</span>';
-    return '<tr><td data-label="#" style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama"><strong>' + escapeHtml(r[0] || '-') + '</strong></td><td data-label="Emel" style="font-size:0.82rem;color:var(--muted)">' + escapeHtml(r[1] || '-') + '</td><td data-label="Jawatan"><span class="badge badge-blue">' + escapeHtml(r[2] || '-') + '</span></td><td data-label="Kelas">' + escapeHtml(r[3] || '-') + '</td><td data-label="No. Telefon" style="font-size:0.82rem">' + escapeHtml(r[4] || '-') + '</td><td data-label="Status">' + st + '</td><td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-sm btn-secondary" onclick="editGuru(' + globalIdx + ')">Edit</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'guru\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">Padam</button></td></tr>';
+    return '<tr><td data-label="#" style="color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama"><strong>' + escapeHtml(r[0] || '-') + '</strong></td><td data-label="Emel" style="font-size:0.82rem;color:var(--muted)">' + escapeHtml(r[1] || '-') + '</td><td data-label="Jawatan"><span class="badge badge-blue">' + escapeHtml(r[2] || '-') + '</span></td><td data-label="Guru Kelas">' + escapeHtml(r[3] || '-') + '</td><td data-label="No. Telefon" style="font-size:0.82rem">' + escapeHtml(r[4] || '-') + '</td><td data-label="Status">' + st + '</td><td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap"><button class="btn btn-sm btn-secondary" onclick="editGuru(' + globalIdx + ')">Edit</button><button class="btn btn-sm btn-danger" onclick="confirmPadam(\'guru\',' + globalIdx + ',' + JSON.stringify(r[0] || '') + ')">Padam</button></td></tr>';
   }).join('');
 }
 
@@ -7446,7 +7446,7 @@ function normalizeMuridRow(row) {
   return padSheetRow(row, MURID_SHEET_HEADERS.length);
 }
 
-const GURU_SHEET_HEADERS = ['Nama','Emel','Jawatan','Kelas','Telefon','Status','WhatsApp','Tarikh Lahir','Catatan','Kokum Unit Beruniform','Kokum Kelab Dan Persatuan','Kokum Sukan Dan Permainan','Dikemaskini','Oleh'];
+const GURU_SHEET_HEADERS = ['Nama','Emel','Jawatan','Guru Kelas','Telefon','Status','WhatsApp','Tarikh Lahir','Catatan','Kokum Unit Beruniform','Kokum Kelab Dan Persatuan','Kokum Sukan Dan Permainan','Dikemaskini','Oleh'];
 const MURID_SHEET_HEADERS = ['Nama','Kelas','Jantina','Tarikh Lahir','Telefon Wali','Nama Wali','No. IC','Status','Catatan','Kokum Unit Beruniform','Kokum Kelab Dan Persatuan','Kokum Sukan Dan Permainan','Dikemaskini','Oleh'];
 
 function padSheetRow(row, expectedLength) {
@@ -7524,6 +7524,67 @@ async function submitGuru() {
     closeModal('modalGuru'); updateGuruStats(); filterDataGuru();
   } catch(e) { showToast('Ralat: ' + e.message, 'error'); }
 }
+
+function importGuruCSV() {
+  const file = document.getElementById('guruCsvInput').files[0];
+  if (!file) { showToast('Pilih fail CSV guru dahulu.', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const lines = e.target.result.split(/\r?\n/).filter(function(l) { return l.trim(); });
+    let added = 0, skipped = 0;
+    const newRows = [];
+    lines.forEach(function(line, idx) {
+      if (idx === 0 && line.toLowerCase().replace(/"/g, '').startsWith('nama')) return;
+      const cols = parseCSVLine(line);
+      if (!cols[0]) { skipped++; return; }
+      const row = buildGuruRowPayload({
+        nama: cols[0] || '',
+        emel: cols[1] || '',
+        jawatan: cols[2] || 'Guru Kelas',
+        kelas: cols[3] || '',
+        telefon: cols[4] || '',
+        status: cols[5] || 'Aktif',
+        wa: cols[6] || '',
+        catatan: cols[7] || ''
+      });
+      newRows.push(row);
+      added++;
+    });
+    if (!newRows.length) { showToast('Tiada data sah.', 'error'); return; }
+    let sent = 0;
+    for (const row of newRows) {
+      try {
+        await callWorker({ action: 'appendRow', sheetKey: 'GURU', row: row });
+        _guruData.push(row);
+        sent++;
+      } catch(e) { skipped++; }
+    }
+    showToast(sent + ' guru diimport!', 'success');
+    updateGuruStats(); filterDataGuru();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function downloadGuruTemplate() {
+  const headers = 'Nama,Emel,Jawatan,Guru Kelas,No. Telefon,Status,WhatsApp,Catatan';
+  const row = 'Cikgu Ali,ali@moe-dl.edu.my,Guru Kelas,4 MUTIARA,60123456789,Aktif,60123456789,Guru penasihat STEM';
+  downloadCSV(headers + '\n' + row + '\n', 'templat_guru.csv');
+}
+
+function exportGuruCSV() {
+  if (!_guruData.length) { showToast('Tiada data.', 'error'); return; }
+  const headers = 'Nama,Emel,Jawatan,Guru Kelas,No. Telefon,Status,WhatsApp,Catatan,Tarikh Lahir';
+  const rows = _guruData.map(function(r) {
+    var normalized = padSheetRow(r, GURU_SHEET_HEADERS.length);
+    return [
+      normalized[0], normalized[1], normalized[2], normalized[3],
+      normalized[4], normalized[5], normalized[6], normalized[8], normalized[7]
+    ].map(function(c) { return '"' + (c || '') + '"'; }).join(',');
+  });
+  downloadCSV([headers].concat(rows).join('\n'), 'data_guru_skkiandongo.csv');
+  showToast('CSV dieksport.', 'success');
+}
+
 
 function buildMuridRowPayload(values, existingRow) {
   var preserved = padSheetRow(existingRow, MURID_SHEET_HEADERS.length);
