@@ -5516,14 +5516,25 @@ async function hantarTelegram(mesej) {
   return data;
 }
 
+function normalizePhoneFonnte(num) {
+  let clean = String(num || '').replace(/\D/g, '');
+  if (clean.startsWith('0')) {
+    clean = '60' + clean.substring(1);
+  } else if (clean.startsWith('1')) {
+    clean = '60' + clean;
+  }
+  return clean;
+}
+
 async function callFonnte(target, mesej) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const cleanTarget = normalizePhoneFonnte(target);
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
     headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ target: target, message: mesej, countryCode: "60" })
+    body: JSON.stringify({ target: cleanTarget, message: mesej, countryCode: "60" })
   });
   const data = await res.json();
   if (!data.status) throw new Error(data.reason || data.detail || 'Fonnte error');
@@ -5534,10 +5545,11 @@ async function callFonnteFile(target, caption, blob, filename) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const cleanTarget = normalizePhoneFonnte(target);
   const form = new FormData();
-  form.append('target', target);
+  form.append('target', cleanTarget);
   form.append('message', caption || '');
-  form.append('file', blob, filename || 'surat_amaran.pdf');
+  form.append('file', blob, filename || 'surat_amaran.jpg');
   form.append('countryCode', '60');
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
@@ -5572,8 +5584,9 @@ async function callFonnteUrl(target, caption, fileUrl, filename) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const cleanTarget = normalizePhoneFonnte(target);
   const form = new FormData();
-  form.append('target', target);
+  form.append('target', cleanTarget);
   form.append('url', fileUrl);
   form.append('filename', filename || 'SuratAmaran.jpg');
   form.append('message', caption || '');
