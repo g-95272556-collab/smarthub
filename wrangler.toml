@@ -2,6 +2,7 @@ name = "smartschoolhub-skkiandongo"
 main = "SmartSchoolHub_Worker.js"
 compatibility_date = "2026-04-20"
 workers_dev = true
+account_id = "51b50f751b0d7b49db7cf38623acb622"
 
 [assets]
 directory = "./"
