@@ -6460,7 +6460,7 @@ cetakOPR = function() {
         --section-title-font: 7.7px;
         --section-font: 7.1px;
         --note-font: 6.7px;
-        --photo-h: 18.5mm;
+        --photo-h: 28mm;
       }
       * { box-sizing: border-box; }
       html, body {
@@ -6632,7 +6632,7 @@ cetakOPR = function() {
       }
       .opr-gallery-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         align-content: stretch;
         gap: 2mm;
       }
@@ -6785,7 +6785,7 @@ cetakOPR = function() {
           var sectionTitle = 7.7;
           var section = 7.1;
           var note = 6.7;
-          var photo = 25.5;
+          var photo = 28;
           var tries = 0;
           while (sheet.scrollHeight > sheet.clientHeight && tries < 20) {
             base -= 0.16;
@@ -6801,7 +6801,7 @@ cetakOPR = function() {
             root.style.setProperty('--section-title-font', Math.max(sectionTitle, 6.1) + 'px');
             root.style.setProperty('--section-font', Math.max(section, 5.7) + 'px');
             root.style.setProperty('--note-font', Math.max(note, 5.5) + 'px');
-            root.style.setProperty('--photo-h', Math.max(photo, 13.5) + 'mm');
+            root.style.setProperty('--photo-h', Math.max(photo, 18) + 'mm');
             tries++;
           }
         }
