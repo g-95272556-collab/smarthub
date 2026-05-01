@@ -153,8 +153,8 @@ let _autoPunchOutBusy = false;
 let _laporanBertugasUiBound = false;
 let currentAutoRefreshInterval = null;
 let _d1EditorDraftTimer = null;
-const OPR_IMAGE_MIN_COUNT = 4;
-const OPR_IMAGE_MAX_COUNT = 4;
+const OPR_IMAGE_MIN_COUNT = 6;
+const OPR_IMAGE_MAX_COUNT = 6;
 let _oprImageItems = [];
 let _oprImageTargetIndex = -1;
 let _d1EditorDraftBound = false;
@@ -5675,7 +5675,7 @@ async function handleOPRImageSelection(event, source) {
 
     const availableSlots = OPR_IMAGE_MAX_COUNT - _oprImageItems.length;
     if (availableSlots <= 0) {
-      showToast('Empat gambar sudah dipilih. Guna butang Tukar pada slot gambar untuk ganti.', 'info');
+      showToast('Enam gambar sudah dipilih. Guna butang Tukar pada slot gambar untuk ganti.', 'info');
       return;
     }
 
@@ -5687,7 +5687,7 @@ async function handleOPRImageSelection(event, source) {
     _oprImageItems = _oprImageItems.concat(preparedImages).slice(0, OPR_IMAGE_MAX_COUNT);
     renderOPRImageGrid();
     if (files.length > availableSlots) {
-      showToast('Hanya 4 gambar pertama digunakan supaya cetakan OPR kekal satu muka surat.', 'info');
+      showToast('Hanya 6 gambar pertama digunakan supaya cetakan OPR kekal satu muka surat.', 'info');
     }
     showToast((source === 'camera' ? 'Gambar kamera' : 'Gambar') + ' berjaya ditambah.', 'success');
   } catch (err) {
@@ -5710,7 +5710,7 @@ function renderOPRImageGrid() {
   const grid = document.getElementById('oprImageGrid');
   const status = document.getElementById('oprImageStatus');
   if (status) {
-    status.textContent = _oprImageItems.length + ' / ' + OPR_IMAGE_MAX_COUNT + ' gambar dipilih. Minimum 4 gambar diperlukan untuk cetakan OPR satu muka surat.';
+    status.textContent = _oprImageItems.length + ' / ' + OPR_IMAGE_MAX_COUNT + ' gambar dipilih. Minimum 6 gambar diperlukan untuk cetakan OPR satu muka surat.';
   }
   if (!grid) return;
 
@@ -5797,7 +5797,7 @@ cetakOPR = function() {
     return;
   }
   if (_oprImageItems.length < OPR_IMAGE_MIN_COUNT) {
-    showToast('Sila tambah sekurang-kurangnya 4 gambar sebelum cetak OPR.', 'error');
+    showToast('Sila tambah sekurang-kurangnya 6 gambar sebelum cetak OPR.', 'error');
     return;
   }
   const tarikh = get('opr-tarikh');
@@ -5979,7 +5979,7 @@ cetakOPR = function() {
       }
       .opr-print-photo img {
         width: 100%;
-        height: 37mm;
+        height: 25mm;
         object-fit: cover;
         border-radius: 12px;
         border: 1px solid rgba(16, 36, 62, 0.10);
@@ -6094,7 +6094,7 @@ cetakOPR = function() {
     return;
   }
   if (_oprImageItems.length < OPR_IMAGE_MIN_COUNT) {
-    showToast('Sila tambah sekurang-kurangnya 4 gambar sebelum cetak OPR.', 'error');
+    showToast('Sila tambah sekurang-kurangnya 6 gambar sebelum cetak OPR.', 'error');
     return;
   }
 
@@ -6307,7 +6307,7 @@ cetakOPR = function() {
       }
       .opr-print-photo img {
         width: 100%;
-        height: 31mm;
+        height: 20mm;
         object-fit: cover;
         border-radius: 10px;
         border: 1px solid rgba(16, 36, 62, 0.10);
@@ -6387,7 +6387,7 @@ cetakOPR = function() {
         </div>
         <div class="opr-gallery-card">
           <h3>Dokumentasi Program</h3>
-          <p>Empat foto utama aktiviti untuk rujukan pentadbiran dan eksport PDF.</p>
+          <p>Enam foto utama aktiviti untuk rujukan pentadbiran dan eksport PDF.</p>
           <div class="opr-gallery-grid">
             ${buildOPRPrintPhotoGrid(photos)}
           </div>
@@ -6424,7 +6424,7 @@ cetakOPR = function() {
     return;
   }
   if (_oprImageItems.length < OPR_IMAGE_MIN_COUNT) {
-    showToast('Sila tambah sekurang-kurangnya 4 gambar sebelum cetak OPR.', 'error');
+    showToast('Sila tambah sekurang-kurangnya 6 gambar sebelum cetak OPR.', 'error');
     return;
   }
 
@@ -6460,7 +6460,7 @@ cetakOPR = function() {
         --section-title-font: 7.7px;
         --section-font: 7.1px;
         --note-font: 6.7px;
-        --photo-h: 25.5mm;
+        --photo-h: 18.5mm;
       }
       * { box-sizing: border-box; }
       html, body {
@@ -6801,7 +6801,7 @@ cetakOPR = function() {
             root.style.setProperty('--section-title-font', Math.max(sectionTitle, 6.1) + 'px');
             root.style.setProperty('--section-font', Math.max(section, 5.7) + 'px');
             root.style.setProperty('--note-font', Math.max(note, 5.5) + 'px');
-            root.style.setProperty('--photo-h', Math.max(photo, 17.5) + 'mm');
+            root.style.setProperty('--photo-h', Math.max(photo, 13.5) + 'mm');
             tries++;
           }
         }
