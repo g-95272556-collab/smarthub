@@ -6447,19 +6447,21 @@ cetakOPR = function() {
     <style>
       @page { size: A4 portrait; margin: 6mm; }
       :root {
-        --navy: #10243e;
-        --blue: #1d4fa3;
-        --line: #d9e3f3;
-        --text: #10243e;
-        --muted: #5d6f85;
-        --surface: #f7faff;
+        --navy: #0f172a;
+        --blue: #1e40af;
+        --blue-light: #3b82f6;
+        --line: #e2e8f0;
+        --text: #1e293b;
+        --muted: #64748b;
+        --surface: #f8fafc;
+        --accent: #f59e0b;
         --page-h: 285mm;
-        --base-font: 8.9px;
-        --title-font: 13px;
-        --meta-font: 8.2px;
-        --section-title-font: 7.7px;
-        --section-font: 7.1px;
-        --note-font: 6.7px;
+        --base-font: 9.1px;
+        --title-font: 14.5px;
+        --meta-font: 8.4px;
+        --section-title-font: 8px;
+        --section-font: 7.4px;
+        --note-font: 7px;
         --photo-h: 35mm;
       }
       * { box-sizing: border-box; }
@@ -6478,14 +6480,15 @@ cetakOPR = function() {
         height: var(--page-h);
         min-height: var(--page-h);
         margin: 0 auto;
-        padding: 6mm;
+        padding: 7.5mm;
         background: #ffffff;
-        border: 1px solid var(--line);
-        border-radius: 18px;
+        border: 1px solid rgba(30, 64, 175, 0.1);
+        border-radius: 20px;
         display: flex;
         flex-direction: column;
-        gap: 3.4mm;
+        gap: 4mm;
         overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
       }
       .opr-header {
         display: grid;
@@ -6516,31 +6519,34 @@ cetakOPR = function() {
         color: var(--muted);
       }
       .opr-title .opr-subtitle {
-        margin-top: 4px;
+        margin-top: 5px;
         display: inline-flex;
-        padding: 2px 8px;
+        padding: 3px 12px;
         border-radius: 999px;
-        background: linear-gradient(135deg, rgba(246,199,68,0.22), rgba(29,79,163,0.10));
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(59, 130, 246, 0.1));
         color: var(--blue);
-        font-size: 6.9px;
+        font-size: 7.2px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
+        border: 1px solid rgba(30, 64, 175, 0.08);
       }
       .opr-badge {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 14mm;
-        padding: 4px 9px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #14396f, #1d4fa3);
+        min-height: 16mm;
+        padding: 5px 14px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
         color: #fff;
-        font-size: 6.9px;
+        font-size: 7.2px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
         text-align: center;
+        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+        border: 1px solid rgba(255,255,255,0.1);
       }
       .opr-meta-grid {
         display: grid;
@@ -6548,11 +6554,12 @@ cetakOPR = function() {
         gap: 2mm;
       }
       .opr-meta-card {
-        border: 1px solid var(--line);
-        border-radius: 11px;
-        padding: 2.2mm;
-        min-height: 15.5mm;
-        background: linear-gradient(180deg, #ffffff, var(--surface));
+        border: 1px solid rgba(30, 64, 175, 0.08);
+        border-radius: 12px;
+        padding: 2.5mm 3mm;
+        min-height: 16mm;
+        background: linear-gradient(180deg, #ffffff, #f1f5f9);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
       }
       .opr-meta-card.program { grid-column: span 2; }
       .opr-meta-card.place { grid-column: span 2; }
@@ -6588,13 +6595,14 @@ cetakOPR = function() {
         min-height: 0;
       }
       .opr-print-section {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: #fcfdff;
-        padding: 2.1mm 2.4mm;
+        border: 1px solid rgba(30, 64, 175, 0.08);
+        border-radius: 14px;
+        background: #ffffff;
+        padding: 2.4mm 2.8mm;
         min-height: 0;
         display: grid;
         grid-template-rows: auto 1fr;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.01);
       }
       .opr-print-section h3 {
         margin: 0 0 3px;
@@ -6614,14 +6622,15 @@ cetakOPR = function() {
         font-style: italic;
       }
       .opr-gallery-card {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: linear-gradient(180deg, #ffffff, #f5f9ff);
-        padding: 2.3mm;
+        border: 1px solid rgba(30, 64, 175, 0.1);
+        border-radius: 14px;
+        background: linear-gradient(180deg, #ffffff, #f0f7ff);
+        padding: 2.8mm;
         display: grid;
         grid-template-rows: auto 1fr;
-        gap: 2mm;
+        gap: 2.4mm;
         min-height: 0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
       }
       .opr-gallery-card h3 {
         margin: 0;
