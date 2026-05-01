@@ -6,7 +6,7 @@ workers_dev = true
 [assets]
 directory = "./"
 binding = "ASSETS"
-run_worker_first = ["/api/*", "/ai/*", "/token"]
+run_worker_first = ["/api/*", "/ai/*", "/token", "/letter/*"]
 html_handling = "auto-trailing-slash"
 not_found_handling = "404-page"
 

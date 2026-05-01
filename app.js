@@ -5549,6 +5549,40 @@ async function callFonnteFile(target, caption, blob, filename) {
   return data;
 }
 
+async function uploadLetterToWorker(blob) {
+  if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
+  const base64 = await new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function() { resolve(reader.result.split(',')[1]); };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+  const url = APP.workerUrl.replace(/\/+$/, '') + '/api';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'storeLetterFile', data: base64, mimeType: blob.type || 'image/jpeg', filename: 'SuratAmaran.jpg' })
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || 'Gagal simpan fail ke Worker');
+  return data.url;
+}
+
+async function callFonnteUrl(target, caption, fileUrl, filename) {
+  const token = hlConfig.fonnteToken;
+  if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
+  if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const res = await fetch('https://api.fonnte.com/send', {
+    method: 'POST',
+    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ target: target, url: fileUrl, filename: filename || 'SuratAmaran.jpg', message: caption || '', countryCode: '60' })
+  });
+  const data = await res.json();
+  console.log('[Fonnte URL] respons:', JSON.stringify(data));
+  if (!data.status) throw new Error(data.reason || data.detail || 'Fonnte error');
+  return data;
+}
+
 function loadHtml2Pdf() {
   return new Promise(function(resolve, reject) {
     if (window.html2pdf) { resolve(window.html2pdf); return; }
@@ -5656,13 +5690,17 @@ async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
   var tarikh = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
   var info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
   var m = { nama: nama, kelas: kelas, tahap: tahap, jumlahHari: jumlahHari, hariKonsekutif: hariKonsekutif || 0, tahapInfo: info };
-  showToast('Menghantar surat amaran ke WhatsApp ' + telefon + '...', 'info');
+  var caption = janaWATeksSuratAmaran(m, cfg, tarikh);
+  var filename = 'SuratAmaran_' + info.label.replace(/\s+/g, '') + '_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
+  showToast('Jana surat amaran...', 'info');
   try {
-    var mesej = janaWATeksSuratAmaran(m, cfg, tarikh);
-    var resp = await callFonnte(telefon, mesej);
+    var blob = await janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
+    showToast('Muat naik & hantar ke WhatsApp ' + telefon + '...', 'info');
+    var fileUrl = await uploadLetterToWorker(blob);
+    var resp = await callFonnteUrl(telefon, caption, fileUrl, filename);
     if (resp.status === true || resp.status === 'true') {
       showToast(info.label + ' berjaya dihantar ke ' + telefon, 'success');
-      logNotif(info.label + ' WA', telefon, mesej, 'Berjaya');
+      logNotif(info.label + ' WA Imej', telefon, fileUrl, 'Berjaya');
     } else {
       showToast('Gagal hantar: ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error');
     }
@@ -10579,18 +10617,23 @@ async function hantarAmaranKeGroupUjian() {
     if (!muridAmaran.length) { showToast('Tiada murid yang perlu amaran.', 'info'); return; }
     var cfg = getAmaranSekolahConfig();
     var tarikh = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
-    showToast('Menghantar ' + muridAmaran.length + ' surat amaran ke group ujian...', 'info');
+    showToast('Jana dan hantar ' + muridAmaran.length + ' surat amaran ke group ujian...', 'info');
     var sent = 0, failed = 0;
     for (var i = 0; i < muridAmaran.length; i++) {
       var m = muridAmaran[i];
       try {
-        showToast('Hantar surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
-        var mesej = janaWATeksSuratAmaran(m, cfg, tarikh);
-        var resp = await callFonnte(testGroup, mesej);
-        if (resp.status === true || resp.status === 'true') { sent++; logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, mesej, 'Berjaya'); }
+        showToast('Jana surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
+        var caption = janaWATeksSuratAmaran(m, cfg, tarikh);
+        var filename = 'SuratAmaran_' + m.tahapInfo.label.replace(/\s+/g, '') + '_' + m.nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
+        // Jana imej → muat naik ke Worker → dapatkan URL awam → hantar ke Fonnte via URL
+        var blob = await janaImejSuratAmaran(m.nama, m.kelas, m.telefon, m.tahap, m.jumlahHari, m.hariKonsekutif);
+        showToast('Muat naik & hantar ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
+        var fileUrl = await uploadLetterToWorker(blob);
+        var resp = await callFonnteUrl(testGroup, caption, fileUrl, filename);
+        if (resp.status === true || resp.status === 'true') { sent++; logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, fileUrl, 'Berjaya'); }
         else { failed++; showToast('Fonnte gagal: ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error'); }
-        await sleep(1200);
-      } catch(err) { failed++; console.error('Gagal hantar untuk ' + m.nama + ':', err); showToast('Gagal hantar untuk ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
+        await sleep(1500);
+      } catch(err) { failed++; console.error('Gagal hantar untuk ' + m.nama + ':', err); showToast('Gagal ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
     }
     showToast('Selesai! Surat dihantar: ' + sent + '/' + muridAmaran.length + (failed > 0 ? ' (' + failed + ' gagal)' : ''), sent > 0 ? 'success' : 'error');
   } catch(e) { showToast('Ralat: ' + e.message, 'error'); }
