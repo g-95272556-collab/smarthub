@@ -190,6 +190,9 @@ export default {
       if (path === "/token") {
         return await generateTokenEndpoint(request, env, corsHeaders);
       }
+      if (path.startsWith("/letter/")) {
+        return await handleLetterFile(request, env, corsHeaders, path);
+      }
 
       if (env.ASSETS && typeof env.ASSETS.fetch === "function") {
         return env.ASSETS.fetch(request);
@@ -297,6 +300,27 @@ async function handleAPI(request, env, corsHeaders) {
       return jsonResp({ success: true, summary: await buildKokumAttendanceSummary(env, body, workerToken) }, 200, corsHeaders);
     } catch (err) {
       return jsonResp({ success: false, error: err.message || "Gagal memuat ringkasan kehadiran kokum." }, err.status || 500, corsHeaders);
+    }
+  }
+
+  if (body.action === "storeLetterFile") {
+    try {
+      if (!env.DB) return jsonResp({ success: false, error: "D1 tidak dikonfigurasi" }, 500, corsHeaders);
+      const base64 = String(body.data || "");
+      const mimeType = String(body.mimeType || "image/jpeg");
+      const filename = String(body.filename || "surat.jpg").replace(/[^a-zA-Z0-9._-]/g, "_");
+      if (!base64 || base64.length < 100) return jsonResp({ success: false, error: "Data fail kosong" }, 400, corsHeaders);
+      if (base64.length > 3000000) return jsonResp({ success: false, error: "Fail terlalu besar (max ~2MB)" }, 400, corsHeaders);
+      const id = crypto.randomUUID().replace(/-/g, "");
+      const now = Math.floor(Date.now() / 1000);
+      const expires = now + 86400; // 24 jam
+      await env.DB.prepare("DELETE FROM letter_cache WHERE expires_at < ?").bind(now).run();
+      await env.DB.prepare("INSERT INTO letter_cache (id, data, mime_type, filename, created_at, expires_at) VALUES (?,?,?,?,?,?)")
+        .bind(id, base64, mimeType, filename, now, expires).run();
+      const workerBase = new URL(request.url).origin;
+      return jsonResp({ success: true, url: workerBase + "/letter/" + id + "/" + filename, id }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message || "Gagal simpan fail" }, 500, corsHeaders);
     }
   }
 
@@ -2039,3 +2063,29 @@ function findGuruByIdentity(rows, actor, allowNameFallback) {
   }
   return allowNameFallback && nameMatches.length === 1 ? nameMatches[0] : null;
 }
+
+async function handleLetterFile(request, env, corsHeaders, path) {
+  if (!env.DB) return new Response("D1 tidak dikonfigurasi", { status: 500 });
+  const parts = path.split("/").filter(Boolean); // ["letter", "{id}", "{filename}"]
+  const id = parts[1] || "";
+  if (!id || id.length < 10) return new Response("ID tidak sah", { status: 400 });
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const row = await env.DB.prepare("SELECT data, mime_type, filename FROM letter_cache WHERE id = ? AND expires_at > ?")
+      .bind(id, now).first();
+    if (!row) return new Response("Fail tidak dijumpai atau sudah tamat tempoh", { status: 404 });
+    const binary = Uint8Array.from(atob(row.data), c => c.charCodeAt(0));
+    return new Response(binary, {
+      status: 200,
+      headers: {
+        "Content-Type": row.mime_type,
+        "Content-Disposition": 'inline; filename="' + row.filename + '"',
+        "Cache-Control": "public, max-age=3600",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  } catch (err) {
+    return new Response("Ralat: " + err.message, { status: 500 });
+  }
+}
+
