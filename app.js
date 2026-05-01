@@ -8812,8 +8812,17 @@ function showToast(msg, type) {
   if (!container) return;
   const toast = document.createElement('div');
   toast.className = 'toast ' + type;
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
   const icons = { success: '✅', error: '❌', info: 'ℹ️' };
-  toast.innerHTML = '<span>' + (icons[type] || 'ℹ️') + '</span><span>' + msg + '</span>';
+  const icon = document.createElement('span');
+  icon.className = 'toast-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.textContent = icons[type] || 'ℹ️';
+  const message = document.createElement('span');
+  message.className = 'toast-message';
+  message.textContent = String(msg || '');
+  toast.append(icon, message);
   container.appendChild(toast);
   setTimeout(function() { toast.style.opacity = '0'; toast.style.transform = 'translateX(40px)'; toast.style.transition = '0.3s'; setTimeout(function() { toast.remove(); }, 350); }, 3500);
 }
