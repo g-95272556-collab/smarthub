@@ -6633,7 +6633,7 @@ cetakOPR = function() {
       .opr-gallery-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        align-content: stretch;
+        align-content: start;
         gap: 2mm;
       }
       .opr-print-photo {
