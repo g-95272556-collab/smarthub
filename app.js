@@ -10149,6 +10149,199 @@ function updateDashboardMurid(allMurid, today) {
   renderMuridTidakHadirDash(tidakHadir);
 }
 
+// ══ SISTEM AMARAN KEHADIRAN MURID ══════════════════════════════════════════
+var TAHAP_AMARAN_INFO = [
+  { tahap: 0, label: 'Normal', warna: '#22c55e', warnaText: '#166534', ikon: '✅', keterangan: '' },
+  { tahap: 1, label: 'Amaran 1', warna: '#f59e0b', warnaText: '#92400e', ikon: '⚠️', keterangan: 'Guru kelas mengeluarkan Surat Amaran 1. Rekod dalam APDM. Maklumkan ibu bapa melalui panggilan / WhatsApp / surat rasmi.' },
+  { tahap: 2, label: 'Amaran 2', warna: '#f97316', warnaText: '#7c2d12', ikon: '🔶', keterangan: 'Surat Amaran 2 dikeluarkan. Ibu bapa dipanggil hadir ke sekolah. Guru Disiplin / PK HEM dilibatkan.' },
+  { tahap: 3, label: 'Amaran 3', warna: '#ef4444', warnaText: '#7f1d1d', ikon: '🚨', keterangan: 'Surat Amaran 3 dikeluarkan. Kes serius. Murid dirujuk kaunselor dan intervensi khusus dilaksanakan.' },
+  { tahap: 4, label: 'Buang Sekolah', warna: '#7c3aed', warnaText: '#2e1065', ikon: '🚫', keterangan: 'Proses buang sekolah dijalankan mengikut prosedur penuh KPM. Kes dirujuk PPD/JPN. Dokumentasi lengkap wajib.' }
+];
+
+function tentukTahapAmaran(jumlahHari, hariKonsekutif) {
+  if (jumlahHari >= 60) return 4;
+  if (jumlahHari >= 40) return 3;
+  if (jumlahHari >= 20) return 2;
+  if (jumlahHari >= 10 || hariKonsekutif >= 3) return 1;
+  return 0;
+}
+
+function kiraTidakHadirMurid(allRows) {
+  const map = {};
+  const statusAbsent = ['Tidak Hadir', 'Ponteng'];
+  allRows.forEach(function(r) {
+    if (!r.nama || r.nama.toLowerCase() === 'nama') return;
+    const key = (r.nama + '|' + r.kelas).toLowerCase();
+    if (!map[key]) map[key] = { nama: r.nama, kelas: r.kelas, telefon: r.telefon || '', tarikhAbsent: [], tarikhAll: [] };
+    if (r.tarikh) {
+      map[key].tarikhAll.push({ tarikh: r.tarikh, status: r.status });
+      if (statusAbsent.includes(r.status) && !map[key].tarikhAbsent.includes(r.tarikh)) {
+        map[key].tarikhAbsent.push(r.tarikh);
+      }
+    }
+    if (r.telefon && !map[key].telefon) map[key].telefon = r.telefon;
+  });
+  Object.values(map).forEach(function(m) {
+    m.jumlahHari = m.tarikhAbsent.length;
+    const sorted = m.tarikhAll.slice().sort(function(a, b) { return a.tarikh < b.tarikh ? -1 : a.tarikh > b.tarikh ? 1 : 0; });
+    let maxStreak = 0, streak = 0;
+    sorted.forEach(function(d) {
+      if (['Tidak Hadir', 'Ponteng'].includes(d.status)) { streak++; if (streak > maxStreak) maxStreak = streak; }
+      else { streak = 0; }
+    });
+    m.hariKonsekutif = maxStreak;
+    m.tahap = tentukTahapAmaran(m.jumlahHari, m.hariKonsekutif);
+    m.tahapInfo = TAHAP_AMARAN_INFO[m.tahap];
+  });
+  return map;
+}
+
+async function loadAmaranKehadiran() {
+  const container = document.getElementById('amaranKehadiranBody');
+  const statsDiv = document.getElementById('amaranKehadiranStats');
+  if (!container) return;
+  container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Menganalisis data kehadiran semua murid...</td></tr>';
+  if (statsDiv) statsDiv.innerHTML = '';
+  try {
+    const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
+    if (!data.success) throw new Error(data.error || 'Gagal membaca data');
+    const allRows = (data.rows || []).map(parseKehadiranMuridRow).filter(function(r) { return r.nama && r.nama.toLowerCase() !== 'nama'; });
+    if (!allRows.length) { container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Tiada data kehadiran</td></tr>'; return; }
+    const muridMap = kiraTidakHadirMurid(allRows);
+    const allMurid = Object.values(muridMap);
+    const muridAmaran = allMurid.filter(function(m) { return m.tahap > 0; }).sort(function(a, b) { return b.tahap - a.tahap || b.jumlahHari - a.jumlahHari; });
+    const counts = [0, 0, 0, 0, 0];
+    allMurid.forEach(function(m) { counts[m.tahap]++; });
+    if (statsDiv) {
+      statsDiv.innerHTML =
+        '<div class="stat-card"><div class="stat-icon amber"><span style="font-size:1rem">⚠️</span></div><div class="stat-info"><small>Amaran 1</small><strong>' + counts[1] + '</strong></div></div>' +
+        '<div class="stat-card"><div class="stat-icon red"><span style="font-size:1rem">🔶</span></div><div class="stat-info"><small>Amaran 2</small><strong>' + counts[2] + '</strong></div></div>' +
+        '<div class="stat-card"><div class="stat-icon red"><span style="font-size:1rem">🚨</span></div><div class="stat-info"><small>Amaran 3</small><strong>' + counts[3] + '</strong></div></div>' +
+        '<div class="stat-card"><div class="stat-icon" style="background:rgba(124,58,237,0.12)"><span style="font-size:1rem">🚫</span></div><div class="stat-info"><small>Buang Sekolah</small><strong>' + counts[4] + '</strong></div></div>';
+    }
+    if (!muridAmaran.length) { container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Tiada murid memerlukan surat amaran pada masa ini.</td></tr>'; showToast('Tiada murid yang perlu amaran.', 'success'); return; }
+    container.innerHTML = muridAmaran.map(function(m) {
+      const info = m.tahapInfo;
+      const bs = 'background:' + info.warna + '22;color:' + info.warnaText + ';border:1px solid ' + info.warna + ';padding:2px 8px;border-radius:12px;font-size:0.78rem;font-weight:700';
+      return '<tr>' +
+        '<td data-label="Nama Murid"><strong>' + escapeHtml(m.nama) + '</strong></td>' +
+        '<td data-label="Kelas"><span class="badge badge-blue">' + escapeHtml(m.kelas) + '</span></td>' +
+        '<td data-label="Jumlah Hari" style="font-weight:700;color:#ef4444">' + m.jumlahHari + ' hari</td>' +
+        '<td data-label="Berturut" style="font-size:0.9rem">' + m.hariKonsekutif + ' hari</td>' +
+        '<td data-label="Tahap"><span style="' + bs + '">' + info.ikon + ' ' + info.label + '</span></td>' +
+        '<td data-label="Tindakan" style="display:flex;gap:6px;flex-wrap:wrap">' +
+          '<button class="btn btn-sm" style="background:var(--blue,#1a4fa0);color:#fff" onclick=\'pratinjauSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📄 Surat</button>' +
+          (m.telefon ? '<button class="btn btn-sm btn-success" onclick=\'hantarNotifSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ')\'>📩 Hantar</button>' : '') +
+        '</td></tr>';
+    }).join('');
+    showToast(muridAmaran.length + ' murid memerlukan tindakan amaran.', 'warning');
+  } catch(e) {
+    container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--red)">' + escapeHtml(e.message) + '</td></tr>';
+    showToast('Ralat analisis amaran: ' + e.message, 'error');
+  }
+}
+
+function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
+  const info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
+  const sekolah = getSchoolTemplateName();
+  const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+  const rujukan = 'SSH/AM' + tahap + '/' + new Date().getFullYear() + '/' + String(Date.now()).slice(-4);
+  const tindakanMap = {
+    1: ['Guru kelas mengeluarkan Surat Amaran Pertama (1) ini.', 'Rekod dalam Buku Kedatangan / APDM.', 'Ibu bapa / penjaga dihubungi melalui panggilan telefon, WhatsApp dan surat rasmi.'],
+    2: ['Surat Amaran Kedua (2) dikeluarkan.', 'Ibu bapa / penjaga dipanggil hadir ke sekolah.', 'Guru Disiplin / PK HEM dilibatkan dalam pengurusan kes.'],
+    3: ['Surat Amaran Ketiga (3) dikeluarkan.', 'Kes dikategorikan sebagai serius.', 'Murid dirujuk kepada kaunselor sekolah untuk intervensi khusus.', 'Ibu bapa diberitahu secara rasmi.'],
+    4: ['Kes diproses untuk tindakan buang sekolah mengikut prosedur penuh KPM.', 'Kes dirujuk kepada PPD / JPN untuk tindakan susulan.', 'Dokumentasi lengkap disiapkan dan diserahkan.']
+  };
+  const tindakan = (tindakanMap[tahap] || []).map(function(t) { return '<li style="margin-bottom:6px">' + t + '</li>'; }).join('');
+  const w = info.warna;
+  const wt = info.warnaText;
+  return '<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>Surat Amaran Kehadiran - ' + escapeHtml(nama) + '</title>' +
+    '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Calibri,Arial,sans-serif;color:#1a1a2e;background:#fff;font-size:11.5pt;line-height:1.7}.paper{max-width:210mm;margin:0 auto;padding:20mm 22mm;min-height:297mm}.header{text-align:center;border-bottom:3px solid ' + w + ';padding-bottom:14px;margin-bottom:20px}.school-name{font-size:16pt;font-weight:800;text-transform:uppercase;color:#1a3a6b;letter-spacing:.03em}.doc-title{font-size:15pt;font-weight:800;color:' + wt + ';text-transform:uppercase;margin:14px 0 4px;letter-spacing:.04em}.ref-row{display:flex;justify-content:space-between;font-size:10pt;color:#555;margin-top:8px}.section{margin:18px 0}.section-title{font-weight:700;font-size:12pt;color:#1a3a6b;border-bottom:1px solid #dde;padding-bottom:4px;margin-bottom:10px}.info-table{width:100%;border-collapse:collapse;margin-bottom:14px}.info-table td{padding:5px 10px;border:1px solid #dde;font-size:11pt}.info-table td:first-child{width:38%;background:#f8f9fe;font-weight:600;color:#334}.stat-box{display:flex;gap:12px;margin:14px 0}.stat-item{flex:1;background:#f8f9fe;border:1.5px solid #dde;border-radius:8px;padding:10px 14px;text-align:center}.stat-num{font-size:22pt;font-weight:800;color:#ef4444}.stat-label{font-size:9pt;color:#666;margin-top:2px}.tindakan-list{list-style:decimal;padding-left:20px;color:#222}.sign-row{display:flex;justify-content:space-between;margin-top:48px}.sign-box{width:42%;text-align:center}.sign-line{border-top:1.5px solid #444;margin-top:52px;padding-top:6px;font-size:10.5pt}.footer{margin-top:32px;padding-top:12px;border-top:2px solid ' + w + ';font-size:9pt;color:#888;text-align:center}.warning-bar{background:' + w + '18;border-left:5px solid ' + w + ';padding:10px 16px;margin:16px 0;border-radius:0 6px 6px 0;font-size:11pt;color:' + wt + ';font-weight:600}@media print{body{font-size:11pt}.paper{padding:15mm 18mm}}</style>' +
+    '</head><body><div class="paper">' +
+    '<div class="header"><div class="school-name">' + escapeHtml(sekolah) + '</div>' +
+    '<div style="font-size:10.5pt;color:#556;margin-top:4px">Kementerian Pendidikan Malaysia</div>' +
+    '<div class="doc-title">' + info.ikon + ' Surat Amaran Kehadiran &mdash; ' + info.label + '</div>' +
+    '<div class="ref-row"><span>Rujukan: ' + rujukan + '</span><span>Tarikh: ' + tarikhHariIni + '</span></div></div>' +
+    '<div style="margin-bottom:12px"><strong>Kepada Ibu Bapa / Penjaga,</strong></div>' +
+    '<div class="section"><div class="section-title">Maklumat Murid</div>' +
+    '<table class="info-table"><tr><td>Nama Murid</td><td><strong>' + escapeHtml(nama) + '</strong></td></tr>' +
+    '<tr><td>Kelas</td><td>' + escapeHtml(kelas) + '</td></tr>' +
+    '<tr><td>Tahun Semasa</td><td>' + new Date().getFullYear() + '</td></tr>' +
+    '<tr><td>No. Telefon Wali</td><td>' + escapeHtml(telefon || '—') + '</td></tr></table></div>' +
+    '<div class="section"><div class="section-title">Rekod Ketidakhadiran</div>' +
+    '<div class="stat-box">' +
+    '<div class="stat-item"><div class="stat-num">' + jumlahHari + '</div><div class="stat-label">Jumlah Hari<br>Tidak Hadir</div></div>' +
+    '<div class="stat-item"><div class="stat-num" style="font-size:18pt">' + info.ikon + '</div><div class="stat-label" style="font-weight:700;color:' + wt + '">' + info.label + '</div></div>' +
+    '</div></div>' +
+    '<div class="warning-bar">' + info.keterangan + '</div>' +
+    '<div class="section"><div class="section-title">Kandungan Surat</div>' +
+    '<p style="margin-bottom:12px">Dengan hormatnya pihak sekolah ingin memaklumkan bahawa anak / murid jagaan tuan / puan iaitu <strong>' + escapeHtml(nama) + '</strong> dari kelas <strong>' + escapeHtml(kelas) + '</strong> telah direkodkan tidak hadir ke sekolah sebanyak <strong>' + jumlahHari + ' hari</strong> pada tahun ' + new Date().getFullYear() + '.</p>' +
+    '<p style="margin-bottom:12px">Ketidakhadiran murid ini telah mencapai tahap yang memerlukan tindakan susulan di bawah tatacara disiplin sekolah selaras dengan garis panduan Kementerian Pendidikan Malaysia.</p>' +
+    '<p>Justeru, pihak sekolah mengeluarkan <strong>' + info.label + '</strong> ini dan memohon kerjasama ibu bapa / penjaga untuk mengambil tindakan segera.</p></div>' +
+    '<div class="section"><div class="section-title">Tindakan Yang Diperlukan</div><ol class="tindakan-list">' + tindakan + '</ol></div>' +
+    '<div class="section"><p style="font-size:10.5pt;color:#555">Kerjasama tuan / puan amat dihargai. Sekiranya ada pertanyaan lanjut, sila hubungi pihak sekolah.</p></div>' +
+    '<div class="sign-row"><div class="sign-box"><div class="sign-line"><strong>( .............................. )</strong><br><span style="font-size:10pt">Guru Kelas / Guru Disiplin</span><br><span style="font-size:9.5pt;color:#666">' + escapeHtml(sekolah) + '</span></div></div>' +
+    '<div class="sign-box"><div class="sign-line"><strong>( .............................. )</strong><br><span style="font-size:10pt">Pengetua / Guru Besar</span><br><span style="font-size:9.5pt;color:#666">' + escapeHtml(sekolah) + '</span></div></div></div>' +
+    '<div class="footer">Surat ini dijana secara digital oleh SmartSchoolHub &bull; ' + tarikhHariIni + ' &bull; ' + escapeHtml(sekolah) + '</div>' +
+    '</div><script>window.onload=function(){window.print();};<\/script></body></html>';
+}
+
+function pratinjauSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
+  const info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
+  const modal = document.getElementById('modalPratinjauSuratAmaran');
+  const frame = document.getElementById('framePratinjauSuratAmaran');
+  const title = document.getElementById('modalPratinjauSuratAmaranTitle');
+  if (!modal || !frame) return;
+  if (title) title.textContent = info.ikon + ' ' + info.label + ' — ' + nama + ' (' + kelas + ')';
+  const html = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0);
+  modal.dataset.nama = nama;
+  modal.dataset.kelas = kelas;
+  modal.dataset.telefon = telefon || '';
+  modal.dataset.tahap = String(tahap);
+  modal.dataset.jumlahHari = String(jumlahHari);
+  modal.dataset.hariKonsekutif = String(hariKonsekutif || 0);
+  try { frame.srcdoc = html; } catch(e) { const doc = frame.contentDocument || frame.contentWindow.document; doc.open(); doc.write(html); doc.close(); }
+  modal.style.display = 'flex';
+}
+
+function tutupModalPratinjauSuratAmaran() {
+  const modal = document.getElementById('modalPratinjauSuratAmaran');
+  if (modal) modal.style.display = 'none';
+}
+
+function cetakSuratAmaranDariModal() {
+  const modal = document.getElementById('modalPratinjauSuratAmaran');
+  if (!modal) return;
+  const html = janaHtmlSuratAmaran(modal.dataset.nama, modal.dataset.kelas, modal.dataset.telefon, parseInt(modal.dataset.tahap), parseInt(modal.dataset.jumlahHari), parseInt(modal.dataset.hariKonsekutif));
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Sila benarkan popup untuk mencetak surat.', 'error'); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
+async function hantarNotifSuratAmaran(nama, kelas, telefon, tahap, jumlahHari) {
+  if (!telefon) { showToast('Tiada nombor telefon wali untuk ' + nama, 'error'); return; }
+  const info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
+  const sekolah = getSchoolTemplateName();
+  const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+  const mesej = '🏫 *' + sekolah + '*\n\n' + info.ikon + ' *' + info.label.toUpperCase() + ' — AMARAN KEHADIRAN*\n\n' +
+    'Kepada ibu bapa / penjaga *' + nama + '* (' + kelas + '),\n\n' +
+    'Anak jagaan tuan/puan telah direkodkan *tidak hadir sebanyak ' + jumlahHari + ' hari* pada tahun ini dan telah mencapai tahap *' + info.label + '*.\n\n' +
+    '*Tindakan diperlukan:*\n' + info.keterangan + '\n\n' +
+    'Sila hubungi pihak sekolah untuk maklumat lanjut.\n\n📅 ' + tarikhHariIni;
+  try {
+    const resp = await callFonnte(telefon, mesej);
+    if (resp.status === true || resp.status === 'true') {
+      showToast('Notifikasi ' + info.label + ' berjaya dihantar kepada wali ' + nama, 'success');
+      logNotif(info.label + ' Kehadiran', telefon, mesej, 'Berjaya');
+    } else {
+      showToast('Gagal hantar notifikasi: ' + JSON.stringify(resp), 'error');
+    }
+  } catch(e) { showToast('Ralat hantar notifikasi: ' + e.message, 'error'); }
+}
+
+// ══ END SISTEM AMARAN KEHADIRAN MURID ═════════════════════════════════════
+
 async function loadKehadiranMurid(options) {
   const opts = Object.assign({ silent: false, preserveTable: false, reason: 'manual' }, options || {});
   const tbody = document.getElementById('muridKehadiranBody');
