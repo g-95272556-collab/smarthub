@@ -2522,6 +2522,23 @@ _{SEKOLAH}_</textarea>
           </div>
         </div>
 
+        <div class="card opr-media-card" style="margin-bottom:20px">
+          <div class="section-header">
+            <div>
+              <h2>Dokumentasi Bergambar</h2>
+              <p class="opr-section-note">Tambah sekurang-kurangnya 4 gambar dari galeri atau kamera. Empat gambar ini akan dipaparkan pada cetakan OPR satu muka surat.</p>
+            </div>
+            <div class="opr-media-toolbar">
+              <input id="oprImageUploadInput" type="file" accept="image/*" multiple hidden onchange="handleOPRImageSelection(event, 'gallery')">
+              <input id="oprCameraInput" type="file" accept="image/*" capture="environment" hidden onchange="handleOPRImageSelection(event, 'camera')">
+              <button class="btn btn-sm btn-secondary" type="button" onclick="openOPRImagePicker('oprImageUploadInput')">🖼 Muat Naik</button>
+              <button class="btn btn-sm btn-secondary" type="button" onclick="openOPRImagePicker('oprCameraInput')">📷 Buka Kamera</button>
+            </div>
+          </div>
+          <div id="oprImageStatus" class="opr-image-status">0 / 4 gambar dipilih. Cetakan akan dihadkan kepada 4 gambar untuk mengekalkan OPR satu muka surat.</div>
+          <div id="oprImageGrid" class="opr-image-grid"></div>
+        </div>
+
       <div id="oprAIStatus" class="result-box" style="display:none"></div>
       <div class="opr-footer-actions">
         <button class="btn btn-primary opr-print-btn" onclick="cetakOPR()">🖨 Cetak / Eksport PDF</button>
@@ -3210,7 +3227,7 @@ window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
   googleAuthUrl: 'https://smartschoolhub-google-oauth.g-95272556.workers.dev'
 }, window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {});
 </script>
-<script src="app.min.js" defer></script>
+<script src="app.js" defer></script>
 <script src="https://accounts.google.com/gsi/client" async defer onload="typeof onGSIReady === 'function' && onGSIReady()" onerror="typeof showLoginPage === 'function' && showLoginPage()"></script>
 <script>
 if ('serviceWorker' in navigator) {

@@ -153,6 +153,10 @@ let _autoPunchOutBusy = false;
 let _laporanBertugasUiBound = false;
 let currentAutoRefreshInterval = null;
 let _d1EditorDraftTimer = null;
+const OPR_IMAGE_MIN_COUNT = 4;
+const OPR_IMAGE_MAX_COUNT = 4;
+let _oprImageItems = [];
+let _oprImageTargetIndex = -1;
 let _d1EditorDraftBound = false;
 let _kokumDraftTimer = null;
 let _kokumProgramConfig = null;
@@ -1796,6 +1800,7 @@ document.addEventListener('DOMContentLoaded', () => {
   syncResponsiveAppChrome();
   window.addEventListener('resize', syncResponsiveAppChrome);
   syncBootstrapConfigInputs();
+  renderOPRImageGrid();
   showLoginPage();
   updateLoginReadinessMessage();
   if (!_gsiReady && hasGoogleSignInClient()) {
@@ -5557,10 +5562,10 @@ async function janaOPR(field) {
   if (textarea) { textarea.placeholder = '✨ AI sedang menjana...'; textarea.value = ''; }
   const konteks = 'Nama Program: ' + nama + '\nAnjuran: ' + (anjuran || '-') + '\nPeserta: ' + (peserta || '-') + '\nTempat: ' + (tempat || '-');
   const prompts = {
-    objektif: 'Tulis 3-4 objektif program "' + nama + '" dalam Bahasa Malaysia formal untuk laporan OPR sekolah. Konteks: ' + konteks + '. Format bernombor. Terus tulis objektif sahaja.',
-    aktiviti: 'Tulis huraian aktiviti yang dijalankan dalam program "' + nama + '" dalam Bahasa Malaysia formal. Konteks: ' + konteks + '. Format paragraf. Terus tulis aktiviti sahaja.',
-    kekuatan: 'Tulis 3-4 kekuatan program "' + nama + '" dalam Bahasa Malaysia formal. Konteks: ' + konteks + '. Format bernombor.',
-    kelemahan: 'Tulis 2-3 kelemahan dan cadangan untuk program "' + nama + '" dalam Bahasa Malaysia formal. Konteks: ' + konteks + '. Format bernombor.'
+    objektif: 'Tulis maksimum 3 objektif program "' + nama + '" dalam Bahasa Malaysia formal untuk laporan OPR sekolah. Konteks: ' + konteks + '. Format bernombor ringkas. Terus tulis objektif sahaja.',
+    aktiviti: 'Tulis maksimum 3 perkara utama bagi aktiviti yang dijalankan untuk program "' + nama + '" dalam Bahasa Malaysia formal. Konteks: ' + konteks + '. Format bernombor ringkas, bukan paragraf panjang. Terus tulis aktiviti sahaja.',
+    kekuatan: 'Tulis maksimum 3 kekuatan program "' + nama + '" dalam Bahasa Malaysia formal. Konteks: ' + konteks + '. Format bernombor ringkas.',
+    kelemahan: 'Tulis maksimum 3 kelemahan atau cadangan penambahbaikan untuk program "' + nama + '" dalam Bahasa Malaysia formal. Konteks: ' + konteks + '. Format bernombor ringkas.'
   };
   try {
     const data = await callWorkerAI(prompts[field], 'opr');
@@ -5592,6 +5597,1230 @@ function cetakOPR() {
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Laporan OPR - ' + nama + '</title><style>body{font-family:Arial,sans-serif;font-size:12pt;margin:2cm;color:#000}h1{font-size:14pt;text-align:center;text-transform:uppercase;margin-bottom:4px}h2{font-size:13pt;text-align:center;margin-bottom:20px}.header{text-align:center;margin-bottom:24px;border-bottom:2px solid #000;padding-bottom:14px}table{width:100%;border-collapse:collapse;margin-bottom:16px}td{padding:6px 10px;border:1px solid #999;vertical-align:top}td:first-child{width:35%;font-weight:bold;background:#f5f5f5}.section{margin:16px 0}.section h3{font-size:12pt;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:8px}.section p{white-space:pre-wrap;line-height:1.7}.sign-row{display:flex;justify-content:space-between;margin-top:40px}.sign-box{text-align:center;width:40%}.sign-line{border-top:1px solid #000;margin-top:50px;padding-top:6px}@media print{body{margin:1.5cm}}</style></head><body><div class="header"><h1>' + get('opr-institusi') + '</h1><div style="font-size:11pt">' + get('opr-alamat') + '</div><h2 style="margin-top:16px">LAPORAN ONE PAGE REPORT (OPR)</h2></div><table><tr><td>Nama Program / Aktiviti</td><td>' + nama + '</td></tr><tr><td>Anjuran</td><td>' + (get('opr-anjuran') || '—') + '</td></tr><tr><td>Tarikh</td><td>' + tarikhFmt + '</td></tr><tr><td>Tempat</td><td>' + (get('opr-tempat') || '—') + '</td></tr><tr><td>Bilangan Peserta</td><td>' + (get('opr-peserta') || '—') + '</td></tr></table>' + (get('opr-objektif') ? '<div class="section"><h3>1. Objektif</h3><p>' + get('opr-objektif') + '</p></div>' : '') + (get('opr-aktiviti') ? '<div class="section"><h3>2. Aktiviti yang Dijalankan</h3><p>' + get('opr-aktiviti') + '</p></div>' : '') + (get('opr-kekuatan') ? '<div class="section"><h3>3. Kekuatan / Kejayaan</h3><p>' + get('opr-kekuatan') + '</p></div>' : '') + (get('opr-kelemahan') ? '<div class="section"><h3>4. Kelemahan / Cadangan</h3><p>' + get('opr-kelemahan') + '</p></div>' : '') + '<div class="sign-row"><div class="sign-box"><div class="sign-line"><strong>' + (get('opr-penyedia') || '( ........................... )') + '</strong><br><span style="font-size:10pt">' + (get('opr-jawatan') || 'Penyedia Laporan') + '</span></div></div><div class="sign-box"><div class="sign-line"><strong>' + (get('opr-gb') || '( ........................... )') + '</strong><br><span style="font-size:10pt">' + (get('opr-gb-jawatan') || 'Guru Besar') + '</span></div></div></div><script>window.onload=function(){window.print();};<\/script></body></html>');
   win.document.close();
 }
+
+function openOPRImagePicker(inputId, targetIndex) {
+  const input = document.getElementById(inputId);
+  _oprImageTargetIndex = Number.isInteger(targetIndex) ? targetIndex : -1;
+  if (input) input.click();
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function() { resolve(String(reader.result || '')); };
+    reader.onerror = function() { reject(new Error('Gagal membaca fail gambar.')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function resizeOPRImageDataUrl(dataUrl) {
+  return new Promise(function(resolve) {
+    const img = new Image();
+    img.onload = function() {
+      const maxWidth = 1400;
+      const maxHeight = 1050;
+      const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+      const width = Math.max(1, Math.round(img.width * ratio));
+      const height = Math.max(1, Math.round(img.height * ratio));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.86));
+    };
+    img.onerror = function() {
+      resolve(dataUrl);
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function normalizeOPRImageFile(file, slotNumber) {
+  const rawDataUrl = await readFileAsDataUrl(file);
+  const resizedDataUrl = await resizeOPRImageDataUrl(rawDataUrl);
+  return {
+    id: 'opr-img-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    name: file && file.name ? file.name : ('Gambar ' + slotNumber),
+    src: resizedDataUrl
+  };
+}
+
+async function handleOPRImageSelection(event, source) {
+  const input = event && event.target;
+  const files = Array.from((input && input.files) || []).filter(function(file) {
+    return file && /^image\//i.test(String(file.type || ''));
+  });
+  if (!files.length) {
+    _oprImageTargetIndex = -1;
+    return;
+  }
+
+  try {
+    if (_oprImageTargetIndex >= 0 && _oprImageTargetIndex < OPR_IMAGE_MAX_COUNT) {
+      const replacement = await normalizeOPRImageFile(files[0], _oprImageTargetIndex + 1);
+      const nextImages = _oprImageItems.slice();
+      nextImages[_oprImageTargetIndex] = replacement;
+      _oprImageItems = nextImages.slice(0, OPR_IMAGE_MAX_COUNT);
+      renderOPRImageGrid();
+      showToast((source === 'camera' ? 'Gambar kamera' : 'Gambar') + ' berjaya dikemas kini.', 'success');
+      return;
+    }
+
+    const availableSlots = OPR_IMAGE_MAX_COUNT - _oprImageItems.length;
+    if (availableSlots <= 0) {
+      showToast('Empat gambar sudah dipilih. Guna butang Tukar pada slot gambar untuk ganti.', 'info');
+      return;
+    }
+
+    const selectedFiles = files.slice(0, availableSlots);
+    const preparedImages = [];
+    for (let i = 0; i < selectedFiles.length; i++) {
+      preparedImages.push(await normalizeOPRImageFile(selectedFiles[i], _oprImageItems.length + i + 1));
+    }
+    _oprImageItems = _oprImageItems.concat(preparedImages).slice(0, OPR_IMAGE_MAX_COUNT);
+    renderOPRImageGrid();
+    if (files.length > availableSlots) {
+      showToast('Hanya 4 gambar pertama digunakan supaya cetakan OPR kekal satu muka surat.', 'info');
+    }
+    showToast((source === 'camera' ? 'Gambar kamera' : 'Gambar') + ' berjaya ditambah.', 'success');
+  } catch (err) {
+    showToast('Gagal memproses gambar: ' + err.message, 'error');
+  } finally {
+    _oprImageTargetIndex = -1;
+    if (input) input.value = '';
+  }
+}
+
+function removeOPRImage(imageId) {
+  const nextImages = _oprImageItems.filter(function(item) { return item.id !== imageId; });
+  if (nextImages.length === _oprImageItems.length) return;
+  _oprImageItems = nextImages;
+  renderOPRImageGrid();
+  showToast('Gambar OPR dibuang.', 'info');
+}
+
+function renderOPRImageGrid() {
+  const grid = document.getElementById('oprImageGrid');
+  const status = document.getElementById('oprImageStatus');
+  if (status) {
+    status.textContent = _oprImageItems.length + ' / ' + OPR_IMAGE_MAX_COUNT + ' gambar dipilih. Minimum 4 gambar diperlukan untuk cetakan OPR satu muka surat.';
+  }
+  if (!grid) return;
+
+  const slots = [];
+  for (let index = 0; index < OPR_IMAGE_MAX_COUNT; index++) {
+    const item = _oprImageItems[index];
+    if (item) {
+      slots.push(
+        '<figure class="opr-image-slot">' +
+          '<img class="opr-image-preview" src="' + item.src + '" alt="' + escapeHtml(item.name || ('Gambar ' + (index + 1))) + '">' +
+          '<figcaption class="opr-image-caption">' +
+            '<div class="opr-image-meta">' +
+              '<strong>Gambar ' + (index + 1) + '</strong>' +
+              '<span>Ketik Tukar atau Kamera untuk kemas kini slot ini</span>' +
+            '</div>' +
+            '<div class="opr-image-card-actions">' +
+              '<button class="opr-image-action-btn" type="button" onclick="openOPRImagePicker(\'oprImageUploadInput\', ' + index + ')">Tukar</button>' +
+              '<button class="opr-image-action-btn opr-image-action-btn-camera" type="button" onclick="openOPRImagePicker(\'oprCameraInput\', ' + index + ')">Kamera</button>' +
+              '<button class="opr-image-remove" type="button" onclick="removeOPRImage(\'' + item.id + '\')">Buang</button>' +
+            '</div>' +
+          '</figcaption>' +
+        '</figure>'
+      );
+    } else {
+      slots.push(
+        '<button class="opr-image-slot is-empty opr-image-slot-button" type="button" onclick="openOPRImagePicker(\'oprImageUploadInput\', ' + index + ')">' +
+          '<div class="opr-image-placeholder">' +
+            '<strong>Slot ' + (index + 1) + '</strong>' +
+            '<span>Tekan untuk tambah gambar program</span>' +
+            '<div class="opr-image-actions">' +
+              '<span class="opr-slot-btn">Galeri</span>' +
+              '<span class="opr-slot-btn opr-slot-btn-camera" onclick="event.stopPropagation();openOPRImagePicker(\'oprCameraInput\', ' + index + ')">Kamera</span>' +
+            '</div>' +
+          '</div>' +
+        '</button>'
+      );
+    }
+  }
+  grid.innerHTML = slots.join('');
+}
+
+function compactOPRPrintText(value) {
+  const text = String(value || '')
+    .replace(/\r/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (!text) return '';
+  return text;
+}
+
+function formatOPRPrintText(value) {
+  const text = compactOPRPrintText(value);
+  if (!text) {
+    return '<span class="opr-print-empty">Belum diisi.</span>';
+  }
+  return escapeHtml(text).replace(/\n/g, '<br>');
+}
+
+function buildOPRPrintSection(title, value, extraClass) {
+  return '<section class="opr-print-section' + (extraClass ? (' ' + extraClass) : '') + '">' +
+    '<h3>' + escapeHtml(title) + '</h3>' +
+    '<div class="opr-print-section-body">' + formatOPRPrintText(value) + '</div>' +
+  '</section>';
+}
+
+function buildOPRPrintPhotoGrid(items) {
+  return items.map(function(item, index) {
+    return '<figure class="opr-print-photo">' +
+      '<img src="' + item.src + '" alt="' + escapeHtml(item.name || ('Gambar ' + (index + 1))) + '">' +
+      '<figcaption>Gambar ' + (index + 1) + '</figcaption>' +
+    '</figure>';
+  }).join('');
+}
+
+cetakOPR = function() {
+  const get = function(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+  };
+  const nama = get('opr-nama');
+  if (!nama) {
+    showToast('Sila isi Nama Program dahulu.', 'error');
+    return;
+  }
+  if (_oprImageItems.length < OPR_IMAGE_MIN_COUNT) {
+    showToast('Sila tambah sekurang-kurangnya 4 gambar sebelum cetak OPR.', 'error');
+    return;
+  }
+  const tarikh = get('opr-tarikh');
+  const tarikhDate = tarikh ? parseLocalDateYMD(tarikh) : null;
+  const tarikhFmt = tarikhDate ? tarikhDate.toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  const logoUrl = new URL('assets/sk-kiandongo-logo.png', window.location.href).href;
+  const photos = _oprImageItems.slice(0, OPR_IMAGE_MAX_COUNT);
+  const win = window.open('', '_blank');
+  if (!win) {
+    showToast('Popup cetakan disekat oleh pelayar. Benarkan popup dan cuba semula.', 'error');
+    return;
+  }
+
+  win.document.write(`<!DOCTYPE html>
+  <html lang="ms">
+  <head>
+    <meta charset="UTF-8">
+    <title>Laporan OPR - ${escapeHtml(nama)}</title>
+    <style>
+      @page { size: A4 portrait; margin: 8mm; }
+      :root {
+        --navy: #10243e;
+        --blue: #1d4fa3;
+        --line: #d8e2f0;
+        --text: #10243e;
+        --muted: #5d6f85;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #edf4ff;
+        color: var(--text);
+        font-family: "Plus Jakarta Sans", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body { font-size: 10px; }
+      .opr-sheet {
+        width: 194mm;
+        min-height: 279mm;
+        margin: 0 auto;
+        padding: 9mm;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 6mm;
+        overflow: hidden;
+      }
+      .opr-header {
+        display: grid;
+        grid-template-columns: 18mm 1fr;
+        gap: 5mm;
+        align-items: center;
+        padding-bottom: 4mm;
+        border-bottom: 1px solid var(--line);
+      }
+      .opr-logo {
+        width: 18mm;
+        height: 18mm;
+        object-fit: contain;
+        border-radius: 50%;
+        background: #fff;
+      }
+      .opr-title h1 {
+        margin: 0;
+        font-size: 15px;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--navy);
+      }
+      .opr-title p {
+        margin: 3px 0 0;
+        font-size: 9.5px;
+        color: var(--muted);
+      }
+      .opr-title .opr-subtitle {
+        margin-top: 6px;
+        display: inline-flex;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(245,197,24,0.18), rgba(29,79,163,0.08));
+        color: var(--blue);
+        font-size: 8.6px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 3mm;
+      }
+      .opr-meta-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 3.2mm;
+        background: linear-gradient(180deg, #ffffff, #f8fbff);
+      }
+      .opr-meta-card small {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 8px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+      }
+      .opr-meta-card strong {
+        display: block;
+        font-size: 9.4px;
+        line-height: 1.45;
+        color: var(--navy);
+      }
+      .opr-main {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 5mm;
+        min-height: 0;
+      }
+      .opr-copy-grid {
+        display: grid;
+        gap: 3.2mm;
+        align-content: start;
+      }
+      .opr-print-section {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fcfdff;
+        padding: 3.2mm 3.4mm;
+        min-height: 0;
+      }
+      .opr-print-section h3 {
+        margin: 0 0 5px;
+        font-size: 9px;
+        color: var(--blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-print-section-body {
+        font-size: 8.9px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 7;
+      }
+      .opr-print-empty {
+        color: var(--muted);
+        font-style: italic;
+      }
+      .opr-gallery-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: linear-gradient(180deg, #ffffff, #f5f9ff);
+        padding: 3.2mm;
+        display: grid;
+        gap: 3mm;
+      }
+      .opr-gallery-card h3 {
+        margin: 0;
+        font-size: 9px;
+        color: var(--blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 3mm;
+      }
+      .opr-print-photo {
+        margin: 0;
+        display: grid;
+        gap: 4px;
+      }
+      .opr-print-photo img {
+        width: 100%;
+        height: 37mm;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 1px solid rgba(16, 36, 62, 0.10);
+        background: #dbe7f7;
+      }
+      .opr-print-photo figcaption {
+        font-size: 8.1px;
+        font-weight: 700;
+        text-align: center;
+        color: var(--muted);
+      }
+      .opr-sign-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6mm;
+        align-items: end;
+      }
+      .opr-sign-box {
+        border-top: 1.5px solid #19355e;
+        padding-top: 3mm;
+        min-height: 18mm;
+        text-align: center;
+      }
+      .opr-sign-box strong {
+        display: block;
+        font-size: 9.4px;
+        color: var(--navy);
+      }
+      .opr-sign-box span {
+        display: block;
+        margin-top: 4px;
+        font-size: 8.2px;
+        color: var(--muted);
+      }
+      .opr-footer-note {
+        margin-top: 2mm;
+        font-size: 7.8px;
+        text-align: right;
+        color: var(--muted);
+      }
+      @media print {
+        body { background: #fff; }
+        .opr-sheet {
+          width: auto;
+          min-height: auto;
+          border: none;
+          border-radius: 0;
+          padding: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="opr-sheet">
+      <div class="opr-header">
+        <img class="opr-logo" src="${logoUrl}" alt="Logo ${escapeHtml(get('opr-institusi') || 'Sekolah')}">
+        <div class="opr-title">
+          <h1>${escapeHtml(get('opr-institusi') || 'Sekolah')}</h1>
+          <p>${escapeHtml(get('opr-alamat') || 'Alamat sekolah')}</p>
+          <span class="opr-subtitle">One Page Report (OPR)</span>
+        </div>
+      </div>
+      <div class="opr-meta-grid">
+        <div class="opr-meta-card"><small>Program</small><strong>${escapeHtml(nama)}</strong></div>
+        <div class="opr-meta-card"><small>Anjuran</small><strong>${escapeHtml(get('opr-anjuran') || '—')}</strong></div>
+        <div class="opr-meta-card"><small>Tarikh</small><strong>${escapeHtml(tarikhFmt)}</strong></div>
+        <div class="opr-meta-card"><small>Tempat</small><strong>${escapeHtml(get('opr-tempat') || '—')}</strong></div>
+        <div class="opr-meta-card"><small>Peserta</small><strong>${escapeHtml(get('opr-peserta') || '—')}</strong></div>
+      </div>
+      <div class="opr-main">
+        <div class="opr-copy-grid">
+          ${buildOPRPrintSection('Objektif', get('opr-objektif'))}
+          ${buildOPRPrintSection('Aktiviti yang Dijalankan', get('opr-aktiviti'))}
+          ${buildOPRPrintSection('Kekuatan / Kejayaan', get('opr-kekuatan'))}
+          ${buildOPRPrintSection('Kelemahan / Cadangan', get('opr-kelemahan'))}
+        </div>
+        <div class="opr-gallery-card">
+          <h3>Dokumentasi Program</h3>
+          <div class="opr-gallery-grid">
+            ${buildOPRPrintPhotoGrid(photos)}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="opr-sign-row">
+          <div class="opr-sign-box">
+            <strong>${escapeHtml(get('opr-penyedia') || '( ........................... )')}</strong>
+            <span>${escapeHtml(get('opr-jawatan') || 'Penyedia Laporan')}</span>
+          </div>
+          <div class="opr-sign-box">
+            <strong>${escapeHtml(get('opr-gb') || '( ........................... )')}</strong>
+            <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
+          </div>
+        </div>
+        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+      </div>
+    </div>
+    <script>window.onload=function(){window.print();};<\/script>
+  </body>
+  </html>`);
+  win.document.close();
+};
+
+cetakOPR = function() {
+  const get = function(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+  };
+  const nama = get('opr-nama');
+  if (!nama) {
+    showToast('Sila isi Nama Program dahulu.', 'error');
+    return;
+  }
+  if (_oprImageItems.length < OPR_IMAGE_MIN_COUNT) {
+    showToast('Sila tambah sekurang-kurangnya 4 gambar sebelum cetak OPR.', 'error');
+    return;
+  }
+
+  const tarikh = get('opr-tarikh');
+  const tarikhDate = tarikh ? parseLocalDateYMD(tarikh) : null;
+  const tarikhFmt = tarikhDate ? tarikhDate.toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  const logoUrl = new URL('assets/sk-kiandongo-logo.png', window.location.href).href;
+  const photos = _oprImageItems.slice(0, OPR_IMAGE_MAX_COUNT);
+  const win = window.open('', '_blank');
+  if (!win) {
+    showToast('Popup cetakan disekat oleh pelayar. Benarkan popup dan cuba semula.', 'error');
+    return;
+  }
+
+  win.document.write(`<!DOCTYPE html>
+  <html lang="ms">
+  <head>
+    <meta charset="UTF-8">
+    <title>Laporan OPR - ${escapeHtml(nama)}</title>
+    <style>
+      @page { size: A4 portrait; margin: 6mm; }
+      :root {
+        --navy: #10243e;
+        --blue: #1d4fa3;
+        --line: #d9e3f3;
+        --text: #10243e;
+        --muted: #5d6f85;
+        --surface: #f7faff;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #edf4ff;
+        color: var(--text);
+        font-family: "Plus Jakarta Sans", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body { font-size: 9.2px; }
+      .opr-sheet {
+        width: 197mm;
+        min-height: 284mm;
+        margin: 0 auto;
+        padding: 7mm;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 4.5mm;
+        overflow: hidden;
+      }
+      .opr-header {
+        display: grid;
+        grid-template-columns: 17mm 1fr auto;
+        gap: 4mm;
+        align-items: center;
+        padding-bottom: 4mm;
+        border-bottom: 1px solid var(--line);
+      }
+      .opr-logo {
+        width: 17mm;
+        height: 17mm;
+        object-fit: contain;
+        border-radius: 50%;
+        background: #fff;
+      }
+      .opr-title { min-width: 0; }
+      .opr-title h1 {
+        margin: 0;
+        font-size: 14px;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--navy);
+      }
+      .opr-title p {
+        margin: 2px 0 0;
+        font-size: 8.4px;
+        color: var(--muted);
+      }
+      .opr-title .opr-subtitle {
+        margin-top: 4px;
+        display: inline-flex;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(246,199,68,0.22), rgba(29,79,163,0.10));
+        color: var(--blue);
+        font-size: 7.8px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 16mm;
+        padding: 4px 10px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #14396f, #1d4fa3);
+        color: #fff;
+        font-size: 7.8px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        text-align: center;
+      }
+      .opr-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 2.5mm;
+      }
+      .opr-meta-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 2.8mm;
+        min-height: 18mm;
+        background: linear-gradient(180deg, #ffffff, var(--surface));
+      }
+      .opr-meta-card.program { grid-column: span 2; }
+      .opr-meta-card.place { grid-column: span 2; }
+      .opr-meta-card.participants { grid-column: span 2; }
+      .opr-meta-card small {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 7.4px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+      }
+      .opr-meta-card strong {
+        display: block;
+        font-size: 8.6px;
+        line-height: 1.32;
+        color: var(--navy);
+      }
+      .opr-main {
+        display: grid;
+        grid-template-columns: 1.08fr 0.92fr;
+        gap: 4mm;
+        min-height: 0;
+      }
+      .opr-copy-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2.5mm;
+        align-content: start;
+      }
+      .opr-print-section {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fcfdff;
+        padding: 2.8mm 3mm;
+        min-height: 0;
+      }
+      .opr-print-section h3 {
+        margin: 0 0 4px;
+        font-size: 8px;
+        color: var(--blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-print-section-body {
+        font-size: 7.8px;
+        line-height: 1.42;
+        white-space: pre-wrap;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 7;
+      }
+      .opr-print-section.activity .opr-print-section-body {
+        -webkit-line-clamp: 8;
+      }
+      .opr-print-empty {
+        color: var(--muted);
+        font-style: italic;
+      }
+      .opr-gallery-card {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: linear-gradient(180deg, #ffffff, #f5f9ff);
+        padding: 2.8mm;
+        display: grid;
+        gap: 2.4mm;
+      }
+      .opr-gallery-card h3 {
+        margin: 0;
+        font-size: 8px;
+        color: var(--blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-gallery-card p {
+        margin: 0;
+        font-size: 7.2px;
+        color: var(--muted);
+      }
+      .opr-gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 2.5mm;
+      }
+      .opr-print-photo {
+        margin: 0;
+        display: grid;
+        gap: 3px;
+      }
+      .opr-print-photo img {
+        width: 100%;
+        height: 31mm;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 1px solid rgba(16, 36, 62, 0.10);
+        background: #dbe7f7;
+      }
+      .opr-print-photo figcaption {
+        font-size: 7.3px;
+        font-weight: 700;
+        text-align: center;
+        color: var(--muted);
+      }
+      .opr-sign-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4mm;
+        align-items: end;
+      }
+      .opr-sign-box {
+        border-top: 1.5px solid #19355e;
+        padding-top: 2.5mm;
+        min-height: 14mm;
+        text-align: center;
+      }
+      .opr-sign-box strong {
+        display: block;
+        font-size: 8.5px;
+        color: var(--navy);
+      }
+      .opr-sign-box span {
+        display: block;
+        margin-top: 3px;
+        font-size: 7.4px;
+        color: var(--muted);
+      }
+      .opr-footer-note {
+        margin-top: 1.5mm;
+        font-size: 6.9px;
+        text-align: right;
+        color: var(--muted);
+      }
+      @media print {
+        body { background: #fff; }
+        .opr-sheet {
+          width: auto;
+          min-height: auto;
+          border: none;
+          border-radius: 0;
+          padding: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="opr-sheet">
+      <div class="opr-header">
+        <img class="opr-logo" src="${logoUrl}" alt="Logo ${escapeHtml(get('opr-institusi') || 'Sekolah')}">
+        <div class="opr-title">
+          <h1>${escapeHtml(get('opr-institusi') || 'Sekolah')}</h1>
+          <p>${escapeHtml(get('opr-alamat') || 'Alamat sekolah')}</p>
+          <span class="opr-subtitle">One Page Report (OPR)</span>
+        </div>
+        <div class="opr-badge">Laporan Ringkas<br>1 Muka Surat</div>
+      </div>
+      <div class="opr-meta-grid">
+        <div class="opr-meta-card program"><small>Program</small><strong>${escapeHtml(nama)}</strong></div>
+        <div class="opr-meta-card"><small>Anjuran</small><strong>${escapeHtml(get('opr-anjuran') || '—')}</strong></div>
+        <div class="opr-meta-card"><small>Tarikh</small><strong>${escapeHtml(tarikhFmt)}</strong></div>
+        <div class="opr-meta-card place"><small>Tempat</small><strong>${escapeHtml(get('opr-tempat') || '—')}</strong></div>
+        <div class="opr-meta-card participants"><small>Peserta</small><strong>${escapeHtml(get('opr-peserta') || '—')}</strong></div>
+      </div>
+      <div class="opr-main">
+        <div class="opr-copy-grid">
+          ${buildOPRPrintSection('Objektif', get('opr-objektif'), 230)}
+          ${buildOPRPrintSection('Aktiviti yang Dijalankan', get('opr-aktiviti'), 300, 'activity')}
+          ${buildOPRPrintSection('Kekuatan / Kejayaan', get('opr-kekuatan'), 230)}
+          ${buildOPRPrintSection('Kelemahan / Cadangan', get('opr-kelemahan'), 230)}
+        </div>
+        <div class="opr-gallery-card">
+          <h3>Dokumentasi Program</h3>
+          <p>Empat foto utama aktiviti untuk rujukan pentadbiran dan eksport PDF.</p>
+          <div class="opr-gallery-grid">
+            ${buildOPRPrintPhotoGrid(photos)}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="opr-sign-row">
+          <div class="opr-sign-box">
+            <strong>${escapeHtml(get('opr-penyedia') || '( ........................... )')}</strong>
+            <span>${escapeHtml(get('opr-jawatan') || 'Penyedia Laporan')}</span>
+          </div>
+          <div class="opr-sign-box">
+            <strong>${escapeHtml(get('opr-gb') || '( ........................... )')}</strong>
+            <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
+          </div>
+        </div>
+        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+      </div>
+    </div>
+    <script>window.onload=function(){window.print();};<\/script>
+  </body>
+  </html>`);
+  win.document.close();
+};
+
+cetakOPR = function() {
+  const get = function(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : '';
+  };
+  const nama = get('opr-nama');
+  if (!nama) {
+    showToast('Sila isi Nama Program dahulu.', 'error');
+    return;
+  }
+  if (_oprImageItems.length < OPR_IMAGE_MIN_COUNT) {
+    showToast('Sila tambah sekurang-kurangnya 4 gambar sebelum cetak OPR.', 'error');
+    return;
+  }
+
+  const tarikh = get('opr-tarikh');
+  const tarikhDate = tarikh ? parseLocalDateYMD(tarikh) : null;
+  const tarikhFmt = tarikhDate ? tarikhDate.toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  const logoUrl = new URL('assets/sk-kiandongo-logo.png', window.location.href).href;
+  const photos = _oprImageItems.slice(0, OPR_IMAGE_MAX_COUNT);
+  const win = window.open('', '_blank');
+  if (!win) {
+    showToast('Popup cetakan disekat oleh pelayar. Benarkan popup dan cuba semula.', 'error');
+    return;
+  }
+
+  win.document.write(`<!DOCTYPE html>
+  <html lang="ms">
+  <head>
+    <meta charset="UTF-8">
+    <title>Laporan OPR - ${escapeHtml(nama)}</title>
+    <style>
+      @page { size: A4 portrait; margin: 6mm; }
+      :root {
+        --navy: #10243e;
+        --blue: #1d4fa3;
+        --line: #d9e3f3;
+        --text: #10243e;
+        --muted: #5d6f85;
+        --surface: #f7faff;
+        --page-h: 285mm;
+        --base-font: 8.9px;
+        --title-font: 13px;
+        --meta-font: 8.2px;
+        --section-title-font: 7.7px;
+        --section-font: 7.1px;
+        --note-font: 6.7px;
+        --photo-h: 25.5mm;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #edf4ff;
+        color: var(--text);
+        font-family: "Plus Jakarta Sans", Arial, sans-serif;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body { font-size: var(--base-font); }
+      .opr-sheet {
+        width: 197mm;
+        height: var(--page-h);
+        min-height: var(--page-h);
+        margin: 0 auto;
+        padding: 6mm;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 3.4mm;
+        overflow: hidden;
+      }
+      .opr-header {
+        display: grid;
+        grid-template-columns: 15mm 1fr auto;
+        gap: 3.4mm;
+        align-items: center;
+        padding-bottom: 3.2mm;
+        border-bottom: 1px solid var(--line);
+      }
+      .opr-logo {
+        width: 15mm;
+        height: 15mm;
+        object-fit: contain;
+        border-radius: 50%;
+        background: #fff;
+      }
+      .opr-title { min-width: 0; }
+      .opr-title h1 {
+        margin: 0;
+        font-size: var(--title-font);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--navy);
+      }
+      .opr-title p {
+        margin: 2px 0 0;
+        font-size: 7.2px;
+        color: var(--muted);
+      }
+      .opr-title .opr-subtitle {
+        margin-top: 4px;
+        display: inline-flex;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(246,199,68,0.22), rgba(29,79,163,0.10));
+        color: var(--blue);
+        font-size: 6.9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 14mm;
+        padding: 4px 9px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #14396f, #1d4fa3);
+        color: #fff;
+        font-size: 6.9px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        text-align: center;
+      }
+      .opr-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 2mm;
+      }
+      .opr-meta-card {
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 2.2mm;
+        min-height: 15.5mm;
+        background: linear-gradient(180deg, #ffffff, var(--surface));
+      }
+      .opr-meta-card.program { grid-column: span 2; }
+      .opr-meta-card.place { grid-column: span 2; }
+      .opr-meta-card.participants { grid-column: span 2; }
+      .opr-meta-card small {
+        display: block;
+        margin-bottom: 2px;
+        font-size: 6.6px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+      }
+      .opr-meta-card strong {
+        display: block;
+        font-size: var(--meta-font);
+        line-height: 1.24;
+        color: var(--navy);
+      }
+      .opr-main {
+        display: grid;
+        grid-template-columns: 0.98fr 1.02fr;
+        gap: 3mm;
+        min-height: 0;
+        align-items: stretch;
+        flex: 1 1 auto;
+      }
+      .opr-copy-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: 1fr;
+        gap: 2mm;
+        min-height: 0;
+      }
+      .opr-print-section {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fcfdff;
+        padding: 2.1mm 2.4mm;
+        min-height: 0;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+      .opr-print-section h3 {
+        margin: 0 0 3px;
+        font-size: var(--section-title-font);
+        color: var(--blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-print-section-body {
+        font-size: var(--section-font);
+        line-height: 1.3;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .opr-print-empty {
+        color: var(--muted);
+        font-style: italic;
+      }
+      .opr-gallery-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff, #f5f9ff);
+        padding: 2.3mm;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 2mm;
+        min-height: 0;
+      }
+      .opr-gallery-card h3 {
+        margin: 0;
+        font-size: var(--section-title-font);
+        color: var(--blue);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .opr-gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-content: stretch;
+        gap: 2mm;
+      }
+      .opr-print-photo {
+        margin: 0;
+        display: grid;
+        gap: 2px;
+      }
+      .opr-print-photo img {
+        width: 100%;
+        height: var(--photo-h);
+        object-fit: cover;
+        border-radius: 9px;
+        border: 1px solid rgba(16, 36, 62, 0.10);
+        background: #dbe7f7;
+      }
+      .opr-print-photo figcaption {
+        font-size: 6.4px;
+        font-weight: 700;
+        text-align: center;
+        color: var(--muted);
+      }
+      .opr-footer {
+        display: grid;
+        gap: 1.8mm;
+        margin-top: 1mm;
+      }
+      .opr-sign-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4mm;
+        align-items: stretch;
+      }
+      .opr-sign-box {
+        min-height: 20mm;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff, #f8fbff);
+        padding: 2.4mm 2.6mm;
+        display: grid;
+        gap: 2mm;
+        align-content: space-between;
+      }
+      .opr-sign-label {
+        font-size: 6.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+      .opr-sign-line {
+        border-top: 1.4px solid #19355e;
+        padding-top: 1.8mm;
+        text-align: center;
+      }
+      .opr-sign-box strong {
+        display: block;
+        font-size: 7.6px;
+        color: var(--navy);
+      }
+      .opr-sign-box span {
+        display: block;
+        margin-top: 2px;
+        font-size: 6.7px;
+        color: var(--muted);
+      }
+      .opr-sign-date {
+        margin-top: 3px;
+        font-size: 6.3px;
+        color: var(--muted);
+      }
+      .opr-footer-note {
+        font-size: var(--note-font);
+        text-align: right;
+        color: var(--muted);
+      }
+      @media print {
+        body { background: #fff; }
+        .opr-sheet {
+          width: auto;
+          border: none;
+          border-radius: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="opr-sheet" id="oprSheet">
+      <div class="opr-header">
+        <img class="opr-logo" src="${logoUrl}" alt="Logo ${escapeHtml(get('opr-institusi') || 'Sekolah')}">
+        <div class="opr-title">
+          <h1>${escapeHtml(get('opr-institusi') || 'Sekolah')}</h1>
+          <p>${escapeHtml(get('opr-alamat') || 'Alamat sekolah')}</p>
+          <span class="opr-subtitle">One Page Report (OPR)</span>
+        </div>
+        <div class="opr-badge">Laporan Ringkas<br>1 Muka Surat</div>
+      </div>
+      <div class="opr-meta-grid">
+        <div class="opr-meta-card program"><small>Program</small><strong>${escapeHtml(nama)}</strong></div>
+        <div class="opr-meta-card"><small>Anjuran</small><strong>${escapeHtml(get('opr-anjuran') || '—')}</strong></div>
+        <div class="opr-meta-card"><small>Tarikh</small><strong>${escapeHtml(tarikhFmt)}</strong></div>
+        <div class="opr-meta-card place"><small>Tempat</small><strong>${escapeHtml(get('opr-tempat') || '—')}</strong></div>
+        <div class="opr-meta-card participants"><small>Peserta</small><strong>${escapeHtml(get('opr-peserta') || '—')}</strong></div>
+      </div>
+      <div class="opr-main">
+        <div class="opr-copy-grid">
+          ${buildOPRPrintSection('Objektif', get('opr-objektif'))}
+          ${buildOPRPrintSection('Aktiviti yang Dijalankan', get('opr-aktiviti'), 'activity')}
+          ${buildOPRPrintSection('Kekuatan / Kejayaan', get('opr-kekuatan'))}
+          ${buildOPRPrintSection('Kelemahan / Cadangan', get('opr-kelemahan'))}
+        </div>
+        <div class="opr-gallery-card">
+          <h3>Gambar Program</h3>
+          <div class="opr-gallery-grid">
+            ${buildOPRPrintPhotoGrid(photos)}
+          </div>
+        </div>
+      </div>
+      <div class="opr-footer">
+        <div class="opr-sign-row">
+          <div class="opr-sign-box">
+            <div class="opr-sign-label">Disediakan Oleh</div>
+            <div class="opr-sign-line">
+              <strong>${escapeHtml(get('opr-penyedia') || '( ........................... )')}</strong>
+              <span>${escapeHtml(get('opr-jawatan') || 'Penyedia Laporan')}</span>
+              <div class="opr-sign-date">Tarikh: ${escapeHtml(tarikhFmt)}</div>
+            </div>
+          </div>
+          <div class="opr-sign-box">
+            <div class="opr-sign-label">Disahkan Oleh</div>
+            <div class="opr-sign-line">
+              <strong>${escapeHtml(get('opr-gb') || '( ........................... )')}</strong>
+              <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
+              <div class="opr-sign-date">Tarikh: ${escapeHtml(tarikhFmt)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        function fitSheet() {
+          var root = document.documentElement;
+          var sheet = document.getElementById('oprSheet');
+          if (!sheet) return;
+          var base = 8.9;
+          var title = 13;
+          var meta = 8.2;
+          var sectionTitle = 7.7;
+          var section = 7.1;
+          var note = 6.7;
+          var photo = 25.5;
+          var tries = 0;
+          while (sheet.scrollHeight > sheet.clientHeight && tries < 20) {
+            base -= 0.16;
+            title -= 0.18;
+            meta -= 0.16;
+            sectionTitle -= 0.12;
+            section -= 0.16;
+            note -= 0.08;
+            photo -= 0.7;
+            root.style.setProperty('--base-font', Math.max(base, 6) + 'px');
+            root.style.setProperty('--title-font', Math.max(title, 10.5) + 'px');
+            root.style.setProperty('--meta-font', Math.max(meta, 6.6) + 'px');
+            root.style.setProperty('--section-title-font', Math.max(sectionTitle, 6.1) + 'px');
+            root.style.setProperty('--section-font', Math.max(section, 5.7) + 'px');
+            root.style.setProperty('--note-font', Math.max(note, 5.5) + 'px');
+            root.style.setProperty('--photo-h', Math.max(photo, 17.5) + 'mm');
+            tries++;
+          }
+        }
+        window.onload = function() {
+          fitSheet();
+          requestAnimationFrame(function() {
+            fitSheet();
+            setTimeout(function() {
+              fitSheet();
+              window.print();
+            }, 120);
+          });
+        };
+      })();
+    <\/script>
+  </body>
+  </html>`);
+  win.document.close();
+};
 
 function setKokumStatus(msg, type) {
   const box = document.getElementById('kokumStatusBox');
