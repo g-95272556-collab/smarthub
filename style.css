@@ -1370,41 +1370,41 @@ table tbody tr:last-child td { border-bottom: none; }
 /* ─────────────────────────────────────────── */
 #toast-container {
   position: fixed;
-  right: 22px;
-  bottom: calc(22px + var(--safe-bottom, 0px));
+  right: 16px;
+  bottom: calc(16px + var(--safe-bottom, 0px));
   z-index: 9999;
   display: grid;
-  gap: 12px;
-  width: min(420px, calc(100vw - 24px));
+  gap: 14px;
+  width: min(520px, calc(100vw - 20px));
 }
 .toast {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-columns: 26px minmax(0, 1fr);
   align-items: start;
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 18px;
+  gap: 14px;
+  padding: 20px 22px;
+  border-radius: 22px;
   border: 1px solid rgba(255,255,255,0.14);
-  box-shadow: 0 16px 40px rgba(8,21,43,0.28);
+  box-shadow: 0 20px 48px rgba(8,21,43,0.32);
   backdrop-filter: blur(14px);
   color: #F8FAFC;
-  font-size: 0.98rem;
-  font-weight: 600;
-  line-height: 1.55;
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.6;
   width: 100%;
   max-width: 100%;
   animation: slide-in 0.3s ease;
-  border-left: 4px solid var(--gold);
+  border-left: 5px solid var(--gold);
   background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(30,41,59,0.96));
 }
 .toast-icon {
   display: grid;
   place-items: center;
-  width: 22px;
-  min-height: 22px;
-  font-size: 1.05rem;
+  width: 26px;
+  min-height: 26px;
+  font-size: 1.24rem;
   line-height: 1;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 .toast-message {
   color: inherit;
@@ -1413,11 +1413,11 @@ table tbody tr:last-child td { border-bottom: none; }
 .toast > span:first-child {
   display: grid;
   place-items: center;
-  width: 22px;
-  min-height: 22px;
-  font-size: 1.05rem;
+  width: 26px;
+  min-height: 26px;
+  font-size: 1.24rem;
   line-height: 1;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 .toast > span:last-child {
   color: inherit;
@@ -1441,29 +1441,37 @@ table tbody tr:last-child td { border-bottom: none; }
 }
 @media (max-width: 640px) {
   #toast-container {
-    left: 12px;
-    right: 12px;
-    bottom: calc(12px + var(--safe-bottom, 0px));
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + var(--safe-bottom, 0px));
     width: auto;
   }
   .toast {
-    grid-template-columns: 20px minmax(0, 1fr);
-    gap: 10px;
-    padding: 15px 16px;
-    border-radius: 16px;
-    font-size: 0.94rem;
-    line-height: 1.5;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 12px;
+    padding: 18px 18px;
+    border-radius: 18px;
+    font-size: 1rem;
+    line-height: 1.55;
   }
   .toast-icon {
-    width: 20px;
-    min-height: 20px;
-    font-size: 1rem;
+    width: 24px;
+    min-height: 24px;
+    font-size: 1.12rem;
   }
   .toast > span:first-child {
-    width: 20px;
-    min-height: 20px;
-    font-size: 1rem;
+    width: 24px;
+    min-height: 24px;
+    font-size: 1.12rem;
   }
+}
+.opr-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+.opr-print-btn {
+  min-width: min(100%, 280px);
 }
 .pwa-banner {
   display: none;
