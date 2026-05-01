@@ -10340,6 +10340,68 @@ async function hantarNotifSuratAmaran(nama, kelas, telefon, tahap, jumlahHari) {
   } catch(e) { showToast('Ralat hantar notifikasi: ' + e.message, 'error'); }
 }
 
+async function insertDummyDataAmaran() {
+  const btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Memasukkan...'; }
+  const guruEmail = (APP.user && APP.user.email) ? APP.user.email : 'ujian@sekolah.edu.my';
+  const tahun = new Date().getFullYear();
+  // 12 hari tidak hadir → Amaran 1 (≥10 hari)
+  const tarikhList = [
+    tahun + '-01-06', tahun + '-01-07', tahun + '-01-08',
+    tahun + '-01-13', tahun + '-01-14', tahun + '-01-20',
+    tahun + '-02-03', tahun + '-02-10', tahun + '-02-17',
+    tahun + '-03-03', tahun + '-03-10', tahun + '-03-17'
+  ];
+  const rows = tarikhList.map(function(tarikh) {
+    return ['[UJIAN] Ali bin Abu', '4 MUTIARA', tarikh, 'Tidak Hadir', '60123456789', 'Data ujian amaran', guruEmail];
+  });
+  try {
+    let ok = 0;
+    for (const row of rows) {
+      const res = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_MURID', row: row });
+      if (res.success) ok++;
+      await sleep(200);
+    }
+    showToast(ok + ' rekod ujian berjaya dimasukkan. Klik "Semak Amaran" untuk lihat hasilnya.', 'success');
+    await loadAmaranKehadiran();
+  } catch(e) {
+    showToast('Gagal masukkan data ujian: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="lucide-icon" width="14" height="14"><use href="#lucide-flask-conical"></use></svg> Masuk Data Ujian'; }
+  }
+}
+
+async function hantarAmaranKeGroupUjian() {
+  const container = document.getElementById('amaranKehadiranBody');
+  const rows = container ? Array.from(container.querySelectorAll('tr[data-nama]')) : [];
+  const testGroup = String(hlConfig.fonnteTestGroup || '').trim();
+  if (!testGroup) { showToast('Test Group Fonnte belum dikonfigurasi dalam Konfigurasi.', 'error'); return; }
+  try {
+    const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
+    if (!data.success) throw new Error(data.error || 'Gagal membaca data');
+    const allRows = (data.rows || []).map(parseKehadiranMuridRow).filter(function(r) { return r.nama && r.nama.toLowerCase() !== 'nama'; });
+    const muridMap = kiraTidakHadirMurid(allRows);
+    const muridAmaran = Object.values(muridMap).filter(function(m) { return m.tahap > 0; }).sort(function(a, b) { return b.tahap - a.tahap || b.jumlahHari - a.jumlahHari; });
+    if (!muridAmaran.length) { showToast('Tiada murid yang perlu amaran.', 'info'); return; }
+    const sekolah = getSchoolTemplateName();
+    const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+    const senarai = muridAmaran.map(function(m) {
+      return m.tahapInfo.ikon + ' ' + m.nama + ' (' + m.kelas + ') — *' + m.tahapInfo.label + '* [' + m.jumlahHari + ' hari]';
+    }).join('\n');
+    const mesej = '🏫 *' + sekolah + '*\n📋 *LAPORAN AMARAN KEHADIRAN MURID*\n📅 ' + tarikhHariIni + '\n\n' +
+      '*Senarai Murid Memerlukan Tindakan:*\n' + senarai + '\n\n' +
+      '⚠️ = Amaran 1 (≥10 hari)\n🔶 = Amaran 2 (≥20 hari)\n🚨 = Amaran 3 (≥40 hari)\n🚫 = Buang Sekolah (≥60 hari)\n\n' +
+      '_Dijana oleh SmartSchoolHub_';
+    const resp = await callFonnte(testGroup, mesej);
+    if (resp.status === true || resp.status === 'true') {
+      showToast('Laporan amaran berjaya dihantar ke Group WA Ujian!', 'success');
+      logNotif('Amaran Kehadiran Group Ujian', testGroup, mesej, 'Berjaya');
+    } else {
+      showToast('Gagal hantar ke group: ' + JSON.stringify(resp), 'error');
+    }
+  } catch(e) { showToast('Ralat: ' + e.message, 'error'); }
+}
+
 // ══ END SISTEM AMARAN KEHADIRAN MURID ═════════════════════════════════════
 
 async function loadKehadiranMurid(options) {

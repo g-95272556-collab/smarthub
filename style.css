@@ -293,6 +293,7 @@ html, body {
 .nav-item.c-rose .nav-icon { color: #fb7185; background: rgba(251,113,133,0.15); }
 .nav-item.c-teal .nav-icon { color: #2dd4bf; background: rgba(45,212,191,0.15); }
 .nav-item.c-amber .nav-icon { color: #fcd34d; background: rgba(252,211,77,0.15); }
+.nav-item.c-red .nav-icon { color: #f87171; background: rgba(248,113,113,0.15); }
 
 .nav-item.active .nav-icon {
   background: var(--gold) !important;

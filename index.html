@@ -1394,6 +1394,10 @@
         <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-graduation-cap"></use></svg></span>
         <span>Kehadiran Murid</span>
       </button>
+      <button class="nav-item c-red" onclick="showModule('amaran-kehadiran')">
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-alert-triangle"></use></svg></span>
+        <span>Amaran Kehadiran</span>
+      </button>
 
       <div class="nav-section-label">Utiliti Guru</div>
       <button class="nav-item c-orange" onclick="showModule('opr')">
@@ -1894,18 +1898,38 @@
           <iframe id="framePratinjauSuratAmaran" style="flex:1;border:none;border-radius:0 0 16px 16px;min-height:600px" title="Pratinjau Surat Amaran"></iframe>
         </div>
 
-        <!-- Panel Amaran Kehadiran -->
-        <div class="card" style="margin-top:24px;border-top:4px solid #ef4444">
-          <div class="section-header" style="flex-wrap:wrap;gap:10px">
-            <div>
-              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20" style="color:#ef4444"><use href="#lucide-alert-triangle"></use></svg> Sistem Amaran Kehadiran</h2>
-              <p style="font-size:0.82rem;color:var(--muted);margin:4px 0 0">Analisis automatik kehadiran murid dan jana surat amaran digital mengikut standard KPM</p>
+        <!-- Pautan ke modul amaran -->
+        <div class="card" style="margin-top:24px;border-left:4px solid #ef4444">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:1.5rem">⚠️</span>
+              <div>
+                <strong>Semak Amaran Kehadiran Murid</strong>
+                <p style="font-size:0.82rem;color:var(--muted);margin:4px 0 0">Jana surat amaran digital dan hantar notifikasi kepada wali mengikut standard KPM</p>
+              </div>
             </div>
-            <button class="btn btn-primary" onclick="loadAmaranKehadiran()" style="flex-shrink:0"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-search"></use></svg> Semak Amaran Kehadiran</button>
+            <button class="btn btn-primary" onclick="showModule('amaran-kehadiran')" style="flex-shrink:0"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-alert-triangle"></use></svg> Buka Amaran Kehadiran</button>
           </div>
+        </div>
+      </div>
 
-          <!-- Panduan Tahap -->
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px">
+      <!-- ══ AMARAN KEHADIRAN MURID ══ -->
+      <div id="mod-amaran-kehadiran" class="module" style="display:none">
+        <div class="page-header">
+          <div>
+            <h1 style="display:flex;align-items:center;gap:12px"><svg class="lucide-icon" width="28" height="28" style="color:#ef4444"><use href="#lucide-alert-triangle"></use></svg> Amaran Kehadiran Murid</h1>
+            <p>Analisis automatik dan jana surat amaran digital mengikut standard disiplin KPM</p>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-secondary" onclick="insertDummyDataAmaran()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-flask-conical"></use></svg> Masuk Data Ujian</button>
+            <button class="btn btn-primary" onclick="loadAmaranKehadiran()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-search"></use></svg> Semak Amaran</button>
+          </div>
+        </div>
+
+        <!-- Panduan Tahap -->
+        <div class="card" style="margin-bottom:20px">
+          <div class="section-header"><h2>Tahap Tindakan Disiplin</h2></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
             <div style="background:#fef9ee;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px">
               <div style="font-weight:700;color:#92400e;font-size:0.85rem">⚠️ Amaran 1</div>
               <div style="font-size:0.78rem;color:#78350f;margin-top:4px">3 hari berturut-turut <em>atau</em> ≥ 10 hari</div>
@@ -1923,11 +1947,17 @@
               <div style="font-size:0.78rem;color:#2e1065;margin-top:4px">≥ 60 hari (kumulatif)</div>
             </div>
           </div>
+        </div>
 
-          <!-- Statistik Amaran -->
-          <div id="amaranKehadiranStats" class="card-grid card-grid-4" style="margin-bottom:18px"></div>
+        <!-- Statistik Amaran -->
+        <div id="amaranKehadiranStats" class="card-grid card-grid-4" style="margin-bottom:20px"></div>
 
-          <!-- Jadual Senarai Amaran -->
+        <!-- Jadual + Tindakan -->
+        <div class="card">
+          <div class="section-header" style="flex-wrap:wrap;gap:10px">
+            <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="18" height="18" style="color:#ef4444"><use href="#lucide-list-alert"></use></svg> Senarai Murid Memerlukan Tindakan</h2>
+            <button class="btn btn-sm btn-success" onclick="hantarAmaranKeGroupUjian()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-send"></use></svg> Hantar ke Group WA Ujian</button>
+          </div>
           <div class="table-wrap">
             <table class="responsive-mobile-table">
               <thead>
@@ -1941,7 +1971,7 @@
                 </tr>
               </thead>
               <tbody id="amaranKehadiranBody">
-                <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Klik "Semak Amaran Kehadiran" untuk menganalisis data.</td></tr>
+                <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Klik "Semak Amaran" untuk menganalisis data kehadiran.</td></tr>
               </tbody>
             </table>
           </div>
