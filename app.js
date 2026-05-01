@@ -5563,26 +5563,37 @@ function loadHtml2Pdf() {
 async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
   const html2pdfLib = await loadHtml2Pdf();
   await muatLogoSuratAmaran();
-  const html = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah });
-  return new Promise(function(resolve, reject) {
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:none;visibility:hidden';
-    document.body.appendChild(iframe);
-    iframe.onload = function() {
-      const body = iframe.contentDocument && iframe.contentDocument.querySelector('.paper');
-      if (!body) { document.body.removeChild(iframe); reject(new Error('Gagal jana kandungan surat.')); return; }
-      html2pdfLib().set({
-        margin: 0,
-        filename: 'SuratAmaran_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf',
-        image: { type: 'jpeg', quality: 0.97 },
-        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      }).from(body).outputPdf('blob').then(function(blob) {
-        document.body.removeChild(iframe); resolve(blob);
-      }).catch(function(e) { document.body.removeChild(iframe); reject(e); });
-    };
-    iframe.srcdoc = html;
-  });
+  const fullHtml = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah });
+
+  // Extract CSS and body — inject directly into main document to avoid iframe cross-origin issues
+  const cssMatch = fullHtml.match(/<style>([\s\S]*?)<\/style>/i);
+  const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/i);
+  const cssContent = cssMatch ? cssMatch[1] : '';
+  const bodyContent = bodyMatch ? bodyMatch[1] : '';
+
+  const styleEl = document.createElement('style');
+  styleEl.textContent = cssContent;
+  document.head.appendChild(styleEl);
+
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1';
+  wrapper.innerHTML = bodyContent;
+  document.body.appendChild(wrapper);
+
+  const paperEl = wrapper.querySelector('.paper') || wrapper.firstElementChild || wrapper;
+  try {
+    const blob = await html2pdfLib().set({
+      margin: 0,
+      filename: 'SuratAmaran_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf',
+      image: { type: 'jpeg', quality: 0.97 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(paperEl).outputPdf('blob');
+    return blob;
+  } finally {
+    if (styleEl.parentNode) document.head.removeChild(styleEl);
+    if (wrapper.parentNode) document.body.removeChild(wrapper);
+  }
 }
 
 async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
@@ -10508,8 +10519,7 @@ async function insertDummyDataAmaran() {
 }
 
 async function hantarAmaranKeGroupUjian() {
-  const testGroup = String(hlConfig.fonnteTestGroup || '').trim();
-  if (!testGroup) { showToast('Test Group Fonnte belum dikonfigurasi dalam Konfigurasi.', 'error'); return; }
+  const testGroup = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim();
   showToast('Mengambil data amaran...', 'info');
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
@@ -10532,7 +10542,7 @@ async function hantarAmaranKeGroupUjian() {
         if (resp.status === true || resp.status === 'true') { sent++; logNotif('PDF ' + m.tahapInfo.label + ' GroupUjian', testGroup, caption, 'Berjaya'); }
         else { failed++; }
         await sleep(1200);
-      } catch(err) { failed++; }
+      } catch(err) { failed++; console.error('Gagal PDF untuk ' + m.nama + ':', err); showToast('Gagal jana/hantar PDF untuk ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
     }
     showToast('Selesai! PDF dihantar: ' + sent + '/' + muridAmaran.length + (failed > 0 ? ' (' + failed + ' gagal)' : ''), sent > 0 ? 'success' : 'error');
   } catch(e) { showToast('Ralat: ' + e.message, 'error'); }
