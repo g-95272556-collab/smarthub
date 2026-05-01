@@ -654,6 +654,16 @@ async function ensureD1Schema(env) {
     CREATE INDEX IF NOT EXISTS idx_sheet_rows_sheet_name_row_index
     ON sheet_rows(sheet_name, row_index)
   `).run();
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS letter_cache (
+      id TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    )
+  `).run();
   D1_SCHEMA_READY = true;
 }
 

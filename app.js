@@ -5549,7 +5549,7 @@ async function callFonnteFile(target, caption, blob, filename) {
   return data;
 }
 
-async function uploadLetterToWorker(blob) {
+async function uploadLetterToWorker(blob, filename) {
   if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
   const base64 = await new Promise(function(resolve, reject) {
     const reader = new FileReader();
@@ -5561,7 +5561,7 @@ async function uploadLetterToWorker(blob) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'storeLetterFile', data: base64, mimeType: blob.type || 'image/jpeg', filename: 'SuratAmaran.jpg' })
+    body: JSON.stringify({ action: 'storeLetterFile', data: base64, mimeType: blob.type || 'image/jpeg', filename: filename || 'SuratAmaran.jpg' })
   });
   const data = await res.json();
   if (!data.success) throw new Error(data.error || 'Gagal simpan fail ke Worker');
@@ -5652,7 +5652,7 @@ async function janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hari
   document.head.appendChild(styleEl);
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;overflow:visible;';
-  wrapper.innerHTML = bodyMatch ? bodyMatch[1] : '';
+  wrapper.innerHTML = bodyMatch ? bodyMatch[1] : fullHtml;
   document.body.appendChild(wrapper);
   await new Promise(function(r) { setTimeout(r, 300); });
   const paperEl = wrapper.querySelector('.paper') || wrapper.firstElementChild || wrapper;
@@ -5698,19 +5698,57 @@ async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
   var m = { nama: nama, kelas: kelas, tahap: tahap, jumlahHari: jumlahHari, hariKonsekutif: hariKonsekutif || 0, tahapInfo: info };
   var caption = janaWATeksSuratAmaran(m, cfg, tarikh);
   var filename = 'SuratAmaran_' + info.label.replace(/\s+/g, '') + '_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
-  showToast('Jana surat amaran...', 'info');
+  
   try {
+    showToast('Menjana imej surat...', 'info');
     var blob = await janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
-    showToast('Muat naik & hantar ke WhatsApp ' + telefon + '...', 'info');
-    var fileUrl = await uploadLetterToWorker(blob);
-    var resp = await callFonnteUrl(telefon, caption, fileUrl, filename);
-    if (resp.status === true || resp.status === 'true') {
-      showToast(info.label + ' berjaya dihantar ke ' + telefon, 'success');
-      logNotif(info.label + ' WA Imej', telefon, fileUrl, 'Berjaya');
-    } else {
-      showToast('Gagal hantar: ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error');
+    
+    let sentSuccess = false;
+    let methodUsed = '';
+    let errorLog = '';
+
+    // Cuba Kaedah 1: Worker Storage (Paling selamat untuk CORS)
+    try {
+      showToast('Muat naik ke Worker...', 'info');
+      var fileUrl = await uploadLetterToWorker(blob, filename);
+      showToast('Menghantar via URL...', 'info');
+      var resp = await callFonnteUrl(telefon, caption, fileUrl, filename);
+      if (resp.status) {
+        sentSuccess = true;
+        methodUsed = 'Worker URL';
+      } else {
+        errorLog += 'Worker method: ' + (resp.reason || 'Fonnte reject');
+      }
+    } catch(err) {
+      errorLog += 'Worker method error: ' + err.message + '. ';
     }
-  } catch(e) { showToast('Ralat hantar surat amaran: ' + e.message, 'error'); }
+
+    // Cuba Kaedah 2: Direct Upload (Fallback jika Worker gagal)
+    if (!sentSuccess) {
+      try {
+        showToast('Worker gagal, cuba penghantaran terus...', 'info');
+        var respDirect = await callFonnteFile(telefon, caption, blob, filename);
+        if (respDirect.status) {
+          sentSuccess = true;
+          methodUsed = 'Direct Upload';
+        } else {
+          errorLog += 'Direct method: ' + (respDirect.reason || 'Fonnte reject');
+        }
+      } catch(err) {
+        errorLog += 'Direct method error: ' + err.message;
+      }
+    }
+
+    if (sentSuccess) {
+      showToast(info.label + ' berjaya dihantar (' + methodUsed + ')', 'success');
+      logNotif(info.label + ' WA', telefon, filename, 'Berjaya');
+    } else {
+      throw new Error(errorLog || 'Gagal dalam semua kaedah penghantaran.');
+    }
+  } catch(e) {
+    console.error('Attendance Letter Error:', e);
+    showToast('Ralat: ' + e.message, 'error');
+  }
 }
 
 async function hantarPDFDariModal() {
