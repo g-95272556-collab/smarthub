@@ -684,6 +684,7 @@ function normalizeDutyScheduleRows(rows) {
 function applyBackendOperationalConfig(config) {
   const cfg = config || {};
   _backendConfigCache = cfg;
+  applyNotificationRuntimeConfig(cfg);
 
   const adminEmails = parseJsonConfigValue(cfg.ADMIN_EMAILS_JSON, []);
   _adminEmails = Array.isArray(adminEmails) ? adminEmails.map(function(email) {
@@ -704,6 +705,16 @@ function applyBackendOperationalConfig(config) {
       saveLocalKokumProgramConfig(cloneKokumProgramOptions(JSON.parse(cfg.KOKUM_PROGRAM_OPTIONS_JSON)));
     } catch (e) {}
   }
+}
+function applyNotificationRuntimeConfig(config) {
+  const cfg = config || {};
+  hlConfig.tgBot = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramBot] || hlConfig.tgBot || '').trim();
+  hlConfig.tgChat = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramChat] || hlConfig.tgChat || '').trim();
+  hlConfig.tgTopic = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramTopic] || hlConfig.tgTopic || '').trim();
+  hlConfig.fonnteToken = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteToken] || hlConfig.fonnteToken || '').trim();
+  hlConfig.fonnteGroup = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteGuruGroup] || cfg.FONNTE_GROUP || hlConfig.fonnteGroup || '').trim();
+  hlConfig.fonnteTestGroup = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteTestGroup] || hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim();
+  localStorage.setItem('ssh_hl_config', JSON.stringify(hlConfig));
 }
 async function loadBackendOperationalConfig(forceReload) {
   if (!forceReload && _backendConfigCache) return _backendConfigCache;
@@ -802,16 +813,12 @@ function renderBirthdayNotifConfigSummary(config) {
 
 function populateBirthdayNotifConfigInputs(config) {
   config = config || {};
-  hlConfig.tgBot = String(config[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramBot] || hlConfig.tgBot || '').trim();
-  hlConfig.tgChat = String(config[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramChat] || hlConfig.tgChat || '').trim();
-  hlConfig.tgTopic = String(config[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramTopic] || hlConfig.tgTopic || '').trim();
-  hlConfig.fonnteGroup = String(config[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteGuruGroup] || config.FONNTE_GROUP || hlConfig.fonnteGroup || '').trim();
-  localStorage.setItem('ssh_hl_config', JSON.stringify(hlConfig));
+  applyNotificationRuntimeConfig(config);
 
   setBirthdayNotifInputValue('hl-tg-bot', hlConfig.tgBot);
   setBirthdayNotifInputValue('hl-tg-chat', hlConfig.tgChat);
   setBirthdayNotifInputValue('hl-tg-topic', hlConfig.tgTopic);
-  setBirthdayNotifInputValue('hl-fonnte-token', String(config[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteToken] || '').trim());
+  setBirthdayNotifInputValue('hl-fonnte-token', hlConfig.fonnteToken || '');
   syncGroupGuruFonnteInputs(hlConfig.fonnteGroup || '');
 
   var changed = false;
@@ -5573,9 +5580,17 @@ function normalizeFonnteTarget(target) {
     .join(',');
 }
 
+async function getFonnteRuntimeToken() {
+  var token = String(hlConfig.fonnteToken || '').trim();
+  if (token) return token;
+  await loadBackendOperationalConfig(true);
+  token = String(hlConfig.fonnteToken || '').trim();
+  if (token) return token;
+  throw new Error('Token Fonnte belum dikonfigurasi. Sila simpan FONNTE_TOKEN dalam modul Konfigurasi.');
+}
+
 async function callFonnte(target, mesej) {
-  const token = hlConfig.fonnteToken;
-  if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
+  const token = await getFonnteRuntimeToken();
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
   const cleanTarget = normalizeFonnteTarget(target);
   const res = await fetch('https://api.fonnte.com/send', {
@@ -5589,8 +5604,7 @@ async function callFonnte(target, mesej) {
 }
 
 async function callFonnteFile(target, caption, blob, filename) {
-  const token = hlConfig.fonnteToken;
-  if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
+  const token = await getFonnteRuntimeToken();
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
   const cleanTarget = normalizeFonnteTarget(target);
   const form = new FormData();
@@ -5628,8 +5642,7 @@ async function uploadLetterToWorker(blob, filename) {
 }
 
 async function callFonnteUrl(target, caption, fileUrl, filename) {
-  const token = hlConfig.fonnteToken;
-  if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
+  const token = await getFonnteRuntimeToken();
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
   const cleanTarget = normalizeFonnteTarget(target);
   const form = new FormData();
