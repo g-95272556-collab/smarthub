@@ -6712,7 +6712,7 @@ cetakOPR = function() {
         border-top: 1.4px solid #19355e;
         padding-top: 1.8mm;
         text-align: center;
-        width: 75%;
+        width: 2cm;
         margin: 0 auto;
       }
       .opr-sign-box strong {
