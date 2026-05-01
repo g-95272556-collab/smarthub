@@ -5529,6 +5529,96 @@ async function callFonnte(target, mesej) {
   return data;
 }
 
+async function callFonnteFile(target, caption, blob, filename) {
+  const token = hlConfig.fonnteToken;
+  if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
+  if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const form = new FormData();
+  form.append('target', target);
+  form.append('message', caption || '');
+  form.append('file', blob, filename || 'surat_amaran.pdf');
+  form.append('countryCode', '60');
+  const res = await fetch('https://api.fonnte.com/send', {
+    method: 'POST',
+    headers: { 'Authorization': token },
+    body: form
+  });
+  const data = await res.json();
+  if (!data.status) throw new Error(data.reason || data.detail || 'Fonnte error');
+  return data;
+}
+
+function loadHtml2Pdf() {
+  return new Promise(function(resolve, reject) {
+    if (window.html2pdf) { resolve(window.html2pdf); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = function() { resolve(window.html2pdf); };
+    script.onerror = function() { reject(new Error('Gagal muatkan pustaka html2pdf.js.')); };
+    document.head.appendChild(script);
+  });
+}
+
+async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
+  const html2pdfLib = await loadHtml2Pdf();
+  const html = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true });
+  return new Promise(function(resolve, reject) {
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;height:297mm;border:none;visibility:hidden';
+    document.body.appendChild(iframe);
+    iframe.onload = function() {
+      const body = iframe.contentDocument && iframe.contentDocument.querySelector('.paper');
+      if (!body) { document.body.removeChild(iframe); reject(new Error('Gagal jana kandungan surat.')); return; }
+      html2pdfLib().set({
+        margin: [10, 15, 10, 15],
+        filename: 'SuratAmaran_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf',
+        image: { type: 'jpeg', quality: 0.97 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(body).outputPdf('blob').then(function(blob) {
+        document.body.removeChild(iframe);
+        resolve(blob);
+      }).catch(function(e) {
+        document.body.removeChild(iframe);
+        reject(e);
+      });
+    };
+    iframe.srcdoc = html;
+  });
+}
+
+async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
+  if (!telefon) { showToast('Tiada nombor telefon wali untuk ' + nama, 'error'); return; }
+  const info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
+  const sekolah = getSchoolTemplateName();
+  const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+  showToast('Jana PDF surat amaran...', 'info');
+  try {
+    const blob = await janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
+    const caption = '🏫 *' + sekolah + '*\n\n' + info.ikon + ' *' + info.label.toUpperCase() + ' — SURAT AMARAN KEHADIRAN*\n\n' +
+      'Kepada ibu bapa / penjaga *' + nama + '* (' + kelas + '),\n\n' +
+      'Sila rujuk dokumen rasmi yang dihantar bersama ini.\n\n' +
+      '_' + tarikhHariIni + '_';
+    const filename = 'SuratAmaran_' + info.label.replace(/\s+/g, '') + '_' + nama.replace(/\s+/g, '_') + '.pdf';
+    showToast('Menghantar PDF ke WhatsApp...', 'info');
+    const resp = await callFonnteFile(telefon, caption, blob, filename);
+    if (resp.status === true || resp.status === 'true') {
+      showToast('PDF ' + info.label + ' berjaya dihantar ke ' + telefon, 'success');
+      logNotif(info.label + ' PDF', telefon, caption, 'Berjaya');
+    } else {
+      showToast('Gagal hantar PDF: ' + JSON.stringify(resp), 'error');
+    }
+  } catch(e) { showToast('Ralat hantar PDF: ' + e.message, 'error'); }
+}
+
+async function hantarPDFDariModal() {
+  const modal = document.getElementById('modalPratinjauSuratAmaran');
+  if (!modal) return;
+  const { nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif } = modal.dataset;
+  if (!telefon) { showToast('Tiada nombor telefon wali dalam rekod ini.', 'error'); return; }
+  await hantarPDFSuratAmaran(nama, kelas, telefon, parseInt(tahap), parseInt(jumlahHari), parseInt(hariKonsekutif));
+}
+
 async function testTelegram() {
   try {
     const mesej = '🧪 *Test dari Smart School Hub v2.0*\n\nSambungan Telegram berjaya! ✅';
@@ -10230,8 +10320,8 @@ async function loadAmaranKehadiran() {
         '<td data-label="Berturut" style="font-size:0.9rem">' + m.hariKonsekutif + ' hari</td>' +
         '<td data-label="Tahap"><span style="' + bs + '">' + info.ikon + ' ' + info.label + '</span></td>' +
         '<td data-label="Tindakan" style="display:flex;gap:6px;flex-wrap:wrap">' +
-          '<button class="btn btn-sm" style="background:var(--blue,#1a4fa0);color:#fff" onclick=\'pratinjauSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📄 Surat</button>' +
-          (m.telefon ? '<button class="btn btn-sm btn-success" onclick=\'hantarNotifSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ')\'>📩 Hantar</button>' : '') +
+          '<button class="btn btn-sm" style="background:var(--blue,#1a4fa0);color:#fff" onclick=\'pratinjauSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📄 Pratinjau</button>' +
+          (m.telefon ? '<button class="btn btn-sm btn-success" onclick=\'hantarPDFSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📨 PDF ke WA</button>' : '') +
         '</td></tr>';
     }).join('');
     showToast(muridAmaran.length + ' murid memerlukan tindakan amaran.', 'warning');
@@ -10241,7 +10331,7 @@ async function loadAmaranKehadiran() {
   }
 }
 
-function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
+function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif, opts) {
   const info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
   const sekolah = getSchoolTemplateName();
   const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -10283,7 +10373,7 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
     '<div class="sign-row"><div class="sign-box"><div class="sign-line"><strong>( .............................. )</strong><br><span style="font-size:10pt">Guru Kelas / Guru Disiplin</span><br><span style="font-size:9.5pt;color:#666">' + escapeHtml(sekolah) + '</span></div></div>' +
     '<div class="sign-box"><div class="sign-line"><strong>( .............................. )</strong><br><span style="font-size:10pt">Pengetua / Guru Besar</span><br><span style="font-size:9.5pt;color:#666">' + escapeHtml(sekolah) + '</span></div></div></div>' +
     '<div class="footer">Surat ini dijana secara digital oleh SmartSchoolHub &bull; ' + tarikhHariIni + ' &bull; ' + escapeHtml(sekolah) + '</div>' +
-    '</div><script>window.onload=function(){window.print();};<\/script></body></html>';
+    '</div>' + ((opts && opts.noPrint) ? '' : '<script>window.onload=function(){window.print();};<\/script>') + '</body></html>';
 }
 
 function pratinjauSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
