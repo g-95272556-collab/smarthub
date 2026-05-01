@@ -5609,7 +5609,7 @@ async function callFonnteFile(target, caption, blob, filename) {
   const cleanTarget = normalizeFonnteTarget(target);
   const form = new FormData();
   form.append('target', cleanTarget);
-  form.append('message', caption || '');
+  if (caption) form.append('message', caption);
   form.append('file', blob, filename || 'surat_amaran.jpg');
   form.append('countryCode', '0');
   const res = await fetch('https://api.fonnte.com/send', {
@@ -5638,18 +5638,22 @@ async function uploadLetterToWorker(blob, filename) {
   });
   const data = await res.json();
   if (!data.success) throw new Error(data.error || 'Gagal simpan fail ke Worker');
+  if (!data.url || !/^https?:\/\//i.test(String(data.url))) {
+    throw new Error('Worker tidak memulangkan URL fail surat yang sah.');
+  }
   return data.url;
 }
 
 async function callFonnteUrl(target, caption, fileUrl, filename) {
   const token = await getFonnteRuntimeToken();
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  if (!fileUrl || !/^https?:\/\//i.test(String(fileUrl))) throw new Error('URL fail surat tidak sah.');
   const cleanTarget = normalizeFonnteTarget(target);
   const form = new FormData();
   form.append('target', cleanTarget);
   form.append('url', fileUrl);
   form.append('filename', filename || 'SuratAmaran.jpg');
-  form.append('message', caption || '');
+  if (caption) form.append('message', caption);
   form.append('countryCode', '0');
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
@@ -5660,6 +5664,27 @@ async function callFonnteUrl(target, caption, fileUrl, filename) {
   console.log('[Fonnte URL] respons:', JSON.stringify(data));
   if (!data.status) throw new Error(data.reason || data.detail || 'Fonnte error');
   return data;
+}
+
+async function sendFonnteMediaOnly(target, blob, filename) {
+  var errors = [];
+  try {
+    var directResp = await callFonnteFile(target, '', blob, filename);
+    return { status: true, method: 'Direct Upload', response: directResp };
+  } catch (err) {
+    errors.push('Direct Upload: ' + (err && err.message ? err.message : err));
+  }
+
+  try {
+    var fileUrl = await uploadLetterToWorker(blob, filename);
+    console.log('[Surat Amaran] URL fail:', fileUrl);
+    var urlResp = await callFonnteUrl(target, '', fileUrl, filename);
+    return { status: true, method: 'Worker URL', url: fileUrl, response: urlResp };
+  } catch (err) {
+    errors.push('Worker URL: ' + (err && err.message ? err.message : err));
+  }
+
+  throw new Error('Gagal hantar lampiran media Fonnte. ' + errors.join(' | '));
 }
 
 function loadHtml2Pdf() {
@@ -5777,49 +5802,10 @@ async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
   try {
     showToast('Menjana imej surat...', 'info');
     var blob = await janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
-    
-    let sentSuccess = false;
-    let methodUsed = '';
-    let errorLog = '';
-
-    // Kaedah 1: Worker URL. Fonnte lebih konsisten mengambil media daripada URL fail awam.
-    try {
-      showToast('Muat naik imej surat...', 'info');
-      var fileUrl = await uploadLetterToWorker(blob, filename);
-      showToast('Menghantar imej surat ke WhatsApp...', 'info');
-      var respUrl = await callFonnteUrl(telefon, caption, fileUrl, filename);
-      if (respUrl.status) {
-        sentSuccess = true;
-        methodUsed = 'Worker URL';
-      } else {
-        errorLog += 'Worker method: ' + (respUrl.reason || 'Fonnte reject');
-      }
-    } catch(err) {
-      errorLog += 'Worker method error: ' + err.message + '. ';
-    }
-
-    // Kaedah 2: Direct Upload sebagai fallback jika Worker atau pakej URL gagal.
-    if (!sentSuccess) {
-      try {
-        showToast('URL gagal, cuba upload terus...', 'info');
-        var respDirect = await callFonnteFile(telefon, caption, blob, filename);
-        if (respDirect.status) {
-          sentSuccess = true;
-          methodUsed = 'Direct Upload';
-        } else {
-          errorLog += 'Direct method: ' + (respDirect.reason || 'Fonnte reject');
-        }
-      } catch(err) {
-        errorLog += 'Direct method error: ' + err.message;
-      }
-    }
-
-    if (sentSuccess) {
-      showToast(info.label + ' berjaya dihantar (' + methodUsed + ')', 'success');
-      logNotif(info.label + ' WA', telefon, filename, 'Berjaya');
-    } else {
-      throw new Error(errorLog || 'Gagal dalam semua kaedah penghantaran.');
-    }
+    showToast('Menghantar lampiran imej surat...', 'info');
+    var mediaResult = await sendFonnteMediaOnly(telefon, blob, filename);
+    showToast(info.label + ' berjaya dihantar sebagai imej (' + mediaResult.method + ')', 'success');
+    logNotif(info.label + ' WA', telefon, caption + '\n\nFail: ' + filename, 'Berjaya');
   } catch(e) {
     console.error('Attendance Letter Error:', e);
     showToast('Ralat: ' + e.message, 'error');
@@ -10744,13 +10730,11 @@ async function hantarAmaranKeGroupUjian() {
         showToast('Jana surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
         var caption = janaCaptionMediaSuratAmaran(m, cfg, tarikh);
         var filename = 'SuratAmaran_' + m.tahapInfo.label.replace(/\s+/g, '') + '_' + m.nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
-        // Jana imej → muat naik ke Worker → dapatkan URL awam → hantar ke Fonnte via URL
         var blob = await janaImejSuratAmaran(m.nama, m.kelas, m.telefon, m.tahap, m.jumlahHari, m.hariKonsekutif);
-        showToast('Muat naik & hantar ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
-        var fileUrl = await uploadLetterToWorker(blob, filename);
-        var resp = await callFonnteUrl(testGroup, caption, fileUrl, filename);
-        if (resp.status === true || resp.status === 'true') { sent++; logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, fileUrl, 'Berjaya'); }
-        else { failed++; showToast('Fonnte gagal: ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error'); }
+        showToast('Hantar imej ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
+        var mediaResult = await sendFonnteMediaOnly(testGroup, blob, filename);
+        sent++;
+        logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, caption + '\n\nKaedah: ' + mediaResult.method, 'Berjaya');
         await sleep(1500);
       } catch(err) { failed++; console.error('Gagal hantar untuk ' + m.nama + ':', err); showToast('Gagal ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
     }
