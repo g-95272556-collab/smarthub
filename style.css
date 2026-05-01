@@ -1497,7 +1497,7 @@ table tbody tr:last-child td { border-bottom: none; }
 }
 .opr-image-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 .opr-image-slot {
@@ -1555,8 +1555,8 @@ table tbody tr:last-child td { border-bottom: none; }
 .opr-image-preview {
   display: block;
   width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
   background: #dbe7f7;
 }
 .opr-image-caption {
@@ -2440,7 +2440,7 @@ table tbody tr:last-child td { border-bottom: none; }
     font-size: 0.78rem;
   }
   .opr-image-preview {
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 16 / 9;
   }
   .opr-image-caption {
     gap: 6px;
