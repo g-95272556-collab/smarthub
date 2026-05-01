@@ -6482,6 +6482,9 @@ cetakOPR = function() {
         margin: 0 auto;
         padding: 5.5mm 6.5mm;
         background: #ffffff;
+        background-image: 
+          radial-gradient(at 0% 0%, rgba(30, 64, 175, 0.03) 0px, transparent 50%),
+          radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.02) 0px, transparent 50%);
         border: 1px solid rgba(30, 64, 175, 0.1);
         border-radius: 18px;
         display: flex;
@@ -6489,6 +6492,19 @@ cetakOPR = function() {
         gap: 2.8mm;
         overflow: hidden;
         box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        position: relative;
+      }
+      .opr-sheet::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 86c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm66-3c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zm-40-39c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm50 38c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM20 53c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm12-32c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM8 43c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm76-13c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM34 56c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm44 26c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM22 8c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm42 82c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zm-4-48c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1zM54 2c.552 0 1-.448 1-1s-.448-1-1-1-1 .448-1 1 .448 1 1 1z' fill='%231e40af' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+      }
+      .opr-header, .opr-meta-grid, .opr-main, .opr-footer {
+        position: relative;
+        z-index: 1;
       }
       .opr-header {
         display: grid;
@@ -6696,6 +6712,8 @@ cetakOPR = function() {
         border-top: 1.4px solid #19355e;
         padding-top: 1.8mm;
         text-align: center;
+        width: 75%;
+        margin: 0 auto;
       }
       .opr-sign-box strong {
         display: block;
