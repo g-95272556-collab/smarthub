@@ -20,6 +20,8 @@
 
 # Local test scratch files
 /_live_kehadiran_test.html
+/_tmp_opr_preview_latest.html
+/_chrome_preview_profile/
 
 # OAuth handoff files copied into tracked deployment paths
 /deploy-oauth.ps1
