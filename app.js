@@ -5668,22 +5668,24 @@ async function janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hari
         document.head.appendChild(s);
       });
     })();
+    // Tunggu render & logo (biasanya 800ms lebih selamat untuk logo & font)
+    await new Promise(r => setTimeout(r, 800));
+
+    const paperEl = wrapper.querySelector('.paper') || wrapper.firstElementChild || wrapper;
     const canvas = await html2canvasLib(paperEl, {
-      scale: 1.5,
+      scale: 2.0, // Tingkatkan kualiti
       useCORS: true,
       allowTaint: true,
-      logging: false,
       backgroundColor: '#ffffff',
+      logging: false,
       scrollX: 0,
       scrollY: 0
     });
-    return await new Promise(function(resolve, reject) {
-      canvas.toBlob(function(b) {
-        if (!b || b.size < 5000) { reject(new Error('Imej kosong (' + (b ? b.size : 0) + ' bytes)')); return; }
-        console.log('[IMEJ] Saiz:', b.size, 'bytes');
-        resolve(b);
-      }, 'image/jpeg', 0.88);
-    });
+
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
+    if (!blob || blob.size < 5000) throw new Error('Imej dijana tidak sah atau terlalu kecil.');
+    console.log('[IMEJ] Saiz:', blob.size, 'bytes');
+    return blob;
   } finally {
     if (styleEl.parentNode) document.head.removeChild(styleEl);
     if (wrapper.parentNode) document.body.removeChild(wrapper);
@@ -5707,35 +5709,34 @@ async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
     let methodUsed = '';
     let errorLog = '';
 
-    // Cuba Kaedah 1: Worker Storage (Paling selamat untuk CORS)
+    // Kaedah 1: Direct Upload (Paling stabil untuk penghantaran media)
     try {
-      showToast('Muat naik ke Worker...', 'info');
-      var fileUrl = await uploadLetterToWorker(blob, filename);
-      showToast('Menghantar via URL...', 'info');
-      var resp = await callFonnteUrl(telefon, caption, fileUrl, filename);
-      if (resp.status) {
+      showToast('Menghantar imej secara terus...', 'info');
+      var respDirect = await callFonnteFile(telefon, caption, blob, filename);
+      if (respDirect.status) {
         sentSuccess = true;
-        methodUsed = 'Worker URL';
+        methodUsed = 'Direct Upload';
       } else {
-        errorLog += 'Worker method: ' + (resp.reason || 'Fonnte reject');
+        errorLog += 'Direct method: ' + (respDirect.reason || 'Fonnte reject');
       }
     } catch(err) {
-      errorLog += 'Worker method error: ' + err.message + '. ';
+      errorLog += 'Direct method error: ' + err.message + '. ';
     }
 
-    // Cuba Kaedah 2: Direct Upload (Fallback jika Worker gagal)
+    // Kaedah 2: Worker Storage (Fallback jika Direct Upload gagal / CORS)
     if (!sentSuccess) {
       try {
-        showToast('Worker gagal, cuba penghantaran terus...', 'info');
-        var respDirect = await callFonnteFile(telefon, caption, blob, filename);
-        if (respDirect.status) {
+        showToast('Direct gagal, cuba via Worker...', 'info');
+        var fileUrl = await uploadLetterToWorker(blob, filename);
+        var respUrl = await callFonnteUrl(telefon, caption, fileUrl, filename);
+        if (respUrl.status) {
           sentSuccess = true;
-          methodUsed = 'Direct Upload';
+          methodUsed = 'Worker URL';
         } else {
-          errorLog += 'Direct method: ' + (respDirect.reason || 'Fonnte reject');
+          errorLog += 'Worker method: ' + (respUrl.reason || 'Fonnte reject');
         }
       } catch(err) {
-        errorLog += 'Direct method error: ' + err.message;
+        errorLog += 'Worker method error: ' + err.message;
       }
     }
 
