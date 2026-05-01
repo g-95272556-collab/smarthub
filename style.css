@@ -1473,6 +1473,146 @@ table tbody tr:last-child td { border-bottom: none; }
 .opr-print-btn {
   min-width: min(100%, 280px);
 }
+.opr-section-note {
+  margin: 6px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.opr-media-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.opr-image-status {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(26,79,160,0.10);
+  background: rgba(26,79,160,0.05);
+  color: var(--blue);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.opr-image-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.opr-image-slot {
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(15,23,42,0.08);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.opr-image-slot-button {
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
+  text-align: inherit;
+}
+.opr-image-slot.is-empty {
+  min-height: 118px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(26,79,160,0.04), rgba(245,197,24,0.10));
+  border-style: dashed;
+}
+.opr-image-placeholder {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+.opr-image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.opr-slot-btn {
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: rgba(26,79,160,0.10);
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.opr-slot-btn-camera {
+  background: rgba(16,185,129,0.12);
+  color: #0f766e;
+}
+.opr-image-placeholder strong {
+  color: var(--navy);
+  font-size: 0.88rem;
+}
+.opr-image-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: #dbe7f7;
+}
+.opr-image-caption {
+  display: grid;
+  gap: 7px;
+  padding: 8px 9px;
+  color: var(--navy);
+}
+.opr-image-meta {
+  display: grid;
+  gap: 3px;
+}
+.opr-image-meta strong {
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.opr-image-meta span {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  color: var(--muted);
+}
+.opr-image-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.opr-image-action-btn,
+.opr-image-remove {
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.opr-image-action-btn {
+  background: rgba(26,79,160,0.10);
+  color: var(--blue);
+}
+.opr-image-action-btn-camera {
+  background: rgba(16,185,129,0.12);
+  color: #0f766e;
+}
+.opr-image-remove {
+  background: rgba(239,68,68,0.10);
+  color: var(--red);
+}
+.opr-image-action-btn:hover {
+  background: rgba(26,79,160,0.18);
+}
+.opr-image-action-btn-camera:hover {
+  background: rgba(16,185,129,0.18);
+}
+.opr-image-remove:hover {
+  background: rgba(239,68,68,0.18);
+}
 .pwa-banner {
   display: none;
   align-items: center;
@@ -2210,6 +2350,16 @@ table tbody tr:last-child td { border-bottom: none; }
   .page-header > button:last-child {
     width: 100%;
   }
+  .opr-media-toolbar {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .opr-media-toolbar > * {
+    flex: 1 1 180px;
+  }
+  .opr-image-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .page-header,
   .section-header {
     flex-direction: column;
@@ -2277,6 +2427,48 @@ table tbody tr:last-child td { border-bottom: none; }
 @media (max-width: 640px) {
   .card-grid-4 { grid-template-columns: 1fr; }
   .card-grid-3 { grid-template-columns: 1fr; }
+  .opr-image-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .opr-image-slot.is-empty { min-height: 104px; }
+  .opr-image-placeholder {
+    gap: 5px;
+    padding: 9px;
+  }
+  .opr-image-placeholder strong {
+    font-size: 0.78rem;
+  }
+  .opr-image-preview {
+    aspect-ratio: 1 / 1;
+  }
+  .opr-image-caption {
+    gap: 6px;
+    padding: 6px 7px;
+  }
+  .opr-image-meta strong {
+    font-size: 0.68rem;
+  }
+  .opr-image-meta span {
+    font-size: 0.56rem;
+    line-height: 1.15;
+  }
+  .opr-image-card-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .opr-image-action-btn,
+  .opr-image-remove,
+  .opr-slot-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 28px;
+    padding: 4px 6px;
+    font-size: 0.58rem;
+  }
   
   /* Force 1 column for config menu on mobile */
   #mod-konfigurasi .card div[style*="display:grid"] {
