@@ -3544,9 +3544,9 @@ function parseKehadiranMuridRow(r) {
     let rows = (data.rows || []).map(parseKehadiranMuridRow).filter(r => r.nama && r.nama.toLowerCase() !== 'nama');
     if (filterDate && filterDate.value) rows = rows.filter(r => r.tarikh === filterDate.value);
     if (filterKelas && filterKelas.value) rows = rows.filter(r => r.kelas === filterKelas.value);
-    const hadir = rows.filter(r => r.status === 'Hadir').length;
+    const hadir = rows.filter(r => ['Hadir', 'Lewat'].includes(r.status)).length;
     const tidak = rows.filter(r => ['Tidak Hadir', 'Ponteng'].includes(r.status)).length;
-    const cuti = rows.filter(r => ['Cuti','MC'].includes(r.status)).length;
+    const cuti = rows.filter(r => ['Cuti','MC','Sakit'].includes(r.status)).length;
     const pct = rows.length ? Math.round((hadir / rows.length) * 100) : 0;
     const setEl = function(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; };
     setEl('murid-stat-hadir', hadir);
@@ -3719,7 +3719,7 @@ async function loadSenaraKelas() {
     return;
   }
   tbody.innerHTML = murid.map((m, i) =>
-    '<tr style="border-bottom:1px solid var(--border)"><td data-label="#" style="padding:10px 14px;color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama Murid" style="padding:10px 14px"><strong style="font-size:0.88rem">' + m.nama + '</strong><div style="font-size:0.75rem;color:var(--muted)">' + (m.wali ? 'Wali: ' + m.wali : '') + '</div></td><td data-label="Status" style="padding:8px 10px"><select id="status_' + i + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;background:#fff;width:100%"><option value="Hadir">✅ Hadir</option><option value="Tidak Hadir">❌ Tidak Hadir</option><option value="MC">🏥 MC</option><option value="Cuti">📋 Cuti</option></select></td><td data-label="Catatan" style="padding:8px 10px"><input id="catatan_' + i + '" type="text" placeholder="catatan..." style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;width:100%;background:#fff"></td></tr>'
+    '<tr style="border-bottom:1px solid var(--border)"><td data-label="#" style="padding:10px 14px;color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama Murid" style="padding:10px 14px"><strong style="font-size:0.88rem">' + m.nama + '</strong><div style="font-size:0.75rem;color:var(--muted)">' + (m.wali ? 'Wali: ' + m.wali : '') + '</div></td><td data-label="Status" style="padding:8px 10px"><select id="status_' + i + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;background:#fff;width:100%"><option value="Hadir">✅ Hadir</option><option value="Tidak Hadir">❌ Tidak Hadir</option><option value="MC">🏥 MC</option><option value="Cuti">📋 Cuti</option><option value="Ponteng">🚫 Ponteng</option><option value="Lewat">⚠️ Lewat</option></select></td><td data-label="Catatan" style="padding:8px 10px"><input id="catatan_' + i + '" type="text" placeholder="catatan..." style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;width:100%;background:#fff"></td></tr>'
   ).join('');
   if (infoEl) infoEl.textContent = murid.length + ' murid dalam ' + kelas + ' • ' + (access.mesej || '');
   window._senaraKelasData = murid;
@@ -3756,7 +3756,7 @@ function setSemuaStatus(status) {
 function normalizeBulkMuridStatus(status) {
   const raw = String(status || '').trim();
   if (raw === 'MC') return 'Sakit';
-  return ['Tidak Hadir', 'Sakit', 'Cuti', 'Ponteng'].includes(raw) ? raw : 'Hadir';
+  return ['Tidak Hadir', 'Sakit', 'Cuti', 'Ponteng', 'Lewat'].includes(raw) ? raw : 'Hadir';
 }
 
 async function submitKehadiranKelas() {
@@ -3777,7 +3777,7 @@ async function submitKehadiranKelas() {
     const catatanEl = document.getElementById('catatan_' + idx);
     const status = statusEl ? statusEl.value : 'Hadir';
     const catatan = catatanEl ? catatanEl.value : '';
-    if (status === 'Tidak Hadir' || status === 'MC') tidakHadirList.push(m);
+    if (['Tidak Hadir', 'MC', 'Ponteng'].includes(status)) tidakHadirList.push(m);
     return [m.nama, kelas, tarikh, status, m.telefon, catatan, APP.user ? APP.user.email : ''];
   });
   try {
@@ -3959,8 +3959,9 @@ function binaRingkasanLaporanKelas(rows) {
     if (!kelasMap[k]) kelasMap[k] = { hadir: 0, tidak: 0, total: 0, murid: new Set() };
     kelasMap[k].murid.add(r.nama);
     kelasMap[k].total++;
-    if (r.status === 'Hadir') kelasMap[k].hadir++;
-    else kelasMap[k].tidak++;
+    if (r.status === 'Hadir' || r.status === 'Lewat') kelasMap[k].hadir++;
+    else if (['Tidak Hadir', 'Ponteng'].includes(r.status)) kelasMap[k].tidak++;
+    else kelasMap[k].tidak++; // Fallback for other statuses like Cuti/MC in this simple count
   });
   return Object.entries(kelasMap).sort(function(a, b) { return a[0].localeCompare(b[0]); });
 }
@@ -10137,7 +10138,7 @@ function statusBadge(status) {
 
 function updateDashboardMurid(allMurid, today) {
   var todayMurid = allMurid.filter(function(r){ return r.tarikh === today; });
-  var hadir = todayMurid.filter(function(r){ return r.status === 'Hadir'; }).length;
+  var hadir = todayMurid.filter(function(r){ return ['Hadir', 'Lewat'].includes(r.status); }).length;
   var tidakHadir = todayMurid.filter(function(r){ return ['Tidak Hadir', 'Sakit', 'Ponteng'].includes(r.status); });
   var total = todayMurid.length;
   var pct = total ? Math.round((hadir / total) * 100) : 0;
@@ -10165,7 +10166,7 @@ async function loadKehadiranMurid(options) {
     let rows = (data.rows || []).map(parseKehadiranMuridRow).filter(r => r.nama && r.nama.toLowerCase() !== 'nama');
     if (filterDate && filterDate.value) rows = rows.filter(r => r.tarikh === filterDate.value);
     if (filterKelas && filterKelas.value) rows = rows.filter(r => r.kelas === filterKelas.value);
-    const hadir = rows.filter(r => r.status === 'Hadir').length;
+    const hadir = rows.filter(r => ['Hadir', 'Lewat'].includes(r.status)).length;
     const tidak = rows.filter(r => ['Tidak Hadir', 'Ponteng'].includes(r.status)).length;
     const cuti = rows.filter(r => ['Cuti', 'Sakit'].includes(r.status)).length;
     const pct = rows.length ? Math.round((hadir / rows.length) * 100) : 0;
