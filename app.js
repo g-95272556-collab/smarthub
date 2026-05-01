@@ -5687,6 +5687,15 @@ async function sendFonnteMediaOnly(target, blob, filename) {
   throw new Error('Gagal hantar lampiran media Fonnte. ' + errors.join(' | '));
 }
 
+async function sendFonnteLetterLink(target, caption, blob, filename) {
+  var fileUrl = await uploadLetterToWorker(blob, filename);
+  var message = String(caption || '').trim();
+  message += '\n\n📎 Pautan surat rasmi:\n' + fileUrl;
+  message += '\n\nNota: Akaun Fonnte Free menghantar pautan dalam bentuk teks. Lampiran imej/PDF memerlukan pakej Fonnte yang menyokong media.';
+  var response = await callFonnte(target, message);
+  return { status: true, method: 'Text Link', url: fileUrl, response: response };
+}
+
 function loadHtml2Pdf() {
   return new Promise(function(resolve, reject) {
     if (window.html2pdf) { resolve(window.html2pdf); return; }
@@ -5802,10 +5811,10 @@ async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
   try {
     showToast('Menjana imej surat...', 'info');
     var blob = await janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
-    showToast('Menghantar lampiran imej surat...', 'info');
-    var mediaResult = await sendFonnteMediaOnly(telefon, blob, filename);
-    showToast(info.label + ' berjaya dihantar sebagai imej (' + mediaResult.method + ')', 'success');
-    logNotif(info.label + ' WA', telefon, caption + '\n\nFail: ' + filename, 'Berjaya');
+    showToast('Muat naik surat dan hantar pautan WhatsApp...', 'info');
+    var linkResult = await sendFonnteLetterLink(telefon, caption, blob, filename);
+    showToast(info.label + ' berjaya dihantar sebagai pautan surat.', 'success');
+    logNotif(info.label + ' WA', telefon, caption + '\n\nPautan: ' + linkResult.url, 'Berjaya');
   } catch(e) {
     console.error('Attendance Letter Error:', e);
     showToast('Ralat: ' + e.message, 'error');
@@ -10522,7 +10531,7 @@ async function loadAmaranKehadiran() {
         '<td data-label="Tahap"><span style="' + bs + '">' + info.ikon + ' ' + info.label + '</span></td>' +
         '<td data-label="Tindakan" style="display:flex;gap:6px;flex-wrap:wrap">' +
           '<button class="btn btn-sm" style="background:var(--blue,#1a4fa0);color:#fff" onclick=\'pratinjauSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📄 Pratinjau</button>' +
-          (m.telefon ? '<button class="btn btn-sm btn-success" onclick=\'hantarPDFSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📨 Imej ke WA</button>' : '') +
+          (m.telefon ? '<button class="btn btn-sm btn-success" onclick=\'hantarPDFSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📨 Pautan Surat ke WA</button>' : '') +
         '</td></tr>';
     }).join('');
     showToast(muridAmaran.length + ' murid memerlukan tindakan amaran.', 'warning');
@@ -10731,10 +10740,10 @@ async function hantarAmaranKeGroupUjian() {
         var caption = janaCaptionMediaSuratAmaran(m, cfg, tarikh);
         var filename = 'SuratAmaran_' + m.tahapInfo.label.replace(/\s+/g, '') + '_' + m.nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
         var blob = await janaImejSuratAmaran(m.nama, m.kelas, m.telefon, m.tahap, m.jumlahHari, m.hariKonsekutif);
-        showToast('Hantar imej ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
-        var mediaResult = await sendFonnteMediaOnly(testGroup, blob, filename);
+        showToast('Hantar pautan surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
+        var linkResult = await sendFonnteLetterLink(testGroup, caption, blob, filename);
         sent++;
-        logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, caption + '\n\nKaedah: ' + mediaResult.method, 'Berjaya');
+        logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, caption + '\n\nPautan: ' + linkResult.url, 'Berjaya');
         await sleep(1500);
       } catch(err) { failed++; console.error('Gagal hantar untuk ' + m.nama + ':', err); showToast('Gagal ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
     }
