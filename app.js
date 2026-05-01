@@ -5576,9 +5576,12 @@ async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariK
   document.head.appendChild(styleEl);
 
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;z-index:-1';
+  wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;width:210mm;background:#fff;overflow:visible;';
   wrapper.innerHTML = bodyContent;
   document.body.appendChild(wrapper);
+
+  // Small delay so layout is computed before html2canvas captures
+  await new Promise(function(r) { setTimeout(r, 200); });
 
   const paperEl = wrapper.querySelector('.paper') || wrapper.firstElementChild || wrapper;
   try {
@@ -5586,9 +5589,11 @@ async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariK
       margin: 0,
       filename: 'SuratAmaran_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf',
       image: { type: 'jpeg', quality: 0.97 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff' },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }).from(paperEl).outputPdf('blob');
+    console.log('[PDF] Blob saiz:', blob && blob.size, 'bytes, jenis:', blob && blob.type);
+    if (!blob || blob.size < 1000) throw new Error('PDF terlalu kecil atau kosong (' + (blob ? blob.size : 0) + ' bytes) — rendering gagal');
     return blob;
   } finally {
     if (styleEl.parentNode) document.head.removeChild(styleEl);
@@ -10539,8 +10544,9 @@ async function hantarAmaranKeGroupUjian() {
         var caption = '🏫 *' + cfg.nama + '*\n\n' + m.tahapInfo.ikon + ' *' + m.tahapInfo.label.toUpperCase() + '*\n\nMurid: *' + m.nama + '* (' + m.kelas + ')\nJumlah Tidak Hadir: *' + m.jumlahHari + ' hari*\n\n_Dihantar ke Group Ujian — SmartSchoolHub_';
         var filename = 'SuratAmaran_' + m.tahapInfo.label.replace(/\s+/g, '') + '_' + m.nama.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
         var resp = await callFonnteFile(testGroup, caption, blob, filename);
+        console.log('[Fonnte] Respons hantar PDF', m.nama, ':', JSON.stringify(resp));
         if (resp.status === true || resp.status === 'true') { sent++; logNotif('PDF ' + m.tahapInfo.label + ' GroupUjian', testGroup, caption, 'Berjaya'); }
-        else { failed++; }
+        else { failed++; showToast('Fonnte gagal hantar ' + m.nama + ': ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error'); }
         await sleep(1200);
       } catch(err) { failed++; console.error('Gagal PDF untuk ' + m.nama + ':', err); showToast('Gagal jana/hantar PDF untuk ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
     }
