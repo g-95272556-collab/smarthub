@@ -1576,6 +1576,14 @@ function onGSIReady() {
     if (_domReady) renderGSIButton();
     return;
   }
+
+  // Pastikan library google benar-benar wujud sebelum set ready
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+    console.warn('Google GSI client library not found yet. Retrying...');
+    setTimeout(onGSIReady, 500);
+    return;
+  }
+
   _gsiReady = true;
   if (_domReady) initAuth();
 }
@@ -1817,19 +1825,25 @@ document.addEventListener('DOMContentLoaded', () => {
 function initAuth() {
   syncBootstrapConfigInputs();
   APP.googleClientId = resolveInitialGoogleClientId();
+
   if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+    console.warn('Google Auth requested but library not loaded.');
     showLoginPage();
     updateLoginReadinessMessage();
     return;
   }
+
   if (_authInitializedClientId !== APP.googleClientId) {
     try {
+      console.log('Initializing Google Sign-In with Client ID:', APP.googleClientId);
+      console.log('Current Origin:', window.location.origin);
+
       google.accounts.id.initialize({
         client_id: APP.googleClientId,
         callback: handleGoogleCredential,
         auto_select: false,
         cancel_on_tap_outside: true,
-        ux_mode: 'popup'
+        ux_mode: (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? 'popup' : 'redirect'
       });
       _authInitializedClientId = APP.googleClientId;
       _gsiButtonRenderedClientId = '';

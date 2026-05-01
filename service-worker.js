@@ -1,8 +1,9 @@
-const CACHE_NAME = "ssh-pwa-v5-responsive";
+const CACHE_NAME = "ssh-pwa-v6-responsive";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./app.js",
+  "./app.min.js",
+  "./style.min.css",
   "./manifest.webmanifest",
   "./offline.html",
   "./assets/sk-kiandongo-logo.png",
@@ -52,7 +53,7 @@ self.addEventListener("fetch", function(event) {
   const isGoogleFontAsset = /fonts\.(googleapis|gstatic)\.com$/i.test(url.hostname);
   const isFreshAsset = isSameOrigin && (
     request.mode === "navigate" ||
-    /\/(?:index\.html|app\.js|runtime-config\.js|service-worker\.js)$/.test(url.pathname)
+    /\/(?:index\.html|app\.min\.js|style\.min\.css|runtime-config\.js|service-worker\.js)$/.test(url.pathname)
   );
 
   if (isFreshAsset) {

@@ -4,8 +4,11 @@
   "version": "1.0.0",
   "description": "Local tooling for SmartSchoolHub Worker and Apps Script deployment.",
   "scripts": {
-    "build:web": "node scripts/build-icons.js && terser app.js -o app.min.js -c -m",
+    "build:web": "node scripts/build-icons.js && terser app.js -o app.min.js -c -m && node scripts/sync-web.js",
+    "build:assets": "npx cap assets generate --android",
     "build:android": "npm run build:web && npx cap sync android",
+    "apk:debug": "powershell -Command \"$env:JAVA_HOME='C:\\Program Files\\Android\\Android Studio\\jbr'; cd android; ./gradlew.bat assembleDebug\"",
+    "apk:release": "powershell -Command \"$env:JAVA_HOME='C:\\Program Files\\Android\\Android Studio\\jbr'; cd android; ./gradlew.bat assembleRelease\"",
     "apps:sync": "powershell -ExecutionPolicy Bypass -File ./scripts/sync-apps-script.ps1",
     "apps:push": "npm run apps:sync && clasp push",
     "apps:deploy": "npm run apps:sync && clasp deploy",
