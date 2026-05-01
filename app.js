@@ -6460,7 +6460,7 @@ cetakOPR = function() {
         --section-title-font: 7.7px;
         --section-font: 7.1px;
         --note-font: 6.7px;
-        --photo-h: 28mm;
+        --photo-h: 35mm;
       }
       * { box-sizing: border-box; }
       html, body {
@@ -6644,10 +6644,10 @@ cetakOPR = function() {
       .opr-print-photo img {
         width: 100%;
         height: var(--photo-h);
-        object-fit: cover;
+        object-fit: contain;
         border-radius: 9px;
         border: 1px solid rgba(16, 36, 62, 0.10);
-        background: #dbe7f7;
+        background: #f0f4f8;
       }
       .opr-print-photo figcaption {
         font-size: 6.4px;
@@ -6785,7 +6785,7 @@ cetakOPR = function() {
           var sectionTitle = 7.7;
           var section = 7.1;
           var note = 6.7;
-          var photo = 28;
+          var photo = 35;
           var tries = 0;
           while (sheet.scrollHeight > sheet.clientHeight && tries < 20) {
             base -= 0.16;
@@ -6801,7 +6801,7 @@ cetakOPR = function() {
             root.style.setProperty('--section-title-font', Math.max(sectionTitle, 6.1) + 'px');
             root.style.setProperty('--section-font', Math.max(section, 5.7) + 'px');
             root.style.setProperty('--note-font', Math.max(note, 5.5) + 'px');
-            root.style.setProperty('--photo-h', Math.max(photo, 18) + 'mm');
+            root.style.setProperty('--photo-h', Math.max(photo, 22) + 'mm');
             tries++;
           }
         }
