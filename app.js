@@ -5572,10 +5572,16 @@ async function callFonnteUrl(target, caption, fileUrl, filename) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const form = new FormData();
+  form.append('target', target);
+  form.append('url', fileUrl);
+  form.append('filename', filename || 'SuratAmaran.jpg');
+  form.append('message', caption || '');
+  form.append('countryCode', '60');
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
-    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ target: target, url: fileUrl, filename: filename || 'SuratAmaran.jpg', message: caption || '', countryCode: '60' })
+    headers: { 'Authorization': token },
+    body: form
   });
   const data = await res.json();
   console.log('[Fonnte URL] respons:', JSON.stringify(data));
