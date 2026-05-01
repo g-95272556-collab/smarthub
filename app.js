@@ -5652,26 +5652,21 @@ async function janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hari
 
 async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
   if (!telefon) { showToast('Tiada nombor telefon wali untuk ' + nama, 'error'); return; }
-  const info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
-  const sekolah = getSchoolTemplateName();
-  const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
-  showToast('Jana imej surat amaran...', 'info');
+  var cfg = getAmaranSekolahConfig();
+  var tarikh = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+  var info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
+  var m = { nama: nama, kelas: kelas, tahap: tahap, jumlahHari: jumlahHari, hariKonsekutif: hariKonsekutif || 0, tahapInfo: info };
+  showToast('Menghantar surat amaran ke WhatsApp ' + telefon + '...', 'info');
   try {
-    const blob = await janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
-    const caption = '🏫 *' + sekolah + '*\n\n' + info.ikon + ' *' + info.label.toUpperCase() + ' — SURAT AMARAN KEHADIRAN*\n\n' +
-      'Kepada ibu bapa / penjaga *' + nama + '* (' + kelas + '),\n\n' +
-      'Sila rujuk dokumen rasmi yang dihantar bersama ini.\n\n' +
-      '_' + tarikhHariIni + '_';
-    const filename = 'SuratAmaran_' + info.label.replace(/\s+/g, '') + '_' + nama.replace(/\s+/g, '_') + '.jpg';
-    showToast('Menghantar surat amaran ke WhatsApp...', 'info');
-    const resp = await callFonnteFile(telefon, caption, blob, filename);
+    var mesej = janaWATeksSuratAmaran(m, cfg, tarikh);
+    var resp = await callFonnte(telefon, mesej);
     if (resp.status === true || resp.status === 'true') {
-      showToast('PDF ' + info.label + ' berjaya dihantar ke ' + telefon, 'success');
-      logNotif(info.label + ' PDF', telefon, caption, 'Berjaya');
+      showToast(info.label + ' berjaya dihantar ke ' + telefon, 'success');
+      logNotif(info.label + ' WA', telefon, mesej, 'Berjaya');
     } else {
-      showToast('Gagal hantar PDF: ' + JSON.stringify(resp), 'error');
+      showToast('Gagal hantar: ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error');
     }
-  } catch(e) { showToast('Ralat hantar PDF: ' + e.message, 'error'); }
+  } catch(e) { showToast('Ralat hantar surat amaran: ' + e.message, 'error'); }
 }
 
 async function hantarPDFDariModal() {
@@ -10582,25 +10577,60 @@ async function hantarAmaranKeGroupUjian() {
     const muridMap = kiraTidakHadirMurid(allRows);
     const muridAmaran = Object.values(muridMap).filter(function(m) { return m.tahap > 0; }).sort(function(a, b) { return b.tahap - a.tahap || b.jumlahHari - a.jumlahHari; });
     if (!muridAmaran.length) { showToast('Tiada murid yang perlu amaran.', 'info'); return; }
-    showToast('Jana dan hantar ' + muridAmaran.length + ' surat PDF ke group ujian...', 'info');
+    var cfg = getAmaranSekolahConfig();
+    var tarikh = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+    showToast('Menghantar ' + muridAmaran.length + ' surat amaran ke group ujian...', 'info');
     var sent = 0, failed = 0;
     for (var i = 0; i < muridAmaran.length; i++) {
       var m = muridAmaran[i];
       try {
-        showToast('Jana PDF surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
-        var blob = await janaImejSuratAmaran(m.nama, m.kelas, m.telefon, m.tahap, m.jumlahHari, m.hariKonsekutif);
-        var cfg = getAmaranSekolahConfig();
-        var caption = '🏫 *' + cfg.nama + '*\n\n' + m.tahapInfo.ikon + ' *' + m.tahapInfo.label.toUpperCase() + '*\n\nMurid: *' + m.nama + '* (' + m.kelas + ')\nJumlah Tidak Hadir: *' + m.jumlahHari + ' hari*\n\n_Dihantar ke Group Ujian — SmartSchoolHub_';
-        var filename = 'SuratAmaran_' + m.tahapInfo.label.replace(/\s+/g, '') + '_' + m.nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
-        var resp = await callFonnteFile(testGroup, caption, blob, filename);
-        console.log('[Fonnte] Respons hantar PDF', m.nama, ':', JSON.stringify(resp));
-        if (resp.status === true || resp.status === 'true') { sent++; logNotif('PDF ' + m.tahapInfo.label + ' GroupUjian', testGroup, caption, 'Berjaya'); }
-        else { failed++; showToast('Fonnte gagal hantar ' + m.nama + ': ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error'); }
+        showToast('Hantar surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
+        var mesej = janaWATeksSuratAmaran(m, cfg, tarikh);
+        var resp = await callFonnte(testGroup, mesej);
+        if (resp.status === true || resp.status === 'true') { sent++; logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, mesej, 'Berjaya'); }
+        else { failed++; showToast('Fonnte gagal: ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error'); }
         await sleep(1200);
-      } catch(err) { failed++; console.error('Gagal PDF untuk ' + m.nama + ':', err); showToast('Gagal jana/hantar PDF untuk ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
+      } catch(err) { failed++; console.error('Gagal hantar untuk ' + m.nama + ':', err); showToast('Gagal hantar untuk ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
     }
-    showToast('Selesai! PDF dihantar: ' + sent + '/' + muridAmaran.length + (failed > 0 ? ' (' + failed + ' gagal)' : ''), sent > 0 ? 'success' : 'error');
+    showToast('Selesai! Surat dihantar: ' + sent + '/' + muridAmaran.length + (failed > 0 ? ' (' + failed + ' gagal)' : ''), sent > 0 ? 'success' : 'error');
   } catch(e) { showToast('Ralat: ' + e.message, 'error'); }
+}
+
+function janaWATeksSuratAmaran(m, cfg, tarikh) {
+  var info = m.tahapInfo;
+  var garis = '━━━━━━━━━━━━━━━━━━━━━━━━━━';
+  var rujukan = cfg.rujukan + '/' + new Date().getFullYear();
+  var paraUtama = {
+    1: 'Dimaklumkan bahawa anak/jagaan tuan/puan telah *tidak hadir ke sekolah tanpa sebab yang munasabah* sebanyak *' + m.jumlahHari + ' hari* sehingga tarikh surat ini.\n\nTuan/Puan dipohon mengambil perhatian serius dan memastikan kehadiran anak/jagaan tuan/puan pada setiap hari persekolahan.',
+    2: 'Dimaklumkan bahawa anak/jagaan tuan/puan telah *tidak hadir ke sekolah tanpa sebab yang munasabah* sebanyak *' + m.jumlahHari + ' hari* sehingga tarikh surat ini.\n\nIni merupakan *amaran kedua* yang dikeluarkan. Tuan/Puan dipohon hadir ke sekolah bersama anak/jagaan tuan/puan untuk sesi perbincangan dengan pihak sekolah.',
+    3: 'Dimaklumkan bahawa anak/jagaan tuan/puan telah *tidak hadir ke sekolah tanpa sebab yang munasabah* sebanyak *' + m.jumlahHari + ' hari* sehingga tarikh surat ini.\n\nIni merupakan *amaran ketiga dan muktamad*. Pihak sekolah akan mengambil tindakan selanjutnya termasuk melaporkan kepada Pejabat Pendidikan Daerah.',
+    4: 'Dimaklumkan bahawa anak/jagaan tuan/puan telah *tidak hadir ke sekolah tanpa sebab yang munasabah* sebanyak *' + m.jumlahHari + ' hari* sehingga tarikh surat ini.\n\n⛔ *AMARAN TERAKHIR:* Pihak sekolah terpaksa mengemukakan kes ini kepada Pejabat Pendidikan Daerah untuk tindakan lanjut termasuk kemungkinan *dibuang sekolah*.'
+  };
+  return garis + '\n' +
+    '🏫 *' + cfg.nama + '*\n' +
+    '_' + cfg.alamat1 + (cfg.alamat2 ? ' ' + cfg.alamat2 : '') + '_\n' +
+    '_Tel: ' + cfg.tel + '_\n' +
+    garis + '\n\n' +
+    'Ruj: ' + rujukan + '\n' +
+    'Tarikh: ' + tarikh + '\n\n' +
+    '*Kepada:*\n' +
+    'Ibu Bapa / Penjaga\n' +
+    '_' + m.nama + '_\n' +
+    '_Kelas: ' + m.kelas + '_\n\n' +
+    garis + '\n' +
+    info.ikon + ' *PER: ' + info.label.toUpperCase() + ' KEHADIRAN MURID*\n' +
+    garis + '\n\n' +
+    'Dengan hormatnya perkara di atas adalah dirujuk.\n\n' +
+    (paraUtama[m.tahap] || paraUtama[1]) + '\n\n' +
+    'Kerjasama tuan/puan amat dihargai.\n\n' +
+    'Sekian, terima kasih.\n\n' +
+    garis + '\n' +
+    '_Yang menurut perintah,_\n\n' +
+    '*' + cfg.guruBesar + '*\n' +
+    '_Guru Besar_\n' +
+    '_' + cfg.nama + '_\n' +
+    garis + '\n' +
+    '_📱 Dihantar melalui SmartSchoolHub_';
 }
 
 // ══ END SISTEM AMARAN KEHADIRAN MURID ═════════════════════════════════════
