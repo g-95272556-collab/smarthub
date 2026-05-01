@@ -6462,7 +6462,7 @@ cetakOPR = function() {
         --section-title-font: 8px;
         --section-font: 7.4px;
         --note-font: 7px;
-        --photo-h: 35mm;
+        --photo-h: 40mm;
       }
       * { box-sizing: border-box; }
       html, body {
@@ -6480,13 +6480,13 @@ cetakOPR = function() {
         height: var(--page-h);
         min-height: var(--page-h);
         margin: 0 auto;
-        padding: 7.5mm;
+        padding: 5.5mm 6.5mm;
         background: #ffffff;
         border: 1px solid rgba(30, 64, 175, 0.1);
-        border-radius: 20px;
+        border-radius: 18px;
         display: flex;
         flex-direction: column;
-        gap: 4mm;
+        gap: 2.8mm;
         overflow: hidden;
         box-shadow: 0 10px 25px rgba(0,0,0,0.05);
       }
@@ -6535,17 +6535,17 @@ cetakOPR = function() {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 16mm;
-        padding: 5px 14px;
-        border-radius: 16px;
+        min-height: 14mm;
+        padding: 4px 12px;
+        border-radius: 14px;
         background: linear-gradient(135deg, #1e3a8a, #3b82f6);
         color: #fff;
-        font-size: 7.2px;
+        font-size: 7px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.08em;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+        box-shadow: 0 4px 10px rgba(30, 64, 175, 0.15);
         border: 1px solid rgba(255,255,255,0.1);
       }
       .opr-meta-grid {
@@ -6555,9 +6555,9 @@ cetakOPR = function() {
       }
       .opr-meta-card {
         border: 1px solid rgba(30, 64, 175, 0.08);
-        border-radius: 12px;
-        padding: 2.5mm 3mm;
-        min-height: 16mm;
+        border-radius: 10px;
+        padding: 2.2mm 2.8mm;
+        min-height: 15mm;
         background: linear-gradient(180deg, #ffffff, #f1f5f9);
         box-shadow: 0 2px 4px rgba(0,0,0,0.02);
       }
@@ -6794,7 +6794,7 @@ cetakOPR = function() {
           var sectionTitle = 7.7;
           var section = 7.1;
           var note = 6.7;
-          var photo = 35;
+          var photo = 40;
           var tries = 0;
           while (sheet.scrollHeight > sheet.clientHeight && tries < 20) {
             base -= 0.16;
@@ -6810,7 +6810,7 @@ cetakOPR = function() {
             root.style.setProperty('--section-title-font', Math.max(sectionTitle, 6.1) + 'px');
             root.style.setProperty('--section-font', Math.max(section, 5.7) + 'px');
             root.style.setProperty('--note-font', Math.max(note, 5.5) + 'px');
-            root.style.setProperty('--photo-h', Math.max(photo, 22) + 'mm');
+            root.style.setProperty('--photo-h', Math.max(photo, 25) + 'mm');
             tries++;
           }
         }
