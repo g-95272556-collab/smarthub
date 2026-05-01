@@ -5516,14 +5516,25 @@ async function hantarTelegram(mesej) {
   return data;
 }
 
+function normalizePhoneFonnte(num) {
+  let clean = String(num || '').replace(/\D/g, '');
+  if (clean.startsWith('0')) {
+    clean = '60' + clean.substring(1);
+  } else if (clean.startsWith('1')) {
+    clean = '60' + clean;
+  }
+  return clean;
+}
+
 async function callFonnte(target, mesej) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const cleanTarget = normalizePhoneFonnte(target);
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
     headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ target: target, message: mesej, countryCode: "60" })
+    body: JSON.stringify({ target: cleanTarget, message: mesej, countryCode: "60" })
   });
   const data = await res.json();
   if (!data.status) throw new Error(data.reason || data.detail || 'Fonnte error');
@@ -5534,10 +5545,11 @@ async function callFonnteFile(target, caption, blob, filename) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const cleanTarget = normalizePhoneFonnte(target);
   const form = new FormData();
-  form.append('target', target);
+  form.append('target', cleanTarget);
   form.append('message', caption || '');
-  form.append('file', blob, filename || 'surat_amaran.pdf');
+  form.append('file', blob, filename || 'surat_amaran.jpg');
   form.append('countryCode', '60');
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
@@ -5549,7 +5561,7 @@ async function callFonnteFile(target, caption, blob, filename) {
   return data;
 }
 
-async function uploadLetterToWorker(blob) {
+async function uploadLetterToWorker(blob, filename) {
   if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
   const base64 = await new Promise(function(resolve, reject) {
     const reader = new FileReader();
@@ -5561,7 +5573,7 @@ async function uploadLetterToWorker(blob) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'storeLetterFile', data: base64, mimeType: blob.type || 'image/jpeg', filename: 'SuratAmaran.jpg' })
+    body: JSON.stringify({ action: 'storeLetterFile', data: base64, mimeType: blob.type || 'image/jpeg', filename: filename || 'SuratAmaran.jpg' })
   });
   const data = await res.json();
   if (!data.success) throw new Error(data.error || 'Gagal simpan fail ke Worker');
@@ -5572,10 +5584,17 @@ async function callFonnteUrl(target, caption, fileUrl, filename) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
+  const cleanTarget = normalizePhoneFonnte(target);
+  const form = new FormData();
+  form.append('target', cleanTarget);
+  form.append('url', fileUrl);
+  form.append('filename', filename || 'SuratAmaran.jpg');
+  form.append('message', caption || '');
+  form.append('countryCode', '60');
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
-    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ target: target, url: fileUrl, filename: filename || 'SuratAmaran.jpg', message: caption || '', countryCode: '60' })
+    headers: { 'Authorization': token },
+    body: form
   });
   const data = await res.json();
   console.log('[Fonnte URL] respons:', JSON.stringify(data));
@@ -5646,7 +5665,7 @@ async function janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hari
   document.head.appendChild(styleEl);
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;overflow:visible;';
-  wrapper.innerHTML = bodyMatch ? bodyMatch[1] : '';
+  wrapper.innerHTML = bodyMatch ? bodyMatch[1] : fullHtml;
   document.body.appendChild(wrapper);
   await new Promise(function(r) { setTimeout(r, 300); });
   const paperEl = wrapper.querySelector('.paper') || wrapper.firstElementChild || wrapper;
@@ -5662,22 +5681,24 @@ async function janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hari
         document.head.appendChild(s);
       });
     })();
+    // Tunggu render & logo (biasanya 800ms lebih selamat untuk logo & font)
+    await new Promise(r => setTimeout(r, 800));
+
+    const paperEl = wrapper.querySelector('.paper') || wrapper.firstElementChild || wrapper;
     const canvas = await html2canvasLib(paperEl, {
-      scale: 1.5,
+      scale: 2.0, // Tingkatkan kualiti
       useCORS: true,
       allowTaint: true,
-      logging: false,
       backgroundColor: '#ffffff',
+      logging: false,
       scrollX: 0,
       scrollY: 0
     });
-    return await new Promise(function(resolve, reject) {
-      canvas.toBlob(function(b) {
-        if (!b || b.size < 5000) { reject(new Error('Imej kosong (' + (b ? b.size : 0) + ' bytes)')); return; }
-        console.log('[IMEJ] Saiz:', b.size, 'bytes');
-        resolve(b);
-      }, 'image/jpeg', 0.88);
-    });
+
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
+    if (!blob || blob.size < 5000) throw new Error('Imej dijana tidak sah atau terlalu kecil.');
+    console.log('[IMEJ] Saiz:', blob.size, 'bytes');
+    return blob;
   } finally {
     if (styleEl.parentNode) document.head.removeChild(styleEl);
     if (wrapper.parentNode) document.body.removeChild(wrapper);
@@ -5692,19 +5713,56 @@ async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
   var m = { nama: nama, kelas: kelas, tahap: tahap, jumlahHari: jumlahHari, hariKonsekutif: hariKonsekutif || 0, tahapInfo: info };
   var caption = janaWATeksSuratAmaran(m, cfg, tarikh);
   var filename = 'SuratAmaran_' + info.label.replace(/\s+/g, '') + '_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
-  showToast('Jana surat amaran...', 'info');
+  
   try {
+    showToast('Menjana imej surat...', 'info');
     var blob = await janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
-    showToast('Muat naik & hantar ke WhatsApp ' + telefon + '...', 'info');
-    var fileUrl = await uploadLetterToWorker(blob);
-    var resp = await callFonnteUrl(telefon, caption, fileUrl, filename);
-    if (resp.status === true || resp.status === 'true') {
-      showToast(info.label + ' berjaya dihantar ke ' + telefon, 'success');
-      logNotif(info.label + ' WA Imej', telefon, fileUrl, 'Berjaya');
-    } else {
-      showToast('Gagal hantar: ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error');
+    
+    let sentSuccess = false;
+    let methodUsed = '';
+    let errorLog = '';
+
+    // Kaedah 1: Direct Upload (Paling stabil untuk penghantaran media)
+    try {
+      showToast('Menghantar imej secara terus...', 'info');
+      var respDirect = await callFonnteFile(telefon, caption, blob, filename);
+      if (respDirect.status) {
+        sentSuccess = true;
+        methodUsed = 'Direct Upload';
+      } else {
+        errorLog += 'Direct method: ' + (respDirect.reason || 'Fonnte reject');
+      }
+    } catch(err) {
+      errorLog += 'Direct method error: ' + err.message + '. ';
     }
-  } catch(e) { showToast('Ralat hantar surat amaran: ' + e.message, 'error'); }
+
+    // Kaedah 2: Worker Storage (Fallback jika Direct Upload gagal / CORS)
+    if (!sentSuccess) {
+      try {
+        showToast('Direct gagal, cuba via Worker...', 'info');
+        var fileUrl = await uploadLetterToWorker(blob, filename);
+        var respUrl = await callFonnteUrl(telefon, caption, fileUrl, filename);
+        if (respUrl.status) {
+          sentSuccess = true;
+          methodUsed = 'Worker URL';
+        } else {
+          errorLog += 'Worker method: ' + (respUrl.reason || 'Fonnte reject');
+        }
+      } catch(err) {
+        errorLog += 'Worker method error: ' + err.message;
+      }
+    }
+
+    if (sentSuccess) {
+      showToast(info.label + ' berjaya dihantar (' + methodUsed + ')', 'success');
+      logNotif(info.label + ' WA', telefon, filename, 'Berjaya');
+    } else {
+      throw new Error(errorLog || 'Gagal dalam semua kaedah penghantaran.');
+    }
+  } catch(e) {
+    console.error('Attendance Letter Error:', e);
+    showToast('Ralat: ' + e.message, 'error');
+  }
 }
 
 async function hantarPDFDariModal() {
