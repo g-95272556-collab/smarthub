@@ -6662,9 +6662,9 @@ cetakOPR = function() {
       }
       .opr-sign-row {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 4mm;
-        align-items: stretch;
+        grid-template-columns: 1fr;
+        gap: 3mm;
+        margin-top: 1mm;
       }
       .opr-sign-box {
         min-height: 20mm;
@@ -6749,27 +6749,27 @@ cetakOPR = function() {
           <div class="opr-gallery-grid">
             ${buildOPRPrintPhotoGrid(photos)}
           </div>
+          <div class="opr-sign-row">
+            <div class="opr-sign-box">
+              <div class="opr-sign-label">Disediakan Oleh</div>
+              <div class="opr-sign-line">
+                <strong>${escapeHtml(get('opr-penyedia') || '( ........................... )')}</strong>
+                <span>${escapeHtml(get('opr-jawatan') || 'Penyedia Laporan')}</span>
+                <div class="opr-sign-date">Tarikh: ${escapeHtml(tarikhFmt)}</div>
+              </div>
+            </div>
+            <div class="opr-sign-box">
+              <div class="opr-sign-label">Disahkan Oleh</div>
+              <div class="opr-sign-line">
+                <strong>${escapeHtml(get('opr-gb') || '( ........................... )')}</strong>
+                <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
+                <div class="opr-sign-date">Tarikh: ${escapeHtml(tarikhFmt)}</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="opr-footer">
-        <div class="opr-sign-row">
-          <div class="opr-sign-box">
-            <div class="opr-sign-label">Disediakan Oleh</div>
-            <div class="opr-sign-line">
-              <strong>${escapeHtml(get('opr-penyedia') || '( ........................... )')}</strong>
-              <span>${escapeHtml(get('opr-jawatan') || 'Penyedia Laporan')}</span>
-              <div class="opr-sign-date">Tarikh: ${escapeHtml(tarikhFmt)}</div>
-            </div>
-          </div>
-          <div class="opr-sign-box">
-            <div class="opr-sign-label">Disahkan Oleh</div>
-            <div class="opr-sign-line">
-              <strong>${escapeHtml(get('opr-gb') || '( ........................... )')}</strong>
-              <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
-              <div class="opr-sign-date">Tarikh: ${escapeHtml(tarikhFmt)}</div>
-            </div>
-          </div>
-        </div>
         <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
       </div>
     </div>
