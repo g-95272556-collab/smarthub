@@ -128,6 +128,7 @@ function escapeHtml(value) {
 }
 
 let _gsiReady = false;
+let _gsiScriptRequested = false;
 let _domReady = false;
 let _geoProfile = null;
 let _authInitializedClientId = '';
@@ -292,6 +293,33 @@ function getTrimmedValue(id) {
   const el = $id(id);
   return el ? String(el.value || '').trim() : '';
 }
+async function fetchJsonWithTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function() { controller.abort(); }, timeoutMs || 4000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+function loadGoogleIdentityScript() {
+  if (_gsiReady || _gsiScriptRequested || typeof document === 'undefined') return;
+  _gsiScriptRequested = true;
+  const script = document.createElement('script');
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.async = true;
+  script.defer = true;
+  script.onload = function() {
+    if (typeof onGSIReady === 'function') onGSIReady();
+  };
+  script.onerror = function() {
+    _gsiScriptRequested = false;
+    updateLoginReadinessMessage();
+  };
+  document.head.appendChild(script);
+}
 function isStandalonePWA() {
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
@@ -426,6 +454,7 @@ async function initPWA() {
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.addEventListener('controllerchange', function() {
     if (APP.pwa.refreshing) return;
+    if (!APP.pwa.updateReady) return;
     APP.pwa.refreshing = true;
     window.location.reload();
   });
@@ -460,7 +489,7 @@ function applyPWAUpdate() {
     showToast('Tiada kemas kini aplikasi yang menunggu.', 'info');
     return;
   }
-  APP.pwa.updateReady = false;
+  APP.pwa.updateReady = true;
   renderPWAStatus();
   showToast('Kemas kini aplikasi sedang diterapkan...', 'info');
   APP.pwa.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -1181,8 +1210,8 @@ function loadGroupKelasUI() {
 // ── Dashboard Functions ───────────────────
 async function muatCuaca() {
   try {
-    var res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=5.3055655&longitude=116.9633906&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=Asia%2FKuala_Lumpur');
-    var d = await res.json(); var c = d.current;
+    var d = await fetchJsonWithTimeout('https://api.open-meteo.com/v1/forecast?latitude=5.3055655&longitude=116.9633906&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=Asia%2FKuala_Lumpur', 3500);
+    var c = d.current;
     var icons = {
       0: 'sun',
       1: 'cloud-sun',
@@ -1226,8 +1255,7 @@ async function muatWaktuSolat() {
     return s.substring(0,5);
   }
   try {
-    var res = await fetch('https://api.waktusolat.app/v2/solat/SBH07');
-    var d = await res.json();
+    var d = await fetchJsonWithTimeout('https://api.waktusolat.app/v2/solat/SBH07', 3500);
     var now = new Date();
     var nowParts = getMalaysiaDateParts(now);
     var nm = nowParts.hour * 60 + nowParts.minute;
@@ -1814,9 +1842,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       const ls = $id('loadingScreen');
       if (ls) { ls.classList.add('hidden'); setTimeout(() => { ls.style.display = 'none'; }, 500); }
+      loadGoogleIdentityScript();
     }, 300);
   });
-  if (_gsiReady) initAuth();
+  initAuth();
 });
 
 function initAuth() {
@@ -5526,15 +5555,33 @@ function normalizePhoneFonnte(num) {
   return clean;
 }
 
+function normalizeFonnteTargetPart(part) {
+  var raw = String(part || '').trim();
+  if (!raw) return '';
+  var variableParts = raw.split('|');
+  var destination = String(variableParts[0] || '').trim();
+  if (/@g\.us$/i.test(destination)) return raw;
+  variableParts[0] = normalizePhoneFonnte(destination);
+  return variableParts.filter(function(value) { return String(value || '').trim() !== ''; }).join('|');
+}
+
+function normalizeFonnteTarget(target) {
+  return String(target || '')
+    .split(',')
+    .map(normalizeFonnteTargetPart)
+    .filter(Boolean)
+    .join(',');
+}
+
 async function callFonnte(target, mesej) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
-  const cleanTarget = normalizePhoneFonnte(target);
+  const cleanTarget = normalizeFonnteTarget(target);
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
     headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ target: cleanTarget, message: mesej, countryCode: "60" })
+    body: JSON.stringify({ target: cleanTarget, message: mesej, countryCode: "0" })
   });
   const data = await res.json();
   if (!data.status) throw new Error(data.reason || data.detail || 'Fonnte error');
@@ -5545,12 +5592,12 @@ async function callFonnteFile(target, caption, blob, filename) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
-  const cleanTarget = normalizePhoneFonnte(target);
+  const cleanTarget = normalizeFonnteTarget(target);
   const form = new FormData();
   form.append('target', cleanTarget);
   form.append('message', caption || '');
   form.append('file', blob, filename || 'surat_amaran.jpg');
-  form.append('countryCode', '60');
+  form.append('countryCode', '0');
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
     headers: { 'Authorization': token },
@@ -5584,13 +5631,13 @@ async function callFonnteUrl(target, caption, fileUrl, filename) {
   const token = hlConfig.fonnteToken;
   if (!token) throw new Error('Token Fonnte belum dikonfigurasi.');
   if (!target) throw new Error('Tiada nombor atau ID sasaran Fonnte.');
-  const cleanTarget = normalizePhoneFonnte(target);
+  const cleanTarget = normalizeFonnteTarget(target);
   const form = new FormData();
   form.append('target', cleanTarget);
   form.append('url', fileUrl);
   form.append('filename', filename || 'SuratAmaran.jpg');
   form.append('message', caption || '');
-  form.append('countryCode', '60');
+  form.append('countryCode', '0');
   const res = await fetch('https://api.fonnte.com/send', {
     method: 'POST',
     headers: { 'Authorization': token },
@@ -5711,7 +5758,7 @@ async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
   var tarikh = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
   var info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
   var m = { nama: nama, kelas: kelas, tahap: tahap, jumlahHari: jumlahHari, hariKonsekutif: hariKonsekutif || 0, tahapInfo: info };
-  var caption = janaWATeksSuratAmaran(m, cfg, tarikh);
+  var caption = janaCaptionMediaSuratAmaran(m, cfg, tarikh);
   var filename = 'SuratAmaran_' + info.label.replace(/\s+/g, '') + '_' + nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
   
   try {
@@ -5722,34 +5769,35 @@ async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
     let methodUsed = '';
     let errorLog = '';
 
-    // Kaedah 1: Direct Upload (Paling stabil untuk penghantaran media)
+    // Kaedah 1: Worker URL. Fonnte lebih konsisten mengambil media daripada URL fail awam.
     try {
-      showToast('Menghantar imej secara terus...', 'info');
-      var respDirect = await callFonnteFile(telefon, caption, blob, filename);
-      if (respDirect.status) {
+      showToast('Muat naik imej surat...', 'info');
+      var fileUrl = await uploadLetterToWorker(blob, filename);
+      showToast('Menghantar imej surat ke WhatsApp...', 'info');
+      var respUrl = await callFonnteUrl(telefon, caption, fileUrl, filename);
+      if (respUrl.status) {
         sentSuccess = true;
-        methodUsed = 'Direct Upload';
+        methodUsed = 'Worker URL';
       } else {
-        errorLog += 'Direct method: ' + (respDirect.reason || 'Fonnte reject');
+        errorLog += 'Worker method: ' + (respUrl.reason || 'Fonnte reject');
       }
     } catch(err) {
-      errorLog += 'Direct method error: ' + err.message + '. ';
+      errorLog += 'Worker method error: ' + err.message + '. ';
     }
 
-    // Kaedah 2: Worker Storage (Fallback jika Direct Upload gagal / CORS)
+    // Kaedah 2: Direct Upload sebagai fallback jika Worker atau pakej URL gagal.
     if (!sentSuccess) {
       try {
-        showToast('Direct gagal, cuba via Worker...', 'info');
-        var fileUrl = await uploadLetterToWorker(blob, filename);
-        var respUrl = await callFonnteUrl(telefon, caption, fileUrl, filename);
-        if (respUrl.status) {
+        showToast('URL gagal, cuba upload terus...', 'info');
+        var respDirect = await callFonnteFile(telefon, caption, blob, filename);
+        if (respDirect.status) {
           sentSuccess = true;
-          methodUsed = 'Worker URL';
+          methodUsed = 'Direct Upload';
         } else {
-          errorLog += 'Worker method: ' + (respUrl.reason || 'Fonnte reject');
+          errorLog += 'Direct method: ' + (respDirect.reason || 'Fonnte reject');
         }
       } catch(err) {
-        errorLog += 'Worker method error: ' + err.message;
+        errorLog += 'Direct method error: ' + err.message;
       }
     }
 
@@ -10475,7 +10523,7 @@ async function loadAmaranKehadiran() {
         '<td data-label="Tahap"><span style="' + bs + '">' + info.ikon + ' ' + info.label + '</span></td>' +
         '<td data-label="Tindakan" style="display:flex;gap:6px;flex-wrap:wrap">' +
           '<button class="btn btn-sm" style="background:var(--blue,#1a4fa0);color:#fff" onclick=\'pratinjauSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📄 Pratinjau</button>' +
-          (m.telefon ? '<button class="btn btn-sm btn-success" onclick=\'hantarPDFSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📨 PDF ke WA</button>' : '') +
+          (m.telefon ? '<button class="btn btn-sm btn-success" onclick=\'hantarPDFSuratAmaran(' + JSON.stringify(m.nama) + ',' + JSON.stringify(m.kelas) + ',' + JSON.stringify(m.telefon) + ',' + m.tahap + ',' + m.jumlahHari + ',' + m.hariKonsekutif + ')\'>📨 Imej ke WA</button>' : '') +
         '</td></tr>';
     }).join('');
     showToast(muridAmaran.length + ' murid memerlukan tindakan amaran.', 'warning');
@@ -10681,12 +10729,12 @@ async function hantarAmaranKeGroupUjian() {
       var m = muridAmaran[i];
       try {
         showToast('Jana surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
-        var caption = janaWATeksSuratAmaran(m, cfg, tarikh);
+        var caption = janaCaptionMediaSuratAmaran(m, cfg, tarikh);
         var filename = 'SuratAmaran_' + m.tahapInfo.label.replace(/\s+/g, '') + '_' + m.nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
         // Jana imej → muat naik ke Worker → dapatkan URL awam → hantar ke Fonnte via URL
         var blob = await janaImejSuratAmaran(m.nama, m.kelas, m.telefon, m.tahap, m.jumlahHari, m.hariKonsekutif);
         showToast('Muat naik & hantar ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
-        var fileUrl = await uploadLetterToWorker(blob);
+        var fileUrl = await uploadLetterToWorker(blob, filename);
         var resp = await callFonnteUrl(testGroup, caption, fileUrl, filename);
         if (resp.status === true || resp.status === 'true') { sent++; logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, fileUrl, 'Berjaya'); }
         else { failed++; showToast('Fonnte gagal: ' + (resp.reason || resp.detail || JSON.stringify(resp)), 'error'); }
@@ -10735,6 +10783,17 @@ function janaWATeksSuratAmaran(m, cfg, tarikh) {
 }
 
 // ══ END SISTEM AMARAN KEHADIRAN MURID ═════════════════════════════════════
+
+function janaCaptionMediaSuratAmaran(m, cfg, tarikh) {
+  var info = m.tahapInfo || TAHAP_AMARAN_INFO[m.tahap] || TAHAP_AMARAN_INFO[1];
+  return '🏫 *' + cfg.nama + '*\n\n' +
+    'Dilampirkan imej surat rasmi *' + info.label + ' Kehadiran* untuk:\n\n' +
+    'Nama: *' + m.nama + '*\n' +
+    'Kelas: *' + m.kelas + '*\n' +
+    'Jumlah tidak hadir: *' + m.jumlahHari + ' hari*\n' +
+    'Tarikh: ' + tarikh + '\n\n' +
+    'Sila rujuk lampiran surat dan hubungi pihak sekolah untuk tindakan lanjut.';
+}
 
 async function loadKehadiranMurid(options) {
   const opts = Object.assign({ silent: false, preserveTable: false, reason: 'manual' }, options || {});

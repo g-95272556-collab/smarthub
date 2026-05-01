@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#08152B">
+<meta name="description" content="SmartSchoolHub SK Kiandongo untuk pengurusan kehadiran, laporan guru, kokurikulum, notifikasi dan data sekolah secara berpusat.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,11 +14,11 @@
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icon-192.png">
 <title>Smart School Hub v2.0 — SK Kiandongo</title>
-<meta name="description" content="SmartSchoolHub v2.0 — Sistem pengurusan sekolah pintar SK Kiandongo. Log masuk untuk mengurus kehadiran, jadual dan laporan guru serta murid.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="style" href="style.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
 <link rel="stylesheet" href="style.min.css">
 
 
@@ -1310,7 +1311,7 @@
 </div>
 
 <!-- ─── LOGIN PAGE ─── -->
-<div id="loginPage" role="region" aria-label="Halaman Log Masuk">
+<main id="loginPage" role="region" aria-label="Halaman Log Masuk">
   <div class="login-card">
     <div class="login-logo" role="img" aria-label="Logo Rasmi SK Kiandongo">SK</div>
     <h1>Smart School Hub</h1>
@@ -1356,7 +1357,7 @@
       Akses terhad kepada warga sekolah sahaja
     </div>
   </div>
-</div>
+</main>
 
 <!-- ─── MAIN APP ─── -->
 <div id="appPage" class="page">
@@ -1892,7 +1893,7 @@
             <strong id="modalPratinjauSuratAmaranTitle" style="font-size:1rem;color:var(--text)">Pratinjau Surat Amaran</strong>
             <div style="display:flex;gap:8px">
               <button class="btn btn-primary" onclick="cetakSuratAmaranDariModal()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-printer"></use></svg> Cetak / Simpan PDF</button>
-              <button class="btn btn-success" onclick="hantarPDFDariModal()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-send"></use></svg> Hantar PDF ke WA</button>
+              <button class="btn btn-success" onclick="hantarPDFDariModal()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-send"></use></svg> Hantar Imej ke WA</button>
               <button class="btn btn-secondary" onclick="tutupModalPratinjauSuratAmaran()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-x"></use></svg> Tutup</button>
             </div>
           </div>
@@ -4129,7 +4130,6 @@ window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
 }, window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {});
 </script>
 <script src="app.js" defer></script>
-<script src="https://accounts.google.com/gsi/client" async defer onload="typeof onGSIReady === 'function' && onGSIReady()" onerror="typeof showLoginPage === 'function' && showLoginPage()"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
