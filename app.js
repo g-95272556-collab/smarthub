@@ -5601,20 +5601,69 @@ async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariK
   }
 }
 
+// Generate letter as JPEG image — more reliable for WhatsApp group delivery than PDF documents
+async function janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
+  await muatLogoSuratAmaran();
+  const fullHtml = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah });
+  const cssMatch = fullHtml.match(/<style>([\s\S]*?)<\/style>/i);
+  const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/i);
+  const styleEl = document.createElement('style');
+  styleEl.textContent = cssMatch ? cssMatch[1] : '';
+  document.head.appendChild(styleEl);
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;overflow:visible;';
+  wrapper.innerHTML = bodyMatch ? bodyMatch[1] : '';
+  document.body.appendChild(wrapper);
+  await new Promise(function(r) { setTimeout(r, 300); });
+  const paperEl = wrapper.querySelector('.paper') || wrapper.firstElementChild || wrapper;
+  try {
+    const html2canvasLib = (window.html2canvas) ? window.html2canvas : await (function() {
+      return new Promise(function(resolve, reject) {
+        if (window.html2canvas) { resolve(window.html2canvas); return; }
+        // html2pdf bundles html2canvas — load it first if needed
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload = function() { resolve(window.html2canvas); };
+        s.onerror = function() { reject(new Error('Gagal muatkan html2canvas.')); };
+        document.head.appendChild(s);
+      });
+    })();
+    const canvas = await html2canvasLib(paperEl, {
+      scale: 1.5,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0
+    });
+    return await new Promise(function(resolve, reject) {
+      canvas.toBlob(function(b) {
+        if (!b || b.size < 5000) { reject(new Error('Imej kosong (' + (b ? b.size : 0) + ' bytes)')); return; }
+        console.log('[IMEJ] Saiz:', b.size, 'bytes');
+        resolve(b);
+      }, 'image/jpeg', 0.88);
+    });
+  } finally {
+    if (styleEl.parentNode) document.head.removeChild(styleEl);
+    if (wrapper.parentNode) document.body.removeChild(wrapper);
+  }
+}
+
 async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
   if (!telefon) { showToast('Tiada nombor telefon wali untuk ' + nama, 'error'); return; }
   const info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
   const sekolah = getSchoolTemplateName();
   const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
-  showToast('Jana PDF surat amaran...', 'info');
+  showToast('Jana imej surat amaran...', 'info');
   try {
-    const blob = await janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
+    const blob = await janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif);
     const caption = '🏫 *' + sekolah + '*\n\n' + info.ikon + ' *' + info.label.toUpperCase() + ' — SURAT AMARAN KEHADIRAN*\n\n' +
       'Kepada ibu bapa / penjaga *' + nama + '* (' + kelas + '),\n\n' +
       'Sila rujuk dokumen rasmi yang dihantar bersama ini.\n\n' +
       '_' + tarikhHariIni + '_';
-    const filename = 'SuratAmaran_' + info.label.replace(/\s+/g, '') + '_' + nama.replace(/\s+/g, '_') + '.pdf';
-    showToast('Menghantar PDF ke WhatsApp...', 'info');
+    const filename = 'SuratAmaran_' + info.label.replace(/\s+/g, '') + '_' + nama.replace(/\s+/g, '_') + '.jpg';
+    showToast('Menghantar surat amaran ke WhatsApp...', 'info');
     const resp = await callFonnteFile(telefon, caption, blob, filename);
     if (resp.status === true || resp.status === 'true') {
       showToast('PDF ' + info.label + ' berjaya dihantar ke ' + telefon, 'success');
@@ -10539,10 +10588,10 @@ async function hantarAmaranKeGroupUjian() {
       var m = muridAmaran[i];
       try {
         showToast('Jana PDF surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
-        var blob = await janaPDFSuratAmaran(m.nama, m.kelas, m.telefon, m.tahap, m.jumlahHari, m.hariKonsekutif);
+        var blob = await janaImejSuratAmaran(m.nama, m.kelas, m.telefon, m.tahap, m.jumlahHari, m.hariKonsekutif);
         var cfg = getAmaranSekolahConfig();
         var caption = '🏫 *' + cfg.nama + '*\n\n' + m.tahapInfo.ikon + ' *' + m.tahapInfo.label.toUpperCase() + '*\n\nMurid: *' + m.nama + '* (' + m.kelas + ')\nJumlah Tidak Hadir: *' + m.jumlahHari + ' hari*\n\n_Dihantar ke Group Ujian — SmartSchoolHub_';
-        var filename = 'SuratAmaran_' + m.tahapInfo.label.replace(/\s+/g, '') + '_' + m.nama.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+        var filename = 'SuratAmaran_' + m.tahapInfo.label.replace(/\s+/g, '') + '_' + m.nama.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg';
         var resp = await callFonnteFile(testGroup, caption, blob, filename);
         console.log('[Fonnte] Respons hantar PDF', m.nama, ':', JSON.stringify(resp));
         if (resp.status === true || resp.status === 'true') { sent++; logNotif('PDF ' + m.tahapInfo.label + ' GroupUjian', testGroup, caption, 'Berjaya'); }
