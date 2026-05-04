@@ -10818,11 +10818,13 @@ async function insertDummyDataAmaran() {
     }
     return dates;
   };
+  // Semua tarikh mesti lepas (sebelum hari ini) — Jana dalam tahun semasa, bulan 1-4 sahaja
+  // Tahap 1: ≥10 hari | Tahap 2: ≥20 | Tahap 3: ≥40 | Tahap 4 (Buang): ≥60
   const senaraiUjian = [
     { nama: '[UJIAN] Ali bin Abu', kelas: '4 MUTIARA', telefon: '60123456789', hari: 12, bulan: 1, catatan: 'Data ujian Amaran 1' },
-    { nama: '[UJIAN] Balan anak Bujang', kelas: '5 DELIMA', telefon: '60123456780', hari: 22, bulan: 2, catatan: 'Data ujian Amaran 2' },
-    { nama: '[UJIAN] Chong Mei Lin', kelas: '6 BAIDURI', telefon: '60123456781', hari: 42, bulan: 3, catatan: 'Data ujian Amaran 3' },
-    { nama: '[UJIAN] Dayang Nur Aina', kelas: '3 KRISTAL', telefon: '60123456782', hari: 62, bulan: 4, catatan: 'Data ujian Buang Sekolah' }
+    { nama: '[UJIAN] Balan anak Bujang', kelas: '5 DELIMA', telefon: '60123456780', hari: 22, bulan: 1, catatan: 'Data ujian Amaran 2' },
+    { nama: '[UJIAN] Chong Mei Lin', kelas: '6 BAIDURI', telefon: '60123456781', hari: 42, bulan: 1, catatan: 'Data ujian Amaran 3' },
+    { nama: '[UJIAN] Dayang Nur Aina', kelas: '3 KRISTAL', telefon: '60123456782', hari: 62, bulan: 1, catatan: 'Data ujian Buang Sekolah' }
   ];
   const rows = [];
   senaraiUjian.forEach(function(item) {
