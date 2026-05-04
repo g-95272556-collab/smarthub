@@ -1,0 +1,16 @@
+{
+	"appId": "com.sshub.premium",
+	"appName": "SmartSchoolHub",
+	"webDir": "www",
+	"server": {
+		"url": "https://xbasmarthub.netlify.app",
+		"cleartext": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 3000,
+			"backgroundColor": "#08152B",
+			"androidScaleType": "CENTER_CROP"
+		}
+	}
+}
