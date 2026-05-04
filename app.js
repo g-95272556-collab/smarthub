@@ -133,6 +133,8 @@ let _geoProfile = null;
 let _authInitializedClientId = '';
 let _gsiButtonRenderedClientId = '';
 let _storedSessionRestoreAttempted = false;
+let _gsiPollInterval = null;
+let _gsiScriptInjected = false;
 let _birthdayHydrationPromise = null;
 let _birthdayHydratedOnce = false;
 let geoCoords = null;
@@ -1570,6 +1572,44 @@ function renderDashGuruTable(rows, isninStr, jumaatStr) {
 
 
 // ── GOOGLE AUTH ────────────────────────────────────────────────
+function injectGSIScript() {
+  if (_gsiScriptInjected) return;
+  if (document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
+    _gsiScriptInjected = true;
+    return;
+  }
+  _gsiScriptInjected = true;
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.async = true;
+  s.defer = true;
+  s.onload = function() { onGSIReady(); };
+  s.onerror = function() {
+    console.warn('GSI script inject failed. Will retry via poll.');
+    _gsiScriptInjected = false;
+  };
+  document.head.appendChild(s);
+}
+
+function startGSIPoll() {
+  if (_gsiPollInterval) return;
+  let elapsed = 0;
+  const MAX_MS = 30000;
+  const INTERVAL = 600;
+  _gsiPollInterval = setInterval(function() {
+    elapsed += INTERVAL;
+    if (_gsiReady) { clearInterval(_gsiPollInterval); _gsiPollInterval = null; return; }
+    if (hasGoogleSignInClient()) { onGSIReady(); return; }
+    if (elapsed >= MAX_MS) {
+      clearInterval(_gsiPollInterval);
+      _gsiPollInterval = null;
+      console.warn('GSI library not loaded after 30s. Trying re-inject.');
+      _gsiScriptInjected = false;
+      injectGSIScript();
+    }
+  }, INTERVAL);
+}
+
 function onGSIReady() {
   if (_gsiReady) {
     updateLoginReadinessMessage();
@@ -1577,13 +1617,13 @@ function onGSIReady() {
     return;
   }
 
-  // Pastikan library google benar-benar wujud sebelum set ready
   if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
     console.warn('Google GSI client library not found yet. Retrying...');
     setTimeout(onGSIReady, 500);
     return;
   }
 
+  if (_gsiPollInterval) { clearInterval(_gsiPollInterval); _gsiPollInterval = null; }
   _gsiReady = true;
   if (_domReady) initAuth();
 }
@@ -1809,9 +1849,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!_gsiReady && hasGoogleSignInClient()) {
     onGSIReady();
   } else if (!_gsiReady) {
-    setTimeout(() => {
-      if (!_gsiReady && hasGoogleSignInClient()) onGSIReady();
-    }, 800);
+    injectGSIScript();
+    startGSIPoll();
   }
   requestAnimationFrame(() => {
     setTimeout(() => {
@@ -1934,12 +1973,11 @@ function renderGSIButton() {
 }
 
 function retryGSIRender() {
-  if (!_gsiReady && hasGoogleSignInClient()) {
-    onGSIReady();
-    return;
-  }
-  if (_gsiReady) initAuth();
-  else showToast('Google Sign-In belum siap dimuat. Tunggu sebentar dan cuba lagi.', 'error');
+  if (_gsiReady) { initAuth(); return; }
+  if (hasGoogleSignInClient()) { onGSIReady(); return; }
+  injectGSIScript();
+  startGSIPoll();
+  showToast('Sedang memuatkan Google Sign-In...', 'info');
 }
 
 function showLoginPage() {
