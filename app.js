@@ -5691,7 +5691,7 @@ async function sendFonnteLetterLink(target, caption, blob, filename) {
   var fileUrl = await uploadLetterToWorker(blob, filename);
   var message = String(caption || '').trim();
   message += '\n\n📎 Pautan surat rasmi:\n' + fileUrl;
-  message += '\n\nNota: Akaun Fonnte Free menghantar pautan dalam bentuk teks. Lampiran imej/PDF memerlukan pakej Fonnte yang menyokong media.';
+  message += '\n\nSila buka pautan di atas untuk melihat atau memuat turun surat rasmi. Hubungi pihak sekolah sekiranya pautan tidak dapat dibuka.';
   var response = await callFonnte(target, message);
   return { status: true, method: 'Text Link', url: fileUrl, response: response };
 }
