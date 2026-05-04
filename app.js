@@ -3285,12 +3285,17 @@ async function semakDanNotifGuruBelumIsi() {
   const tarikh = getTodayYMD(now);
   const guardKey = 'ssh_notif_peringatan_' + tarikh;
   if (localStorage.getItem(guardKey)) return;
+  // Set guard SEBELUM operasi async — elak race condition antara tab
+  localStorage.setItem(guardKey, '1');
   try {
     const [kehadiranData, guruData] = await Promise.all([
       callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' }),
       callWorker({ action: 'readSheet', sheetKey: 'GURU' })
     ]);
-    if (!kehadiranData.success || !guruData.success) return;
+    if (!kehadiranData.success || !guruData.success) {
+      localStorage.removeItem(guardKey); // Rollback jika fetch gagal
+      return;
+    }
     const sudahIsi = new Set(
       (kehadiranData.rows || [])
         .map(parseKehadiranGuruRow)
@@ -3310,11 +3315,10 @@ async function semakDanNotifGuruBelumIsi() {
       SEKOLAH: getSchoolTemplateName()
     });
     await hantar_notif_gb_pk(mesej);
-    localStorage.setItem(guardKey, '1');
     for (const g of belumIsi) {
       await sendGuruAttendancePersonalReminderOnce(g, tarikh);
     }
-  } catch(e) {}
+  } catch(e) { localStorage.removeItem(guardKey); }
 }
 
 async function notifMuridTidakHadirJam9() {
@@ -3322,10 +3326,13 @@ async function notifMuridTidakHadirJam9() {
   const totalMin = getCurrentTotalMinutes(now);
   if (totalMin < 9 * 60 || totalMin > 9 * 60 + 10) return;
   const tarikh = getTodayYMD(now);
-  if (localStorage.getItem('ssh_notif9_' + tarikh)) return;
+  const notif9Key = 'ssh_notif9_' + tarikh;
+  if (localStorage.getItem(notif9Key)) return;
+  // Set guard SEBELUM async — elak race condition antara tab
+  localStorage.setItem(notif9Key, '1');
   try {
     const kehadiranData = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
-    if (!kehadiranData.success) return;
+    if (!kehadiranData.success) { localStorage.removeItem(notif9Key); return; }
     const tidakHadir = (kehadiranData.rows || [])
       .map(parseKehadiranMuridRow)
       .filter(r => r.tarikh === tarikh && ['Tidak Hadir', 'Sakit', 'Ponteng'].includes(r.status))
@@ -3354,9 +3361,8 @@ async function notifMuridTidakHadirJam9() {
       try { await callFonnte(m.telefon, mesej); logNotif('Auto Tidak Hadir Murid', m.telefon, mesej, 'Berjaya'); sent++; } catch(e) {}
       await sleep(500);
     }
-    localStorage.setItem('ssh_notif9_' + tarikh, '1');
     if (sent > 0 || tgOk) showToast('📩 Notifikasi tidak hadir murid dihantar.', 'info');
-  } catch(e) {}
+  } catch(e) { localStorage.removeItem(notif9Key); }
 }
 
 setInterval(function() { updateWaktuStatus(); semakDanNotifGuruBelumIsi(); notifMuridTidakHadirJam9(); semakNotifHariLahirAuto(); maybeAutoHadir(false); maybeAutoPunchOut(false); }, 60000);
@@ -10791,7 +10797,8 @@ async function buangDummyDataAmaran() {
     const allRows = data.rows || [];
     // Kekal baris header + baris BUKAN [UJIAN]
     const filtered = allRows.filter(function(r) {
-      const nama = String(Array.isArray(r) ? (r[3] || r[0] || '') : '');
+      // Data disimpan dalam format [nama, kelas, tarikh, status, ...] — nama sentiasa di r[0]
+      const nama = String(Array.isArray(r) ? (r[0] || '') : '');
       return !nama.toLowerCase().startsWith('[ujian]');
     });
     if (filtered.length === allRows.length) { showToast('Tiada data ujian untuk dibuang.', 'info'); return false; }
