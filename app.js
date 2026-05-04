@@ -10585,15 +10585,16 @@ function muatAmaranSekolahConfigUI() {
 
 // ── Logo loader ───────────────────────────────────────────────────────────
 var _amaranLogoKPM = null, _amaranLogoSekolah = null, _amaranCopSekolah = null;
+var AMARAN_ASSET_VERSION = 'surat-amaran-kpm-20260504';
 function _blobToBase64(blob) {
   return new Promise(function(resolve) { var r = new FileReader(); r.onload = function(){ resolve(r.result); }; r.onerror = function(){ resolve(''); }; r.readAsDataURL(blob); });
 }
 async function muatLogoSuratAmaran() {
   if (_amaranLogoKPM !== null && _amaranLogoSekolah !== null && _amaranCopSekolah !== null) return;
   var results = await Promise.all([
-    fetch('./assets/logo.png').then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; }),
-    fetch('./assets/sk-kiandongo-logo.png').then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; }),
-    fetch('./assets/cop-sekolah.png').then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; })
+    fetch('./assets/logo.png?v=' + AMARAN_ASSET_VERSION, { cache: 'reload' }).then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; }),
+    fetch('./assets/sk-kiandongo-logo.png?v=' + AMARAN_ASSET_VERSION, { cache: 'reload' }).then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; }),
+    fetch('./assets/cop-sekolah.png?v=' + AMARAN_ASSET_VERSION, { cache: 'reload' }).then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; })
   ]);
   _amaranLogoKPM = results[0] || ''; _amaranLogoSekolah = results[1] || ''; _amaranCopSekolah = results[2] || '';
 }
@@ -10711,7 +10712,7 @@ async function hantarNotifSuratAmaran(nama, kelas, telefon, tahap, jumlahHari) {
   } catch(e) { showToast('Ralat hantar notifikasi: ' + e.message, 'error'); }
 }
 
-async function insertDummyDataAmaran() {
+async function insertDummyDataAmaranLegacy() {
   const btn = event && event.target;
   if (btn) { btn.disabled = true; btn.textContent = 'Memasukkan...'; }
   const guruEmail = (APP.user && APP.user.email) ? APP.user.email : 'ujian@sekolah.edu.my';
@@ -10734,6 +10735,47 @@ async function insertDummyDataAmaran() {
       await sleep(200);
     }
     showToast(ok + ' rekod ujian berjaya dimasukkan. Klik "Semak Amaran" untuk lihat hasilnya.', 'success');
+    await loadAmaranKehadiran();
+  } catch(e) {
+    showToast('Gagal masukkan data ujian: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="lucide-icon" width="14" height="14"><use href="#lucide-flask-conical"></use></svg> Masuk Data Ujian'; }
+  }
+}
+
+async function insertDummyDataAmaran() {
+  const btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Memasukkan...'; }
+  const guruEmail = (APP.user && APP.user.email) ? APP.user.email : 'ujian@sekolah.edu.my';
+  const tahun = new Date().getFullYear();
+  const pad = function(n) { return String(n).padStart(2, '0'); };
+  const janaTarikh = function(month, count) {
+    const dates = [];
+    for (let i = 1; i <= count; i++) {
+      dates.push(tahun + '-' + pad(month + Math.floor((i - 1) / 25)) + '-' + pad(((i - 1) % 25) + 1));
+    }
+    return dates;
+  };
+  const senaraiUjian = [
+    { nama: '[UJIAN] Ali bin Abu', kelas: '4 MUTIARA', telefon: '60123456789', hari: 12, bulan: 1, catatan: 'Data ujian Amaran 1' },
+    { nama: '[UJIAN] Balan anak Bujang', kelas: '5 DELIMA', telefon: '60123456780', hari: 22, bulan: 2, catatan: 'Data ujian Amaran 2' },
+    { nama: '[UJIAN] Chong Mei Lin', kelas: '6 BAIDURI', telefon: '60123456781', hari: 42, bulan: 3, catatan: 'Data ujian Amaran 3' },
+    { nama: '[UJIAN] Dayang Nur Aina', kelas: '3 KRISTAL', telefon: '60123456782', hari: 62, bulan: 4, catatan: 'Data ujian Buang Sekolah' }
+  ];
+  const rows = [];
+  senaraiUjian.forEach(function(item) {
+    janaTarikh(item.bulan, item.hari).forEach(function(tarikh) {
+      rows.push([item.nama, item.kelas, tarikh, 'Tidak Hadir', item.telefon, item.catatan, guruEmail]);
+    });
+  });
+  try {
+    let ok = 0;
+    for (const row of rows) {
+      const res = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_MURID', row: row });
+      if (res.success) ok++;
+      await sleep(80);
+    }
+    showToast(ok + ' rekod ujian untuk semua tahap amaran berjaya dimasukkan.', 'success');
     await loadAmaranKehadiran();
   } catch(e) {
     showToast('Gagal masukkan data ujian: ' + e.message, 'error');

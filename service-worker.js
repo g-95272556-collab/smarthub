@@ -1,10 +1,12 @@
-const CACHE_NAME = "ssh-pwa-v5-responsive";
+const CACHE_NAME = "ssh-pwa-v6-surat-amaran-assets";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./app.js",
   "./manifest.webmanifest",
   "./offline.html",
+  "./assets/logo.png",
+  "./assets/cop-sekolah.png",
   "./assets/sk-kiandongo-logo.png",
   "./assets/icon-192.png",
   "./assets/icon-512.png",
