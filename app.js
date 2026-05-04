@@ -5710,7 +5710,8 @@ function loadHtml2Pdf() {
 async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
   const html2pdfLib = await loadHtml2Pdf();
   await muatLogoSuratAmaran();
-  const fullHtml = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah });
+  const cfg = await getAmaranSekolahConfigAsync();
+  const fullHtml = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true, config: cfg }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah, cop: _amaranCopSekolah });
 
   // Extract CSS and body — inject directly into main document to avoid iframe cross-origin issues
   const cssMatch = fullHtml.match(/<style>([\s\S]*?)<\/style>/i);
@@ -5751,7 +5752,8 @@ async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariK
 // Generate letter as JPEG image — more reliable for WhatsApp group delivery than PDF documents
 async function janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
   await muatLogoSuratAmaran();
-  const fullHtml = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah });
+  const cfg = await getAmaranSekolahConfigAsync();
+  const fullHtml = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true, config: cfg }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah, cop: _amaranCopSekolah });
   const cssMatch = fullHtml.match(/<style>([\s\S]*?)<\/style>/i);
   const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/i);
   const styleEl = document.createElement('style');
@@ -5801,7 +5803,7 @@ async function janaImejSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hari
 
 async function hantarPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif) {
   if (!telefon) { showToast('Tiada nombor telefon wali untuk ' + nama, 'error'); return; }
-  var cfg = getAmaranSekolahConfig();
+  var cfg = await getAmaranSekolahConfigAsync();
   var tarikh = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
   var info = TAHAP_AMARAN_INFO[tahap] || TAHAP_AMARAN_INFO[1];
   var m = { nama: nama, kelas: kelas, tahap: tahap, jumlahHari: jumlahHari, hariKonsekutif: hariKonsekutif || 0, tahapInfo: info };
@@ -10550,8 +10552,25 @@ function getAmaranSekolahConfig() {
     tel:       localStorage.getItem('AMARAN_CFG_TEL')     || '089-873123',
     emel:      localStorage.getItem('AMARAN_CFG_EMEL')    || 'xba1234@moe.edu.my',
     guruBesar: localStorage.getItem('AMARAN_CFG_GB')      || 'NAMA GURU BESAR',
-    rujukan:   localStorage.getItem('AMARAN_CFG_RUJUKAN') || 'SKK/HEM/Disiplin'
+    rujukan:   localStorage.getItem('AMARAN_CFG_RUJUKAN') || 'SKKNDGO.700-7/1/2'
   };
+}
+async function getGuruBesarNameFromData() {
+  try {
+    const gurus = await getGuruList();
+    const gb = (gurus || []).find(function(guru) {
+      return String(guru && guru.jawatan || '').toLowerCase().includes('guru besar');
+    });
+    return String(gb && gb.nama || '').trim();
+  } catch(e) {
+    return '';
+  }
+}
+async function getAmaranSekolahConfigAsync() {
+  var cfg = getAmaranSekolahConfig();
+  var namaGb = await getGuruBesarNameFromData();
+  if (namaGb) cfg.guruBesar = namaGb;
+  return cfg;
 }
 function simpanAmaranSekolahConfig() {
   var map = { AMARAN_CFG_NAMA:'cfg-amaran-nama', AMARAN_CFG_ALAMAT1:'cfg-amaran-alamat1', AMARAN_CFG_ALAMAT2:'cfg-amaran-alamat2', AMARAN_CFG_TEL:'cfg-amaran-tel', AMARAN_CFG_EMEL:'cfg-amaran-emel', AMARAN_CFG_GB:'cfg-amaran-gb', AMARAN_CFG_RUJUKAN:'cfg-amaran-rujukan' };
@@ -10565,22 +10584,23 @@ function muatAmaranSekolahConfigUI() {
 }
 
 // ── Logo loader ───────────────────────────────────────────────────────────
-var _amaranLogoKPM = null, _amaranLogoSekolah = null;
+var _amaranLogoKPM = null, _amaranLogoSekolah = null, _amaranCopSekolah = null;
 function _blobToBase64(blob) {
   return new Promise(function(resolve) { var r = new FileReader(); r.onload = function(){ resolve(r.result); }; r.onerror = function(){ resolve(''); }; r.readAsDataURL(blob); });
 }
 async function muatLogoSuratAmaran() {
-  if (_amaranLogoKPM !== null && _amaranLogoSekolah !== null) return;
+  if (_amaranLogoKPM !== null && _amaranLogoSekolah !== null && _amaranCopSekolah !== null) return;
   var results = await Promise.all([
     fetch('./assets/logo.png').then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; }),
-    fetch('./assets/sk-kiandongo-logo.png').then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; })
+    fetch('./assets/sk-kiandongo-logo.png').then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; }),
+    fetch('./assets/cop-sekolah.png').then(function(r){ return r.blob(); }).then(_blobToBase64).catch(function(){ return ''; })
   ]);
-  _amaranLogoKPM = results[0] || ''; _amaranLogoSekolah = results[1] || '';
+  _amaranLogoKPM = results[0] || ''; _amaranLogoSekolah = results[1] || ''; _amaranCopSekolah = results[2] || '';
 }
 
 // ── Jana HTML Surat Amaran (format rasmi KPM) ────────────────────────────
 function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif, opts, logos) {
-  var cfg = getAmaranSekolahConfig();
+  var cfg = (opts && opts.config) || getAmaranSekolahConfig();
   var lg = logos || {};
   var tahun = new Date().getFullYear();
   var tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -10590,7 +10610,7 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
   var rujMap   = { 1:'01', 2:'02', 3:'03', 4:'04' };
   var tajuk = tajukMap[tahap] || tajukMap[1];
   var perHeading = perMap[tahap] || perMap[1];
-  var rujukan = cfg.rujukan + '/' + (rujMap[tahap] || '01') + '/' + tahun;
+  var rujukan = cfg.rujukan + ' (' + (rujMap[tahap] || '01') + '/' + tahun + ')';
   var pRow = function(n, txt) { return '<p class="p-row"><span class="p-num">' + n + '.</span><span class="p-txt">' + txt + '</span></p>'; };
   var paraMap = {
     1: pRow(1,'Dengan segala hormatnya perkara di atas dirujuk.') +
@@ -10615,9 +10635,10 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
        pRow(4,'Sehubungan itu, pihak sekolah akan memulakan proses tindakan buang sekolah mengikut prosedur yang ditetapkan oleh Kementerian Pendidikan Malaysia dan kes ini akan dirujuk kepada PPD/JPN.')
   };
   var isi = paraMap[tahap] || paraMap[1];
-  var logoKPMTag = lg.kpm ? '<img src="' + lg.kpm + '" class="hdr-logo" alt="KPM">' : '<div class="hdr-logo-ph"></div>';
+  var logoKPMTag = lg.kpm ? '<img src="' + lg.kpm + '" class="hdr-logo hdr-logo-kpm" alt="Kementerian Pendidikan Malaysia">' : '<div class="hdr-logo-ph"></div>';
   var logoSkTag  = lg.sekolah ? '<img src="' + lg.sekolah + '" class="hdr-logo" alt="Sekolah">' : '<div class="hdr-logo-ph"></div>';
-  var CSS = '*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Times New Roman",Times,serif;font-size:12pt;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.paper{max-width:210mm;margin:0 auto;padding:18mm 20mm 14mm 25mm;min-height:297mm}.hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}.hdr-logo{width:76px;height:76px;object-fit:contain;flex-shrink:0}.hdr-logo-ph{width:76px;height:76px;flex-shrink:0}.hdr-mid{flex:1;text-align:center;line-height:1.55}.hdr-sekolah{font-size:13.5pt;font-weight:bold;text-transform:uppercase;letter-spacing:.01em}.hdr-info{font-size:10.5pt;margin-top:3px}.hdr-rule{border:none;border-top:2.5px solid #000;margin:5px 0 0}.tajuk{text-align:center;font-size:13pt;font-weight:bold;text-transform:uppercase;text-decoration:underline;margin:12px 0 14px}.ref-blk{margin-bottom:14px}.ref-row{display:flex;margin-bottom:3px;font-size:11.5pt}.ref-lbl{width:82px;flex-shrink:0}.ref-col{width:16px}.ref-val{flex:1;border-bottom:1px solid #000;min-width:100px}.kepada{margin-bottom:14px;font-size:11.5pt;line-height:1.85}.salam{margin-bottom:10px;font-size:11.5pt}.per{font-size:11.5pt;font-weight:bold;text-decoration:underline;margin-bottom:12px}.body-paras{font-size:11.5pt;line-height:1.8}.p-row{display:flex;margin-bottom:9px}.p-num{width:22px;flex-shrink:0}.p-txt{flex:1}.indent{display:flex;margin:3px 0 3px 22px;font-size:11.5pt}.ind-lbl{width:70px;flex-shrink:0}.ind-col{width:14px}.ind-val{flex:1;border-bottom:1px solid #000;min-width:100px}.closing{margin:14px 0 4px;font-size:11.5pt}.berkhidmat{font-size:11.5pt;font-weight:bold;font-style:italic;margin:4px 0 10px}.yang-amanah{font-size:11.5pt}.sign-section{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px}.sign-left{font-size:11.5pt}.sign-dots{letter-spacing:1px;margin:44px 0 2px}.sign-name{font-weight:bold}.cop-box{border:1.5px solid #000;min-width:110px;height:80px;display:flex;flex-direction:column}.cop-lbl{font-size:9.5pt;padding:3px 6px;border-bottom:1px solid #000}.footer-note{font-size:8.5pt;color:#444;font-style:italic;margin-top:18px;padding-top:6px;border-top:1px solid #999;text-align:center}@media print{body{font-size:11pt}.paper{padding:14mm 18mm 12mm 22mm}}';
+  var copTag = lg.cop ? '<img src="' + lg.cop + '" class="cop-img" alt="Cop Sekolah">' : '';
+  var CSS = '*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Times New Roman",Times,serif;font-size:12pt;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.paper{max-width:210mm;margin:0 auto;padding:18mm 20mm 14mm 25mm;min-height:297mm}.hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}.hdr-logo{width:76px;height:76px;object-fit:contain;flex-shrink:0}.hdr-logo-kpm{width:92px;height:76px}.hdr-logo-ph{width:76px;height:76px;flex-shrink:0}.hdr-mid{flex:1;text-align:center;line-height:1.55}.hdr-sekolah{font-size:13.5pt;font-weight:bold;text-transform:uppercase;letter-spacing:.01em}.hdr-info{font-size:10.5pt;margin-top:3px}.hdr-rule{border:none;border-top:2.5px solid #000;margin:5px 0 0}.tajuk{text-align:center;font-size:13pt;font-weight:bold;text-transform:uppercase;text-decoration:underline;margin:12px 0 14px}.ref-blk{margin-bottom:14px}.ref-row{display:flex;margin-bottom:3px;font-size:11.5pt}.ref-lbl{width:82px;flex-shrink:0}.ref-col{width:16px}.ref-val{width:4cm;flex:0 0 4cm;border-bottom:1px solid #000}.kepada{margin-bottom:14px;font-size:11.5pt;line-height:1.85}.salam{margin-bottom:10px;font-size:11.5pt}.per{font-size:11.5pt;font-weight:bold;text-decoration:underline;margin-bottom:12px}.body-paras{font-size:11.5pt;line-height:1.8}.p-row{display:flex;margin-bottom:9px}.p-num{width:22px;flex-shrink:0}.p-txt{flex:1}.indent{display:flex;margin:3px 0 3px 22px;font-size:11.5pt}.ind-lbl{width:70px;flex-shrink:0}.ind-col{width:14px}.ind-val{flex:1;border-bottom:1px solid #000;min-width:100px}.closing{margin:14px 0 4px;font-size:11.5pt}.berkhidmat{font-size:11.5pt;font-weight:bold;font-style:italic;margin:4px 0 10px}.yang-amanah{font-size:11.5pt}.sign-section{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px}.sign-left{font-size:11.5pt}.sign-dots{letter-spacing:1px;margin:44px 0 2px}.sign-name{font-weight:bold}.cop-box{min-width:110px;width:120px;height:92px;display:flex;align-items:center;justify-content:center}.cop-img{max-width:118px;max-height:90px;object-fit:contain}.footer-note{font-size:8.5pt;color:#444;font-style:italic;margin-top:18px;padding-top:6px;border-top:1px solid #999;text-align:center}@media print{body{font-size:11pt}.paper{padding:14mm 18mm 12mm 22mm}}';
   return '<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>' + escapeHtml(tajuk) + ' - ' + escapeHtml(nama) + '</title><style>' + CSS + '</style></head><body>' +
     '<div class="paper">' +
     '<div class="hdr">' + logoKPMTag + '<div class="hdr-mid"><div class="hdr-sekolah">' + escapeHtml(cfg.nama) + '</div><div class="hdr-info">' + escapeHtml(cfg.alamat1) + '<br>' + escapeHtml(cfg.alamat2) + '<br>TEL : ' + escapeHtml(cfg.tel) + '<br>E-MEL : ' + escapeHtml(cfg.emel) + '</div></div>' + logoSkTag + '</div>' +
@@ -10631,7 +10652,7 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
     '<div class="closing">Sekian, terima kasih.</div>' +
     '<div class="berkhidmat">"BERKHIDMAT UNTUK NEGARA"</div>' +
     '<div class="yang-amanah">Yang menjalankan amanah,</div>' +
-    '<div class="sign-section"><div class="sign-left"><div class="sign-dots">.............................................</div><div class="sign-name">(' + escapeHtml(cfg.guruBesar) + ')</div><div>Guru Besar</div><div>' + escapeHtml(cfg.nama) + '</div></div><div class="cop-box"><div class="cop-lbl">Cop Sekolah:</div></div></div>' +
+    '<div class="sign-section"><div class="sign-left"><div class="sign-dots">.............................................</div><div class="sign-name">(' + escapeHtml(cfg.guruBesar) + ')</div><div>Guru Besar</div><div>' + escapeHtml(cfg.nama) + '</div></div><div class="cop-box">' + copTag + '</div></div>' +
     '<div class="footer-note">Nota: Surat ini adalah cetakan komputer dan tidak memerlukan tandatangan basah sekiranya dicetak melalui sistem rasmi sekolah.</div>' +
     '</div>' + (noPrint ? '' : '<script>window.onload=function(){window.print();};<\/script>') + '</body></html>';
 }
@@ -10648,7 +10669,8 @@ async function pratinjauSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, har
   modal.style.display = 'flex';
   frame.srcdoc = '<div style="font-family:sans-serif;padding:24px;color:#555">Memuatkan logo dan surat...</div>';
   await muatLogoSuratAmaran();
-  const html = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, {}, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah });
+  const cfg = await getAmaranSekolahConfigAsync();
+  const html = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { config: cfg }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah, cop: _amaranCopSekolah });
   try { frame.srcdoc = html; } catch(e) { const doc = frame.contentDocument || frame.contentWindow.document; doc.open(); doc.write(html); doc.close(); }
 }
 
@@ -10661,7 +10683,8 @@ async function cetakSuratAmaranDariModal() {
   const modal = document.getElementById('modalPratinjauSuratAmaran');
   if (!modal) return;
   await muatLogoSuratAmaran();
-  const html = janaHtmlSuratAmaran(modal.dataset.nama, modal.dataset.kelas, modal.dataset.telefon, parseInt(modal.dataset.tahap), parseInt(modal.dataset.jumlahHari), parseInt(modal.dataset.hariKonsekutif), {}, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah });
+  const cfg = await getAmaranSekolahConfigAsync();
+  const html = janaHtmlSuratAmaran(modal.dataset.nama, modal.dataset.kelas, modal.dataset.telefon, parseInt(modal.dataset.tahap), parseInt(modal.dataset.jumlahHari), parseInt(modal.dataset.hariKonsekutif), { config: cfg }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah, cop: _amaranCopSekolah });
   const win = window.open('', '_blank');
   if (!win) { showToast('Sila benarkan popup untuk mencetak surat.', 'error'); return; }
   win.document.write(html); win.document.close();
@@ -10729,7 +10752,7 @@ async function hantarAmaranKeGroupUjian() {
     const muridMap = kiraTidakHadirMurid(allRows);
     const muridAmaran = Object.values(muridMap).filter(function(m) { return m.tahap > 0; }).sort(function(a, b) { return b.tahap - a.tahap || b.jumlahHari - a.jumlahHari; });
     if (!muridAmaran.length) { showToast('Tiada murid yang perlu amaran.', 'info'); return; }
-    var cfg = getAmaranSekolahConfig();
+    var cfg = await getAmaranSekolahConfigAsync();
     var tarikh = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
     showToast('Jana dan hantar ' + muridAmaran.length + ' surat amaran ke group ujian...', 'info');
     var sent = 0, failed = 0;
