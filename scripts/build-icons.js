@@ -13,7 +13,7 @@ const iconsSet = new Set();
 
 const dynamicIcons = [
   'party-popper', 'play',
-  'sun', 'cloud-sun', 'cloud', 'cloud-fog', 'cloud-drizzle', 
+  'sun', 'cloud-sun', 'cloud', 'cloud-fog', 'cloud-drizzle',
   'cloud-rain', 'snowflake', 'cloud-rain-wind', 'cloud-lightning'
 ];
 dynamicIcons.forEach(i => iconsSet.add(i));
@@ -23,6 +23,14 @@ const iTagRegex = /<i\s+([^>]*?)data-lucide="([^"]+)"([^>]*?)>.*?<\/i>/g;
 let match;
 while ((match = iTagRegex.exec(indexHtml)) !== null) {
   iconsSet.add(match[2]);
+}
+
+// Scan <use href="#lucide-..."> dalam index.html dan app.js
+const useHrefRegex = /href="#lucide-([a-z0-9-]+)"/g;
+for (const src of [indexHtml, appJs]) {
+  while ((match = useHrefRegex.exec(src)) !== null) {
+    iconsSet.add(match[1]);
+  }
 }
 
 const icons = Array.from(iconsSet).sort();
@@ -79,9 +87,14 @@ indexHtml = indexHtml.replace(iTagRegex, (fullMatch, before, iconName, after) =>
 indexHtml = indexHtml.replace(/<script[^>]*src="[^"]*lucide\.min\.js"[^>]*><\/script>\s*/g, '');
 indexHtml = indexHtml.replace(/<script>\s*\/\/\s*Initialize Lucide Icons\s*document\.addEventListener\('DOMContentLoaded',\s*function\(\)\s*{\s*lucide\.createIcons\(\);\s*}\);\s*<\/script>\s*/g, '');
 
-indexHtml = indexHtml.replace(/<body[^>]*>/i, (match) => {
-  return `${match}\n\n<!-- SVG Sprite for Lucide Icons -->\n${spriteSvg}\n`;
-});
+const existingSpriteRegex = /<!-- SVG Sprite for Lucide Icons -->\n<svg[\s\S]*?<\/svg>/g;
+if (existingSpriteRegex.test(indexHtml)) {
+  indexHtml = indexHtml.replace(existingSpriteRegex, `<!-- SVG Sprite for Lucide Icons -->\n${spriteSvg}`);
+} else {
+  indexHtml = indexHtml.replace(/<body[^>]*>/i, (match) => {
+    return `${match}\n\n<!-- SVG Sprite for Lucide Icons -->\n${spriteSvg}\n`;
+  });
+}
 
 fs.writeFileSync(indexHtmlPath, indexHtml, 'utf-8');
 console.log('Updated index.html');

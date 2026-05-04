@@ -1615,6 +1615,10 @@ function onGSIReady() {
     if (_domReady) renderGSIButton();
     return;
   }
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+    setTimeout(onGSIReady, 500);
+    return;
+  }
   _gsiReady = true;
   if (_domReady) initAuth();
 }
@@ -1858,6 +1862,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function initAuth() {
   syncBootstrapConfigInputs();
   APP.googleClientId = resolveInitialGoogleClientId();
+
+  if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+    showLoginPage();
+    setLoginConfigStatus('Log masuk Google tidak disokong dalam WebView Android. Sila buka SmartSchoolHub dalam Google Chrome atau pelayar sistem.', 'error');
+    return;
+  }
+
   if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
     showLoginPage();
     updateLoginReadinessMessage();
