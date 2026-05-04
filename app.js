@@ -112,8 +112,8 @@ const GEO = {
   jamHadir: 7, minHadir: 0,
   jamLewat: 7, minLewat: 30,
   jamTidak: 8, minTidak: 0,
-  gbTel: '60195363361',
-  pkTel: '60193386910',
+  gbTel: '',
+  pkTel: '',
 };
 
 const BULAN = ['','Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
@@ -3047,9 +3047,24 @@ function tunjukHasil(teks, jenis) {
   });
 }
 
+async function getGbPkTelFromGuru() {
+  try {
+    const gurus = await getGuruList();
+    const hasil = [];
+    gurus.forEach(function(g) {
+      const j = String(g.jawatan || '').trim().toLowerCase();
+      const tel = String(g.telefon || '').trim();
+      if (tel && (j.includes('guru besar') || j.includes('penolong kanan'))) hasil.push(tel);
+    });
+    return [...new Set(hasil)];
+  } catch(e) { return []; }
+}
+
 async function hantar_notif_gb_pk(mesej) {
   if (!isNotifAutoEnabled() || !isGuruAttendanceNotifEnabled()) return;
-  const targets = [GEO.gbTel, GEO.pkTel].filter(Boolean);
+  let targets = await getGbPkTelFromGuru();
+  // Fallback ke GEO config jika tiada data guru
+  if (!targets.length) targets = [GEO.gbTel, GEO.pkTel].filter(Boolean);
   for (const tel of targets) {
     try { await callFonnte(tel, mesej); logNotif('Guru Bertugas', tel, mesej, 'Berjaya'); await sleep(400); } catch(e) {}
   }
@@ -3806,26 +3821,41 @@ async function submitKehadiranKelas() {
   if (!tarikh) { showToast('Sila pilih tarikh.', 'error'); return; }
   if ((window._senaraKelasDataKelas || '') !== kelas) { showToast('Sila muatkan semula senarai kelas sebelum simpan.', 'error'); return; }
   if (!murid.length) { showToast('Tiada senarai murid.', 'error'); return; }
-  showToast('Menyimpan ' + murid.length + ' rekod...', 'info');
-  const tidakHadirList = [];
+  showToast('Menyemak rekod sedia ada...', 'info');
+  const allTidakHadirList = [];
   let usedLegacyFallback = false;
-  const rowsToSave = murid.map(function(m, idx) {
+  const allRowsToSave = murid.map(function(m, idx) {
     const statusEl = document.getElementById('status_' + idx);
     const catatanEl = document.getElementById('catatan_' + idx);
     const status = statusEl ? statusEl.value : 'Hadir';
     const catatan = catatanEl ? catatanEl.value : '';
-    if (['Tidak Hadir', 'MC', 'Ponteng'].includes(status)) tidakHadirList.push(m);
+    if (['Tidak Hadir', 'MC', 'Ponteng'].includes(status)) allTidakHadirList.push(m);
     return [m.nama, kelas, tarikh, status, m.telefon, catatan, APP.user ? APP.user.email : ''];
   });
+  let rowsToSave = allRowsToSave;
+  let tidakHadirList = allTidakHadirList;
+  let skippedCount = 0;
   try {
-    const duplicates = await findExistingKehadiranMuridDuplicates(rowsToSave);
-    if (duplicates.length) {
-      const preview = duplicates.slice(0, 3).map(function(row) { return row[0]; }).join(', ');
-      showToast('Rekod kehadiran untuk tarikh ini sudah wujud: ' + preview + (duplicates.length > 3 ? ' dan lain-lain.' : '.'), 'error');
+    const duplicates = await findExistingKehadiranMuridDuplicates(allRowsToSave);
+    if (duplicates.length === allRowsToSave.length) {
+      showToast('Kehadiran kelas ' + kelas + ' untuk tarikh ini sudah lengkap disimpan.', 'info');
       return;
+    }
+    if (duplicates.length > 0) {
+      const dupNames = new Set(duplicates.map(function(r) { return String(r[0] || '').trim().toLowerCase(); }));
+      rowsToSave = allRowsToSave.filter(function(r) { return !dupNames.has(String(r[0] || '').trim().toLowerCase()); });
+      tidakHadirList = allTidakHadirList.filter(function(m) { return !dupNames.has(String(m.nama || '').trim().toLowerCase()); });
+      skippedCount = duplicates.length;
+      showToast(skippedCount + ' rekod lama dikekalkan. Menyimpan ' + rowsToSave.length + ' rekod baru...', 'info');
+    } else {
+      showToast('Menyimpan ' + rowsToSave.length + ' rekod...', 'info');
     }
   } catch (dupErr) {
     showToast(dupErr.message, 'error');
+    return;
+  }
+  if (!rowsToSave.length) {
+    showToast('Tiada rekod baru untuk disimpan.', 'info');
     return;
   }
   try {
@@ -3837,24 +3867,35 @@ async function submitKehadiranKelas() {
       return;
     }
     let fallbackOk = 0;
-    try {
-      usedLegacyFallback = true;
-      for (let idx = 0; idx < rowsToSave.length; idx++) {
+    let fallbackSkipped = 0;
+    usedLegacyFallback = true;
+    for (let idx = 0; idx < rowsToSave.length; idx++) {
+      try {
         const fallbackData = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_MURID', row: rowsToSave[idx] });
         if (!fallbackData.success) throw new Error(fallbackData.error || 'Gagal menyimpan rekod kehadiran murid.');
         fallbackOk++;
-      }
-    } catch (fallbackErr) {
-      if (fallbackErr && ['AUTH_REQUIRED','AUTH_FORBIDDEN','CLASS_FORBIDDEN','NO_ASSIGNED_CLASS','TEACHER_NOT_FOUND'].includes(fallbackErr.code)) {
-        showToast(fallbackErr.message, 'error');
+      } catch (fallbackErr) {
+        if (fallbackErr && fallbackErr.code === 'DUPLICATE_KEHADIRAN_MURID') {
+          fallbackSkipped++;
+          continue;
+        }
+        if (fallbackErr && ['AUTH_REQUIRED','AUTH_FORBIDDEN','CLASS_FORBIDDEN','NO_ASSIGNED_CLASS','TEACHER_NOT_FOUND'].includes(fallbackErr.code)) {
+          showToast(fallbackErr.message, 'error');
+          return;
+        }
+        showToast(fallbackErr && fallbackErr.message ? fallbackErr.message : 'Gagal menyimpan rekod kehadiran murid.', 'error');
         return;
       }
-      showToast(fallbackErr && fallbackErr.message ? fallbackErr.message : 'Gagal menyimpan rekod kehadiran murid.', 'error');
+    }
+    if (!fallbackOk && fallbackSkipped > 0) {
+      showToast('Semua rekod sudah disimpan sebelum ini.', 'info');
+      closeModal('modalKehadiranMurid');
       return;
     }
+    skippedCount += fallbackSkipped;
   }
   closeModal('modalKehadiranMurid');
-  showToast((usedLegacyFallback ? '✅ Mod serasi lama digunakan. ' : '✅ ') + rowsToSave.length + ' rekod disimpan.', 'success');
+  showToast((usedLegacyFallback ? '✅ Mod serasi lama. ' : '✅ ') + rowsToSave.length + ' rekod baru disimpan' + (skippedCount > 0 ? ' (' + skippedCount + ' rekod lama dikekalkan).' : '.'), 'success');
   if (tidakHadirList.length > 0 && isNotifAutoEnabled() && isMuridAttendanceNotifEnabled()) {
       var guardMurid = 'ssh_notif_wali_' + tarikh + '_' + kelas.replace(/\s/g,'');
       if (!localStorage.getItem(guardMurid)) {
@@ -10743,6 +10784,27 @@ async function insertDummyDataAmaranLegacy() {
   }
 }
 
+async function buangDummyDataAmaran() {
+  try {
+    const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
+    if (!data.success) throw new Error(data.error);
+    const allRows = data.rows || [];
+    // Kekal baris header + baris BUKAN [UJIAN]
+    const filtered = allRows.filter(function(r) {
+      const nama = String(Array.isArray(r) ? (r[3] || r[0] || '') : '');
+      return !nama.toLowerCase().startsWith('[ujian]');
+    });
+    if (filtered.length === allRows.length) { showToast('Tiada data ujian untuk dibuang.', 'info'); return false; }
+    const res = await callWorker({ action: 'replaceSheet', sheetKey: 'KEHADIRAN_MURID', rows: filtered });
+    if (!res.success) throw new Error(res.error);
+    showToast((allRows.length - filtered.length) + ' rekod ujian dibuang.', 'success');
+    return true;
+  } catch(e) {
+    showToast('Gagal buang data ujian: ' + e.message, 'error');
+    return false;
+  }
+}
+
 async function insertDummyDataAmaran() {
   const btn = event && event.target;
   if (btn) { btn.disabled = true; btn.textContent = 'Memasukkan...'; }
@@ -10769,9 +10831,13 @@ async function insertDummyDataAmaran() {
     });
   });
   try {
+    // Buang data ujian lama dahulu untuk elak duplicate error
+    if (btn) btn.textContent = 'Semak data lama...';
+    await buangDummyDataAmaran();
+    if (btn) btn.textContent = 'Memasukkan ' + rows.length + ' rekod...';
     const res = await callWorker({ action: 'appendRows', sheetKey: 'KEHADIRAN_MURID', rows: rows });
     if (res.success) {
-      showToast(rows.length + ' rekod ujian untuk semua tahap amaran berjaya dimasukkan.', 'success');
+      showToast(rows.length + ' rekod ujian (4 tahap amaran) berjaya dimasukkan.', 'success');
       await loadAmaranKehadiran();
     } else {
       throw new Error(res.error || 'Gagal menyimpan rekod.');
