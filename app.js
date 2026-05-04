@@ -135,6 +135,44 @@ let _gsiButtonRenderedClientId = '';
 let _storedSessionRestoreAttempted = false;
 let _gsiPollInterval = null;
 let _gsiScriptInjected = false;
+
+function isCapacitorApp() {
+  return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+}
+
+function startCapacitorOAuth() {
+  try {
+    const clientId = APP.googleClientId || DEFAULT_GOOGLE_CLIENT_ID;
+    const redirectUri = (window.location.origin && window.location.origin !== 'null') ? window.location.origin : 'https://localhost';
+    const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('ssh_oauth_nonce', nonce);
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'id_token',
+      scope: 'openid email profile',
+      nonce: nonce,
+      prompt: 'select_account'
+    });
+    window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+  } catch(e) {
+    showToast('Gagal membuka log masuk Google: ' + e.message, 'error');
+  }
+}
+
+function checkOAuthRedirect() {
+  try {
+    const hash = window.location.hash;
+    if (!hash || hash.length < 2) return false;
+    const params = new URLSearchParams(hash.substring(1));
+    const idToken = params.get('id_token');
+    if (!idToken) return false;
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    localStorage.removeItem('ssh_oauth_nonce');
+    setTimeout(function() { handleGoogleCredential({ credential: idToken }); }, 150);
+    return true;
+  } catch(e) { return false; }
+}
 let _birthdayHydrationPromise = null;
 let _birthdayHydratedOnce = false;
 let geoCoords = null;
@@ -1717,6 +1755,7 @@ function exposeLoginBootstrapActions() {
   window.savePreLoginConfig = savePreLoginConfig;
   window.checkLoginWorkerStatus = checkLoginWorkerStatus;
   window.retryGSIRender = retryGSIRender;
+  window.startCapacitorOAuth = startCapacitorOAuth;
 }
 
 function bindLoginBootstrapActions() {
@@ -1846,6 +1885,7 @@ document.addEventListener('DOMContentLoaded', () => {
   syncBootstrapConfigInputs();
   showLoginPage();
   updateLoginReadinessMessage();
+  if (checkOAuthRedirect()) return;
   if (!_gsiReady && hasGoogleSignInClient()) {
     onGSIReady();
   } else if (!_gsiReady) {
@@ -1973,6 +2013,7 @@ function renderGSIButton() {
 }
 
 function retryGSIRender() {
+  if (isCapacitorApp()) { startCapacitorOAuth(); return; }
   if (_gsiReady) { initAuth(); return; }
   if (hasGoogleSignInClient()) { onGSIReady(); return; }
   injectGSIScript();
@@ -1987,10 +2028,12 @@ function showLoginPage() {
   exposeLoginBootstrapActions();
   bindLoginBootstrapActions();
   syncBootstrapConfigInputs();
-  if (_gsiReady) renderGSIButton();
-  else {
+  if (_gsiReady && !isCapacitorApp()) {
+    renderGSIButton();
+  } else {
     const btn = document.getElementById('googleSignInBtn');
-    if (btn) btn.innerHTML = '<button class="btn btn-primary btn-full" onclick="retryGSIRender()" style="margin-bottom:14px">Log Masuk dengan Google</button>';
+    const clickFn = isCapacitorApp() ? 'startCapacitorOAuth()' : 'retryGSIRender()';
+    if (btn) btn.innerHTML = '<button class="btn btn-primary btn-full" onclick="' + clickFn + '" style="margin-bottom:14px">Log Masuk dengan Google</button>';
   }
   updateLoginReadinessMessage();
 }
