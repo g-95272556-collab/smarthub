@@ -3,7 +3,8 @@
   "appName": "SmartSchoolHub",
   "webDir": "www",
   "server": {
-    "androidScheme": "https"
+    "url": "https://xbasmarthub.netlify.app",
+    "cleartext": false
   },
   "plugins": {
     "SplashScreen": {
