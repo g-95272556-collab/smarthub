@@ -10461,9 +10461,9 @@ var TAHAP_AMARAN_INFO = [
 ];
 
 function tentukTahapAmaran(jumlahHari, hariKonsekutif) {
-  if (jumlahHari >= 60) return 4;
-  if (jumlahHari >= 40) return 3;
-  if (jumlahHari >= 20) return 2;
+  if (jumlahHari >= 60 || hariKonsekutif >= 31) return 4;
+  if (jumlahHari >= 40 || hariKonsekutif >= 17) return 3;
+  if (jumlahHari >= 20 || hariKonsekutif >= 10) return 2;
   if (jumlahHari >= 10 || hariKonsekutif >= 3) return 1;
   return 0;
 }
@@ -10769,14 +10769,13 @@ async function insertDummyDataAmaran() {
     });
   });
   try {
-    let ok = 0;
-    for (const row of rows) {
-      const res = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_MURID', row: row });
-      if (res.success) ok++;
-      await sleep(80);
+    const res = await callWorker({ action: 'appendRows', sheetKey: 'KEHADIRAN_MURID', rows: rows });
+    if (res.success) {
+      showToast(rows.length + ' rekod ujian untuk semua tahap amaran berjaya dimasukkan.', 'success');
+      await loadAmaranKehadiran();
+    } else {
+      throw new Error(res.error || 'Gagal menyimpan rekod.');
     }
-    showToast(ok + ' rekod ujian untuk semua tahap amaran berjaya dimasukkan.', 'success');
-    await loadAmaranKehadiran();
   } catch(e) {
     showToast('Gagal masukkan data ujian: ' + e.message, 'error');
   } finally {
