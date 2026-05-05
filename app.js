@@ -187,7 +187,7 @@ function updateMobileNavTitle(moduleId) {
   if (!activeBtn) activeBtn = document.querySelector('.nav-item.active');
   var labels = activeBtn ? activeBtn.querySelectorAll('span') : [];
   var text = labels && labels.length ? labels[labels.length - 1].textContent : '';
-  titleEl.textContent = text || 'Smart School Hub';
+  titleEl.textContent = text || 'SmartSchoolHub';
 }
 
 function setMobileNavOpen(isOpen) {
@@ -749,12 +749,12 @@ function renderGroupFonnteSetupUI() {
   var testInput = document.getElementById('config-fonnte-test-group');
   if (testInput) testInput.value = testId;
   updateGroupSetupSummary('config-fonnte-test-status', !!testId);
-  setText('config-fonnte-test-id', testId || 'Tiada group disimpan.');
+  setText('config-fonnte-test-id', testId || 'Tiada kumpulan disimpan.');
 
   var guruId = getGroupGuruFonnteId();
   syncGroupGuruFonnteInputs(guruId);
   updateGroupSetupSummary('config-fonnte-guru-status', !!guruId);
-  setText('config-fonnte-guru-id', guruId || 'Tiada group disimpan.');
+  setText('config-fonnte-guru-id', guruId || 'Tiada kumpulan disimpan.');
 
   var activeCount = 0;
   SENARAI_KELAS_MURID.forEach(function(kelas) {
@@ -764,7 +764,7 @@ function renderGroupFonnteSetupUI() {
     var input = document.getElementById(field.input);
     if (input) input.value = id || '';
     updateGroupSetupSummary(field.status, !!id);
-    setText(field.idBox, id || 'Tiada group disimpan.');
+    setText(field.idBox, id || 'Tiada kumpulan disimpan.');
     if (id) activeCount++;
   });
   setText('config-group-kelas-summary', activeCount + '/' + SENARAI_KELAS_MURID.length + ' aktif');
@@ -795,9 +795,9 @@ function renderBirthdayNotifConfigSummary(config) {
   setText('birthdayNotifFonnteStatus', fonnteToken ? 'Aktif' : 'Tidak lengkap');
   setText('birthdayNotifFonnteMeta', fonnteToken ? 'Token: ' + maskConfigValue(fonnteToken, 8) : 'Token Fonnte belum disimpan.');
   setText('birthdayNotifGuruGroupStatus', guruGroup ? 'Aktif' : 'Tidak lengkap');
-  setText('birthdayNotifGuruGroupMeta', guruGroup || 'Group guru belum disimpan.');
+  setText('birthdayNotifGuruGroupMeta', guruGroup || 'Kumpulan guru belum disimpan.');
   setText('birthdayNotifClassGroupStatus', activeClassCount + '/' + SENARAI_KELAS_MURID.length + ' aktif');
-  setText('birthdayNotifClassGroupMeta', activeClassCount === SENARAI_KELAS_MURID.length ? 'Semua group kelas telah diset.' : 'Masih ada group kelas yang belum lengkap.');
+  setText('birthdayNotifClassGroupMeta', activeClassCount === SENARAI_KELAS_MURID.length ? 'Semua kumpulan kelas telah diset.' : 'Masih ada kumpulan kelas yang belum lengkap.');
 
   var tbody = document.getElementById('birthdayNotifGroupBody');
   if (!tbody) return;
@@ -807,7 +807,7 @@ function renderBirthdayNotifConfigSummary(config) {
     var action = groupId
       ? '<button class="btn btn-sm btn-secondary" onclick="testBirthdayFonnteTarget(' + JSON.stringify(kelas) + ')">Uji</button>'
       : '<span style="color:var(--muted);font-size:0.82rem">Tiada ujian</span>';
-    return '<tr><td><strong>' + escapeHtml(kelas) + '</strong></td><td>' + badge + '</td><td style="font-family:monospace;font-size:0.82rem;color:var(--muted)">' + escapeHtml(groupId || 'Tiada group disimpan.') + '</td><td>' + action + '</td></tr>';
+    return '<tr><td><strong>' + escapeHtml(kelas) + '</strong></td><td>' + badge + '</td><td style="font-family:monospace;font-size:0.82rem;color:var(--muted)">' + escapeHtml(groupId || 'Tiada kumpulan disimpan.') + '</td><td>' + action + '</td></tr>';
   }).join('');
 }
 
@@ -871,7 +871,7 @@ async function simpanKonfigHariLahir() {
     var data = await callWorker({ action: 'setConfig', config: payload });
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan konfigurasi notifikasi hari lahir.');
     renderBirthdayNotifConfigSummary(payload);
-    setBirthdayConfigCheckResult('Konfigurasi Telegram, Fonnte, group guru, dan group kelas berjaya disimpan.', false);
+  setBirthdayConfigCheckResult('Konfigurasi Telegram, Fonnte, kumpulan guru, dan kumpulan kelas berjaya disimpan.', false);
     showToast('Konfigurasi notifikasi hari lahir berjaya disimpan.', 'success');
     try { await loadConfig(); } catch (err) {}
   } catch (e) {
@@ -996,23 +996,23 @@ async function testBirthdayFonnteTarget(targetType) {
   var label = '';
   if (targetType === 'guru') {
     originalTarget = String(getGroupGuruFonnteId() || '').trim();
-    label = 'Group Guru';
+    label = 'Kumpulan Guru';
   } else {
     originalTarget = String(getGroupKelas(targetType) || '').trim();
     label = targetType;
   }
   
-  var target = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Test Group
+  var target = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Kumpulan Ujian
   try {
-    var mesej = '🧪 Semakan konfigurasi Fonnte SmartSchoolHub\nSaluran Asal: ' + label + (originalTarget ? ' (' + originalTarget + ')' : ' (Tiada ID)') + '\nLencongan Ujian: Test Group\nStatus: Berjaya dihubungi.';
+    var mesej = '🧪 Semakan konfigurasi Fonnte SmartSchoolHub\nSaluran Asal: ' + label + (originalTarget ? ' (' + originalTarget + ')' : ' (Tiada ID)') + '\nLencongan Ujian: Kumpulan Ujian\nStatus: Berjaya dihubungi.';
     await callFonnte(target, mesej);
-    logNotif('Test Fonnte Hari Lahir', label + ' (Test Group)', mesej, 'Berjaya');
-    setBirthdayConfigCheckResult('Fonnte berjaya dihantar ke Test Group untuk ' + label + '.', false);
-    showToast('Fonnte berjaya diuji (Test Group): ' + label, 'success');
+    logNotif('Test Fonnte Hari Lahir', label + ' (Kumpulan Ujian)', mesej, 'Berjaya');
+    setBirthdayConfigCheckResult('Fonnte berjaya dihantar ke Kumpulan Ujian untuk ' + label + '.', false);
+    showToast('Fonnte berjaya diuji (Kumpulan Ujian): ' + label, 'success');
   } catch (e) {
-    logNotif('Test Fonnte Hari Lahir', label + ' (Test Group)', String(e.message || e), 'Gagal');
-    setBirthdayConfigCheckResult('Fonnte gagal untuk ' + label + ' (Test Group): ' + e.message, true);
-    showToast('Fonnte gagal untuk ' + label + ' (Test Group).', 'error');
+    logNotif('Test Fonnte Hari Lahir', label + ' (Kumpulan Ujian)', String(e.message || e), 'Gagal');
+    setBirthdayConfigCheckResult('Fonnte gagal untuk ' + label + ' (Kumpulan Ujian): ' + e.message, true);
+    showToast('Fonnte gagal untuk ' + label + ' (Kumpulan Ujian).', 'error');
   }
 }
 
@@ -1022,26 +1022,26 @@ async function testAllBirthdayFonnteGroups() {
   var failed = 0;
   var skipped = 0;
   var notes = [];
-  var testGroup = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Test Group
+  var testGroup = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Kumpulan Ujian
   for (var i = 0; i < targets.length; i++) {
     var target = targets[i];
-    var label = target === 'guru' ? 'Group Guru' : target;
+    var label = target === 'guru' ? 'Kumpulan Guru' : target;
     var originalId = target === 'guru' ? getGroupGuruFonnteId() : getGroupKelas(target);
     
     try {
-      var mesej = '🧪 Semakan Fonnte SmartSchoolHub\nSaluran Asal: ' + label + (originalId ? ' (' + originalId + ')' : ' (Tiada ID)') + '\nLencongan Ujian: Test Group\nStatus: Berjaya dihubungi.';
+      var mesej = '🧪 Semakan Fonnte SmartSchoolHub\nSaluran Asal: ' + label + (originalId ? ' (' + originalId + ')' : ' (Tiada ID)') + '\nLencongan Ujian: Kumpulan Ujian\nStatus: Berjaya dihubungi.';
       await callFonnte(testGroup, mesej);
-      logNotif('Test Semua Group Hari Lahir', label + ' (Test Group)', 'Semakan berjaya', 'Berjaya');
+      logNotif('Test Semua Group Hari Lahir', label + ' (Kumpulan Ujian)', 'Semakan berjaya', 'Berjaya');
       passed++;
       notes.push(label + ': berjaya');
     } catch (e) {
-      logNotif('Test Semua Group Hari Lahir', label + ' (Test Group)', String(e.message || e), 'Gagal');
+      logNotif('Test Semua Group Hari Lahir', label + ' (Kumpulan Ujian)', String(e.message || e), 'Gagal');
       failed++;
       notes.push(label + ': gagal - ' + e.message);
     }
     await sleep(350);
   }
-  setBirthdayConfigCheckResult('Semakan semua group ke Test Group selesai. Berjaya: ' + passed + ', Gagal: ' + failed + '. ' + notes.join(' | '), failed > 0);
+  setBirthdayConfigCheckResult('Semakan semua group ke Kumpulan Ujian selesai. Berjaya: ' + passed + ', Gagal: ' + failed + '. ' + notes.join(' | '), failed > 0);
   showToast('Semakan semua group selesai. Berjaya: ' + passed + ', Gagal: ' + failed + '.', failed > 0 ? 'error' : 'success');
 }
 
@@ -1621,9 +1621,9 @@ function updateAttendanceNotificationStatusUI() {
   setText('attendanceMuridNotifStatus', muridEnabled ? 'Aktif' : 'Dinonaktifkan');
   setText('attendanceMuridNotifMeta', muridEnabled ? 'Makluman murid tidak hadir disasarkan sekitar ' + muridTime + '.' : 'Notifikasi murid tidak akan dihantar secara automatik.');
   setText('attendanceGuruChannelStatus', telegramReady || fonnteReady ? 'Sedia' : 'Belum lengkap');
-  setText('attendanceGuruChannelMeta', 'Telegram: ' + (telegramReady ? 'Aktif' : 'Belum lengkap') + ' | Fonnte: ' + (fonnteReady ? 'Aktif' : 'Belum lengkap') + ' | Group guru: ' + (guruGroupReady ? 'Ada' : 'Tiada'));
-  setText('attendanceMuridChannelStatus', classGroupCount + '/' + SENARAI_KELAS_MURID.length + ' group kelas');
-  setText('attendanceMuridChannelMeta', 'Wali: ' + (shouldNotifyMuridGuardian() ? 'Ya' : 'Tidak') + ' | Group kelas: ' + (shouldNotifyMuridClassGroup() ? 'Ya' : 'Tidak') + ' | Telegram: ' + (shouldNotifyMuridTelegram() ? 'Ya' : 'Tidak'));
+  setText('attendanceGuruChannelMeta', 'Telegram: ' + (telegramReady ? 'Aktif' : 'Belum lengkap') + ' | Fonnte: ' + (fonnteReady ? 'Aktif' : 'Belum lengkap') + ' | Kumpulan guru: ' + (guruGroupReady ? 'Ada' : 'Tiada'));
+  setText('attendanceMuridChannelStatus', classGroupCount + '/' + SENARAI_KELAS_MURID.length + ' kumpulan kelas');
+  setText('attendanceMuridChannelMeta', 'Wali: ' + (shouldNotifyMuridGuardian() ? 'Ya' : 'Tidak') + ' | Kumpulan kelas: ' + (shouldNotifyMuridClassGroup() ? 'Ya' : 'Tidak') + ' | Telegram: ' + (shouldNotifyMuridTelegram() ? 'Ya' : 'Tidak'));
 }
 
 function renderDashGuruTable(rows, isninStr, jumaatStr) {
@@ -2126,6 +2126,14 @@ function formatLoginDebugMessage(err) {
 }
 
 async function verifyStoredGoogleSession(user) {
+  if (!user) {
+    localStorage.removeItem('ssh_user');
+    APP.user = null;
+    showLoginPage();
+    return;
+  }
+  APP.user = user;
+  enterApp(APP.user);
   try {
     const verifiedUser = await verifyGoogleSessionWithBackend(user);
     APP.user = verifiedUser;
@@ -2135,7 +2143,8 @@ async function verifyStoredGoogleSession(user) {
     localStorage.removeItem('ssh_user');
     APP.user = null;
     showLoginPage();
-    showToast('Sesi Google tamat atau tidak dibenarkan. Sila log masuk semula.', 'info');
+    renderPersistentLoginError(e);
+    showToast('Sesi Google tamat atau tidak dapat disahkan. Sila log masuk semula.', 'info');
   }
 }
 
@@ -4114,10 +4123,16 @@ function renderLaporanKelasRows(kelasArr) {
 }
 
 async function loadLegacyLaporanKelasData() {
-  const bulan = document.getElementById('laporanBulan').value;
-  const kelas = document.getElementById('laporanKelas').value;
+  const bulanEl = document.getElementById('laporanBulan');
+  const kelasEl = document.getElementById('laporanKelas');
   const tbody = document.getElementById('laporanBody');
   const stats = document.getElementById('laporanStats');
+  if (!bulanEl || !kelasEl || !tbody) {
+    showToast('Paparan laporan kelas lama tidak lagi digunakan. Gunakan modul Laporan Guru Bertugas Mingguan.', 'info');
+    return;
+  }
+  const bulan = bulanEl.value;
+  const kelas = kelasEl.value;
   if (!bulan) { showToast('Sila pilih bulan.', 'error'); return; }
   resetLaporanStats(stats);
   tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Memuat data...</td></tr>';
@@ -5107,7 +5122,7 @@ function cetakLaporanGuruBertugasMingguan() {
         <div class="sign-line"><strong>________________</strong><br><span>Guru Besar</span></div>
       </div>
     </div>
-    <div class="print-footer">Laporan ini dijana melalui Smart School Hub dan sedia untuk cetakan rasmi.</div>
+    <div class="print-footer">Laporan ini dijana melalui SmartSchoolHub dan sedia untuk cetakan rasmi.</div>
   </div>
   <script>
     (function(){
@@ -5255,6 +5270,7 @@ async function hantarTelegramTidakHadirMuridManual() {
     resultBox.textContent = 'Ralat: ' + e.message;
     showToast(e.message, 'error');
   }
+  resultBox.textContent = normalizeNotifResultText(resultBox.textContent);
 }
 
 async function hantarTelegramGuruTidakHadirManual() {
@@ -5293,9 +5309,20 @@ async function hantarTelegramGuruTidakHadirManual() {
     resultBox.textContent = 'Ralat: ' + e.message;
     showToast(e.message, 'error');
   }
+  resultBox.textContent = normalizeNotifResultText(resultBox.textContent);
 }
 
 function notifTidakHadirBatch() { showModule('notifikasi'); switchNotifTab('hantar'); showToast('Tetapkan tarikh dan kelas, kemudian klik Hantar.', 'info'); }
+
+function normalizeNotifResultText(text) {
+  return String(text || '')
+    .replaceAll('âš ', '[!]')
+    .replaceAll('âœ…', '[OK]')
+    .replaceAll('âŒ', '[X]')
+    .replaceAll('â†’', '->')
+    .replaceAll('â€”', '-')
+    .replaceAll('â”€â”€â”€â”€â”€', '-----');
+}
 
 async function hantarNotifTersuai() {
   const target = document.getElementById('notifTarget').value.trim();
@@ -5310,6 +5337,7 @@ async function hantarNotifTersuai() {
       document.getElementById('notifResult').textContent = '✅ Mesej berjaya dihantar ke ' + target;
     } else { document.getElementById('notifResult').textContent = '❌ Gagal: ' + JSON.stringify(resp); showToast('Gagal menghantar mesej.', 'error'); }
   } catch(e) { document.getElementById('notifResult').textContent = 'Ralat: ' + e.message; showToast(e.message, 'error'); }
+  document.getElementById('notifResult').textContent = normalizeNotifResultText(document.getElementById('notifResult').textContent);
 }
 
 function switchNotifTab(tab) {
@@ -5476,7 +5504,7 @@ function importHLCSV() {
       });
     }
     const resultEl = document.getElementById('hlImportResult');
-    if (resultEl) resultEl.textContent = '✅ ' + added + ' rekod diimport. ' + skipped + ' dilangkau.';
+    if (resultEl) resultEl.textContent = '[OK] ' + added + ' rekod diimport. ' + skipped + ' dilangkau.';
     showToast(added + ' rekod berjaya diimport!', 'success');
     loadHariLahir();
   };
@@ -5498,7 +5526,7 @@ function openModalHariLahir() {
   const peranan = prompt('Peranan (Guru/Murid):') || 'Guru';
   const kelas = prompt('Kelas (kosong jika guru):') || '';
   const tarikh = prompt('Tarikh Lahir (DD/MM/YYYY):'); if (!tarikh) return;
-  const telefon = prompt('No. Telefon (opsional):') || '';
+  const telefon = prompt('No. Telefon (pilihan):') || '';
   const parts = parseBirthdayParts(tarikh);
   if (!parts) { showToast('Format tarikh tidak sah. Gunakan DD/MM/YYYY.', 'error'); return; }
   upsertHLRecord({
@@ -5777,7 +5805,7 @@ async function sendFonnteMediaOnly(target, blob, filename) {
 async function sendFonnteLetterLink(target, caption, blob, filename) {
   var fileUrl = await uploadLetterToWorker(blob, filename);
   var message = String(caption || '').trim();
-  message += '\n\n📎 Pautan surat rasmi:\n' + fileUrl;
+  message += '\n\n[Fail Surat Rasmi]\n' + fileUrl;
   message += '\n\nSila buka pautan di atas untuk melihat atau memuat turun surat rasmi. Hubungi pihak sekolah sekiranya pautan tidak dapat dibuka.';
   var response = await callFonnte(target, message);
   return { status: true, method: 'Text Link', url: fileUrl, response: response };
@@ -5800,7 +5828,7 @@ async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariK
   const cfg = await getAmaranSekolahConfigAsync();
   const fullHtml = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true, config: cfg }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah, cop: _amaranCopSekolah });
 
-  // Extract CSS and body — inject directly into main document to avoid iframe cross-origin issues
+  // Extract CSS and body directly into the main document to avoid iframe issues
   const cssMatch = fullHtml.match(/<style>([\s\S]*?)<\/style>/i);
   const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/i);
   const cssContent = cssMatch ? cssMatch[1] : '';
@@ -5920,7 +5948,7 @@ async function hantarPDFDariModal() {
 
 async function testTelegram() {
   try {
-    const mesej = '🧪 *Test dari Smart School Hub v2.0*\n\nSambungan Telegram berjaya! ✅';
+    const mesej = '[Ujian] *Test dari SmartSchoolHub v2.0*\n\nSambungan Telegram berjaya!';
     await sendTelegramLogged('Test Telegram', 'Telegram Admin', mesej);
     showToast('Test Telegram berjaya!', 'success');
   }
@@ -5928,11 +5956,11 @@ async function testTelegram() {
 }
 
 async function testFonnte() {
-  var target = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Test Group
+  var target = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Kumpulan Ujian
   try {
-    const mesej = '🧪 *Test dari Smart School Hub v2.0*\n\nSambungan Fonnte berjaya dihantar ke Test Group! ✅';
+    const mesej = '[Ujian] *Test dari SmartSchoolHub v2.0*\n\nSambungan Fonnte berjaya dihantar ke Kumpulan Ujian!';
     await callFonnte(target, mesej);
-    showToast('Test Fonnte berjaya dihantar ke Test Group!', 'success');
+    showToast('Test Fonnte berjaya dihantar ke Kumpulan Ujian!', 'success');
   } catch(e) {
     showToast('Fonnte gagal: ' + e.message, 'error');
   }
@@ -6464,7 +6492,7 @@ cetakOPR = function() {
             <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
           </div>
         </div>
-        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+        <div class="opr-footer-note">Laporan ini dijana melalui SmartSchoolHub dalam format satu muka surat.</div>
       </div>
     </div>
     <script>window.onload=function(){window.print();};<\/script>
@@ -6794,7 +6822,7 @@ cetakOPR = function() {
             <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
           </div>
         </div>
-        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+        <div class="opr-footer-note">Laporan ini dijana melalui SmartSchoolHub dalam format satu muka surat.</div>
       </div>
     </div>
     <script>window.onload=function(){window.print();};<\/script>
@@ -7187,7 +7215,7 @@ cetakOPR = function() {
         </div>
       </div>
       <div class="opr-footer">
-        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+        <div class="opr-footer-note">Laporan ini dijana melalui SmartSchoolHub dalam format satu muka surat.</div>
       </div>
     </div>
     <script>
@@ -8476,7 +8504,7 @@ async function cetakPelaporanKokumAsync() {
         <div class="hero-top">
           <img class="logo" src="${escapeHtml(logoUrl)}" alt="Logo SK Kiandongo">
           <div class="identity">
-            <div class="eyebrow">Smart School Hub</div>
+            <div class="eyebrow">SmartSchoolHub</div>
             <h1 class="school">SK Kiandongo</h1>
             <p class="subtitle">Pelaporan Aktiviti Kokurikulum SK Kiandongo.</p>
           </div>
@@ -8553,7 +8581,7 @@ async function cetakPelaporanKokumAsync() {
         </div>
 
         <div class="footer">
-          <div class="note">Dokumen ini dijana melalui Smart School Hub untuk tujuan rekod sekolah, semakan pentadbir, dan arkib pelaksanaan aktiviti kokurikulum.</div>
+          <div class="note">Dokumen ini dijana melalui SmartSchoolHub untuk tujuan rekod sekolah, semakan pentadbir, dan arkib pelaksanaan aktiviti kokurikulum.</div>
         </div>
       </div>
       <div class="mark">SK Kiandongo</div>
@@ -10717,7 +10745,7 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
        pRow(4,'Kerjasama tuan/puan untuk memaklumkan sebab ketidakhadiran serta mengambil tindakan segera amat dihargai.'),
     2: pRow(1,'Dengan segala hormatnya perkara di atas dirujuk.') +
        pRow(2,'Dimaklumkan bahawa anak tuan/puan, <strong>' + escapeHtml(nama) + '</strong> masih gagal hadir ke sekolah walaupun Surat Amaran Pertama telah dikeluarkan.') +
-       pRow(3,'Ketidakhadiran ini telah mencapai <strong>' + jumlahHari + ' hari</strong> terkumpul / tambahan sebepas Amaran 1 dan amat membimbangkan.') +
+       pRow(3,'Ketidakhadiran ini telah mencapai <strong>' + jumlahHari + ' hari</strong> terkumpul / tambahan selepas Amaran 1 dan amat membimbangkan.') +
        pRow(4,'Sehubungan itu, tuan/puan dikehendaki hadir ke sekolah untuk sesi perbincangan bagi tindakan lanjut seperti butiran berikut:') +
        '<div class="indent"><span class="ind-lbl">Tarikh</span><span class="ind-col">:</span><span class="ind-val">' + tarikhPerbincanganStr + '</span></div>' +
        '<div class="indent"><span class="ind-lbl">Masa</span><span class="ind-col">:</span><span class="ind-val">9.00 pagi</span></div>' +
@@ -10936,7 +10964,7 @@ async function hantarAmaranKeGroupUjian() {
         showToast('Hantar pautan surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
         var linkResult = await sendFonnteLetterLink(testGroup, caption, blob, filename);
         sent++;
-        logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, caption + '\n\nPautan: ' + linkResult.url, 'Berjaya');
+        logNotif(m.tahapInfo.label + ' Kumpulan Ujian', testGroup, caption + '\n\nPautan: ' + linkResult.url, 'Berjaya');
         await sleep(1500);
       } catch(err) { failed++; console.error('Gagal hantar untuk ' + m.nama + ':', err); showToast('Gagal ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
     }
@@ -11230,9 +11258,9 @@ function lkOnJenisChange() {
     } else if (tahap === 1) {
       note.textContent = 'PBD Tahap 1 (Tahun 1–3): BM, BI, Matematik, Sains, BKD, Moral, PI, PJ.';
     } else if (jenis === 'pbd-pt') {
-      note.textContent = 'PBD Pertengahan Tahun Tahap 2: semua mata pelajaran termasuk RBT, BKD dan Sejarah.';
+      note.textContent = 'Lembaran Kerja PDPC Tahap 2: Latihan pengukuhan harian mengikut topik DSKP.';
     } else {
-      note.textContent = 'PBD Akhir Tahun Tahap 2: semua mata pelajaran termasuk RBT, BKD dan Sejarah.';
+      note.textContent = 'PBD Berterusan Tahap 2: Penilaian sumatif berterusan mengikut aras Taksonomi Bloom.';
     }
   }
   lkOnSubjekChange();
@@ -11507,7 +11535,7 @@ function lkSetStatus(type, msg) {
 
 function lkBinaSumber() {
   var jenis = lkGetJenis();
-  var jenisLabel = { 'pbd-pt': 'PBD Pertengahan Tahun', 'pbd-at': 'PBD Akhir Tahun', 'uasa': 'UASA (Ujian Akhir Sesi Akademik)' };
+  var jenisLabel = { 'pbd-pt': 'Lembaran Kerja PDPC', 'pbd-at': 'PBD Berterusan', 'uasa': 'UASA (Ujian Akhir Sesi Akademik)' };
   var tahun = document.getElementById('lkTahun').value;
   var sel = document.getElementById('lkSubjek');
   var subjekLabel = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : sel.value) : '';
@@ -11578,22 +11606,22 @@ async function callWorkerAIGemini(prompt, withImage) {
       if (e.target.value === 'gemini') {
         note.innerHTML = '✅ <strong>Gemini 3.1 Flash:</strong> AI menjana teks dan imej secara terus (Nano Banana 2). Paling canggih untuk janaan lembaran kerja.';
       } else {
-        note.innerHTML = '⚠️ <strong>DeepSeek:</strong> AI hanya menjana teks. Placeholder <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
+        note.innerHTML = '[Info] <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }
     }
   });
 })();
 
 async function janaLembaranKerja() {
-  if (_lkGenerating) { showToast('Sila tunggu — AI sedang memproses...', 'info'); return; }
+  if (_lkGenerating) { showToast('Sila tunggu - AI sedang memproses...', 'info'); return; }
   if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
   if (!APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
 
   var engine = lkGetEngine();
   _lkGenerating = true;
   var engineLabel = engine === 'gemini' ? 'Gemini 3.1 Flash' : 'DeepSeek';
-  lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30–90 saat).');
-  document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">⏳ Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>';
+  lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
+  document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>'; 
 
   // Reset image section
   var imejBtn = document.getElementById('lkJanaImejBtn');
@@ -11639,7 +11667,7 @@ async function janaLembaranKerja() {
     var selOut = document.getElementById('lkSubjek');
     var subjekLabelOut = selOut ? (selOut.options[selOut.selectedIndex] ? selOut.options[selOut.selectedIndex].text : '') : '';
     var tahunOut = document.getElementById('lkTahun').value;
-    var jenisLabelMap = { 'pbd-pt': 'PBD PERTENGAHAN TAHUN', 'pbd-at': 'PBD AKHIR TAHUN', 'uasa': 'UASA' };
+    var jenisLabelMap = { 'pbd-pt': 'LEMBARAN KERJA PDPC', 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
     var jenisTxt = jenisLabelMap[lkGetJenis()] || '';
     var line = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
     var header = '<div style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
@@ -11697,7 +11725,7 @@ async function janaLembaranKerja() {
         var placeholders = lkExtractImejPlaceholders(fullText);
         if (placeholders.length) {
           if (imejBtn) imejBtn.style.display = 'inline-block';
-          statusMsg += ' ' + placeholders.length + ' placeholder imej — klik 🖼️ Jana Imej jika perlu (DALL-E).';
+      statusMsg += ' ' + placeholders.length + ' penanda imej - klik 🖼️ Jana Imej jika perlu.';
         } else {
           statusMsg += ' Tiada imej dalam output ini.';
         }
@@ -11707,7 +11735,7 @@ async function janaLembaranKerja() {
       var placeholders = lkExtractImejPlaceholders(fullText);
       if (imejBtn) imejBtn.style.display = placeholders.length ? 'inline-block' : 'none';
       if (placeholders.length) {
-        statusMsg += ' Terdapat ' + placeholders.length + ' placeholder imej — klik 🖼️ Jana Imej untuk jana menggunakan Gemini.';
+        statusMsg += ' Terdapat ' + placeholders.length + ' penanda imej - klik 🖼️ Jana Imej untuk jana menggunakan Gemini.';
       } else {
         statusMsg += ' Semak dan cetak jika perlu.';
       }
@@ -11814,7 +11842,7 @@ async function lkJanaImej() {
   if (!box || !box.textContent) { showToast('Jana lembaran kerja dahulu.', 'error'); return; }
 
   var placeholders = lkExtractImejPlaceholders(box.textContent);
-  if (!placeholders.length) { showToast('Tiada placeholder [GAMBAR:] ditemui.', 'info'); return; }
+  if (!placeholders.length) { showToast('Tiada penanda [GAMBAR:] ditemui.', 'info'); return; }
 
   if (!confirm('Jana ' + placeholders.length + ' imej menggunakan Gemini 3.1 Flash?\n\nTeruskan?')) return;
 

@@ -1320,6 +1320,8 @@ async function handleAI(request, env, corsHeaders) {
     laporan_bertugas: `Anda ialah pembantu penulisan laporan guru bertugas mingguan sekolah dalam Bahasa Malaysia formal. Tugas utama anda ialah menghasilkan rumusan mingguan yang padat, profesional, tepat berdasarkan butiran yang diberi, tanpa mereka fakta baharu.`,
     lembaran_kerja: `Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.
 
+WAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).
+
 PERATURAN FORMAT (WAJIB IKUT):
 - Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)
 - Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D
@@ -1339,8 +1341,10 @@ PERATURAN SOALAN BERGAMBAR:
 - Contoh: [GAMBAR: Rajah pokok dengan 5 dahan dan 3 buah pada setiap dahan]
 - Guru akan menyediakan/melukis gambar berdasarkan deskripsi tersebut
 
-PERATURAN ARAS:
-- Aras soalan ikut Taksonomi Bloom
+PERATURAN ARAS & KPM:
+- PBD: Fokus pada penguasaan Standard Kandungan dan Standard Pembelajaran. Soalan mestilah pelbagai aras bagi membolehkan guru menilai Tahap Penguasaan (TP).
+- UASA: Ikuti format instrumen pentaksiran KPM yang merangkumi soalan Objektif (Bahagian A) dan Subjektif/Struktur (Bahagian B/C).
+- Aras soalan ikut Taksonomi Bloom (LOTS & HOTS).
 - Kandungan WAJIB selari dengan DSKP standard kandungan yang dinyatakan
 - Bahasa soalan mestilah sesuai dengan tahap murid`,
     default: `Anda adalah pembantu sekolah SK Kiandongo yang menulis dalam Bahasa Malaysia formal.`,
@@ -1451,6 +1455,8 @@ async function handleAIGemini(request, env, corsHeaders) {
 
   const systemPromptLK = `Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.
 
+WAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).
+
 PERATURAN FORMAT (WAJIB IKUT):
 - Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)
 - Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D
@@ -1470,8 +1476,10 @@ PERATURAN TOPIK:
 - Jika dinyatakan lebih daripada satu topik, agihkan soalan secara seimbang
 - Kandungan WAJIB selari dengan DSKP standard kandungan yang dinyatakan
 
-PERATURAN ARAS:
-- Aras soalan ikut Taksonomi Bloom
+PERATURAN ARAS & KPM:
+- PBD: Fokus pada penguasaan Standard Kandungan dan Standard Pembelajaran. Soalan mestilah pelbagai aras bagi membolehkan guru menilai Tahap Penguasaan (TP).
+- UASA: Ikuti format instrumen pentaksiran KPM yang merangkumi soalan Objektif (Bahagian A) dan Subjektif/Struktur (Bahagian B/C).
+- Aras soalan ikut Taksonomi Bloom (LOTS & HOTS).
 - Bahasa soalan mestilah sesuai dengan tahap murid`;
 
   const useImage = withImage === true;
