@@ -12,7 +12,7 @@ html_handling = "auto-trailing-slash"
 not_found_handling = "404-page"
 
 [vars]
-APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxr6v_2qQavAuNqpVMpStgZbmK1HQeqgfsTtQZkZxkloGwQnmbeHpw7GFPJtLfFJLlf/exec"
+APPS_SCRIPT_URL = "https://script.google.com/macros/library/d/1oNeQzQzWmzI-hRY5YXhZGBy5l8h400nU7cOJsiplMXHlz2W0xi1dFv5y/3"
 GOOGLE_API_CLIENT_ID = "553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com"
 GOOGLE_SHEETS_SPREADSHEET_ID = "1NizJvSD9tL9XjX1PnqtFlVUUVKnGpnLGQjraGKos6Vk"
 GOOGLE_SHEETS_BACKEND = "0"

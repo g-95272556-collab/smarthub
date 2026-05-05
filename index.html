@@ -1413,6 +1413,10 @@
         <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-award"></use></svg></span>
         <span>Pelaporan Kokum</span>
       </button>
+      <button class="nav-item c-indigo" onclick="showModule('lembaran-kerja')">
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-brain"></use></svg></span>
+        <span>Jana Lembaran Kerja AI</span>
+      </button>
 
       <div class="nav-section-label" data-admin-label="true">Pengurusan Data</div>
       <button class="nav-item c-teal" data-admin-nav="true" onclick="showModule('data-guru')">
@@ -3614,6 +3618,203 @@ _{SEKOLAH}_</textarea>
       </div>
 
 
+      <!-- ══ JANA LEMBARAN KERJA AI ══ -->
+      <div id="mod-lembaran-kerja" class="module" style="display:none">
+        <div class="page-header">
+          <div>
+            <h1>🧠 Jana Lembaran Kerja AI</h1>
+            <p>Jana lembaran kerja PBD &amp; UASA Tahap 2 menggunakan AI DeepSeek</p>
+          </div>
+        </div>
+
+        <style>
+          .lk-split { display:grid; grid-template-columns:380px 1fr; gap:16px; align-items:start; }
+          @media(max-width:900px){ .lk-split { grid-template-columns:1fr; } }
+          .lk-form-group { margin-bottom:14px; }
+          .lk-form-group label { display:block; font-size:0.82rem; font-weight:600; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em; }
+          .lk-form-group select, .lk-form-group input[type=text], .lk-form-group input[type=number], .lk-form-group textarea { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:var(--bg); color:var(--text); font-size:0.93rem; box-sizing:border-box; }
+          .lk-form-group textarea { resize:vertical; min-height:72px; }
+          .lk-radio-group { display:flex; gap:8px; flex-wrap:wrap; }
+          .lk-radio-group label { display:flex; align-items:center; gap:5px; font-size:0.9rem; font-weight:500; cursor:pointer; color:var(--text); text-transform:none; letter-spacing:0; }
+          .lk-radio-group input[type=radio] { accent-color:var(--primary); }
+          .lk-tag { display:inline-block; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:20px; margin-left:6px; vertical-align:middle; }
+          .lk-tag-uasa { background:#fee2e2; color:#b91c1c; }
+          .lk-tag-pbd { background:#d1fae5; color:#065f46; }
+          .lk-output-box { min-height:420px; background:var(--bg-alt,#f8fafc); border:1px solid var(--border); border-radius:8px; padding:16px; font-family:'Courier New',monospace; font-size:0.84rem; line-height:1.7; white-space:pre-wrap; color:var(--text); overflow:auto; max-height:70vh; }
+          .lk-status-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.88rem; font-weight:500; }
+          .lk-status-idle { background:#f1f5f9; color:#64748b; }
+          .lk-status-loading { background:#eff6ff; color:#1d4ed8; }
+          .lk-status-done { background:#f0fdf4; color:#15803d; }
+          .lk-status-error { background:#fef2f2; color:#b91c1c; }
+          .lk-spin { display:inline-block; animation:lk-spin 1s linear infinite; }
+          @keyframes lk-spin { to { transform:rotate(360deg); } }
+          .lk-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+          .lk-constraint-note { font-size:0.79rem; color:var(--muted); margin-top:4px; }
+          .lk-divider { border:none; border-top:1px solid var(--border); margin:14px 0; }
+          .lk-tema-group { margin-bottom:8px; }
+          .lk-tema-label { font-size:0.75rem; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; padding-bottom:2px; border-bottom:1px solid #e0e7ff; }
+          .lk-check-label { display:flex; align-items:flex-start; gap:6px; padding:3px 0; cursor:pointer; color:var(--text); font-weight:400; text-transform:none; letter-spacing:0; line-height:1.4; }
+          .lk-check-label:hover { color:#6366f1; }
+          .lk-check-label input[type=checkbox] { margin-top:2px; accent-color:#6366f1; flex-shrink:0; }
+          .lk-img-note { display:flex; align-items:flex-start; gap:6px; background:#fefce8; border:1px solid #fde047; border-radius:7px; padding:8px 10px; font-size:0.8rem; color:#854d0e; margin-bottom:10px; }
+          .lk-no-data { color:var(--muted); font-size:0.85rem; padding:4px 0; }
+          .lk-imej-card { border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--bg); }
+          .lk-imej-card img { width:100%; display:block; }
+          .lk-imej-caption { font-size:0.75rem; color:var(--muted); padding:6px 8px; line-height:1.4; }
+          .lk-imej-loading { padding:40px 10px; text-align:center; color:#6366f1; font-size:0.85rem; border:1px dashed #c7d2fe; border-radius:8px; }
+          .btn-indigo { background:#6366f1; color:#fff; border:none; }
+          .btn-indigo:hover { background:#4f46e5; }
+        </style>
+
+        <div class="lk-split">
+          <!-- PANEL KIRI: FORM INPUT -->
+          <div class="card" style="padding:20px">
+            <h3 style="margin:0 0 16px;font-size:1rem;color:var(--text)">⚙️ Tetapan Lembaran Kerja</h3>
+
+            <div class="lk-form-group">
+              <label>Jenis Penilaian</label>
+              <div class="lk-radio-group">
+                <label><input type="radio" name="lkJenis" value="pbd-pt" onchange="lkOnJenisChange()"> PBD Pertengahan Tahun<span class="lk-tag lk-tag-pbd">PBD</span></label>
+                <label><input type="radio" name="lkJenis" value="pbd-at" onchange="lkOnJenisChange()"> PBD Akhir Tahun<span class="lk-tag lk-tag-pbd">PBD</span></label>
+                <label id="lkLabelUasa"><input type="radio" name="lkJenis" value="uasa" onchange="lkOnJenisChange()"> UASA<span class="lk-tag lk-tag-uasa">Tahap 2</span></label>
+              </div>
+              <div class="lk-constraint-note" id="lkJenisNote" style="margin-top:4px"></div>
+            </div>
+
+            <div class="lk-form-group">
+              <label>Tahun</label>
+              <select id="lkTahun" onchange="lkOnTahunChange()">
+                <optgroup label="Tahap 1">
+                  <option value="1">Tahun 1</option>
+                  <option value="2">Tahun 2</option>
+                  <option value="3">Tahun 3</option>
+                </optgroup>
+                <optgroup label="Tahap 2">
+                  <option value="4">Tahun 4</option>
+                  <option value="5">Tahun 5</option>
+                  <option value="6">Tahun 6</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div class="lk-form-group">
+              <label>Mata Pelajaran</label>
+              <select id="lkSubjek" onchange="lkOnSubjekChange()"></select>
+              <div class="lk-constraint-note" id="lkSubjekNote"></div>
+            </div>
+
+            <div class="lk-form-group">
+              <label>
+                Topik Yang Diajar
+                <span id="lkTopikLoadingBadge" style="display:none;font-size:0.75rem;font-weight:400;color:#6366f1;text-transform:none;margin-left:6px">⏳ memuat DSKP...</span>
+                <span id="lkTopikCount" style="font-size:0.75rem;font-weight:600;color:#6366f1;text-transform:none;margin-left:6px"></span>
+              </label>
+              <div id="lkTopikCheckboxes" style="max-height:210px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;padding:8px 10px;background:var(--bg);font-size:0.88rem">
+                <span style="color:var(--muted)">Pilih mata pelajaran dan tahun dahulu...</span>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:6px;align-items:center">
+                <button class="btn btn-sm" onclick="lkPilihSemuaTopik()" style="font-size:0.78rem;padding:3px 10px">✓ Semua</button>
+                <button class="btn btn-sm btn-gray" onclick="lkBersihTopik()" style="font-size:0.78rem;padding:3px 10px">✗ Bersih</button>
+              </div>
+              <div style="margin-top:8px">
+                <input type="text" id="lkTopikManual" placeholder="+ Tambah topik lain (manual, pilihan)..." style="font-size:0.84rem">
+              </div>
+              <div class="lk-constraint-note" id="lkTopikNote" style="margin-top:4px"></div>
+            </div>
+
+            <div class="lk-form-group">
+              <label>Standard Kandungan <span style="font-weight:400;text-transform:none">(auto-isi dari DSKP / boleh edit)</span></label>
+              <textarea id="lkSK" placeholder="Tandakan topik dahulu — Standard Kandungan akan diisi secara automatik..." style="min-height:90px"></textarea>
+            </div>
+
+            <hr class="lk-divider">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="lk-form-group">
+                <label>Bil. Soalan</label>
+                <input type="number" id="lkBilSoalan" value="10" min="5" max="40">
+              </div>
+              <div class="lk-form-group">
+                <label>Aras Kesukaran</label>
+                <select id="lkAras">
+                  <option value="campuran">Campuran (LOTS+HOTS)</option>
+                  <option value="mudah">Mudah (LOTS)</option>
+                  <option value="sederhana">Sederhana</option>
+                  <option value="susah">Susah (HOTS)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="lk-form-group">
+              <label>Bahasa Arahan</label>
+              <div class="lk-radio-group">
+                <label><input type="radio" name="lkBahasa" value="Bahasa Malaysia" checked> Bahasa Malaysia</label>
+                <label><input type="radio" name="lkBahasa" value="English"> English</label>
+              </div>
+            </div>
+
+            <div class="lk-form-group">
+              <label>Nota Tambahan <span style="font-weight:400;text-transform:none">(pilihan)</span></label>
+              <textarea id="lkNota" placeholder="cth: Fokus pada pengiraan, lebih soalan bercerita, dll..."></textarea>
+            </div>
+
+            <div class="lk-form-group" style="background:var(--surface-alt,#f8fafc);border:1.5px solid var(--border,#e2e8f0);border-radius:8px;padding:10px 14px">
+              <label style="margin-bottom:6px">🤖 Enjin AI</label>
+              <div class="lk-radio-group" style="gap:10px">
+                <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer">
+                  <input type="radio" name="lkEngine" value="deepseek" checked style="margin-top:3px">
+                  <span>
+                    <strong>DeepSeek</strong> — teks sahaja<br>
+                    <small style="color:var(--muted,#64748b)">Percuma · tiada imej · lebih cepat</small>
+                  </span>
+                </label>
+                <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer">
+                  <input type="radio" name="lkEngine" value="gemini" style="margin-top:3px">
+                  <span>
+                    <strong>Gemini 2.0 Flash</strong> — teks + 🖼️ gambar<br>
+                    <small style="color:var(--muted,#64748b)">Percuma · jana imej serentak dengan soalan</small>
+                  </span>
+                </label>
+              </div>
+              <div id="lkEngineNote" style="margin-top:8px;font-size:0.8rem;color:var(--muted,#64748b)">
+                ⚠️ DeepSeek: AI tidak jana imej. Guna <em>[GAMBAR: deskripsi]</em> sebagai placeholder — guru tampal gambar sendiri. Atau tukar ke Gemini untuk jana imej automatik.
+              </div>
+            </div>
+
+            <button class="btn btn-indigo" style="width:100%;padding:11px;font-size:0.95rem;font-weight:600;border-radius:8px;cursor:pointer" onclick="janaLembaranKerja()">
+              🤖 Jana Lembaran Kerja
+            </button>
+          </div>
+
+          <!-- PANEL KANAN: OUTPUT -->
+          <div class="card" style="padding:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <h3 style="margin:0;font-size:1rem;color:var(--text)">📄 Output Lembaran Kerja</h3>
+              <div class="lk-actions">
+                <button class="btn btn-sm" onclick="lkSalinOutput()" title="Salin teks">📋 Salin</button>
+                <button id="lkJanaImejBtn" class="btn btn-sm" style="display:none;background:#f59e0b;color:#fff;border:none" onclick="lkJanaImej()" title="Jana imej untuk placeholder bergambar">🖼️ Jana Imej</button>
+                <button class="btn btn-sm btn-success" onclick="lkCetakOutput()" title="Cetak">🖨️ Cetak</button>
+                <button class="btn btn-sm btn-gray" onclick="lkBersihOutput()" title="Bersih">🗑️ Bersih</button>
+              </div>
+            </div>
+
+            <div class="lk-status-bar lk-status-idle" id="lkStatusBar">
+              <span>💡</span><span id="lkStatusText">Isi tetapan di sebelah kiri dan klik Jana Lembaran Kerja.</span>
+            </div>
+
+            <div class="lk-output-box" id="lkOutputBox">Hasil lembaran kerja akan dipaparkan di sini setelah dijana...</div>
+
+            <!-- Bahagian imej yang dijana -->
+            <div id="lkImejSection" style="display:none;margin-top:14px">
+              <div style="font-size:0.82rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🖼️ Imej Lembaran Kerja</div>
+              <div id="lkImejGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
+              <div class="lk-constraint-note" style="margin-top:8px" id="lkImejNote">Imej dijana oleh AI. Klik kanan → Simpan imej untuk simpan ke komputer.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
       <!-- ══ DATA GURU ══ -->
       <div id="mod-data-guru" class="module" style="display:none">
         <div class="page-header">
@@ -4129,6 +4330,7 @@ window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
   googleAuthUrl: 'https://smartschoolhub-google-oauth.g-95272556.workers.dev'
 }, window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {});
 </script>
+<script src="dskp_embedded.js"></script>
 <script src="app.js" defer></script>
 <script>
 if ('serviceWorker' in navigator) {

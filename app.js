@@ -1048,6 +1048,21 @@ async function testAllBirthdayFonnteGroups() {
 // ── Kawalan Akses ────────────────────────
 var DEFAULT_ADMIN_EMAILS = [];
 var MODUL_PENTADBIR = ['data-guru','data-murid','konfigurasi','notifikasi','hari-lahir'];
+// Cache email pentadbir dari Data Guru (auto-detect)
+var _guruAutoAdminEmails = []; // [{ email, nama, jawatan }]
+var _JAWATAN_PENTADBIR = ['guru besar','penolong kanan pentadbiran','penolong kanan hem','penolong kanan kokurikulum','penolong kanan kokum'];
+function isJawatanPentadbir(jawatan) {
+  var j = String(jawatan || '').toLowerCase().trim();
+  return _JAWATAN_PENTADBIR.some(function(p){ return j.includes(p); });
+}
+async function muatGuruAutoAdmin() {
+  try {
+    var gurus = await getGuruList();
+    _guruAutoAdminEmails = gurus
+      .filter(function(g){ return g.emel && isJawatanPentadbir(g.jawatan); })
+      .map(function(g){ return { email: String(g.emel).trim().toLowerCase(), nama: g.nama || '', jawatan: g.jawatan || '' }; });
+  } catch(e) { _guruAutoAdminEmails = []; }
+}
 function getAdminEmails() {
   var emails = _adminEmails.slice();
   try {
@@ -1070,7 +1085,10 @@ function isPentadbir() {
   if (!APP.user) return false;
   var roleText = String(APP.user.role || APP.user.jawatan || '').toLowerCase();
   if (roleText.includes('admin') || roleText.includes('pentadbir') || roleText.includes('guru besar') || roleText.includes('penolong kanan')) return true;
-  return getAdminEmails().some(function(e){ return e.toLowerCase() === (APP.user.email||'').toLowerCase(); });
+  var userEmail = String(APP.user.email || '').toLowerCase();
+  if (getAdminEmails().some(function(e){ return e.toLowerCase() === userEmail; })) return true;
+  // Semak juga dari auto-detect Data Guru
+  return _guruAutoAdminEmails.some(function(g){ return g.email === userEmail; });
 }
 function addAdminEmail() {
   var input = document.getElementById('configAdminEmail');
@@ -1079,6 +1097,7 @@ function addAdminEmail() {
   if (!email || email.indexOf('@') === -1) { showToast('Sila masukkan email pentadbiran yang sah.', 'error'); return; }
   var emails = getAdminEmails();
   if (emails.some(function(e){ return e.toLowerCase() === email; })) { showToast('Email sudah wujud.', 'error'); return; }
+  if (_guruAutoAdminEmails.some(function(g){ return g.email === email; })) { showToast('Email ini sudah dikesan sebagai Admin Data Guru.', 'info'); return; }
   emails.push(email);
   saveAdminEmails(emails);
   renderAdminList();
@@ -1099,17 +1118,31 @@ function removeAdminEmail(email) {
 function renderAdminList() {
   var tbody = document.getElementById('adminListBody'); if (!tbody) return;
   var emails = getAdminEmails();
-  if (!emails.length) {
+  var autoRows = _guruAutoAdminEmails.filter(function(g){
+    return !emails.some(function(e){ return e.toLowerCase() === g.email; });
+  });
+  if (!emails.length && !autoRows.length) {
     tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Tiada admin dikesan.</td></tr>';
     return;
   }
-  tbody.innerHTML = emails.map(function(email) {
+  var html = '';
+  // Baris auto-detect dari Data Guru
+  html += autoRows.map(function(g) {
+    return '<tr style="background:rgba(37,99,235,0.04)">' +
+      '<td>' + escapeHtml(g.email) + '<br><small style="color:var(--muted)">' + escapeHtml(g.nama) + '</small></td>' +
+      '<td><span style="color:#2563eb;font-size:0.82em">&#9679; Auto (Data Guru)</span><br><small style="color:var(--muted)">' + escapeHtml(g.jawatan) + '</small></td>' +
+      '<td><span style="color:var(--muted);font-size:0.85em">Auto</span></td>' +
+      '</tr>';
+  }).join('');
+  // Baris manual (tambahan/lalai)
+  html += emails.map(function(email) {
     var isDefault = DEFAULT_ADMIN_EMAILS.some(function(e){ return e.toLowerCase() === email.toLowerCase(); });
     return '<tr><td>' + escapeHtml(email) + '</td>' +
            '<td>' + (isDefault ? 'Admin Lalai' : 'Admin Tambahan') + '</td>' +
            '<td>' + (isDefault ? '-' : '<button class="btn btn-sm btn-danger" onclick="removeAdminEmail(' + JSON.stringify(email) + ')">Buang</button>') + '</td>' +
            '</tr>';
   }).join('');
+  tbody.innerHTML = html;
 }
 async function loadAdminConfig() {
   await loadBackendOperationalConfig(true);
@@ -1117,6 +1150,8 @@ async function loadAdminConfig() {
   updateHLNotifStatusUI();
   renderGroupFonnteSetupUI();
   loadBirthdayNotificationConfig();
+  // Auto-muatkan pentadbir dari Data Guru
+  await muatGuruAutoAdmin();
   renderAdminList();
   loadD1Summary();
   loadD1EditableSheet();
@@ -2249,6 +2284,9 @@ function showModule(id) {
     loadKokumProgramConfig(false);
     initPelaporanKokumModule(false);
     currentAutoRefreshInterval = null;
+  } else if (id === 'lembaran-kerja') {
+    lkInitModule();
+    currentAutoRefreshInterval = null;
   } else if (id === 'notifikasi') {
     loadNotifLog();
     currentAutoRefreshInterval = setInterval(loadNotifLog, 600000);
@@ -3153,6 +3191,7 @@ function dedupeGuruReminderRows(rows) {
 }
 
 async function sendGuruAttendancePersonalReminderOnce(row, tarikh, resultBox) {
+  if (!isNotifAutoEnabled() || !isGuruAttendanceNotifEnabled()) return { skipped: true };
   const guardKey = getGuruReminderGuardKey(tarikh, row);
   if (!guardKey || localStorage.getItem(guardKey)) {
     return { skipped: true };
@@ -3277,6 +3316,7 @@ async function initKehadiranGuruModule() {
 }
 
 async function semakDanNotifGuruBelumIsi() {
+  if (!isNotifAutoEnabled() || !isGuruAttendanceNotifEnabled()) return;
   const now = new Date();
   const totalMin = getCurrentTotalMinutes(now);
   if (totalMin < 7 * 60 + 45 || totalMin > 8 * 60 + 5) return;
@@ -10652,7 +10692,9 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
   var cfg = (opts && opts.config) || getAmaranSekolahConfig();
   var lg = logos || {};
   var tahun = new Date().getFullYear();
-  var tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' });
+  var _hariNama = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+  var _today = new Date();
+  var tarikhHariIni = _today.toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' }) + ' (' + _hariNama[_today.getDay()] + ')';
   var noPrint = opts && opts.noPrint;
   var tajukMap = { 1:'SURAT AMARAN PERTAMA KETIDAKHADIRAN MURID', 2:'SURAT AMARAN KEDUA KETIDAKHADIRAN MURID', 3:'SURAT AMARAN KETIGA KETIDAKHADIRAN MURID (TINDAKAN SERIUS)', 4:'NOTIS TINDAKAN BUANG SEKOLAH' };
   var perMap   = { 1:'SURAT AMARAN PERTAMA KETIDAKHADIRAN MURID KE SEKOLAH', 2:'SURAT AMARAN KEDUA KETIDAKHADIRAN MURID KE SEKOLAH', 3:'SURAT AMARAN KETIGA KETIDAKHADIRAN MURID (TINDAKAN SERIUS)', 4:'NOTIS TINDAKAN BUANG SEKOLAH' };
@@ -10661,6 +10703,13 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
   var perHeading = perMap[tahap] || perMap[1];
   var rujukan = cfg.rujukan + ' (' + (rujMap[tahap] || '01') + '/' + tahun + ')';
   var pRow = function(n, txt) { return '<p class="p-row"><span class="p-num">' + n + '.</span><span class="p-txt">' + txt + '</span></p>'; };
+  // Auto-kira tarikh perbincangan: +2 hari dari tarikh surat; jika Jumaat → Isnin
+  var _tarikhPerbincangan = new Date();
+  _tarikhPerbincangan.setDate(_tarikhPerbincangan.getDate() + 2);
+  var _hariPerbincangan = _tarikhPerbincangan.getDay(); // 0=Ahad, 6=Sabtu
+  if (_hariPerbincangan === 0) _tarikhPerbincangan.setDate(_tarikhPerbincangan.getDate() + 1); // Ahad → Isnin
+  if (_hariPerbincangan === 6) _tarikhPerbincangan.setDate(_tarikhPerbincangan.getDate() + 2); // Sabtu → Isnin
+  var tarikhPerbincanganStr = _tarikhPerbincangan.toLocaleDateString('ms-MY', { day: '2-digit', month: 'long', year: 'numeric' }) + ' (' + _hariNama[_tarikhPerbincangan.getDay()] + ')';
   var paraMap = {
     1: pRow(1,'Dengan segala hormatnya perkara di atas dirujuk.') +
        pRow(2,'Dimaklumkan bahawa anak tuan/puan, <strong>' + escapeHtml(nama) + '</strong>, dari kelas ' + escapeHtml(kelas) + ' telah tidak hadir ke sekolah tanpa sebab munasabah selama tiga (3) hari berturut-turut atau sepuluh (10) hari secara tidak berturut-turut.') +
@@ -10670,24 +10719,28 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
        pRow(2,'Dimaklumkan bahawa anak tuan/puan, <strong>' + escapeHtml(nama) + '</strong> masih gagal hadir ke sekolah walaupun Surat Amaran Pertama telah dikeluarkan.') +
        pRow(3,'Ketidakhadiran ini telah mencapai <strong>' + jumlahHari + ' hari</strong> terkumpul / tambahan sebepas Amaran 1 dan amat membimbangkan.') +
        pRow(4,'Sehubungan itu, tuan/puan dikehendaki hadir ke sekolah untuk sesi perbincangan bagi tindakan lanjut seperti butiran berikut:') +
-       '<div class="indent"><span class="ind-lbl">Tarikh</span><span class="ind-col">:</span><span class="ind-val">&nbsp;</span></div>' +
-       '<div class="indent"><span class="ind-lbl">Masa</span><span class="ind-col">:</span><span class="ind-val">&nbsp;</span></div>' +
+       '<div class="indent"><span class="ind-lbl">Tarikh</span><span class="ind-col">:</span><span class="ind-val">' + tarikhPerbincanganStr + '</span></div>' +
+       '<div class="indent"><span class="ind-lbl">Masa</span><span class="ind-col">:</span><span class="ind-val">9.00 pagi</span></div>' +
        '<div class="indent"><span class="ind-lbl">Tempat</span><span class="ind-col">:</span><span class="ind-val">Pejabat Sekolah</span></div>' +
        '<p class="p-row" style="margin-top:8px"><span class="p-num">5.</span><span class="p-txt">Kehadiran tuan/puan adalah penting bagi membincangkan langkah intervensi demi kebajikan anak tuan/puan.</span></p>',
     3: pRow(1,'Dengan segala hormatnya perkara di atas dirujuk.') +
        pRow(2,'Walaupun pelbagai peringatan dan tindakan telah diambil, anak tuan/puan, <strong>' + escapeHtml(nama) + '</strong> masih tidak hadir ke sekolah tanpa sebab munasabah.') +
        pRow(3,'Ketidakhadiran kini telah mencapai tahap kritikal dan boleh membawa kepada tindakan disiplin termasuk cadangan buang sekolah mengikut peraturan yang ditetapkan oleh Kementerian Pendidikan Malaysia.') +
-       pRow(4,'Sehubungan itu, tuan/puan diminta hadir ke sekolah dengan segera untuk sesi perbincangan bersama pihak pentadbir.'),
+       pRow(4,'Sehubungan itu, tuan/puan dikehendaki hadir ke sekolah untuk sesi perbincangan bersama pihak pentadbir seperti butiran berikut:') +
+       '<div class="indent"><span class="ind-lbl">Tarikh</span><span class="ind-col">:</span><span class="ind-val">' + tarikhPerbincanganStr + '</span></div>' +
+       '<div class="indent"><span class="ind-lbl">Masa</span><span class="ind-col">:</span><span class="ind-val">9.00 pagi</span></div>' +
+       '<div class="indent"><span class="ind-lbl">Tempat</span><span class="ind-col">:</span><span class="ind-val">Pejabat Sekolah</span></div>' +
+       '<p class="p-row" style="margin-top:8px"><span class="p-num">5.</span><span class="p-txt">Kehadiran tuan/puan adalah amat diperlukan bagi membincangkan langkah tindakan lanjut yang sewajarnya demi kebajikan anak tuan/puan.</span></p>',
     4: pRow(1,'Dengan segala hormatnya perkara di atas dirujuk.') +
        pRow(2,'Dimaklumkan bahawa anak tuan/puan, <strong>' + escapeHtml(nama) + '</strong> telah direkodkan tidak hadir ke sekolah sebanyak <strong>' + jumlahHari + ' hari</strong> tanpa sebab munasabah sepanjang tahun ' + tahun + '.') +
        pRow(3,'Pihak sekolah telah mengeluarkan tiga (3) surat amaran berturut-turut namun tiada penambahbaikan yang nyata dalam kehadiran murid tersebut.') +
        pRow(4,'Sehubungan itu, pihak sekolah akan memulakan proses tindakan buang sekolah mengikut prosedur yang ditetapkan oleh Kementerian Pendidikan Malaysia dan kes ini akan dirujuk kepada PPD/JPN.')
   };
   var isi = paraMap[tahap] || paraMap[1];
-  var logoKPMTag = lg.kpm ? '<img src="' + lg.kpm + '" class="hdr-logo hdr-logo-kpm" alt="Kementerian Pendidikan Malaysia">' : '<div class="hdr-logo-ph"></div>';
-  var logoSkTag  = lg.sekolah ? '<img src="' + lg.sekolah + '" class="hdr-logo" alt="Sekolah">' : '<div class="hdr-logo-ph"></div>';
+  var logoKPMTag = lg.kpm ? '<img src="' + lg.kpm + '" class="hdr-logo hdr-logo-kpm" alt="Kementerian Pendidikan Malaysia">' : '';
+  var logoSkTag  = lg.sekolah ? '<img src="' + lg.sekolah + '" class="hdr-logo" alt="Sekolah">' : '';
   var copTag = lg.cop ? '<img src="' + lg.cop + '" class="cop-img" alt="Cop Sekolah">' : '';
-  var CSS = '@page{size:A4;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Times New Roman",Times,serif;font-size:11pt;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.paper{width:210mm;max-width:210mm;margin:0 auto;padding:12mm 20mm 10mm 25mm;height:297mm;overflow:hidden}.hdr{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px}.hdr-logo{width:82px;height:82px;object-fit:contain;flex-shrink:0}.hdr-logo-kpm{width:82px;height:82px;object-fit:contain;flex-shrink:0}.hdr-logo-ph{width:82px;height:82px;flex-shrink:0}.hdr-mid{flex:1;text-align:center;line-height:1.45}.hdr-sekolah{font-size:12.5pt;font-weight:bold;text-transform:uppercase;letter-spacing:.01em}.hdr-info{font-size:10pt;margin-top:2px}.hdr-rule{border:none;border-top:2.5px solid #000;margin:4px 0 0}.tajuk{text-align:center;font-size:12pt;font-weight:bold;text-transform:uppercase;text-decoration:underline;margin:9px 0 10px}.ref-blk{display:flex;flex-direction:column;align-items:flex-end;margin-bottom:10px}.ref-row{display:flex;margin-bottom:2px;font-size:11pt;width:290px}.ref-lbl{width:80px;flex-shrink:0}.ref-col{width:14px;text-align:center}.ref-val{flex:1}.kepada{margin-bottom:10px;font-size:11pt;line-height:1.7}.salam{margin-bottom:7px;font-size:11pt}.per{font-size:11pt;font-weight:bold;text-decoration:underline;margin-bottom:9px}.body-paras{font-size:11pt;line-height:1.65}.p-row{display:flex;margin-bottom:6px}.p-num{width:20px;flex-shrink:0}.p-txt{flex:1}.indent{display:flex;margin:2px 0 2px 20px;font-size:11pt}.ind-lbl{width:68px;flex-shrink:0}.ind-col{width:12px}.ind-val{flex:1;border-bottom:1px solid #000;min-width:90px}.closing{margin:10px 0 3px;font-size:11pt}.berkhidmat{font-size:11pt;font-weight:bold;font-style:italic;margin:3px 0 7px}.yang-amanah{font-size:11pt}.sign-section{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px}.sign-left{font-size:11pt}.sign-dots{letter-spacing:1px;margin:38px 0 2px}.sign-name{font-weight:bold}.cop-box{min-width:100px;width:110px;height:84px;display:flex;align-items:center;justify-content:center}.cop-img{max-width:108px;max-height:82px;object-fit:contain}.footer-note{font-size:8pt;color:#444;font-style:italic;margin-top:10px;padding-top:5px;border-top:1px solid #999;text-align:center}@media print{.paper{padding:10mm 18mm 8mm 22mm}}';
+  var CSS = '@page{size:A4;margin:0}*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Times New Roman",Times,serif;font-size:11pt;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.paper{width:210mm;max-width:210mm;margin:0 auto;padding:12mm 20mm 10mm 25mm;height:297mm;overflow:hidden}.hdr{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:3px}.hdr-logo{width:82px;height:82px;object-fit:contain;flex-shrink:0}.hdr-logo-kpm{width:135px;height:135px;object-fit:contain;flex-shrink:0}.hdr-mid{flex:1;text-align:center;line-height:1.45}.hdr-sekolah{font-size:12.5pt;font-weight:bold;text-transform:uppercase;letter-spacing:.01em}.hdr-info{font-size:10pt;margin-top:2px}.hdr-rule{border:none;border-top:2.5px solid #000;margin:4px 0 0}.tajuk{text-align:center;font-size:12pt;font-weight:bold;text-transform:uppercase;text-decoration:underline;margin:9px 0 10px}.ref-blk{display:flex;flex-direction:column;align-items:flex-end;margin-bottom:10px}.ref-row{display:flex;margin-bottom:2px;font-size:11pt;width:290px}.ref-lbl{width:80px;flex-shrink:0}.ref-col{width:14px;text-align:center}.ref-val{flex:1}.kepada{margin-bottom:10px;font-size:11pt;line-height:1.7}.salam{margin-bottom:7px;font-size:11pt}.per{font-size:11pt;font-weight:bold;text-decoration:underline;margin-bottom:9px}.body-paras{font-size:11pt;line-height:1.65}.p-row{display:flex;margin-bottom:6px}.p-num{width:20px;flex-shrink:0}.p-txt{flex:1}.indent{display:flex;margin:2px 0 2px 20px;font-size:11pt}.ind-lbl{width:68px;flex-shrink:0}.ind-col{width:12px}.ind-val{width:50mm;flex:0 0 50mm;border-bottom:1px solid #000}.closing{margin:10px 0 3px;font-size:11pt}.berkhidmat{font-size:11pt;font-weight:bold;font-style:italic;margin:3px 0 7px}.yang-amanah{font-size:11pt}.sign-section{display:flex;justify-content:flex-start;align-items:flex-end;margin-top:10px;position:relative}.sign-left{font-size:11pt}.sign-dots{letter-spacing:1px;margin:38px 0 2px}.sign-name{font-weight:bold}.cop-box{position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:110px;height:90px;display:flex;align-items:center;justify-content:center}.cop-img{max-width:108px;max-height:88px;object-fit:contain}.footer-note{font-size:8pt;color:#444;font-style:italic;margin-top:10px;padding-top:5px;border-top:1px solid #999;text-align:center}@media print{.paper{padding:10mm 18mm 8mm 22mm}}';
   return '<!DOCTYPE html><html lang="ms"><head><meta charset="UTF-8"><title>' + escapeHtml(tajuk) + ' - ' + escapeHtml(nama) + '</title><style>' + CSS + '</style></head><body>' +
     '<div class="paper">' +
     '<div class="hdr">' + logoKPMTag + '<div class="hdr-mid"><div class="hdr-sekolah">' + escapeHtml(cfg.nama) + '</div><div class="hdr-info">' + escapeHtml(cfg.alamat1) + '<br>' + escapeHtml(cfg.alamat2) + '<br>TEL : ' + escapeHtml(cfg.tel) + '<br>E-MEL : ' + escapeHtml(cfg.emel) + '</div></div>' + logoSkTag + '</div>' +
@@ -10982,3 +11035,845 @@ async function loadKehadiranMurid(options) {
     _kehadiranMuridLoading = false;
   }
 }
+
+// ══ JANA LEMBARAN KERJA AI ══════════════════════════════════════
+
+var _lkInited = false;
+var _lkGenerating = false;
+
+// DSKP data — embedded sebagai asas, CSV sheet sebagai pelengkap
+var LK_DSKP_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRHqa-zAQ07wwfAi1oL5axssCCbqBeUMOiwohnK89_22IAf6SOBqUHE_BK-Wlhy-W9x-8Rha6bUeqE4/pub?output=csv';
+var _lkDskpData    = (typeof LK_DSKP_EMBEDDED !== 'undefined') ? JSON.parse(JSON.stringify(LK_DSKP_EMBEDDED)) : {};
+var _lkDskpLoaded  = (typeof LK_DSKP_EMBEDDED !== 'undefined' && Object.keys(_lkDskpData).length > 0);
+var _lkDskpLoading = false;
+
+// Subject name mapper — uses exact names confirmed from the actual sheet
+var LK_SKIP_SUBJEK = { 'PEMULIHAN': true, 'PEMULIHAN KHAS': true }; // skip these
+
+function lkMapSubjekCode(rawName) {
+  // Normalize: uppercase, collapse spaces, & → DAN
+  var n = String(rawName || '').trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[&+]/g, ' dan ')
+    .toLowerCase();
+
+  // Match using lowercase for reliability (no toUpperCase ambiguity)
+  // Confirmed from sheet: Bahasa KadazanDusun, Bahasa Melayu, Bahasa Inggeris,
+  // Pendidikan Jasmani, Matematik, Pendidikan Islam, Pendidikan Kesihatan,
+  // Pendidikan Muzik, Pendidikan Moral, Pendidikan Seni Visual,
+  // Reka Bentuk dan Teknologi, Sains, Sejarah, Pemulihan
+
+  // Skip subjects
+  if (n === 'pemulihan' || n === 'pemulihan khas') return null;
+
+  // Exact matches (lowercase) from actual sheet values
+  if (n === 'bahasa kadazandusun' || n === 'bahasa kadazan dusun' ||
+      n === 'bahasa kadazan' || n === 'kadazandusun') return 'BKD';
+
+  if (n === 'bahasa melayu' || n === 'bahasa malaysia') return 'BM';
+
+  if (n === 'bahasa inggeris' || n === 'english' || n === 'english language') return 'BI';
+
+  if (n === 'matematik' || n === 'mathematics') return 'Math';
+
+  if (n === 'sains' || n === 'science') return 'Sains';
+
+  if (n === 'sejarah' || n === 'history') return 'Sejarah';
+
+  if (n === 'reka bentuk dan teknologi' || n === 'reka bentuk teknologi' ||
+      n === 'rbt') return 'RBT';
+
+  if (n === 'pendidikan moral' || n === 'moral') return 'Moral';
+
+  if (n === 'pendidikan islam' || n === 'p. islam' ||
+      n === 'pendidikan al-quran dan al-sunnah') return 'PI';
+
+  if (n === 'pendidikan jasmani dan kesihatan' || n === 'pendidikan jasmani' ||
+      n === 'pendidikan kesihatan' || n === 'pj' || n === 'pjk') return 'PJ';
+
+  if (n === 'pendidikan seni visual' || n === 'seni visual' ||
+      n === 'p. seni visual') return 'Seni';
+
+  if (n === 'pendidikan muzik' || n === 'muzik' || n === 'music') return 'Muzik';
+
+  // Keyword fallback for any remaining variations
+  if (n.includes('kadazan') || n.includes('dusun')) return 'BKD';
+  if (n.includes('bahasa melayu') || n.includes('bahasa malaysia')) return 'BM';
+  if (n.includes('inggeris') || n.includes('english')) return 'BI';
+  if (n.includes('matematik') || n.includes('mathemat')) return 'Math';
+  if (n.includes('sains') || n.includes('science')) return 'Sains';
+  if (n.includes('sejarah') || n.includes('history')) return 'Sejarah';
+  if (n.includes('reka bentuk') || n.includes('teknologi')) return 'RBT';
+  if (n.includes('moral')) return 'Moral';
+  if (n.includes('islam') || n.includes('quran')) return 'PI';
+  if (n.includes('jasmani') || n.includes('kesihatan')) return 'PJ';
+  if (n.includes('seni visual')) return 'Seni';
+  if (n.includes('muzik') || n.includes('music')) return 'Muzik';
+
+  return null; // truly unknown
+}
+
+function lkNormalizeTahun(raw) {
+  var t = String(raw || '').trim()
+    .replace(/^(tahun|year|darjah|kelas)\s*/i, '')  // strip "Tahun ", "Year " etc
+    .replace(/\s+/g, '')                             // remove spaces
+    .replace(/\.0+$/, '')                            // "1.0" → "1" (Google Sheets float export)
+    .replace(/^0+(?=\d)/, '');                       // "01" → "1"
+  // Accept only valid 1-6
+  var n = parseInt(t, 10);
+  if (n >= 1 && n <= 6) return String(n);
+  return t; // return as-is if not a clean 1-6 (will be skipped later)
+}
+
+var LK_SUBJEK_T1_PBD = [
+  { value: 'BM',    label: 'Bahasa Malaysia' },
+  { value: 'BI',    label: 'English Language' },
+  { value: 'Math',  label: 'Matematik' },
+  { value: 'Sains', label: 'Sains' },
+  { value: 'BKD',   label: 'Bahasa Kadazan Dusun (BKD)' },
+  { value: 'Moral', label: 'Pendidikan Moral' },
+  { value: 'PI',    label: 'Pendidikan Islam' },
+  { value: 'PJ',    label: 'Pendidikan Jasmani & Kesihatan' },
+  { value: 'Seni',  label: 'Pendidikan Seni Visual' },
+  { value: 'Muzik', label: 'Pendidikan Muzik' },
+];
+
+var LK_SUBJEK_T2_PBD = [
+  { value: 'BM',      label: 'Bahasa Malaysia' },
+  { value: 'BI',      label: 'English Language' },
+  { value: 'Math',    label: 'Matematik' },
+  { value: 'Sains',   label: 'Sains' },
+  { value: 'Sejarah', label: 'Sejarah' },
+  { value: 'RBT',     label: 'Reka Bentuk & Teknologi (RBT)' },
+  { value: 'BKD',     label: 'Bahasa Kadazan Dusun (BKD)' },
+  { value: 'Moral',   label: 'Pendidikan Moral' },
+  { value: 'PI',      label: 'Pendidikan Islam' },
+  { value: 'PJ',      label: 'Pendidikan Jasmani & Kesihatan' },
+  { value: 'Seni',    label: 'Pendidikan Seni Visual' },
+  { value: 'Muzik',   label: 'Pendidikan Muzik' },
+];
+
+var LK_SUBJEK_UASA = [
+  { value: 'BM',      label: 'Bahasa Malaysia' },
+  { value: 'BI',      label: 'English Language' },
+  { value: 'Math',    label: 'Matematik' },
+  { value: 'Sains',   label: 'Sains' },
+  { value: 'Sejarah', label: 'Sejarah' },
+];
+
+function lkGetTahap() {
+  var t = parseInt(document.getElementById('lkTahun').value) || 4;
+  return t <= 3 ? 1 : 2;
+}
+
+function lkInitModule() {
+  if (_lkInited) return;
+  _lkInited = true;
+  var radios = document.querySelectorAll('input[name="lkJenis"]');
+  if (radios.length && !Array.from(radios).some(function(r){ return r.checked; })) {
+    radios[0].checked = true;
+  }
+  lkOnTahunChange();
+  lkMuatDskp(); // fetch DSKP data in background
+}
+
+function lkOnTahunChange() {
+  var tahap = lkGetTahap();
+  var uasaLabel = document.getElementById('lkLabelUasa');
+  var uasaRadio = document.querySelector('input[name="lkJenis"][value="uasa"]');
+  var jenisNote = document.getElementById('lkJenisNote');
+
+  if (tahap === 1) {
+    // Disable UASA for Tahap 1
+    if (uasaLabel) uasaLabel.style.opacity = '0.4';
+    if (uasaRadio) {
+      uasaRadio.disabled = true;
+      if (uasaRadio.checked) {
+        // Switch to PBD Pertengahan Tahun
+        var ptRadio = document.querySelector('input[name="lkJenis"][value="pbd-pt"]');
+        if (ptRadio) ptRadio.checked = true;
+      }
+    }
+    if (jenisNote) jenisNote.textContent = 'UASA tidak tersedia untuk Tahap 1 (Tahun 1–3).';
+  } else {
+    if (uasaLabel) uasaLabel.style.opacity = '1';
+    if (uasaRadio) uasaRadio.disabled = false;
+    if (jenisNote) jenisNote.textContent = '';
+  }
+  lkOnJenisChange();
+}
+
+function lkOnJenisChange() {
+  var jenis = lkGetJenis();
+  var tahap = lkGetTahap();
+  var select = document.getElementById('lkSubjek');
+  var note = document.getElementById('lkSubjekNote');
+  if (!select) return;
+
+  var list;
+  if (jenis === 'uasa') {
+    list = LK_SUBJEK_UASA;
+  } else if (tahap === 1) {
+    list = LK_SUBJEK_T1_PBD;
+  } else {
+    list = LK_SUBJEK_T2_PBD;
+  }
+
+  var prev = select.value;
+  select.innerHTML = list.map(function(s) {
+    return '<option value="' + s.value + '"' + (s.value === prev ? ' selected' : '') + '>' + s.label + '</option>';
+  }).join('');
+
+  if (note) {
+    if (jenis === 'uasa') {
+      note.textContent = 'UASA Tahap 2: BM, BI, Matematik, Sains, Sejarah — semua mata pelajaran Tahap 2 terlibat dalam peperiksaan.';
+    } else if (tahap === 1) {
+      note.textContent = 'PBD Tahap 1 (Tahun 1–3): BM, BI, Matematik, Sains, BKD, Moral, PI, PJ.';
+    } else if (jenis === 'pbd-pt') {
+      note.textContent = 'PBD Pertengahan Tahun Tahap 2: semua mata pelajaran termasuk RBT, BKD dan Sejarah.';
+    } else {
+      note.textContent = 'PBD Akhir Tahun Tahap 2: semua mata pelajaran termasuk RBT, BKD dan Sejarah.';
+    }
+  }
+  lkOnSubjekChange();
+}
+
+function lkGetJenis() {
+  var r = document.querySelector('input[name="lkJenis"]:checked');
+  return r ? r.value : 'pbd-pt';
+}
+
+// ── DSKP CSV Fetch & Parse ───────────────────────────────────────
+
+function lkParseCsv(text) {
+  // Strip BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  var rows = [];
+  var lines = text.split(/\r?\n/);
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (!line.trim()) continue;
+    var row = []; var cell = ''; var inQ = false;
+    for (var j = 0; j < line.length; j++) {
+      var c = line[j];
+      if (c === '"') {
+        if (inQ && j + 1 < line.length && line[j+1] === '"') { cell += '"'; j++; }
+        else inQ = !inQ;
+      } else if (c === ',' && !inQ) { row.push(cell.trim()); cell = ''; }
+      else cell += c;
+    }
+    row.push(cell.trim());
+    rows.push(row);
+  }
+  return rows;
+}
+
+// Auto-detect column positions from header row
+function lkDetectColumns(headerRow) {
+  var cols = { mp: -1, tahun: -1, tema: -1, tajuk: -1, sk: -1, sp: -1 };
+  headerRow.forEach(function(h, i) {
+    var hu = (h || '').toUpperCase().trim().replace(/\s+/g,' ');
+    if (cols.mp    < 0 && (hu.includes('MATA PELAJARAN') || hu === 'SUBJEK' || hu === 'MP')) cols.mp = i;
+    if (cols.tahun < 0 && (hu === 'TAHUN' || hu === 'DARJAH' || hu === 'KELAS' || hu === 'YEAR')) cols.tahun = i;
+    if (cols.tema  < 0 && (hu.includes('TEMA') || hu.includes('BIDANG') || hu.includes('TERAS'))) cols.tema = i;
+    if (cols.tajuk < 0 && (hu === 'TAJUK')) cols.tajuk = i;
+    if (cols.sk    < 0 && (hu.includes('STANDARD KANDUNGAN') || hu === 'SK')) cols.sk = i;
+    if (cols.sp    < 0 && (hu.includes('STANDARD PEMBELAJARAN') || hu === 'SP')) cols.sp = i;
+  });
+  // Fallback to known fixed positions (matches screenshot structure)
+  if (cols.mp    < 0) cols.mp    = 2;
+  if (cols.tahun < 0) cols.tahun = 3;
+  if (cols.tema  < 0) cols.tema  = 4;
+  if (cols.tajuk < 0) cols.tajuk = 5;
+  if (cols.sk    < 0) cols.sk    = 7;
+  if (cols.sp    < 0) cols.sp    = 8;
+  return cols;
+}
+
+function lkMuatDskp() {
+  // ── Langkah 1: Muat embedded data serta-merta (tiada tunggu) ───────────
+  if (typeof LK_DSKP_EMBEDDED !== 'undefined' && Object.keys(LK_DSKP_EMBEDDED).length > 0) {
+    if (!_lkDskpLoaded) {
+      _lkDskpData   = JSON.parse(JSON.stringify(LK_DSKP_EMBEDDED));
+      _lkDskpLoaded = true;
+    }
+    var t0 = Object.values(_lkDskpData).reduce(function(s,a){ return s+a.length; },0);
+    console.log('[DSKP] Embedded:', Object.keys(_lkDskpData).length, 'kunci,', t0, 'rekod');
+    lkOnSubjekChange();
+  } else {
+    console.warn('[DSKP] dskp_embedded.js tidak dijumpai.');
+  }
+
+  // ── Langkah 2: Fetch CSV sheet di latar belakang untuk tambah rekod ────
+  if (_lkDskpLoading) return;
+  _lkDskpLoading = true;
+  lkFetchMergeCsv().finally(function(){ _lkDskpLoading = false; });
+}
+
+async function lkFetchMergeCsv() {
+  var badge = document.getElementById('lkTopikLoadingBadge');
+  if (badge) badge.style.display = 'inline';
+  try {
+    var res = await fetch(LK_DSKP_CSV_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var text = await res.text();
+    var rows = lkParseCsv(text);
+    if (rows.length < 2) throw new Error('CSV kosong');
+
+    var cols = lkDetectColumns(rows[0]);
+    var csvData = {};
+
+    for (var i = 1; i < rows.length; i++) {
+      var r = rows[i];
+      var need = Math.max(cols.mp, cols.tahun, cols.tajuk) + 1;
+      if (!r || r.length < need) continue;
+
+      var mp    = (r[cols.mp]    || '').trim();
+      var tahun = lkNormalizeTahun(r[cols.tahun] || '');
+      var tema  = cols.tema  < r.length ? (r[cols.tema]  || '').trim() : '';
+      var tajuk = cols.tajuk < r.length ? (r[cols.tajuk] || '').trim() : '';
+      var sk    = cols.sk    < r.length ? (r[cols.sk]    || '').trim() : '';
+
+      if (!mp || !tajuk || !tahun || !/^[1-6]$/.test(tahun)) continue;
+      var code = lkMapSubjekCode(mp);
+      if (!code) continue;
+
+      var key = code + '-' + tahun;
+      if (!csvData[key]) csvData[key] = [];
+      csvData[key].push({ tema: tema, tajuk: tajuk, sk: sk });
+    }
+
+    // ── Merge: tambah rekod CSV yang belum ada dalam embedded ──────────
+    var added = 0;
+    Object.keys(csvData).forEach(function(key) {
+      if (!_lkDskpData[key]) _lkDskpData[key] = [];
+      var existing = _lkDskpData[key].map(function(x){
+        return x.tajuk.toLowerCase().replace(/\s+/g,' ').trim();
+      });
+      csvData[key].forEach(function(rec) {
+        if (!rec.tajuk) return;
+        var norm = rec.tajuk.toLowerCase().replace(/\s+/g,' ').trim();
+        if (!existing.includes(norm)) {
+          _lkDskpData[key].push(rec);
+          existing.push(norm);
+          added++;
+        }
+      });
+    });
+
+    var total = Object.values(_lkDskpData).reduce(function(s,a){ return s+a.length; },0);
+    console.log('[DSKP] CSV merge selesai: +' + added + ' rekod, jumlah:', total);
+    if (added > 0) lkOnSubjekChange(); // refresh dropdown topik
+
+  } catch(e) {
+    console.log('[DSKP] CSV fetch/merge gagal (embedded tetap aktif):', e.message);
+  } finally {
+    if (badge) badge.style.display = 'none';
+  }
+}
+
+function lkReloadDskp() {
+  _lkDskpData   = (typeof LK_DSKP_EMBEDDED !== 'undefined')
+                  ? JSON.parse(JSON.stringify(LK_DSKP_EMBEDDED)) : {};
+  _lkDskpLoaded  = Object.keys(_lkDskpData).length > 0;
+  _lkDskpLoading = false;
+  lkMuatDskp();
+}
+
+function lkDebugDskp() {
+  if (!_lkDskpLoaded) { console.log('[DSKP] Data belum dimuatkan.'); return; }
+  var keys = Object.keys(_lkDskpData).sort();
+  console.log('[DSKP] === DEBUG ===');
+  keys.forEach(function(k){ console.log(k + ':', _lkDskpData[k].length, 'rekod'); });
+  console.log('[DSKP] Total keys:', keys.length);
+}
+
+function lkOnSubjekChange() {
+  var tahun = (document.getElementById('lkTahun') || {}).value || '1';
+  var sel = document.getElementById('lkSubjek');
+  var subjekVal = sel ? sel.value : '';
+  var box = document.getElementById('lkTopikCheckboxes');
+  var note = document.getElementById('lkTopikNote');
+  if (!box) return;
+
+  var key = subjekVal + '-' + tahun;
+  var entries = _lkDskpData[key] || [];
+
+  var skEl = document.getElementById('lkSK');
+  if (skEl) skEl.value = '';
+  lkKemaskiniTopikCount();
+
+  if (!entries.length) {
+    if (_lkDskpLoaded) {
+      box.innerHTML = '<div class="lk-no-data">⚠️ Tiada data DSKP untuk ' + escapeHtml(subjekVal) + ' Tahun ' + tahun + '. Gunakan ruangan manual di bawah.</div>';
+      if (note) note.textContent = '';
+    } else {
+      box.innerHTML = '<span style="color:var(--muted)">⏳ Memuat data DSKP...</span>';
+    }
+    return;
+  }
+
+  // Group unique TAJUK by TEMA (preserve insertion order)
+  var temaOrder = [];
+  var temaMap = {};
+  entries.forEach(function(e) {
+    if (!temaMap[e.tema]) { temaMap[e.tema] = []; temaOrder.push(e.tema); }
+    if (temaMap[e.tema].indexOf(e.tajuk) === -1) temaMap[e.tema].push(e.tajuk);
+  });
+
+  var html = '';
+  temaOrder.forEach(function(tema) {
+    html += '<div class="lk-tema-group">';
+    if (tema) html += '<div class="lk-tema-label">' + escapeHtml(tema) + '</div>';
+    temaMap[tema].forEach(function(tajuk) {
+      html += '<label class="lk-check-label"><input type="checkbox" class="lk-topik-check" value="' + escapeHtml(tajuk) + '" onchange="lkOnTopikCheckChange()"><span>' + escapeHtml(tajuk) + '</span></label>';
+    });
+    html += '</div>';
+  });
+  box.innerHTML = html;
+
+  var total = temaOrder.reduce(function(sum, t) { return sum + temaMap[t].length; }, 0);
+  if (note) note.textContent = total + ' topik tersedia dari DSKP.';
+}
+
+function lkOnTopikCheckChange() {
+  var tahun = (document.getElementById('lkTahun') || {}).value || '1';
+  var subjekSel = document.getElementById('lkSubjek');
+  var subjekVal = subjekSel ? subjekSel.value : '';
+  var key = subjekVal + '-' + tahun;
+  var entries = _lkDskpData[key] || [];
+
+  var checked = lkGetCheckedTopiks();
+  lkKemaskiniTopikCount();
+
+  if (!checked.length) { var s = document.getElementById('lkSK'); if (s) s.value = ''; return; }
+
+  // Collect all unique SKs for all selected tajuk (maintain order from DSKP)
+  var skLines = []; var seen = {};
+  entries.forEach(function(e) {
+    if (checked.indexOf(e.tajuk) !== -1 && e.sk && !seen[e.sk]) {
+      seen[e.sk] = true; skLines.push(e.sk);
+    }
+  });
+  var skEl = document.getElementById('lkSK');
+  if (skEl) skEl.value = skLines.join('\n');
+}
+
+function lkKemaskiniTopikCount() {
+  var checked = lkGetCheckedTopiks();
+  var manual = ((document.getElementById('lkTopikManual') || {}).value || '').trim();
+  var total = checked.length + (manual ? 1 : 0);
+  var el = document.getElementById('lkTopikCount');
+  if (el) el.textContent = total ? '(' + total + ' dipilih)' : '';
+}
+
+function lkGetCheckedTopiks() {
+  return Array.from(document.querySelectorAll('.lk-topik-check:checked')).map(function(c) { return c.value; });
+}
+
+function lkPilihSemuaTopik() {
+  document.querySelectorAll('.lk-topik-check').forEach(function(c) { c.checked = true; });
+  lkOnTopikCheckChange();
+}
+
+function lkBersihTopik() {
+  document.querySelectorAll('.lk-topik-check').forEach(function(c) { c.checked = false; });
+  var skEl = document.getElementById('lkSK');
+  if (skEl) skEl.value = '';
+  lkKemaskiniTopikCount();
+}
+
+function lkGetTopikValue() {
+  var checked = lkGetCheckedTopiks();
+  var manual = ((document.getElementById('lkTopikManual') || {}).value || '').trim();
+  if (manual) checked.push(manual);
+  return checked.join(', ');
+}
+
+function lkGetBahasa() {
+  var r = document.querySelector('input[name="lkBahasa"]:checked');
+  return r ? r.value : 'Bahasa Malaysia';
+}
+
+function lkSetStatus(type, msg) {
+  var bar = document.getElementById('lkStatusBar');
+  var txt = document.getElementById('lkStatusText');
+  if (!bar || !txt) return;
+  bar.className = 'lk-status-bar lk-status-' + type;
+  var icons = { idle: '💡', loading: '⏳', done: '✅', error: '❌' };
+  bar.querySelector('span:first-child').textContent = icons[type] || '💡';
+  txt.textContent = msg;
+}
+
+function lkBinaSumber() {
+  var jenis = lkGetJenis();
+  var jenisLabel = { 'pbd-pt': 'PBD Pertengahan Tahun', 'pbd-at': 'PBD Akhir Tahun', 'uasa': 'UASA (Ujian Akhir Sesi Akademik)' };
+  var tahun = document.getElementById('lkTahun').value;
+  var sel = document.getElementById('lkSubjek');
+  var subjekLabel = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : sel.value) : '';
+  var subjekVal = sel ? sel.value : '';
+  var topikArr = lkGetCheckedTopiks();
+  var topikManual = ((document.getElementById('lkTopikManual') || {}).value || '').trim();
+  if (topikManual) topikArr.push(topikManual);
+  var sk = (document.getElementById('lkSK').value || '').trim();
+  var bilSoalan = parseInt(document.getElementById('lkBilSoalan').value) || 10;
+  var aras = document.getElementById('lkAras').value;
+  var bahasa = lkGetBahasa();
+  var nota = (document.getElementById('lkNota').value || '').trim();
+  var arasLabel = { campuran: 'Campuran LOTS + HOTS', mudah: 'Mudah (LOTS sahaja)', sederhana: 'Sederhana', susah: 'Susah / HOTS' };
+
+  var tahap = lkGetTahap();
+  var p = 'Jana lembaran kerja untuk murid Tahun ' + tahun + ' (Tahap ' + tahap + '), Sekolah Kebangsaan Malaysia.\n\n';
+  p += 'MAKLUMAT:\n';
+  p += '- Jenis Penilaian: ' + (jenisLabel[jenis] || jenis) + '\n';
+  p += '- Tahun: ' + tahun + ' (Tahap ' + tahap + ')\n';
+  p += '- Mata Pelajaran: ' + subjekLabel + '\n';
+  if (topikArr.length === 1) {
+    p += '- Topik: ' + topikArr[0] + '\n';
+  } else if (topikArr.length > 1) {
+    p += '- Topik (pelbagai, agihkan soalan merentasi semua topik ini):\n';
+    topikArr.forEach(function(t, i) { p += '  ' + (i+1) + '. ' + t + '\n'; });
+  } else {
+    p += '- Topik: Pilih topik sesuai dari DSKP Tahun ' + tahun + '\n';
+  }
+  if (sk) p += '- Standard Kandungan:\n' + sk.split('\n').map(function(s){ return '  ' + s; }).join('\n') + '\n';
+  p += '- Jumlah Soalan: ' + bilSoalan + '\n';
+  p += '- Aras: ' + (arasLabel[aras] || aras) + '\n';
+  p += '- Bahasa: ' + bahasa + '\n';
+  if (nota) p += '- Nota: ' + nota + '\n';
+  if (subjekVal === 'RBT') {
+    p += '\nNota khusus RBT: Jana soalan berasaskan proses reka bentuk, projek, dan teknologi sesuai Tahun ' + tahun + '.';
+  }
+  if (subjekVal === 'BKD') {
+    p += '\nNota khusus BKD: Bahasa Kadazan Dusun — gunakan istilah dan kosa kata Kadazan Dusun yang betul. Jana soalan dalam konteks budaya dan bahasa KadazanDusun Sabah sesuai Tahun ' + tahun + '.';
+  }
+  p += '\n\nJana mengikut struktur: BAHAGIAN A (Aneka Pilihan), BAHAGIAN B (Isi Tempat Kosong), BAHAGIAN C (Soalan Struktur), BAHAGIAN D (Esei jika perlu), kemudian SKEMA PEMARKAHAN.';
+  p += '\nAgihkan ' + bilSoalan + ' soalan secara munasabah. Sertakan arahan setiap bahagian. Jangan guna markdown.';
+
+  return p;
+}
+
+function lkGetEngine() {
+  var r = document.querySelector('input[name="lkEngine"]:checked');
+  return r ? r.value : 'deepseek';
+}
+
+async function callWorkerAIGemini(prompt, withImage) {
+  if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
+  var url = APP.workerUrl.replace(/\/+$/, '') + '/ai/gemini';
+  var res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: prompt, type: 'lembaran_kerja', withImage: withImage })
+  });
+  return await res.json();
+}
+
+// Update engine note when radio changes
+(function() {
+  document.addEventListener('change', function(e) {
+    if (e.target && e.target.name === 'lkEngine') {
+      var note = document.getElementById('lkEngineNote');
+      if (!note) return;
+      if (e.target.value === 'gemini') {
+        note.innerHTML = '✅ Gemini: AI akan jana teks <strong>dan</strong> imej serentak dalam satu permintaan. Imej dipapar terus dalam output.';
+      } else {
+        note.innerHTML = '⚠️ DeepSeek: AI tidak jana imej. Guna <em>[GAMBAR: deskripsi]</em> sebagai placeholder — guru tampal gambar sendiri. Atau tukar ke Gemini untuk jana imej automatik.';
+      }
+    }
+  });
+})();
+
+async function janaLembaranKerja() {
+  if (_lkGenerating) { showToast('Sila tunggu — AI sedang memproses...', 'info'); return; }
+  if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
+  if (!APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
+
+  var engine = lkGetEngine();
+  _lkGenerating = true;
+  var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek';
+  lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30–90 saat).');
+  document.getElementById('lkOutputBox').textContent = '⏳ Memproses permintaan ' + engineLabel + '...';
+
+  // Reset image section
+  var imejBtn = document.getElementById('lkJanaImejBtn');
+  var imejSection = document.getElementById('lkImejSection');
+  var imejGrid = document.getElementById('lkImejGrid');
+  if (imejBtn) imejBtn.style.display = 'none';
+  if (imejSection) imejSection.style.display = 'none';
+  if (imejGrid) imejGrid.innerHTML = '';
+
+  try {
+    var prompt = lkBinaSumber();
+    var result;
+
+    if (engine === 'gemini') {
+      result = await callWorkerAIGemini(prompt, true);
+      // Handle Gemini-specific errors
+      if (result.error === 'gemini_key_missing') {
+        lkSetStatus('error', 'GEMINI_API_KEY belum dikonfigurasi dalam Worker secrets. Hubungi pentadbir.');
+        document.getElementById('lkOutputBox').textContent = '⚠️ GEMINI_API_KEY belum dikonfigurasi.';
+        return;
+      }
+      if (result.error === 'gemini_limit') {
+        lkSetStatus('error', 'Kuota Gemini API dicapai. Cuba sebentar lagi atau tukar ke DeepSeek.');
+        document.getElementById('lkOutputBox').textContent = '⚠️ Had Gemini API dicapai.';
+        return;
+      }
+      if (result.error === 'gemini_key_invalid') {
+        lkSetStatus('error', 'Gemini API key tidak sah. Semak GEMINI_API_KEY dalam Worker secrets.');
+        document.getElementById('lkOutputBox').textContent = '⚠️ Gemini API key tidak sah.';
+        return;
+      }
+    } else {
+      result = await callWorkerAI(prompt, 'lembaran_kerja');
+      if (result.error === 'kredit_habis') {
+        lkSetStatus('error', 'Kredit DeepSeek habis. Hubungi pentadbir untuk menambah kredit.');
+        document.getElementById('lkOutputBox').textContent = '⚠️ Kredit AI tidak mencukupi.';
+        return;
+      }
+    }
+
+    if (!result.success || !result.content) throw new Error(result.message || result.error || 'Respons AI kosong');
+
+    var selOut = document.getElementById('lkSubjek');
+    var subjekLabelOut = selOut ? (selOut.options[selOut.selectedIndex] ? selOut.options[selOut.selectedIndex].text : '') : '';
+    var tahunOut = document.getElementById('lkTahun').value;
+    var jenisLabelMap = { 'pbd-pt': 'PBD PERTENGAHAN TAHUN', 'pbd-at': 'PBD AKHIR TAHUN', 'uasa': 'UASA' };
+    var jenisTxt = jenisLabelMap[lkGetJenis()] || '';
+    var line = '════════════════════════════════════════════';
+    var header = line + '\n';
+    header += 'SK KIANDONGO\n';
+    header += 'LEMBARAN KERJA — ' + jenisTxt + '\n';
+    header += 'Mata Pelajaran: ' + subjekLabelOut + '     Tahun: ' + tahunOut + '\n';
+    header += 'Nama: _______________________________     Kelas: ________\n';
+    header += 'Tarikh: ______________     Markah: _______ / _______\n';
+    header += line + '\n\n';
+
+    var fullText = header + result.content;
+    document.getElementById('lkOutputBox').textContent = fullText;
+
+    var statusMsg = 'Lembaran kerja berjaya dijana oleh ' + engineLabel + '!';
+
+    if (engine === 'gemini') {
+      // Gemini: display inline images directly
+      var geminiImages = result.images || [];
+      if (geminiImages.length) {
+        if (imejSection) imejSection.style.display = 'block';
+        if (imejGrid) {
+          imejGrid.innerHTML = '';
+          var imejNote = document.getElementById('lkImejNote');
+          if (imejNote) imejNote.textContent = 'Imej dijana oleh Gemini 2.0 Flash (percuma). Klik kanan → Simpan imej untuk simpan ke komputer.';
+          geminiImages.forEach(function(src, idx) {
+            var card = document.createElement('div');
+            card.className = 'lk-imej-card';
+            card.innerHTML = '<img src="' + src + '" alt="Imej ' + (idx+1) + '" loading="lazy">' +
+              '<div class="lk-imej-caption">🖼️ Gambar ' + (idx+1) + ' (dijana oleh Gemini)</div>';
+            imejGrid.appendChild(card);
+          });
+        }
+        statusMsg += ' ' + geminiImages.length + ' imej dijana serentak — percuma!';
+      } else {
+        // Gemini returned text only — check for placeholders fallback
+        var placeholders = lkExtractImejPlaceholders(fullText);
+        if (placeholders.length) {
+          if (imejBtn) imejBtn.style.display = 'inline-block';
+          statusMsg += ' ' + placeholders.length + ' placeholder imej — klik 🖼️ Jana Imej jika perlu (DALL-E).';
+        } else {
+          statusMsg += ' Tiada imej dalam output ini.';
+        }
+      }
+    } else {
+      // DeepSeek: check for [GAMBAR:] placeholders
+      var placeholders = lkExtractImejPlaceholders(fullText);
+      if (imejBtn) imejBtn.style.display = placeholders.length ? 'inline-block' : 'none';
+      if (placeholders.length) {
+        statusMsg += ' Terdapat ' + placeholders.length + ' placeholder imej — klik 🖼️ Jana Imej untuk jana (USD $' + (placeholders.length * 0.04).toFixed(2) + ' anggaran).';
+      } else {
+        statusMsg += ' Semak dan cetak jika perlu.';
+      }
+    }
+
+    lkSetStatus('done', statusMsg);
+    showToast('Lembaran kerja berjaya dijana.', 'success');
+  } catch(e) {
+    lkSetStatus('error', 'Ralat: ' + e.message);
+    document.getElementById('lkOutputBox').textContent = '❌ Ralat: ' + e.message;
+    showToast('Ralat AI: ' + e.message, 'error');
+  } finally {
+    _lkGenerating = false;
+  }
+}
+
+function lkSalinOutput() {
+  var box = document.getElementById('lkOutputBox');
+  if (!box || !box.textContent.trim() || box.textContent.startsWith('Hasil lembaran')) {
+    showToast('Tiada output untuk disalin.', 'error'); return;
+  }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(box.textContent).then(function() {
+      showToast('Teks disalin ke papan klip.', 'success');
+    }).catch(function() { lkSalinFallback(box.textContent); });
+  } else { lkSalinFallback(box.textContent); }
+}
+
+function lkSalinFallback(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast('Teks disalin.', 'success'); } catch(e) { showToast('Gagal salin.', 'error'); }
+  document.body.removeChild(ta);
+}
+
+function lkCetakOutput() {
+  var box = document.getElementById('lkOutputBox');
+  if (!box || !box.textContent.trim() || box.textContent.startsWith('Hasil lembaran')) {
+    showToast('Jana lembaran kerja dahulu sebelum cetak.', 'error'); return;
+  }
+  var w = window.open('', '_blank', 'width=850,height=1000');
+  if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
+
+  // Build print HTML — text content
+  var textContent = box.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Collect generated images (if any)
+  var imejCards = document.querySelectorAll('#lkImejGrid .lk-imej-card');
+  var imejHtml = '';
+  if (imejCards.length) {
+    imejHtml += '<div style="page-break-before:always;margin-top:20mm">';
+    imejHtml += '<h2 style="font-family:Arial,sans-serif;font-size:12pt;margin-bottom:12pt">Imej Lembaran Kerja</h2>';
+    imejHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14pt">';
+    imejCards.forEach(function(card) {
+      var img = card.querySelector('img');
+      var caption = card.querySelector('.lk-imej-caption');
+      if (img) {
+        imejHtml += '<div style="border:1pt solid #ccc;padding:6pt;text-align:center">';
+        imejHtml += '<img src="' + img.src + '" style="max-width:100%;height:auto;display:block;margin:0 auto">';
+        if (caption) imejHtml += '<p style="font-family:Arial,sans-serif;font-size:8pt;margin:4pt 0 0;color:#555">' + escapeHtml(caption.textContent) + '</p>';
+        imejHtml += '</div>';
+      }
+    });
+    imejHtml += '</div></div>';
+  }
+
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lembaran Kerja</title>' +
+    '<style>' +
+    'body{font-family:"Courier New",monospace;font-size:11pt;line-height:1.9;padding:20mm 20mm 15mm 25mm;}' +
+    'pre{white-space:pre-wrap;margin:0;font-family:inherit;font-size:inherit;}' +
+    '@media print{@page{margin:15mm 15mm 15mm 20mm;}body{padding:0;}}' +
+    '</style></head><body>' +
+    '<pre>' + textContent + '</pre>' +
+    imejHtml +
+    '</body></html>');
+  w.document.close();
+  w.onload = function(){ w.focus(); w.print(); };
+}
+
+function lkBersihOutput() {
+  var box = document.getElementById('lkOutputBox');
+  if (box) box.textContent = 'Hasil lembaran kerja akan dipaparkan di sini setelah dijana...';
+  var imejBtn = document.getElementById('lkJanaImejBtn');
+  if (imejBtn) imejBtn.style.display = 'none';
+  var imejSection = document.getElementById('lkImejSection');
+  if (imejSection) imejSection.style.display = 'none';
+  var imejGrid = document.getElementById('lkImejGrid');
+  if (imejGrid) imejGrid.innerHTML = '';
+  lkSetStatus('idle', 'Isi tetapan di sebelah kiri dan klik Jana Lembaran Kerja.');
+}
+
+// ── DALL-E 3 Image Generation ───────────────────────────────────
+
+function lkExtractImejPlaceholders(text) {
+  var matches = [];
+  var re = /\[GAMBAR:\s*([^\]]+)\]/gi;
+  var m;
+  while ((m = re.exec(text)) !== null) {
+    var desc = m[1].trim();
+    if (matches.indexOf(desc) === -1) matches.push(desc);
+  }
+  return matches;
+}
+
+async function callWorkerAIImage(prompt) {
+  if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
+  var url = APP.workerUrl.replace(/\/+$/, '') + '/ai/image';
+  var res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: prompt })
+  });
+  return await res.json();
+}
+
+var _lkImejGenerating = false;
+
+async function lkJanaImej() {
+  if (_lkImejGenerating) { showToast('Sila tunggu — imej sedang dijana...', 'info'); return; }
+  var box = document.getElementById('lkOutputBox');
+  if (!box || !box.textContent) { showToast('Jana lembaran kerja dahulu.', 'error'); return; }
+
+  var placeholders = lkExtractImejPlaceholders(box.textContent);
+  if (!placeholders.length) { showToast('Tiada placeholder [GAMBAR:] ditemui.', 'info'); return; }
+
+  var anggaran = (placeholders.length * 0.04).toFixed(2);
+  if (!confirm('Jana ' + placeholders.length + ' imej menggunakan DALL-E 3?\n\nAnggaran kos: USD $' + anggaran + '\n\nTeruskan?')) return;
+
+  _lkImejGenerating = true;
+  var imejBtn = document.getElementById('lkJanaImejBtn');
+  if (imejBtn) { imejBtn.textContent = '⏳ Menjana...'; imejBtn.disabled = true; }
+
+  var imejSection = document.getElementById('lkImejSection');
+  var imejGrid = document.getElementById('lkImejGrid');
+  if (imejSection) imejSection.style.display = 'block';
+  if (imejGrid) imejGrid.innerHTML = '';
+
+  var berjayas = 0;
+  var gagals = 0;
+
+  for (var i = 0; i < placeholders.length; i++) {
+    var desc = placeholders[i];
+    // Show loading card
+    var loadingId = 'lkImejCard_' + i;
+    if (imejGrid) {
+      imejGrid.innerHTML += '<div class="lk-imej-loading" id="' + loadingId + '">⏳ Jana imej ' + (i+1) + '/' + placeholders.length + '...<br><small style="opacity:.7">' + escapeHtml(desc.substring(0,60)) + (desc.length>60?'...':'') + '</small></div>';
+    }
+
+    try {
+      lkSetStatus('loading', 'Jana imej ' + (i+1) + '/' + placeholders.length + ': ' + desc.substring(0,50) + '...');
+      var result = await callWorkerAIImage(desc);
+
+      var cardEl = document.getElementById(loadingId);
+      if (result.success && result.image) {
+        berjayas++;
+        if (cardEl) {
+          cardEl.className = 'lk-imej-card';
+          cardEl.innerHTML = '<img src="' + result.image + '" alt="' + escapeHtml(desc) + '" loading="lazy">' +
+            '<div class="lk-imej-caption">📍 ' + escapeHtml(desc) + '</div>';
+        }
+      } else {
+        gagals++;
+        var errMsg = result.message || result.error || 'Gagal';
+        if (result.error === 'openai_key_missing') errMsg = 'OPENAI_API_KEY belum dikonfigurasi dalam Worker.';
+        else if (result.error === 'openai_kredit_habis') errMsg = 'Kredit OpenAI habis. Tambah kredit di platform.openai.com.';
+        if (cardEl) {
+          cardEl.className = 'lk-imej-loading';
+          cardEl.innerHTML = '❌ Gagal jana imej<br><small>' + escapeHtml(errMsg) + '</small><br><small style="opacity:.7">' + escapeHtml(desc.substring(0,60)) + '</small>';
+        }
+      }
+    } catch(e) {
+      gagals++;
+      var c = document.getElementById(loadingId);
+      if (c) c.innerHTML = '❌ Ralat: ' + escapeHtml(e.message);
+    }
+  }
+
+  _lkImejGenerating = false;
+  if (imejBtn) { imejBtn.textContent = '🖼️ Jana Imej'; imejBtn.disabled = false; }
+
+  var finalMsg = berjayas + ' imej berjaya dijana';
+  if (gagals) finalMsg += ', ' + gagals + ' gagal';
+  lkSetStatus(gagals ? 'error' : 'done', finalMsg + '. Klik kanan → Simpan imej untuk muat turun.');
+  showToast(finalMsg + '.', gagals ? 'error' : 'success');
+}
+
+// ══ END JANA LEMBARAN KERJA AI ══════════════════════════════════

@@ -88,6 +88,8 @@ function doPost(e) {
       case "replaceSheet":
         replaceSheet(data.sheetKey, data.rows || []);
         return jsonResponse({ success: true });
+      case "syncFromD1":
+        return jsonResponse(syncFromD1());
       default:
         return jsonResponse({ success: false, error: "Aksi tidak sah" }, 400);
     }
@@ -465,4 +467,161 @@ function string_(value) {
 
 function getKeyByValue_(obj, value) {
   return Object.keys(obj).find(function(key) { return obj[key] === value; });
+}
+
+// ============================================================
+// SYNC DARI CLOUDFLARE D1 → GOOGLE SHEETS
+// Boleh dijalankan secara manual atau automatik (trigger)
+// ============================================================
+
+// Sheet yang akan di-sync dari D1
+const D1_SYNC_SHEETS = ["GURU", "MURID", "HARILAHIR"];
+
+/**
+ * Jana token harian untuk panggil Cloudflare Worker
+ */
+function generateWorkerToken_(secret) {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const payload = yyyy + mm + dd + secret;
+  const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, payload, Utilities.Charset.UTF_8);
+  return Utilities.base64Encode(digest);
+}
+
+/**
+ * Panggil Cloudflare Worker dan baca data sheet dari D1
+ */
+function bacaSheetDariD1_(workerUrl, token, sheetKey) {
+  // Guna action "serviceReadSheet" — bypass Google OAuth, auth via serviceToken
+  const apiUrl = workerUrl.replace(/\/+$/, "") + "/api";
+  const payload = JSON.stringify({ action: "serviceReadSheet", serviceToken: token, sheetKey: sheetKey });
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: payload,
+    muteHttpExceptions: true
+  };
+  const response = UrlFetchApp.fetch(apiUrl, options);
+  const rawText = response.getContentText();
+  Logger.log("[" + sheetKey + "] Response (" + response.getResponseCode() + "): " + rawText.substring(0, 200));
+  const json = JSON.parse(rawText);
+  if (!json.success) throw new Error("D1 readSheet " + sheetKey + " gagal: " + (json.error || "unknown"));
+  return json.rows || [];
+}
+
+/**
+ * FUNGSI UTAMA — Pull semua data dari D1 dan tulis ke Google Sheets
+ * Boleh dijalankan manual dari Apps Script Editor: Run → syncFromD1
+ */
+function syncFromD1() {
+  const cfg = getConfig();
+  const workerUrl = string_(cfg.WORKER_URL || cfg.CLOUDFLARE_WORKER_URL || "");
+  const secret = string_(cfg.WORKER_SECRET || cfg.WORKER_TOKEN || "");
+
+  if (!workerUrl) {
+    Logger.log("❌ WORKER_URL tidak ditetapkan dalam CONFIG sheet.");
+    return { success: false, error: "WORKER_URL tiada dalam CONFIG" };
+  }
+  if (!secret) {
+    Logger.log("❌ WORKER_SECRET tidak ditetapkan dalam CONFIG sheet.");
+    return { success: false, error: "WORKER_SECRET tiada dalam CONFIG" };
+  }
+
+  const token = generateWorkerToken_(secret);
+  const hasil = {};
+  let adaRalat = false;
+
+  D1_SYNC_SHEETS.forEach(function(sheetKey) {
+    try {
+      Logger.log("⏳ Menarik data " + sheetKey + " dari D1...");
+      const rows = bacaSheetDariD1_(workerUrl, token, sheetKey);
+      if (!rows || rows.length < 2) {
+        Logger.log("⚠️ " + sheetKey + ": Data kosong atau hanya header. Langkau.");
+        hasil[sheetKey] = { skipped: true, reason: "kosong" };
+        return;
+      }
+      // Gantikan keseluruhan sheet dengan data D1
+      replaceSheet(sheetKey, rows);
+      Logger.log("✅ " + sheetKey + ": " + (rows.length - 1) + " baris disync dari D1.");
+      hasil[sheetKey] = { success: true, baris: rows.length - 1 };
+    } catch (e) {
+      Logger.log("❌ " + sheetKey + " gagal: " + e.message);
+      hasil[sheetKey] = { success: false, error: e.message };
+      adaRalat = true;
+    }
+  });
+
+  const ringkasan = Object.keys(hasil).map(function(k) {
+    const h = hasil[k];
+    if (h.skipped) return k + ": langkau (" + h.reason + ")";
+    if (h.success) return k + ": ✅ " + h.baris + " baris";
+    return k + ": ❌ " + h.error;
+  }).join(" | ");
+
+  Logger.log("Sync selesai: " + ringkasan);
+  catatLogSync_(ringkasan, adaRalat ? "Ralat" : "Berjaya");
+  return { success: !adaRalat, ringkasan: ringkasan, butiran: hasil };
+}
+
+/**
+ * Catat log sync ke sheet CONFIG (sebagai metadata)
+ */
+function catatLogSync_(ringkasan, status) {
+  try {
+    const now = Utilities.formatDate(new Date(), "Asia/Kuala_Lumpur", "yyyy-MM-dd HH:mm:ss");
+    setConfig({
+      D1_SYNC_LAST_RUN: now,
+      D1_SYNC_LAST_STATUS: status,
+      D1_SYNC_LAST_RESULT: ringkasan
+    });
+  } catch(e) {}
+}
+
+/**
+ * Pasang trigger automatik — sync setiap hari jam 6:00 pagi
+ * Run sekali sahaja dari Apps Script Editor: Run → pasangTriggerSyncD1
+ */
+function pasangTriggerSyncD1() {
+  // Buang trigger syncFromD1 lama jika ada
+  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+    if (trigger.getHandlerFunction() === "syncFromD1") {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+  // Pasang trigger baru — setiap hari jam 6:00 pagi
+  ScriptApp.newTrigger("syncFromD1")
+    .timeBased()
+    .everyDays(1)
+    .atHour(6)
+    .create();
+  Logger.log("✅ Trigger syncFromD1 dipasang — setiap hari jam 6:00 pagi.");
+}
+
+/**
+ * Buang trigger sync D1
+ * Run dari Apps Script Editor: Run → buangTriggerSyncD1
+ */
+function buangTriggerSyncD1() {
+  let count = 0;
+  ScriptApp.getProjectTriggers().forEach(function(trigger) {
+    if (trigger.getHandlerFunction() === "syncFromD1") {
+      ScriptApp.deleteTrigger(trigger);
+      count++;
+    }
+  });
+  Logger.log(count ? "✅ " + count + " trigger syncFromD1 dibuang." : "⚠️ Tiada trigger syncFromD1 dijumpai.");
+}
+
+/**
+ * Semak status sync terakhir — Log ke Execution Log
+ */
+function semakStatusSync() {
+  const cfg = getConfig();
+  Logger.log("=== STATUS SYNC D1 → SHEETS ===");
+  Logger.log("Masa Run Terakhir : " + (cfg.D1_SYNC_LAST_RUN    || "Belum pernah run"));
+  Logger.log("Status            : " + (cfg.D1_SYNC_LAST_STATUS  || "-"));
+  Logger.log("Keputusan         : " + (cfg.D1_SYNC_LAST_RESULT  || "-"));
+  Logger.log("Worker URL        : " + (cfg.WORKER_URL || cfg.CLOUDFLARE_WORKER_URL || "⚠️ BELUM DITETAPKAN"));
 }

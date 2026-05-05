@@ -184,6 +184,12 @@ export default {
       if (path === "/api" || path.startsWith("/api/")) {
         return await handleAPI(request, env, corsHeaders);
       }
+      if (path === "/ai/image") {
+        return await handleAIImage(request, env, corsHeaders);
+      }
+      if (path === "/ai/gemini") {
+        return await handleAIGemini(request, env, corsHeaders);
+      }
       if (path === "/ai" || path.startsWith("/ai/")) {
         return await handleAI(request, env, corsHeaders);
       }
@@ -258,6 +264,25 @@ async function handleAPI(request, env, corsHeaders) {
   }
 
   const workerToken = await generateDailyToken(env.WORKER_SECRET);
+
+  // ── Service Account bypass: untuk Apps Script / sistem dalaman ──
+  // Guna action "serviceReadSheet" dengan serviceToken = daily token
+  if (body.action === "serviceReadSheet") {
+    if (!body.serviceToken || body.serviceToken !== workerToken) {
+      return jsonResp({ success: false, error: "Service token tidak sah", code: "AUTH_REQUIRED" }, 401, corsHeaders);
+    }
+    const sheetKey = String(body.sheetKey || "").trim();
+    if (!sheetKey) return jsonResp({ success: false, error: "sheetKey diperlukan" }, 400, corsHeaders);
+    try {
+      const rows = shouldUseCloudflareD1(env)
+        ? await d1ReadSheetRows(env, sheetKey)
+        : await readBackendSheetRows(env, sheetKey, workerToken);
+      return jsonResp({ success: true, rows }, 200, corsHeaders);
+    } catch (e) {
+      return jsonResp({ success: false, error: e.message }, 500, corsHeaders);
+    }
+  }
+
   if (needsAuthenticatedRequest(body)) {
     try {
       const actor = await verifyGoogleIdentity(body.auth || {}, env);
@@ -1293,8 +1318,36 @@ async function handleAI(request, env, corsHeaders) {
   const systemPrompts = {
     opr: `Anda adalah pembantu penulisan laporan program sekolah dalam Bahasa Malaysia. Tulis laporan OPR yang formal. Format: Tajuk, Objektif, Aktiviti, Hasil, Cabaran, Cadangan.`,
     laporan_bertugas: `Anda ialah pembantu penulisan laporan guru bertugas mingguan sekolah dalam Bahasa Malaysia formal. Tugas utama anda ialah menghasilkan rumusan mingguan yang padat, profesional, tepat berdasarkan butiran yang diberi, tanpa mereka fakta baharu.`,
+    lembaran_kerja: `Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.
+
+PERATURAN FORMAT (WAJIB IKUT):
+- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)
+- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D
+- Nombor soalan berturutan dalam setiap bahagian: 1. 2. 3. ...
+- Aneka pilihan: gunakan A. B. C. D. (4 pilihan)
+- Isi tempat kosong: gunakan garis bawah panjang ________________
+- Baris kosong antara setiap soalan
+- Akhiri dengan SKEMA PEMARKAHAN (semua jawapan untuk semua bahagian)
+
+PERATURAN TOPIK:
+- Jika dinyatakan lebih daripada satu topik, agihkan soalan secara seimbang merentasi semua topik tersebut
+- Label setiap soalan dengan topiknya jika perlu (cth: [Topik: Pecahan])
+
+PERATURAN SOALAN BERGAMBAR:
+- AI tidak boleh menjana atau embed imej sebenar
+- Jika soalan memerlukan gambar, tulis placeholder: [GAMBAR: deskripsi ringkas gambar yang diperlukan]
+- Contoh: [GAMBAR: Rajah pokok dengan 5 dahan dan 3 buah pada setiap dahan]
+- Guru akan menyediakan/melukis gambar berdasarkan deskripsi tersebut
+
+PERATURAN ARAS:
+- Aras soalan ikut Taksonomi Bloom
+- Kandungan WAJIB selari dengan DSKP standard kandungan yang dinyatakan
+- Bahasa soalan mestilah sesuai dengan tahap murid`,
     default: `Anda adalah pembantu sekolah SK Kiandongo yang menulis dalam Bahasa Malaysia formal.`,
   };
+
+  const maxTokensMap = { lembaran_kerja: 3500 };
+  const maxTokens = maxTokensMap[type] || 1500;
 
   try {
     const aiResponse = await fetch("https://api.deepseek.com/chat/completions", {
@@ -1309,7 +1362,7 @@ async function handleAI(request, env, corsHeaders) {
           { role: "system", content: systemPrompts[type] || systemPrompts.default },
           { role: "user", content: prompt },
         ],
-        max_tokens: 1500,
+        max_tokens: maxTokens,
         temperature: 0.7,
       }),
     });
@@ -1328,6 +1381,154 @@ async function handleAI(request, env, corsHeaders) {
     throw new Error("Respons AI tidak sah");
   } catch (err) {
     return jsonResp({ success: false, error: "AI error: " + err.message }, 500, corsHeaders);
+  }
+}
+
+async function handleAIImage(request, env, corsHeaders) {
+  if (request.method !== "POST") {
+    return jsonResp({ success: false, error: "POST sahaja" }, 405, corsHeaders);
+  }
+  if (!env.OPENAI_API_KEY) {
+    return jsonResp({ success: false, error: "openai_key_missing", message: "OPENAI_API_KEY belum dikonfigurasi dalam Worker secrets." }, 503, corsHeaders);
+  }
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
+
+  const { prompt } = body;
+  if (!prompt) return jsonResp({ success: false, error: "Prompt diperlukan" }, 400, corsHeaders);
+
+  // Build safe educational prompt for DALL-E 3
+  const safePrompt = `Simple black and white line art illustration for Malaysian primary school educational worksheet. ` +
+    `Child-friendly, clean, clear and printable. ` +
+    `Subject: ${String(prompt).slice(0, 800)}. ` +
+    `Style: simple textbook diagram, no text labels, white background.`;
+
+  try {
+    const imgResp = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt: safePrompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "standard",
+        response_format: "b64_json",
+      }),
+    });
+
+    const imgData = await imgResp.json();
+
+    if (imgData?.error) {
+      const msg = imgData.error.message || JSON.stringify(imgData.error);
+      if (imgData.error.code === "billing_hard_limit_reached" || msg.includes("billing")) {
+        return jsonResp({ success: false, error: "openai_kredit_habis", message: "Kredit OpenAI habis." }, 402, corsHeaders);
+      }
+      return jsonResp({ success: false, error: "dall_e_error", message: msg }, 400, corsHeaders);
+    }
+
+    const b64 = imgData?.data?.[0]?.b64_json;
+    if (!b64) throw new Error("Tiada data imej dalam respons DALL-E");
+
+    return jsonResp({ success: true, image: "data:image/png;base64," + b64 }, 200, corsHeaders);
+  } catch (err) {
+    return jsonResp({ success: false, error: "image_error", message: err.message }, 500, corsHeaders);
+  }
+}
+
+async function handleAIGemini(request, env, corsHeaders) {
+  if (request.method !== "POST") {
+    return jsonResp({ success: false, error: "POST sahaja" }, 405, corsHeaders);
+  }
+  if (!env.GEMINI_API_KEY) {
+    return jsonResp({ success: false, error: "gemini_key_missing", message: "GEMINI_API_KEY belum dikonfigurasi dalam Worker secrets." }, 503, corsHeaders);
+  }
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
+
+  const { prompt, type, withImage } = body;
+  if (!prompt) return jsonResp({ success: false, error: "Prompt diperlukan" }, 400, corsHeaders);
+
+  const systemPromptLK = `Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.
+
+PERATURAN FORMAT (WAJIB IKUT):
+- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)
+- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D
+- Nombor soalan berturutan dalam setiap bahagian: 1. 2. 3. ...
+- Aneka pilihan: gunakan A. B. C. D. (4 pilihan)
+- Isi tempat kosong: gunakan garis bawah panjang ________________
+- Baris kosong antara setiap soalan
+- Akhiri dengan SKEMA PEMARKAHAN (semua jawapan untuk semua bahagian)
+
+PERATURAN SOALAN BERGAMBAR:
+- Jika soalan memerlukan gambar atau rajah, tulis placeholder: [GAMBAR: deskripsi ringkas]
+- Contoh: [GAMBAR: Rajah pokok dengan 5 dahan]
+- Sistem akan jana gambar secara automatik untuk setiap placeholder
+
+PERATURAN TOPIK:
+- Jika dinyatakan lebih daripada satu topik, agihkan soalan secara seimbang
+- Kandungan WAJIB selari dengan DSKP standard kandungan yang dinyatakan
+
+PERATURAN ARAS:
+- Aras soalan ikut Taksonomi Bloom
+- Bahasa soalan mestilah sesuai dengan tahap murid`;
+
+  const useImage = withImage === true;
+  const model = useImage ? "gemini-2.0-flash-exp" : "gemini-2.0-flash";
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
+
+  const genConfig = useImage
+    ? { responseModalities: ["TEXT", "IMAGE"] }
+    : { maxOutputTokens: 8192, temperature: 0.7 };
+
+  const reqBody = {
+    systemInstruction: { parts: [{ text: systemPromptLK }] },
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: genConfig,
+  };
+
+  try {
+    const aiResp = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reqBody),
+    });
+
+    const aiData = await aiResp.json();
+
+    if (aiData?.error) {
+      const msg = aiData.error.message || JSON.stringify(aiData.error);
+      const code = aiData.error.code || 0;
+      if (code === 429) return jsonResp({ success: false, error: "gemini_limit", message: "Kuota Gemini API dicapai. Cuba sebentar lagi." }, 429, corsHeaders);
+      if (code === 403) return jsonResp({ success: false, error: "gemini_key_invalid", message: "GEMINI_API_KEY tidak sah atau tiada akses." }, 403, corsHeaders);
+      return jsonResp({ success: false, error: "gemini_error", message: msg }, 400, corsHeaders);
+    }
+
+    const parts = aiData?.candidates?.[0]?.content?.parts;
+    if (!parts || !parts.length) throw new Error("Respons Gemini kosong");
+
+    // Separate text and image parts
+    let textContent = "";
+    const images = [];
+    for (const part of parts) {
+      if (part.text) {
+        textContent += part.text;
+      } else if (part.inlineData) {
+        const mime = part.inlineData.mimeType || "image/png";
+        images.push(`data:${mime};base64,${part.inlineData.data}`);
+      }
+    }
+
+    if (!textContent && !images.length) throw new Error("Tiada kandungan dalam respons Gemini");
+
+    return jsonResp({ success: true, content: textContent, images }, 200, corsHeaders);
+  } catch (err) {
+    return jsonResp({ success: false, error: "gemini_error", message: err.message }, 500, corsHeaders);
   }
 }
 
