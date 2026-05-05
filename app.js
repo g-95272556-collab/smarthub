@@ -11547,8 +11547,8 @@ function lkBinaSumber() {
   if (subjekVal === 'BKD') {
     p += '\nNota khusus BKD: Bahasa Kadazan Dusun — gunakan istilah dan kosa kata Kadazan Dusun yang betul. Jana soalan dalam konteks budaya dan bahasa KadazanDusun Sabah sesuai Tahun ' + tahun + '.';
   }
-  p += '\n\nJana mengikut struktur: BAHAGIAN A (Aneka Pilihan), BAHAGIAN B (Isi Tempat Kosong), BAHAGIAN C (Soalan Struktur), BAHAGIAN D (Esei jika perlu), kemudian SKEMA PEMARKAHAN.';
-  p += '\nAgihkan ' + bilSoalan + ' soalan secara munasabah. Sertakan arahan setiap bahagian. Jangan guna markdown.';
+  p += '\n\nJana: BAHAGIAN A (Aneka Pilihan), BAHAGIAN B (Isi Tempat Kosong), BAHAGIAN C (Struktur), kemudian SKEMA JAWAPAN.';
+  p += '\nAgihkan ' + bilSoalan + ' soalan. Sertakan arahan ringkas. Jangan guna markdown. Jika perlu gambar, hasilkan secara terus.';
 
   return p;
 }
@@ -11576,9 +11576,9 @@ async function callWorkerAIGemini(prompt, withImage) {
       var note = document.getElementById('lkEngineNote');
       if (!note) return;
       if (e.target.value === 'gemini') {
-        note.innerHTML = '✅ Gemini: AI akan jana teks <strong>dan</strong> imej serentak dalam satu permintaan. Imej dipapar terus dalam output.';
+        note.innerHTML = '✅ <strong>Gemini 3.1 Flash:</strong> AI menjana teks dan imej (Nano Banana 2) secara percuma/bersepadu. Sangat pantas dan berkualiti tinggi.';
       } else {
-        note.innerHTML = '⚠️ DeepSeek: AI tidak jana imej. Guna <em>[GAMBAR: deskripsi]</em> sebagai placeholder — guru tampal gambar sendiri. Atau tukar ke Gemini untuk jana imej automatik.';
+        note.innerHTML = '⚠️ <strong>DeepSeek:</strong> AI hanya menjana teks. Placeholder <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }
     }
   });
@@ -11591,9 +11591,9 @@ async function janaLembaranKerja() {
 
   var engine = lkGetEngine();
   _lkGenerating = true;
-  var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek';
+  var engineLabel = engine === 'gemini' ? 'Gemini 3.1 Flash' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30–90 saat).');
-  document.getElementById('lkOutputBox').textContent = '⏳ Memproses permintaan ' + engineLabel + '...';
+  document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">⏳ Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>';
 
   // Reset image section
   var imejBtn = document.getElementById('lkJanaImejBtn');
@@ -11641,17 +11641,32 @@ async function janaLembaranKerja() {
     var tahunOut = document.getElementById('lkTahun').value;
     var jenisLabelMap = { 'pbd-pt': 'PBD PERTENGAHAN TAHUN', 'pbd-at': 'PBD AKHIR TAHUN', 'uasa': 'UASA' };
     var jenisTxt = jenisLabelMap[lkGetJenis()] || '';
-    var line = '════════════════════════════════════════════';
-    var header = line + '\n';
-    header += 'SK KIANDONGO\n';
-    header += 'LEMBARAN KERJA — ' + jenisTxt + '\n';
-    header += 'Mata Pelajaran: ' + subjekLabelOut + '     Tahun: ' + tahunOut + '\n';
-    header += 'Nama: _______________________________     Kelas: ________\n';
-    header += 'Tarikh: ______________     Markah: _______ / _______\n';
-    header += line + '\n\n';
+    var line = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
+    var header = '<div style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
+      line +
+      '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:10px">SK KIANDONGO</div>' +
+      '<div style="text-align:center;font-weight:bold;margin-bottom:10px">LEMBARAN KERJA — ' + jenisTxt + '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+        '<span>Mata Pelajaran: ' + subjekLabelOut + '</span>' +
+        '<span>Tahun: ' + tahunOut + '</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+        '<span>Nama: _______________________________</span>' +
+        '<span>Kelas: ________</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+        '<span>Tarikh: ______________</span>' +
+        '<span>Markah: _______ / _______</span>' +
+      '</div>' +
+      line +
+      '</div>';
 
-    var fullText = header + result.content;
-    document.getElementById('lkOutputBox').textContent = fullText;
+    if (result.isHtml) {
+      document.getElementById('lkOutputBox').innerHTML = header + '<div class="lk-html-content">' + result.content + '</div>';
+    } else {
+      // Fallback for non-HTML (DeepSeek)
+      document.getElementById('lkOutputBox').innerHTML = header + '<pre style="white-space:pre-wrap;font-family:inherit">' + result.content + '</pre>';
+    }
 
     var statusMsg = 'Lembaran kerja berjaya dijana oleh ' + engineLabel + '!';
 
@@ -11663,7 +11678,7 @@ async function janaLembaranKerja() {
         if (imejGrid) {
           imejGrid.innerHTML = '';
           var imejNote = document.getElementById('lkImejNote');
-          if (imejNote) imejNote.textContent = 'Imej dijana oleh Gemini 2.0 Flash (percuma). Klik kanan → Simpan imej untuk simpan ke komputer.';
+          if (imejNote) imejNote.textContent = 'Imej dijana oleh Gemini 3.1 Flash. Klik kanan → Simpan imej untuk simpan ke komputer.';
           geminiImages.forEach(function(src, idx) {
             var card = document.createElement('div');
             card.className = 'lk-imej-card';
@@ -11688,7 +11703,7 @@ async function janaLembaranKerja() {
       var placeholders = lkExtractImejPlaceholders(fullText);
       if (imejBtn) imejBtn.style.display = placeholders.length ? 'inline-block' : 'none';
       if (placeholders.length) {
-        statusMsg += ' Terdapat ' + placeholders.length + ' placeholder imej — klik 🖼️ Jana Imej untuk jana (USD $' + (placeholders.length * 0.04).toFixed(2) + ' anggaran).';
+        statusMsg += ' Terdapat ' + placeholders.length + ' placeholder imej — klik 🖼️ Jana Imej untuk jana menggunakan Gemini.';
       } else {
         statusMsg += ' Semak dan cetak jika perlu.';
       }
@@ -11727,43 +11742,25 @@ function lkSalinFallback(text) {
 
 function lkCetakOutput() {
   var box = document.getElementById('lkOutputBox');
-  if (!box || !box.textContent.trim() || box.textContent.startsWith('Hasil lembaran')) {
+  if (!box || !box.innerHTML.trim() || box.innerHTML.includes('Hasil lembaran kerja akan dipaparkan')) {
     showToast('Jana lembaran kerja dahulu sebelum cetak.', 'error'); return;
   }
   var w = window.open('', '_blank', 'width=850,height=1000');
   if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
 
-  // Build print HTML — text content
-  var textContent = box.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  // Collect generated images (if any)
-  var imejCards = document.querySelectorAll('#lkImejGrid .lk-imej-card');
-  var imejHtml = '';
-  if (imejCards.length) {
-    imejHtml += '<div style="page-break-before:always;margin-top:20mm">';
-    imejHtml += '<h2 style="font-family:Arial,sans-serif;font-size:12pt;margin-bottom:12pt">Imej Lembaran Kerja</h2>';
-    imejHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14pt">';
-    imejCards.forEach(function(card) {
-      var img = card.querySelector('img');
-      var caption = card.querySelector('.lk-imej-caption');
-      if (img) {
-        imejHtml += '<div style="border:1pt solid #ccc;padding:6pt;text-align:center">';
-        imejHtml += '<img src="' + img.src + '" style="max-width:100%;height:auto;display:block;margin:0 auto">';
-        if (caption) imejHtml += '<p style="font-family:Arial,sans-serif;font-size:8pt;margin:4pt 0 0;color:#555">' + escapeHtml(caption.textContent) + '</p>';
-        imejHtml += '</div>';
-      }
-    });
-    imejHtml += '</div></div>';
-  }
+  // Build print HTML
+  var contentHtml = box.innerHTML;
 
   w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lembaran Kerja</title>' +
     '<style>' +
-    'body{font-family:"Courier New",monospace;font-size:11pt;line-height:1.9;padding:20mm 20mm 15mm 25mm;}' +
-    'pre{white-space:pre-wrap;margin:0;font-family:inherit;font-size:inherit;}' +
+    'body{font-family:"Courier New",monospace;font-size:11pt;line-height:1.6;padding:20mm 20mm 15mm 25mm;}' +
+    '.lk-inline-image { margin: 20px 0; text-align: center; }' +
+    '.lk-inline-image img { max-width: 80%; height: auto; border: 1px solid #000; padding: 5px; }' +
+    'pre { white-space: pre-wrap; font-family: inherit; margin: 0; }' +
+    'hr { border: none; border-top: 1pt solid #333; margin: 10pt 0; }' +
     '@media print{@page{margin:15mm 15mm 15mm 20mm;}body{padding:0;}}' +
     '</style></head><body>' +
-    '<pre>' + textContent + '</pre>' +
-    imejHtml +
+    contentHtml +
     '</body></html>');
   w.document.close();
   w.onload = function(){ w.focus(); w.print(); };
@@ -11771,7 +11768,7 @@ function lkCetakOutput() {
 
 function lkBersihOutput() {
   var box = document.getElementById('lkOutputBox');
-  if (box) box.textContent = 'Hasil lembaran kerja akan dipaparkan di sini setelah dijana...';
+  if (box) box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Hasil lembaran kerja akan dipaparkan di sini setelah dijana...</div>';
   var imejBtn = document.getElementById('lkJanaImejBtn');
   if (imejBtn) imejBtn.style.display = 'none';
   var imejSection = document.getElementById('lkImejSection');
@@ -11815,8 +11812,7 @@ async function lkJanaImej() {
   var placeholders = lkExtractImejPlaceholders(box.textContent);
   if (!placeholders.length) { showToast('Tiada placeholder [GAMBAR:] ditemui.', 'info'); return; }
 
-  var anggaran = (placeholders.length * 0.04).toFixed(2);
-  if (!confirm('Jana ' + placeholders.length + ' imej menggunakan DALL-E 3?\n\nAnggaran kos: USD $' + anggaran + '\n\nTeruskan?')) return;
+  if (!confirm('Jana ' + placeholders.length + ' imej menggunakan Gemini 3.1 Flash?\n\nTeruskan?')) return;
 
   _lkImejGenerating = true;
   var imejBtn = document.getElementById('lkJanaImejBtn');

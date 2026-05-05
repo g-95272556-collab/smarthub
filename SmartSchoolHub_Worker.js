@@ -1388,8 +1388,8 @@ async function handleAIImage(request, env, corsHeaders) {
   if (request.method !== "POST") {
     return jsonResp({ success: false, error: "POST sahaja" }, 405, corsHeaders);
   }
-  if (!env.OPENAI_API_KEY) {
-    return jsonResp({ success: false, error: "openai_key_missing", message: "OPENAI_API_KEY belum dikonfigurasi dalam Worker secrets." }, 503, corsHeaders);
+  if (!env.GEMINI_API_KEY) {
+    return jsonResp({ success: false, error: "gemini_key_missing", message: "GEMINI_API_KEY belum dikonfigurasi dalam Worker secrets." }, 503, corsHeaders);
   }
 
   let body;
@@ -1398,43 +1398,38 @@ async function handleAIImage(request, env, corsHeaders) {
   const { prompt } = body;
   if (!prompt) return jsonResp({ success: false, error: "Prompt diperlukan" }, 400, corsHeaders);
 
-  // Build safe educational prompt for DALL-E 3
-  const safePrompt = `Simple black and white line art illustration for Malaysian primary school educational worksheet. ` +
-    `Child-friendly, clean, clear and printable. ` +
+  // Build safe educational prompt for Gemini Image Generation
+  const safePrompt = `Educational illustration for Malaysian primary school worksheet. ` +
     `Subject: ${String(prompt).slice(0, 800)}. ` +
-    `Style: simple textbook diagram, no text labels, white background.`;
+    `Style: clean black and white line art, child-friendly, white background, simple textbook diagram style.`;
+
+  const model = "gemini-3.1-flash-image-preview";
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
 
   try {
-    const imgResp = await fetch("https://api.openai.com/v1/images/generations", {
+    const aiResp = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "dall-e-3",
-        prompt: safePrompt,
-        n: 1,
-        size: "1024x1024",
-        quality: "standard",
-        response_format: "b64_json",
+        contents: [{ role: "user", parts: [{ text: safePrompt }] }],
+        generationConfig: { responseModalities: ["IMAGE"] }
       }),
     });
 
-    const imgData = await imgResp.json();
+    const aiData = await aiResp.json();
 
-    if (imgData?.error) {
-      const msg = imgData.error.message || JSON.stringify(imgData.error);
-      if (imgData.error.code === "billing_hard_limit_reached" || msg.includes("billing")) {
-        return jsonResp({ success: false, error: "openai_kredit_habis", message: "Kredit OpenAI habis." }, 402, corsHeaders);
-      }
-      return jsonResp({ success: false, error: "dall_e_error", message: msg }, 400, corsHeaders);
+    if (aiData?.error) {
+      const msg = aiData.error.message || JSON.stringify(aiData.error);
+      return jsonResp({ success: false, error: "gemini_image_error", message: msg }, 400, corsHeaders);
     }
 
-    const b64 = imgData?.data?.[0]?.b64_json;
-    if (!b64) throw new Error("Tiada data imej dalam respons DALL-E");
+    const part = aiData?.candidates?.[0]?.content?.parts?.[0];
+    if (!part || !part.inlineData) throw new Error("Tiada data imej dihasilkan oleh Gemini");
 
-    return jsonResp({ success: true, image: "data:image/png;base64," + b64 }, 200, corsHeaders);
+    const mime = part.inlineData.mimeType || "image/png";
+    const b64 = part.inlineData.data;
+
+    return jsonResp({ success: true, image: `data:${mime};base64,${b64}` }, 200, corsHeaders);
   } catch (err) {
     return jsonResp({ success: false, error: "image_error", message: err.message }, 500, corsHeaders);
   }
@@ -1466,9 +1461,10 @@ PERATURAN FORMAT (WAJIB IKUT):
 - Akhiri dengan SKEMA PEMARKAHAN (semua jawapan untuk semua bahagian)
 
 PERATURAN SOALAN BERGAMBAR:
-- Jika soalan memerlukan gambar atau rajah, tulis placeholder: [GAMBAR: deskripsi ringkas]
-- Contoh: [GAMBAR: Rajah pokok dengan 5 dahan]
-- Sistem akan jana gambar secara automatik untuk setiap placeholder
+- Jika soalan memerlukan gambar atau rajah, HASILKAN imej tersebut secara terus (native image generation) sejurus selepas teks soalan berkenaan.
+- JANGAN gunakan placeholder [GAMBAR:]. Hasilkan imej sebenar.
+- Pastikan imej adalah relevan dengan kandungan soalan tersebut.
+- Imej mestilah dalam gaya "clean black and white line art" yang sesuai untuk dicetak.
 
 PERATURAN TOPIK:
 - Jika dinyatakan lebih daripada satu topik, agihkan soalan secara seimbang
@@ -1479,7 +1475,7 @@ PERATURAN ARAS:
 - Bahasa soalan mestilah sesuai dengan tahap murid`;
 
   const useImage = withImage === true;
-  const model = useImage ? "gemini-2.0-flash-exp" : "gemini-2.0-flash";
+  const model = "gemini-3.1-flash-image-preview";
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
 
   const genConfig = useImage
@@ -1509,24 +1505,28 @@ PERATURAN ARAS:
       return jsonResp({ success: false, error: "gemini_error", message: msg }, 400, corsHeaders);
     }
 
-    const parts = aiData?.candidates?.[0]?.content?.parts;
-    if (!parts || !parts.length) throw new Error("Respons Gemini kosong");
+    const candidates = aiData?.candidates?.[0]?.content?.parts || [];
+    let htmlContent = "";
+    let imageCount = 0;
 
-    // Separate text and image parts
-    let textContent = "";
-    const images = [];
-    for (const part of parts) {
-      if (part.text) {
-        textContent += part.text;
-      } else if (part.inlineData) {
-        const mime = part.inlineData.mimeType || "image/png";
-        images.push(`data:${mime};base64,${part.inlineData.data}`);
+    candidates.forEach((p) => {
+      if (p.text) {
+        // Tukar baris baru kepada <br> untuk paparan HTML
+        htmlContent += p.text.replace(/\n/g, "<br>");
       }
-    }
+      if (p.inlineData) {
+        imageCount++;
+        const src = `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`;
+        htmlContent += `<div class="lk-inline-image" style="margin: 15px 0; text-align: center;">
+          <img src="${src}" style="max-width: 100%; height: auto; border: 1px solid #ddd; padding: 5px; border-radius: 4px; display: block; margin: 0 auto;">
+          <small style="color: #666; font-style: italic; display: block; margin-top: 5px;">Rajah ${imageCount}</small>
+        </div>`;
+      }
+    });
 
-    if (!textContent && !images.length) throw new Error("Tiada kandungan dalam respons Gemini");
+    if (!htmlContent) throw new Error("Tiada kandungan dihasilkan oleh Gemini");
 
-    return jsonResp({ success: true, content: textContent, images }, 200, corsHeaders);
+    return jsonResp({ success: true, content: htmlContent, images: [], isHtml: true }, 200, corsHeaders);
   } catch (err) {
     return jsonResp({ success: false, error: "gemini_error", message: err.message }, 500, corsHeaders);
   }
