@@ -11670,7 +11670,10 @@ async function janaLembaranKerja() {
     var jenisLabelMap = { 'pbd-pt': 'LEMBARAN KERJA PDPC', 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
     var jenisTxt = jenisLabelMap[lkGetJenis()] || '';
     var line = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
-    var header = '<div style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
+    var masaMenjawab = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
+    var guruPenyedia = document.getElementById('lkGuruPenyedia').value || '';
+    
+    var header = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
       line +
       '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:10px">SK KIANDONGO</div>' +
       '<div style="text-align:center;font-weight:bold;margin-bottom:10px">LEMBARAN KERJA — ' + jenisTxt + '</div>' +
@@ -11679,11 +11682,14 @@ async function janaLembaranKerja() {
         '<span>Tahun: ' + tahunOut + '</span>' +
       '</div>' +
       '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+        '<span>Masa: ' + masaMenjawab + '</span>' +
+        '<span>Tarikh: ______________</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
         '<span>Nama: _______________________________</span>' +
         '<span>Kelas: ________</span>' +
       '</div>' +
-      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
-        '<span>Tarikh: ______________</span>' +
+      '<div style="text-align:right;margin-bottom:8px">' +
         '<span>Markah: _______ / _______</span>' +
       '</div>' +
       line +
@@ -11777,23 +11783,90 @@ function lkCetakOutput() {
   if (!box || !box.innerHTML.trim() || box.innerHTML.includes('Hasil lembaran kerja akan dipaparkan')) {
     showToast('Jana lembaran kerja dahulu sebelum cetak.', 'error'); return;
   }
+  
+  var jenis = lkGetJenis();
+  var subjekSel = document.getElementById('lkSubjek');
+  var subjekLabel = subjekSel ? (subjekSel.options[subjekSel.selectedIndex] ? subjekSel.options[subjekSel.selectedIndex].text : '') : '';
+  var tahun = document.getElementById('lkTahun').value;
+  var masa = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
+  var guru = document.getElementById('lkGuruPenyedia').value || '_______________________';
+  
+  var isUjianFormal = (jenis === 'pbd-at' || jenis === 'uasa');
+  var jenisTxt = { 'pbd-pt': 'LEMBARAN KERJA PDPC', 'pbd-at': 'PENTAKSIRAN BILIK DARJAH (PBD) BERTERUSAN', 'uasa': 'UJIAN AKHIR SESI AKADEMIK (UASA)' }[jenis] || 'LEMBARAN KERJA';
+
   var w = window.open('', '_blank', 'width=850,height=1000');
   if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
 
-  // Build print HTML
-  var contentHtml = box.innerHTML;
+  var style = '<style>' +
+    '@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap");' +
+    'body{font-family:"Courier New",monospace;font-size:11.5pt;line-height:1.6;padding:0;margin:0;color:#000;}' +
+    '.page{padding:20mm 20mm 15mm 25mm;position:relative;background:#fff;}' +
+    '.cover-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260mm;text-align:center;padding:20mm;}' +
+    '.cover-border{border:4pt double #000;padding:40px;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;}' +
+    '.school-name{font-size:1.4rem;font-weight:bold;margin-bottom:10px;text-transform:uppercase;}' +
+    '.exam-title{font-size:1.8rem;font-weight:800;margin:40px 0;text-decoration:underline;}' +
+    '.subject-box{border:2pt solid #000;padding:20px;margin:20px 0;width:80%;font-size:1.3rem;font-weight:bold;}' +
+    '.meta-info{margin:30px 0;font-size:1.2rem;text-align:left;display:inline-block;}' +
+    '.meta-info div{margin-bottom:10px;}' +
+    '.sig-section{margin-top:auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;width:100%;text-align:center;font-size:9pt;}' +
+    '.sig-box{display:flex;flex-direction:column;align-items:center;}' +
+    '.sig-line{border-top:1pt solid #000;width:100%;margin-top:60px;margin-bottom:5px;}' +
+    '.sulit-label{position:absolute;top:20mm;left:25mm;font-weight:bold;border:1.5pt solid #000;padding:2px 10px;font-family:sans-serif;}' +
+    '.page-break{page-break-before:always;}' +
+    '.lk-inline-image{margin:20px 0;text-align:center;}' +
+    '.lk-inline-image img{max-width:85%;height:auto;border:1pt solid #000;padding:5px;}' +
+    'pre{white-space:pre-wrap;font-family:inherit;margin:0;}' +
+    'hr{border:none;border-top:1pt solid #333;margin:10pt 0;}' +
+    '@media print{' +
+      '@page{margin:0;size:A4;}' +
+      '.page{height:297mm;box-sizing:border-box;}' +
+      '.no-print{display:none;}' +
+    '}' +
+    '</style>';
 
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lembaran Kerja</title>' +
-    '<style>' +
-    'body{font-family:"Courier New",monospace;font-size:11pt;line-height:1.6;padding:20mm 20mm 15mm 25mm;}' +
-    '.lk-inline-image { margin: 20px 0; text-align: center; }' +
-    '.lk-inline-image img { max-width: 80%; height: auto; border: 1px solid #000; padding: 5px; }' +
-    'pre { white-space: pre-wrap; font-family: inherit; margin: 0; }' +
-    'hr { border: none; border-top: 1pt solid #333; margin: 10pt 0; }' +
-    '@media print{@page{margin:15mm 15mm 15mm 20mm;}body{padding:0;}}' +
-    '</style></head><body>' +
-    contentHtml +
+  var coverPageHtml = '';
+  if (isUjianFormal) {
+    coverPageHtml = '<div class="page cover-page">' +
+      '<div class="cover-border">' +
+        '<div class="sulit-label">SULIT</div>' +
+        '<div>' +
+          '<div class="school-name">SK KIANDONGO, TONGOD</div>' +
+          '<div style="font-size:1rem">SABAH, MALAYSIA</div>' +
+        '</div>' +
+        '<div>' +
+          '<div class="exam-title">' + jenisTxt + '</div>' +
+          '<div class="subject-box">' + subjekLabel.toUpperCase() + '<br>TAHUN ' + tahun + '</div>' +
+        '</div>' +
+        '<div class="meta-info">' +
+          '<div><strong>MASA MENJAWAB:</strong> ' + masa.toUpperCase() + '</div>' +
+          '<div><strong>JANGAN BUKA KERTAS SOALAN INI SEHINGGA DIBERITAHU</strong></div>' +
+        '</div>' +
+        '<div class="sig-section">' +
+          '<div class="sig-box"><div class="sig-line"></div><strong>DISEDIAKAN OLEH:</strong><br>' + guru + '<br>(Guru Mata Pelajaran)</div>' +
+          '<div class="sig-box"><div class="sig-line"></div><strong>DISEMAK OLEH:</strong><br>_______________________<br>(Ketua Panitia / PK)</div>' +
+          '<div class="sig-box"><div class="sig-line"></div><strong>DISAHKAN OLEH:</strong><br>_______________________<br>(Guru Besar)</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // Remove the preview header if we are printing a formal exam to avoid redundancy
+  var rawContent = box.innerHTML;
+  var finalContentHtml = rawContent;
+  if (isUjianFormal) {
+    // Strip the simple header from preview if it exists
+    finalContentHtml = rawContent.replace(/<div class="lk-print-header"[\s\S]*?<\/div>/i, '');
+    finalContentHtml = '<div class="page page-break">' + finalContentHtml + '</div>';
+  } else {
+    finalContentHtml = '<div class="page">' + finalContentHtml + '</div>';
+  }
+
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cetak Lembaran Kerja</title>' +
+    style + '</head><body>' +
+    coverPageHtml +
+    finalContentHtml +
     '</body></html>');
+  
   w.document.close();
   w.onload = function(){ w.focus(); w.print(); };
 }

@@ -1458,6 +1458,7 @@ async function handleAIGemini(request, env, corsHeaders) {
 WAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).
 
 PERATURAN FORMAT (WAJIB IKUT):
+- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid, atau sebarang elemen muka depan. Maklumat ini akan dijana oleh sistem secara automatik. Mulakan terus dengan soalan.
 - Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)
 - Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D
 - Nombor soalan berturutan dalam setiap bahagian: 1. 2. 3. ...
