@@ -11576,7 +11576,7 @@ async function callWorkerAIGemini(prompt, withImage) {
       var note = document.getElementById('lkEngineNote');
       if (!note) return;
       if (e.target.value === 'gemini') {
-        note.innerHTML = '✅ <strong>Gemini 3.1 Flash:</strong> AI menjana teks dan imej (Nano Banana 2) secara percuma/bersepadu. Sangat pantas dan berkualiti tinggi.';
+        note.innerHTML = '✅ <strong>Gemini 2.0 Flash:</strong> AI menjana teks dan imej secara terus (Stable) dengan pantas. Percuma dan berkualiti tinggi.';
       } else {
         note.innerHTML = '⚠️ <strong>DeepSeek:</strong> AI hanya menjana teks. Placeholder <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }
@@ -11591,7 +11591,7 @@ async function janaLembaranKerja() {
 
   var engine = lkGetEngine();
   _lkGenerating = true;
-  var engineLabel = engine === 'gemini' ? 'Gemini 3.1 Flash' : 'DeepSeek';
+  var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30–90 saat).');
   document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">⏳ Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>';
 
