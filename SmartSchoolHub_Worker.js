@@ -1477,9 +1477,14 @@ PERATURAN TOPIK:
 - Jika dinyatakan lebih daripada satu topik, agihkan soalan secara seimbang
 - Kandungan WAJIB selari dengan DSKP standard kandungan yang dinyatakan
 
-PERATURAN ARAS & KPM:
-- PBD: Fokus pada penguasaan Standard Kandungan dan Standard Pembelajaran. Soalan mestilah pelbagai aras bagi membolehkan guru menilai Tahap Penguasaan (TP).
-- UASA: Ikuti format instrumen pentaksiran KPM yang merangkumi soalan Objektif (Bahagian A) dan Subjektif/Struktur (Bahagian B/C).
+PERATURAN ARAS & KPM (WAJIB):
+- PBD Berterusan / PDPC: Fokus pada penguasaan Standard Kandungan. Jana campuran soalan Objektif dan Subjektif (jumlah sekitar 15 soalan).
+- UASA (Ujian Akhir Sesi Akademik): Jana soalan mengikut struktur subjek:
+  * SAINS: Bahagian A (10 MCQ), Bahagian B (2 Struktur), Bahagian C (4 Struktur/Esei).
+  * MATEMATIK: Bahagian A (20 Objektif/Subjektif Pendek), Bahagian B (5 Penyelesaian Masalah).
+  * SEJARAH: Bahagian A (20 MCQ), Bahagian B (4 Struktur), Bahagian C (2 Esei).
+  * BAHASA MELAYU: Bahagian A (Objektif), Bahagian B (Pemahaman/Tatabahasa), Bahagian C (Penulisan Pendek), Bahagian D (Penulisan Karangan).
+  * BAHASA INGGERIS: Part 1-4 (Reading), Part 5-7 (Writing).
 - Aras soalan ikut Taksonomi Bloom (LOTS & HOTS).
 - Bahasa soalan mestilah sesuai dengan tahap murid`;
 

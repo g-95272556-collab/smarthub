@@ -11228,7 +11228,56 @@ function lkOnTahunChange() {
     if (uasaRadio) uasaRadio.disabled = false;
     if (jenisNote) jenisNote.textContent = '';
   }
+  lkUpdateKpmSoalanCount();
   lkOnJenisChange();
+}
+
+function lkSetSoalanMode(mode) {
+  _lkSoalanMode = mode;
+  var btnAuto = document.getElementById('lkBtnSoalanAuto');
+  var btnManual = document.getElementById('lkBtnSoalanManual');
+  var contAuto = document.getElementById('lkSoalanAutoCont');
+  var contManual = document.getElementById('lkSoalanManualCont');
+  
+  if (mode === 'auto') {
+    if (btnAuto) btnAuto.className = 'btn btn-sm btn-indigo';
+    if (btnManual) btnManual.className = 'btn btn-sm btn-gray';
+    if (contAuto) contAuto.style.display = 'block';
+    if (contManual) contManual.style.display = 'none';
+    lkUpdateKpmSoalanCount();
+  } else {
+    if (btnAuto) btnAuto.className = 'btn btn-sm btn-gray';
+    if (btnManual) btnManual.className = 'btn btn-sm btn-indigo';
+    if (contAuto) contAuto.style.display = 'none';
+    if (contManual) contManual.style.display = 'block';
+  }
+}
+
+function lkGetKpmSoalanCount(jenis, subjek) {
+  if (jenis === 'uasa') {
+    var counts = {
+      'BM': 25,    // 20 Obj + pemahaman + penulisan
+      'BI': 25,    // 7 parts (approx items)
+      'Math': 25,  // 20A + 5B
+      'Sains': 16, // 10A + 2B + 4C
+      'Sejarah': 26 // 20A + 4B + 2C
+    };
+    return counts[subjek] || 20;
+  }
+  // PDPC / PBD Berterusan
+  return 15;
+}
+
+function lkUpdateKpmSoalanCount() {
+  var jenis = lkGetJenis();
+  var sel = document.getElementById('lkSubjek');
+  var subjek = sel ? sel.value : 'BM';
+  var count = lkGetKpmSoalanCount(jenis, subjek);
+  var display = document.getElementById('lkBilSoalanDisplay');
+  if (display) display.textContent = count;
+  // Sync hidden manual input just in case
+  var input = document.getElementById('lkBilSoalan');
+  if (input && _lkSoalanMode === 'auto') input.value = count;
 }
 
 function lkOnJenisChange() {
@@ -11263,6 +11312,7 @@ function lkOnJenisChange() {
       note.textContent = 'PBD Berterusan Tahap 2: Penilaian sumatif berterusan mengikut aras Taksonomi Bloom.';
     }
   }
+  lkUpdateKpmSoalanCount();
   lkOnSubjekChange();
 }
 
@@ -11417,6 +11467,7 @@ function lkDebugDskp() {
 }
 
 function lkOnSubjekChange() {
+  lkUpdateKpmSoalanCount();
   var tahun = (document.getElementById('lkTahun') || {}).value || '1';
   var sel = document.getElementById('lkSubjek');
   var subjekVal = sel ? sel.value : '';
@@ -11544,7 +11595,15 @@ function lkBinaSumber() {
   var topikManual = ((document.getElementById('lkTopikManual') || {}).value || '').trim();
   if (topikManual) topikArr.push(topikManual);
   var sk = (document.getElementById('lkSK').value || '').trim();
-  var bilSoalan = parseInt(document.getElementById('lkBilSoalan').value) || 10;
+  
+  var bilSoalanInput = document.getElementById('lkBilSoalan');
+  var bilSoalan = 10;
+  if (_lkSoalanMode === 'auto') {
+    bilSoalan = lkGetKpmSoalanCount(jenis, subjekVal);
+  } else {
+    bilSoalan = parseInt(bilSoalanInput.value) || 10;
+  }
+  
   var aras = document.getElementById('lkAras').value;
   var bahasa = lkGetBahasa();
   var nota = (document.getElementById('lkNota').value || '').trim();

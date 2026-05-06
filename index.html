@@ -2828,7 +2828,16 @@ _{SEKOLAH}_</textarea>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
               <div class="lk-form-group">
                 <label>Bil. Soalan</label>
-                <input type="number" id="lkBilSoalan" value="10" min="5" max="40">
+                <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+                  <button id="lkBtnSoalanAuto" class="btn btn-sm btn-indigo" onclick="lkSetSoalanMode('auto')" style="flex:1;font-size:0.75rem;padding:4px">✨ Auto (KPM)</button>
+                  <button id="lkBtnSoalanManual" class="btn btn-sm btn-gray" onclick="lkSetSoalanMode('manual')" style="flex:1;font-size:0.75rem;padding:4px">⌨️ Manual</button>
+                </div>
+                <div id="lkSoalanManualCont" style="display:none">
+                  <input type="number" id="lkBilSoalan" value="10" min="5" max="40">
+                </div>
+                <div id="lkSoalanAutoCont" style="font-size:0.82rem;font-weight:600;color:var(--primary);padding:8px;background:var(--bg-alt);border-radius:7px;text-align:center;border:1px dashed var(--primary)">
+                   <span id="lkBilSoalanDisplay">10</span> Soalan (Format KPM)
+                </div>
               </div>
               <div class="lk-form-group">
                 <label>Aras Kesukaran</label>
