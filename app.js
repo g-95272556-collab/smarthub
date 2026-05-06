@@ -1876,6 +1876,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', syncResponsiveAppChrome);
   syncBootstrapConfigInputs();
   renderOPRImageGrid();
+  geminiKemaskiniStatusUI();
   showLoginPage();
   updateLoginReadinessMessage();
   if (!_gsiReady && hasGoogleSignInClient()) {
