@@ -1411,7 +1411,7 @@ async function handleAIImage(request, env, corsHeaders) {
     `Subject: ${String(prompt).slice(0, 800)}. ` +
     `Style: clean black and white line art, child-friendly, white background, simple textbook diagram style.`;
 
-  const model = "gemini-2.0-flash-preview-image-generation";
+  const model = "gemini-3.1-flash-image-preview";
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
 
   try {
@@ -1493,7 +1493,7 @@ PERATURAN ARAS & KPM (WAJIB):
 - Bahasa soalan mestilah sesuai dengan tahap murid`;
 
   const useImage = withImage === true;
-  const model = useImage ? "gemini-2.0-flash-preview-image-generation" : "gemini-2.0-flash";
+  const model = "gemini-3.1-flash-image-preview";
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
 
   const reqBody = {
