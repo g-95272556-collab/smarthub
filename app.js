@@ -11672,6 +11672,7 @@ async function janaLembaranKerja() {
     var line = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
     var masaMenjawab = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
     var guruPenyedia = document.getElementById('lkGuruPenyedia').value || '';
+    var kodKertas = document.getElementById('lkKodKertas').value || '';
     
     var header = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
       line +
@@ -11683,7 +11684,7 @@ async function janaLembaranKerja() {
       '</div>' +
       '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
         '<span>Masa: ' + masaMenjawab + '</span>' +
-        '<span>Tarikh: ______________</span>' +
+        (kodKertas ? '<span>Kod: ' + kodKertas + '</span>' : '<span>Tarikh: ______________</span>') +
       '</div>' +
       '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
         '<span>Nama: _______________________________</span>' +
@@ -11790,36 +11791,55 @@ function lkCetakOutput() {
   var tahun = document.getElementById('lkTahun').value;
   var masa = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
   var guru = document.getElementById('lkGuruPenyedia').value || '_______________________';
+  var kodKertas = document.getElementById('lkKodKertas').value || '_______________________';
+  var bilSoalan = document.getElementById('lkBilSoalan').value || '___';
   
   var isUjianFormal = (jenis === 'pbd-at' || jenis === 'uasa');
-  var jenisTxt = { 'pbd-pt': 'LEMBARAN KERJA PDPC', 'pbd-at': 'PENTAKSIRAN BILIK DARJAH (PBD) BERTERUSAN', 'uasa': 'UJIAN AKHIR SESI AKADEMIK (UASA)' }[jenis] || 'LEMBARAN KERJA';
+  var kpmHeader = isUjianFormal ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : 'PENTAKSIRAN BILIK DARJAH (PBD) BERTERUSAN';
+  if (jenis === 'pbd-pt') kpmHeader = 'LEMBARAN KERJA PDPC';
 
   var w = window.open('', '_blank', 'width=850,height=1000');
   if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
 
   var style = '<style>' +
-    '@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap");' +
-    'body{font-family:"Courier New",monospace;font-size:11.5pt;line-height:1.6;padding:0;margin:0;color:#000;}' +
-    '.page{padding:20mm 20mm 15mm 25mm;position:relative;background:#fff;}' +
-    '.cover-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260mm;text-align:center;padding:20mm;}' +
-    '.cover-border{border:4pt double #000;padding:40px;width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;}' +
-    '.school-name{font-size:1.4rem;font-weight:bold;margin-bottom:10px;text-transform:uppercase;}' +
-    '.exam-title{font-size:1.8rem;font-weight:800;margin:40px 0;text-decoration:underline;}' +
-    '.subject-box{border:2pt solid #000;padding:20px;margin:20px 0;width:80%;font-size:1.3rem;font-weight:bold;}' +
-    '.meta-info{margin:30px 0;font-size:1.2rem;text-align:left;display:inline-block;}' +
-    '.meta-info div{margin-bottom:10px;}' +
-    '.sig-section{margin-top:auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;width:100%;text-align:center;font-size:9pt;}' +
-    '.sig-box{display:flex;flex-direction:column;align-items:center;}' +
-    '.sig-line{border-top:1pt solid #000;width:100%;margin-top:60px;margin-bottom:5px;}' +
-    '.sulit-label{position:absolute;top:20mm;left:25mm;font-weight:bold;border:1.5pt solid #000;padding:2px 10px;font-family:sans-serif;}' +
+    '@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap");' +
+    'body{font-family: Arial, Helvetica, sans-serif; font-size:11pt; line-height:1.5; padding:0; margin:0; color:#000;}' +
+    '.page{padding:15mm 20mm 15mm 20mm; position:relative; background:#fff; min-height: 297mm; box-sizing: border-box;}' +
+    '.cover-page{text-align:center; font-family: Arial, sans-serif; display: block;}' +
+    '.kpm-header{font-size:14pt; font-weight:bold; margin-bottom:5px; text-transform:uppercase;}' +
+    '.sr-label{font-size:12pt; margin-bottom:20px; font-weight:bold;}' +
+    '.school-logo{width:120px; margin:10px auto 30px; display:block;}' +
+    '.info-table{width:100%; margin-bottom:30px; border-collapse: collapse;}' +
+    '.info-table td{padding:5px 0; font-size:11pt; vertical-align: top;}' +
+    '.info-table td:first-child{width:180px; font-weight:bold; text-transform:uppercase;}' +
+    '.info-table td:nth-child(2){width:20px; text-align:center;}' +
+    '.info-table td:last-child{border-bottom:1px solid #000; text-align:left; padding-left:10px; font-weight:bold;}' +
+    '.section-table{width:100%; border:1.5pt solid #000; border-collapse: collapse; margin-bottom:20px;}' +
+    '.section-header{background-color:#f2f2f2; font-weight:bold; text-align:center; padding:8px; text-transform:uppercase; border-bottom:1.5pt solid #000; font-size:11pt;}' +
+    '.blue-header{background-color:#D9EAF7;}' +
+    '.orange-header{background-color:#FDE9D9;}' +
+    '.green-header{background-color:#EBF1DE;}' +
+    '.section-body{padding:15px; text-align:left;}' +
+    '.section-body table{width:100%; border-collapse: collapse;}' +
+    '.section-body td{padding:8px 0; border-bottom:1px solid #ddd;}' +
+    '.section-body td:first-child{width:150px; font-weight:bold;}' +
+    '.section-body td:last-child{border-bottom:1px solid #000;}' +
+    '.instruction-list{margin:0; padding-left:20px; list-style-type: decimal;}' +
+    '.instruction-list li{margin-bottom:5px; font-size:10.5pt;}' +
+    '.sig-grid{display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:1pt solid #000;}' +
+    '.sig-col{padding:15px; border-right:1pt solid #000; position:relative; min-height:180px;}' +
+    '.sig-col:last-child{border-right:none;}' +
+    '.sig-label{font-size:10pt; margin-bottom:60px;}' +
+    '.sig-line{border-bottom:1px solid #000; width:80%; margin:40px 0 10px;}' +
+    '.sig-meta{font-size:10pt; line-height:1.8; text-align:left;}' +
+    '.footer-text{position:absolute; bottom:10mm; left:0; width:100%; text-align:center; font-size:9pt; color:#666; border-top:0.5pt solid #ccc; padding-top:5px;}' +
     '.page-break{page-break-before:always;}' +
-    '.lk-inline-image{margin:20px 0;text-align:center;}' +
-    '.lk-inline-image img{max-width:85%;height:auto;border:1pt solid #000;padding:5px;}' +
-    'pre{white-space:pre-wrap;font-family:inherit;margin:0;}' +
-    'hr{border:none;border-top:1pt solid #333;margin:10pt 0;}' +
+    '.content-area{font-family:"Courier New", monospace; white-space:pre-wrap; line-height:1.7;}' +
+    '.lk-inline-image{margin:20px 0; text-align:center;}' +
+    '.lk-inline-image img{max-width:85%; height:auto; border:1pt solid #000; padding:5px;}' +
     '@media print{' +
-      '@page{margin:0;size:A4;}' +
-      '.page{height:297mm;box-sizing:border-box;}' +
+      '@page{margin:0; size:A4;}' +
+      '.page{height:297mm;}' +
       '.no-print{display:none;}' +
     '}' +
     '</style>';
@@ -11827,41 +11847,80 @@ function lkCetakOutput() {
   var coverPageHtml = '';
   if (isUjianFormal) {
     coverPageHtml = '<div class="page cover-page">' +
-      '<div class="cover-border">' +
-        '<div class="sulit-label">SULIT</div>' +
-        '<div>' +
-          '<div class="school-name">SK KIANDONGO, TONGOD</div>' +
-          '<div style="font-size:1rem">SABAH, MALAYSIA</div>' +
-        '</div>' +
-        '<div>' +
-          '<div class="exam-title">' + jenisTxt + '</div>' +
-          '<div class="subject-box">' + subjekLabel.toUpperCase() + '<br>TAHUN ' + tahun + '</div>' +
-        '</div>' +
-        '<div class="meta-info">' +
-          '<div><strong>MASA MENJAWAB:</strong> ' + masa.toUpperCase() + '</div>' +
-          '<div><strong>JANGAN BUKA KERTAS SOALAN INI SEHINGGA DIBERITAHU</strong></div>' +
-        '</div>' +
-        '<div class="sig-section">' +
-          '<div class="sig-box"><div class="sig-line"></div><strong>DISEDIAKAN OLEH:</strong><br>' + guru + '<br>(Guru Mata Pelajaran)</div>' +
-          '<div class="sig-box"><div class="sig-line"></div><strong>DISEMAK OLEH:</strong><br>_______________________<br>(Ketua Panitia / PK)</div>' +
-          '<div class="sig-box"><div class="sig-line"></div><strong>DISAHKAN OLEH:</strong><br>_______________________<br>(Guru Besar)</div>' +
+      '<div class="kpm-header">KEMENTERIAN PENDIDIKAN MALAYSIA</div>' +
+      '<div class="kpm-header">' + kpmHeader + '</div>' +
+      '<div class="sr-label">SEKOLAH RENDAH</div>' +
+      '<img src="assets/sk-kiandongo-logo.png" class="school-logo" alt="Logo">' +
+      
+      '<table class="info-table">' +
+        '<tr><td>SEKOLAH</td><td>:</td><td>SK KIANDONGO</td></tr>' +
+        '<tr><td>TAHUN</td><td>:</td><td>' + tahun + '</td></tr>' +
+        '<tr><td>MATA PELAJARAN</td><td>:</td><td>' + subjekLabel.toUpperCase() + '</td></tr>' +
+        '<tr><td>KOD KERTAS</td><td>:</td><td>' + kodKertas.toUpperCase() + '</td></tr>' +
+        '<tr><td>MASA</td><td>:</td><td>' + masa.toUpperCase() + '</td></tr>' +
+      '</table>' +
+      
+      '<div class="section-table">' +
+        '<div class="section-header blue-header">MAKLUMAT CALON</div>' +
+        '<div class="section-body">' +
+          '<table>' +
+            '<tr><td>NAMA MURID</td><td>:</td><td style="border-bottom:1px solid #000"></td></tr>' +
+            '<tr><td>KELAS</td><td>:</td><td style="border-bottom:1px solid #000"></td></tr>' +
+          '</table>' +
         '</div>' +
       '</div>' +
+      
+      '<div class="section-table">' +
+        '<div class="section-header orange-header">ARAHAN</div>' +
+        '<div class="section-body">' +
+          '<ol class="instruction-list">' +
+            '<li>Kertas ini mengandungi <strong>' + bilSoalan + '</strong> soalan.</li>' +
+            '<li>Jawab semua soalan.</li>' +
+            '<li>Tulis jawapan pada ruang yang disediakan.</li>' +
+            '<li>Dilarang membuka kertas sehingga diberitahu.</li>' +
+          '</ol>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div class="section-table" style="margin-bottom:0">' +
+        '<div class="section-header green-header">PENGESAHAN PENYEDIAAN DAN SEMAKAN SOALAN</div>' +
+        '<div class="sig-grid">' +
+          '<div class="sig-col">' +
+            '<div class="sig-label">Disediakan oleh<br>(Guru Penyedia)</div>' +
+            '<div class="sig-line"></div>' +
+            '<div class="sig-meta">Nama: ' + guru + '<br>Tarikh:</div>' +
+          '</div>' +
+          '<div class="sig-col">' +
+            '<div class="sig-label">Disemak oleh<br>(Ketua Panitia / PK)</div>' +
+            '<div class="sig-line"></div>' +
+            '<div class="sig-meta">Nama:<br>Tarikh:</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:15px; text-align:left; border-top:1pt solid #000">' +
+          '<div class="sig-label" style="margin-bottom:40px">Disahkan oleh (Guru Besar)</div>' +
+          '<div class="sig-line" style="width:40%"></div>' +
+          '<div class="sig-meta">Nama:<br>Tarikh:<br>Cop Rasmi Sekolah:</div>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div class="footer-text">Dokumen Rasmi ' + (jenis === 'uasa' ? 'UASA' : 'PBD') + ' • SK Kiandongo</div>' +
     '</div>';
   }
 
-  // Remove the preview header if we are printing a formal exam to avoid redundancy
+  // Content processing
   var rawContent = box.innerHTML;
   var finalContentHtml = rawContent;
+  
   if (isUjianFormal) {
-    // Strip the simple header from preview if it exists
+    // Strip simple header if exists
     finalContentHtml = rawContent.replace(/<div class="lk-print-header"[\s\S]*?<\/div>/i, '');
-    finalContentHtml = '<div class="page page-break">' + finalContentHtml + '</div>';
+    finalContentHtml = '<div class="page page-break content-area">' + finalContentHtml + '</div>';
   } else {
-    finalContentHtml = '<div class="page">' + finalContentHtml + '</div>';
+    // For PDPC, maintain the header but wrap in page
+    finalContentHtml = '<div class="page content-area">' + finalContentHtml + '</div>';
   }
 
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Cetak Lembaran Kerja</title>' +
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kertas Peperiksaan</title>' +
     style + '</head><body>' +
     coverPageHtml +
     finalContentHtml +
