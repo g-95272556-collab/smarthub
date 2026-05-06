@@ -11739,7 +11739,7 @@ async function callWorkerAIGemini(prompt, withImage) {
       var note = document.getElementById('lkEngineNote');
       if (!note) return;
       if (e.target.value === 'gemini') {
-        note.innerHTML = '✅ <strong>Gemini 2.0 Flash:</strong> AI menjana teks dan imej secara terus (Nano Banana 2). Paling canggih untuk janaan lembaran kerja.';
+        note.innerHTML = '✅ <strong>Gemini 2.0 Flash:</strong> AI menjana teks dan imej secara terus (Nano Banana 2 Pro). Paling canggih untuk janaan lembaran kerja.';
       } else {
         note.innerHTML = '[Info] <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }

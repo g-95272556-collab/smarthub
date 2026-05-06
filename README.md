@@ -151,7 +151,7 @@ Repo ini menggunakan lesen konservatif `All Rights Reserved` setakat ini supaya 
 
 Aplikasi ini dilengkapi dengan modul janaan lembaran kerja AI yang canggih:
 
-- **Enjin AI**: Menggunakan **Gemini 2.0 Flash** (Nano Banana 2) untuk janaan teks dan imej pendidikan secara *native*.
+- **Enjin AI**: Menggunakan **Gemini 2.0 Flash** (Nano Banana 2 Pro) untuk janaan teks dan imej pendidikan secara *native*.
 - **Kestabilan**: Menggunakan strategi **Penjanaan Berperingkat** (Phased Generation: Bahagian A, B, C/D, Skema) untuk mengelakkan had masa (timeout) 100 saat Cloudflare.
 - **Bypass Direct**: Menyokong penggunaan Kunci API Gemini tempatan untuk komunikasi terus dari pelayar ke Google bagi memintas had rangkaian sepenuhnya.
 - **Format Rasmi**: Menyokong janaan Muka Depan rasmi untuk ujian **UASA** dan **PBD Berterusan**.
