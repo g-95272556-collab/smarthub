@@ -11759,11 +11759,15 @@ async function callWorkerAIGemini(prompt, withImage) {
   // Try local keys with auto-rotation on quota error
   var attempt = geminiDapatkanKunci();
   while (attempt) {
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + attempt.key;
+    var model = withImage ? 'gemini-2.0-flash-preview-image-generation' : 'gemini-2.0-flash';
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + attempt.key;
     var payload = {
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 8192, temperature: 0.7 },
-      response_modalities: withImage ? ["TEXT", "IMAGE"] : ["TEXT"]
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.7,
+        responseModalities: withImage ? ["TEXT", "IMAGE"] : ["TEXT"]
+      }
     };
     try {
       var res = await fetch(url, {
