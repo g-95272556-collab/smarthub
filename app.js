@@ -9702,12 +9702,14 @@ async function loadConfig() {
       populateBirthdayNotifConfigInputs(data.config || {});
       populateAttendanceNotificationConfig(data.config || {});
       
-      // Load local AI key
+      // Load local AI key (legacy)
       var localAi = localStorage.getItem('ssh_local_gemini_key');
       if (localAi) {
         var inp = document.getElementById('configLocalGeminiKey');
         if (inp) inp.value = localAi;
       }
+      // Refresh multi-key status badges
+      geminiMuatStatusSemua();
 
       showToast('Config dimuatkan.', 'success');
     }
@@ -11680,45 +11682,115 @@ function lkPadamLocalAiKey() {
   showToast('Kunci API tempatan dipadam. Sistem akan kembali menggunakan Cloudflare Worker.', 'info');
 }
 
+// Multi-key Gemini system (Kunci 1, 2, 3 dengan auto-rotate kuota)
+function geminiKemaskiniStatus(n) {
+  var key = localStorage.getItem('ssh_gemini_key_' + n);
+  var badge = document.getElementById('gemini-key-' + n + '-status');
+  if (!badge) return;
+  if (!key) {
+    badge.className = 'badge badge-gray';
+    badge.textContent = 'Tiada Kunci';
+  } else if (localStorage.getItem('ssh_gemini_quota_' + n) === 'exhausted') {
+    badge.className = 'badge badge-red';
+    badge.textContent = 'Kuota Habis';
+  } else {
+    badge.className = 'badge badge-green';
+    badge.textContent = 'Aktif';
+  }
+}
+
+function geminiSimpanKunci(n) {
+  var inp = document.getElementById('geminiKey' + n);
+  if (!inp || !inp.value.trim()) { showToast('Sila masukkan Kunci ' + n + '.', 'error'); return; }
+  localStorage.setItem('ssh_gemini_key_' + n, inp.value.trim());
+  localStorage.removeItem('ssh_gemini_quota_' + n);
+  inp.value = '';
+  geminiKemaskiniStatus(n);
+  showToast('Kunci ' + n + ' disimpan dan aktif.', 'success');
+}
+
+function geminiPadamKunci(n) {
+  localStorage.removeItem('ssh_gemini_key_' + n);
+  localStorage.removeItem('ssh_gemini_quota_' + n);
+  var inp = document.getElementById('geminiKey' + n);
+  if (inp) inp.value = '';
+  geminiKemaskiniStatus(n);
+  showToast('Kunci ' + n + ' dipadam.', 'info');
+}
+
+function geminiResetKuota() {
+  [1, 2, 3].forEach(function(n) {
+    localStorage.removeItem('ssh_gemini_quota_' + n);
+    geminiKemaskiniStatus(n);
+  });
+  showToast('Status kuota diset semula. Semua kunci aktif semula.', 'success');
+}
+
+function geminiMuatStatusSemua() {
+  [1, 2, 3].forEach(function(n) { geminiKemaskiniStatus(n); });
+}
+
+// Called on page load to refresh key status badges
+document.addEventListener('DOMContentLoaded', geminiMuatStatusSemua);
+
+async function callGeminiDirect(key, prompt, withImage) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key;
+  var payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { maxOutputTokens: 8192, temperature: 0.7 },
+    response_modalities: withImage ? ["TEXT", "IMAGE"] : ["TEXT"]
+  };
+  var res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    var errData = await res.json().catch(function() { return { error: { message: res.statusText } }; });
+    var msg = errData.error ? errData.error.message : res.statusText;
+    var err = new Error('Google API Error: ' + msg);
+    err.status = res.status;
+    throw err;
+  }
+  var data = await res.json();
+  var content = '';
+  var images = [];
+  if (data.candidates && data.candidates[0].content) {
+    data.candidates[0].content.parts.forEach(function(p) {
+      if (p.text) content += p.text;
+      if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
+    });
+  }
+  return { success: true, content: content, images: images };
+}
+
 async function callWorkerAIGemini(prompt, withImage) {
+  // Try multi-key rotation (Kunci 1 → 2 → 3), skip exhausted keys
+  for (var n = 1; n <= 3; n++) {
+    var key = localStorage.getItem('ssh_gemini_key_' + n);
+    if (!key || !key.trim()) continue;
+    if (localStorage.getItem('ssh_gemini_quota_' + n) === 'exhausted') continue;
+    try {
+      var result = await callGeminiDirect(key.trim(), prompt, withImage);
+      return result;
+    } catch (e) {
+      if (e.status === 429) {
+        localStorage.setItem('ssh_gemini_quota_' + n, 'exhausted');
+        geminiKemaskiniStatus(n);
+        console.warn('Kunci ' + n + ' kehabisan kuota, cuba kunci seterusnya...');
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  // Legacy single key fallback
   var localKey = localStorage.getItem('ssh_local_gemini_key');
   if (localKey && localKey.trim()) {
-    // MOD: Direct call to Google Gemini API (Bypassing Cloudflare 524 timeout)
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + localKey.trim();
-    var payload = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { 
-        maxOutputTokens: 8192, 
-        temperature: 0.7
-      },
-      response_modalities: withImage ? ["TEXT", "IMAGE"] : ["TEXT"]
-    };
-
     try {
-      var res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!res.ok) {
-        var err = await res.json().catch(function(){ return {error:{message:res.statusText}}; });
-        throw new Error('Google API Error: ' + (err.error ? err.error.message : res.statusText));
-      }
-      
-      var data = await res.json();
-      var content = '';
-      var images = [];
-      if (data.candidates && data.candidates[0].content) {
-        data.candidates[0].content.parts.forEach(function(p) {
-          if (p.text) content += p.text;
-          if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
-        });
-      }
-      return { success: true, content: content, images: images };
-    } catch (directError) {
-      console.warn('Direct AI call failed, falling back to Worker:', directError.message);
-      // Fallback: Proceed to Worker call below
+      return await callGeminiDirect(localKey.trim(), prompt, withImage);
+    } catch (e) {
+      console.warn('Legacy key failed, falling back to Worker:', e.message);
     }
   }
 
@@ -11733,7 +11805,7 @@ async function callWorkerAIGemini(prompt, withImage) {
   try {
     return JSON.parse(text);
   } catch (e) {
-    if (text.includes('524')) throw new Error('Masa tamat (524). Server Cloudflare mengambil masa terlalu lama. Sila gunakan Kunci API Gemini Tempatan di menu Konfigurasi untuk mengelakkan had ini.');
+    if (text.includes('524')) throw new Error('Masa tamat (524). Server Cloudflare mengambil masa terlalu lama. Sila tetapkan Kunci API Gemini di menu Konfigurasi untuk mengelakkan had ini.');
     throw new Error('Ralat format respons AI: ' + text.substring(0, 100));
   }
 }
