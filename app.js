@@ -9702,14 +9702,8 @@ async function loadConfig() {
       populateBirthdayNotifConfigInputs(data.config || {});
       populateAttendanceNotificationConfig(data.config || {});
       
-      // Load local AI key (legacy)
-      var localAi = localStorage.getItem('ssh_local_gemini_key');
-      if (localAi) {
-        var inp = document.getElementById('configLocalGeminiKey');
-        if (inp) inp.value = localAi;
-      }
-      // Refresh multi-key status badges
-      geminiMuatStatusSemua();
+      // Load local Gemini keys (3-key rotation system)
+      geminiKemaskiniStatusUI();
 
       showToast('Config dimuatkan.', 'success');
     }
@@ -11668,144 +11662,131 @@ function lkGetEngine() {
   return r ? r.value : 'deepseek';
 }
 
-function lkSimpanLocalAiKey() {
-  var key = document.getElementById('configLocalGeminiKey').value;
-  if (!key) { showToast('Sila masukkan kunci API.', 'error'); return; }
-  localStorage.setItem('ssh_local_gemini_key', key.trim());
-  showToast('Kunci API Gemini Tempatan disimpan! Penjanaan kini akan menghubungi Google secara terus (Bypass Cloudflare).', 'success');
-}
+// === GEMINI 3-KEY AUTO-ROTATE SYSTEM ===
 
-function lkPadamLocalAiKey() {
-  localStorage.removeItem('ssh_local_gemini_key');
-  var inp = document.getElementById('configLocalGeminiKey');
-  if (inp) inp.value = '';
-  showToast('Kunci API tempatan dipadam. Sistem akan kembali menggunakan Cloudflare Worker.', 'info');
-}
-
-// Multi-key Gemini system (Kunci 1, 2, 3 dengan auto-rotate kuota)
-function geminiKemaskiniStatus(n) {
-  var key = localStorage.getItem('ssh_gemini_key_' + n);
-  var badge = document.getElementById('gemini-key-' + n + '-status');
-  if (!badge) return;
-  if (!key) {
-    badge.className = 'badge badge-gray';
-    badge.textContent = 'Tiada Kunci';
-  } else if (localStorage.getItem('ssh_gemini_quota_' + n) === 'exhausted') {
-    badge.className = 'badge badge-red';
-    badge.textContent = 'Kuota Habis';
-  } else {
-    badge.className = 'badge badge-green';
-    badge.textContent = 'Aktif';
+function geminiKemaskiniStatusUI() {
+  for (var n = 1; n <= 3; n++) {
+    var key = localStorage.getItem('ssh_gemini_key_' + n);
+    var exhausted = localStorage.getItem('ssh_gemini_exhausted_' + n);
+    var badge = document.getElementById('gemini-key-' + n + '-status');
+    var inp = document.getElementById('geminiKey' + n);
+    if (inp && key) inp.value = key;
+    if (!badge) continue;
+    if (!key) {
+      badge.className = 'badge badge-gray'; badge.textContent = 'Tiada Kunci';
+    } else if (exhausted) {
+      badge.className = 'badge badge-red'; badge.textContent = 'Kuota Habis';
+    } else {
+      badge.className = 'badge badge-green'; badge.textContent = 'Aktif';
+    }
   }
 }
 
 function geminiSimpanKunci(n) {
   var inp = document.getElementById('geminiKey' + n);
-  if (!inp || !inp.value.trim()) { showToast('Sila masukkan Kunci ' + n + '.', 'error'); return; }
+  if (!inp || !inp.value.trim()) { showToast('Sila masukkan kunci API.', 'error'); return; }
   localStorage.setItem('ssh_gemini_key_' + n, inp.value.trim());
-  localStorage.removeItem('ssh_gemini_quota_' + n);
-  inp.value = '';
-  geminiKemaskiniStatus(n);
-  showToast('Kunci ' + n + ' disimpan dan aktif.', 'success');
+  localStorage.removeItem('ssh_gemini_exhausted_' + n);
+  geminiKemaskiniStatusUI();
+  showToast('Kunci ' + n + ' disimpan.', 'success');
 }
 
 function geminiPadamKunci(n) {
   localStorage.removeItem('ssh_gemini_key_' + n);
-  localStorage.removeItem('ssh_gemini_quota_' + n);
+  localStorage.removeItem('ssh_gemini_exhausted_' + n);
   var inp = document.getElementById('geminiKey' + n);
   if (inp) inp.value = '';
-  geminiKemaskiniStatus(n);
+  geminiKemaskiniStatusUI();
   showToast('Kunci ' + n + ' dipadam.', 'info');
 }
 
 function geminiResetKuota() {
-  [1, 2, 3].forEach(function(n) {
-    localStorage.removeItem('ssh_gemini_quota_' + n);
-    geminiKemaskiniStatus(n);
-  });
-  showToast('Status kuota diset semula. Semua kunci aktif semula.', 'success');
+  for (var n = 1; n <= 3; n++) localStorage.removeItem('ssh_gemini_exhausted_' + n);
+  geminiKemaskiniStatusUI();
+  showToast('Status kuota semua kunci direset. Sedia untuk digunakan semula.', 'success');
 }
 
-function geminiMuatStatusSemua() {
-  [1, 2, 3].forEach(function(n) { geminiKemaskiniStatus(n); });
-}
-
-// Called on page load to refresh key status badges
-document.addEventListener('DOMContentLoaded', geminiMuatStatusSemua);
-
-async function callGeminiDirect(key, prompt, withImage) {
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key;
-  var payload = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 8192, temperature: 0.7 },
-    response_modalities: withImage ? ["TEXT", "IMAGE"] : ["TEXT"]
-  };
-  var res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) {
-    var errData = await res.json().catch(function() { return { error: { message: res.statusText } }; });
-    var msg = errData.error ? errData.error.message : res.statusText;
-    var err = new Error('Google API Error: ' + msg);
-    err.status = res.status;
-    throw err;
-  }
-  var data = await res.json();
-  var content = '';
-  var images = [];
-  if (data.candidates && data.candidates[0].content) {
-    data.candidates[0].content.parts.forEach(function(p) {
-      if (p.text) content += p.text;
-      if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
-    });
-  }
-  return { success: true, content: content, images: images };
-}
-
-async function callWorkerAIGemini(prompt, withImage) {
-  // Try multi-key rotation (Kunci 1 → 2 → 3), skip exhausted keys
+function geminiDapatkanKunci() {
   for (var n = 1; n <= 3; n++) {
     var key = localStorage.getItem('ssh_gemini_key_' + n);
-    if (!key || !key.trim()) continue;
-    if (localStorage.getItem('ssh_gemini_quota_' + n) === 'exhausted') continue;
+    if (key && key.trim() && !localStorage.getItem('ssh_gemini_exhausted_' + n))
+      return { key: key.trim(), slot: n };
+  }
+  return null;
+}
+
+function geminiTandaHabisKuota(slot) {
+  localStorage.setItem('ssh_gemini_exhausted_' + slot, '1');
+  geminiKemaskiniStatusUI();
+}
+
+// Legacy compat wrappers (keep old function names working)
+function lkSimpanLocalAiKey() { geminiSimpanKunci(1); }
+function lkPadamLocalAiKey() { geminiPadamKunci(1); }
+
+async function callWorkerAIGemini(prompt, withImage) {
+  // Migrate legacy single key to slot 1 if slot 1 is empty
+  var legacyKey = localStorage.getItem('ssh_local_gemini_key');
+  if (legacyKey && !localStorage.getItem('ssh_gemini_key_1')) {
+    localStorage.setItem('ssh_gemini_key_1', legacyKey);
+  }
+
+  // Try local keys with auto-rotation on quota error
+  var attempt = geminiDapatkanKunci();
+  while (attempt) {
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + attempt.key;
+    var payload = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 8192, temperature: 0.7 },
+      response_modalities: withImage ? ["TEXT", "IMAGE"] : ["TEXT"]
+    };
     try {
-      var result = await callGeminiDirect(key.trim(), prompt, withImage);
-      return result;
-    } catch (e) {
-      if (e.status === 429) {
-        localStorage.setItem('ssh_gemini_quota_' + n, 'exhausted');
-        geminiKemaskiniStatus(n);
-        console.warn('Kunci ' + n + ' kehabisan kuota, cuba kunci seterusnya...');
-        continue;
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        var err = await res.json().catch(function(){ return {error:{message:res.statusText, code:res.status}}; });
+        var code = (err.error && err.error.code) ? err.error.code : res.status;
+        if (code === 429 || code === 403) {
+          showToast('Kunci ' + attempt.slot + ' kehabisan kuota — cuba kunci seterusnya...', 'info');
+          geminiTandaHabisKuota(attempt.slot);
+          attempt = geminiDapatkanKunci();
+          continue;
+        }
+        throw new Error('Google API Error: ' + (err.error ? err.error.message : res.statusText));
       }
-      throw e;
+      var data = await res.json();
+      var content = '';
+      var images = [];
+      if (data.candidates && data.candidates[0].content) {
+        data.candidates[0].content.parts.forEach(function(p) {
+          if (p.text) content += p.text;
+          if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
+        });
+      }
+      return { success: true, content: content, images: images };
+    } catch (directError) {
+      if (directError.message && directError.message.indexOf('Google API Error') === 0) throw directError;
+      console.warn('Direct AI call failed, falling back to Worker:', directError.message);
+      break;
     }
   }
 
-  // Legacy single key fallback
-  var localKey = localStorage.getItem('ssh_local_gemini_key');
-  if (localKey && localKey.trim()) {
-    try {
-      return await callGeminiDirect(localKey.trim(), prompt, withImage);
-    } catch (e) {
-      console.warn('Legacy key failed, falling back to Worker:', e.message);
-    }
-  }
-
+  // Fallback: Worker
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
-  var url = APP.workerUrl.replace(/\/+$/, '') + '/ai/gemini';
-  var res = await fetch(url, {
+  var wUrl = APP.workerUrl.replace(/\/+$/, '') + '/ai/gemini';
+  var wRes = await fetch(wUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt: prompt, type: 'lembaran_kerja', withImage: withImage })
   });
-  var text = await res.text();
+  var text = await wRes.text();
   try {
     return JSON.parse(text);
   } catch (e) {
-    if (text.includes('524')) throw new Error('Masa tamat (524). Server Cloudflare mengambil masa terlalu lama. Sila tetapkan Kunci API Gemini di menu Konfigurasi untuk mengelakkan had ini.');
+    if (text.includes('524')) throw new Error('Masa tamat (524). Semua kunci tempatan habis kuota atau tiada kunci disimpan. Pergi ke Konfigurasi → Kunci API Gemini untuk tambah kunci.');
     throw new Error('Ralat format respons AI: ' + text.substring(0, 100));
   }
 }
@@ -11871,8 +11852,10 @@ async function janaLembaranKerja() {
         }
       }
       
-      lkSetStatus('success', 'Berjaya menjana kertas ' + engineLabel + ' secara berperingkat.');
+      lkSetStatus('done', 'Lembaran kerja berjaya dijana oleh ' + engineLabel + ' secara berperingkat!');
+      showToast('Lembaran kerja berjaya dijana.', 'success');
       if (imejBtn) imejBtn.style.display = 'inline-flex';
+      return;
     } else {
       // Mod biasa (DeepSeek atau PBD harian)
       var prompt = lkBinaSumber();

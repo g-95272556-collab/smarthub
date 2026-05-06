@@ -1590,6 +1590,7 @@ _SK Kiandongo_</textarea>
             <span class="badge badge-blue">Pusat Tetapan</span>
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+            <button class="btn btn-secondary" onclick="document.getElementById('config-ai-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (AI)</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pangkalan Data (D1)</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-comm-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-message-square"></use></svg> Komunikasi (WA & TG)</button>
             <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-gift"></use></svg> Notifikasi Modul</button>
@@ -1684,26 +1685,64 @@ _SK Kiandongo_</textarea>
 
           <div class="card" id="config-ai-card" style="border: 2px solid var(--primary-light);">
             <div class="section-header">
-              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-sparkles"></use></svg> Konfigurasi AI (Tempatan)</h2>
-              <span class="badge badge-blue">Solusi Ralat 524 (Timeout)</span>
+              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (Auto-Rotate)</h2>
+              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth',block:'start'})">Menu</button>
             </div>
-            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;line-height:1.6">
-              Jika anda sering mengalami ralat <strong>"error code: 524"</strong> semasa menjana lembaran kerja yang panjang, anda boleh masukkan <strong>Kunci API Gemini</strong> anda di sini. 
-              Ini membolehkan pelayar menghubungi Google secara terus tanpa melalui Cloudflare (yang mempunyai had masa 100 saat).
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
+              Masukkan sehingga <strong>3 Kunci API Gemini</strong>. Sistem akan cuba Kunci 1 dahulu — jika kehabisan kuota (ralat 429), Kunci 2 digunakan secara automatik, kemudian Kunci 3. Ini mengelakkan ralat <strong>524 Cloudflare</strong> dan had kuota harian.
             </p>
-            <div style="display:grid;gap:14px">
-              <div class="form-group">
-                <label>Kunci API Google Gemini (AIzaSy...)</label>
-                <input id="configLocalGeminiKey" type="password" placeholder="Masukkan kunci API anda di sini...">
+            <div style="display:grid;gap:12px">
+
+              <div style="border:1px solid var(--border);border-radius:8px;padding:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-weight:600;font-size:0.9rem">🔑 Kunci 1</span>
+                  <span id="gemini-key-1-status" class="badge badge-gray">Tiada Kunci</span>
+                </div>
+                <div class="form-group" style="margin-bottom:10px">
+                  <input id="geminiKey1" type="password" placeholder="AIzaSy..." style="font-family:monospace;font-size:0.85rem">
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(1)">💾 Simpan</button>
+                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(1)">🗑 Padam</button>
+                </div>
               </div>
-              <div style="display:flex;gap:10px">
-                <button class="btn btn-primary" onclick="lkSimpanLocalAiKey()">💾 Simpan Kunci Tempatan</button>
-                <button class="btn btn-secondary" onclick="lkPadamLocalAiKey()">🗑 Padam</button>
+
+              <div style="border:1px solid var(--border);border-radius:8px;padding:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-weight:600;font-size:0.9rem">🔑 Kunci 2</span>
+                  <span id="gemini-key-2-status" class="badge badge-gray">Tiada Kunci</span>
+                </div>
+                <div class="form-group" style="margin-bottom:10px">
+                  <input id="geminiKey2" type="password" placeholder="AIzaSy..." style="font-family:monospace;font-size:0.85rem">
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(2)">💾 Simpan</button>
+                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(2)">🗑 Padam</button>
+                </div>
               </div>
-              <p style="font-size:0.75rem;color:var(--muted);font-style:italic">
-                * Kunci ini hanya disimpan di dalam pelayar anda (Local Storage) dan tidak akan dihantar ke mana-mana server lain.
-              </p>
+
+              <div style="border:1px solid var(--border);border-radius:8px;padding:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-weight:600;font-size:0.9rem">🔑 Kunci 3</span>
+                  <span id="gemini-key-3-status" class="badge badge-gray">Tiada Kunci</span>
+                </div>
+                <div class="form-group" style="margin-bottom:10px">
+                  <input id="geminiKey3" type="password" placeholder="AIzaSy..." style="font-family:monospace;font-size:0.85rem">
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(3)">💾 Simpan</button>
+                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(3)">🗑 Padam</button>
+                </div>
+              </div>
+
             </div>
+            <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <button class="btn btn-secondary" onclick="geminiResetKuota()">🔄 Reset Status Kuota</button>
+              <span style="font-size:0.78rem;color:var(--muted)">Guna ini selepas kuota diperbaharui (Google reset setiap hari)</span>
+            </div>
+            <p style="font-size:0.75rem;color:var(--muted);font-style:italic;margin-top:12px">
+              * Kunci disimpan dalam pelayar sahaja (Local Storage) — tidak dihantar ke mana-mana server lain.
+            </p>
           </div>
 
           <div class="card">
