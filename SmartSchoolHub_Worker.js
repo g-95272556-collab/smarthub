@@ -584,7 +584,9 @@ async function getBackendDiagnostics(env) {
 async function handleGoogleSheetsAction(body, env) {
   switch (body.action) {
     case "getConfig":
-      return { success: true, config: await googleGetConfig(env) };
+      var gCfg = await googleGetConfig(env);
+      if (env.GEMINI_API_KEY) gCfg.GEMINI_API_KEY = env.GEMINI_API_KEY;
+      return { success: true, config: gCfg };
     case "setConfig":
       await googleSetConfig(env, body.config || {});
       if (body.config && Object.keys(body.config || {}).some((key) => String(key || "").trim())) {
@@ -617,7 +619,9 @@ async function handleGoogleSheetsAction(body, env) {
 async function handleD1Action(body, env) {
   switch (body.action) {
     case "getConfig":
-      return { success: true, config: await d1GetConfig(env, body.token) };
+      var d1Cfg = await d1GetConfig(env, body.token);
+      if (env.GEMINI_API_KEY) d1Cfg.GEMINI_API_KEY = env.GEMINI_API_KEY;
+      return { success: true, config: d1Cfg };
     case "getSummary":
       return { success: true, summary: await d1GetSummary(env) };
     case "setConfig":
@@ -1407,7 +1411,7 @@ async function handleAIImage(request, env, corsHeaders) {
     `Subject: ${String(prompt).slice(0, 800)}. ` +
     `Style: clean black and white line art, child-friendly, white background, simple textbook diagram style.`;
 
-  const model = "gemini-3.1-flash-image-preview";
+  const model = "gemini-2.0-flash";
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
 
   try {
@@ -1489,18 +1493,17 @@ PERATURAN ARAS & KPM (WAJIB):
 - Bahasa soalan mestilah sesuai dengan tahap murid`;
 
   const useImage = withImage === true;
-  const model = "gemini-3.1-flash-image-preview";
+  const model = "gemini-2.0-flash";
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
-
-  const genConfig = useImage
-    ? { responseModalities: ["TEXT", "IMAGE"] }
-    : { maxOutputTokens: 8192, temperature: 0.7 };
 
   const reqBody = {
     systemInstruction: { parts: [{ text: systemPromptLK }] },
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: genConfig,
+    generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
   };
+  if (useImage) {
+    reqBody.responseModalities = ["TEXT", "IMAGE"];
+  }
 
   try {
     const aiResp = await fetch(apiUrl, {

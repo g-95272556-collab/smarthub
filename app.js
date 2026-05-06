@@ -705,6 +705,11 @@ function applyBackendOperationalConfig(config) {
       saveLocalKokumProgramConfig(cloneKokumProgramOptions(JSON.parse(cfg.KOKUM_PROGRAM_OPTIONS_JSON)));
     } catch (e) {}
   }
+
+  // MOD: Automatik muat Kunci API Gemini untuk bypass Cloudflare 524
+  if (cfg.GEMINI_API_KEY) {
+    localStorage.setItem('ssh_local_gemini_key', String(cfg.GEMINI_API_KEY).trim());
+  }
 }
 function applyNotificationRuntimeConfig(config) {
   const cfg = config || {};
@@ -4121,6 +4126,8 @@ function renderLaporanKelasRows(kelasArr) {
     risiko: risiko
   };
 }
+
+
 
 async function loadLegacyLaporanKelasData() {
   const bulanEl = document.getElementById('laporanBulan');
@@ -9694,6 +9701,14 @@ async function loadConfig() {
       renderConfigTable(data.config);
       populateBirthdayNotifConfigInputs(data.config || {});
       populateAttendanceNotificationConfig(data.config || {});
+      
+      // Load local AI key
+      var localAi = localStorage.getItem('ssh_local_gemini_key');
+      if (localAi) {
+        var inp = document.getElementById('configLocalGeminiKey');
+        if (inp) inp.value = localAi;
+      }
+
       showToast('Config dimuatkan.', 'success');
     }
     else throw new Error(data.error);
@@ -11068,6 +11083,8 @@ async function loadKehadiranMurid(options) {
 
 var _lkInited = false;
 var _lkGenerating = false;
+var _lkSoalanMode = 'auto'; // Tracks if question count is auto (KPM) or manual
+
 
 // DSKP data — embedded sebagai asas, CSV sheet sebagai pelengkap
 var LK_DSKP_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRHqa-zAQ07wwfAi1oL5axssCCbqBeUMOiwohnK89_22IAf6SOBqUHE_BK-Wlhy-W9x-8Rha6bUeqE4/pub?output=csv';
@@ -11154,8 +11171,8 @@ function lkNormalizeTahun(raw) {
 }
 
 var LK_SUBJEK_T1_PBD = [
-  { value: 'BM',    label: 'Bahasa Malaysia' },
-  { value: 'BI',    label: 'English Language' },
+  { value: 'BM',    label: 'Bahasa Melayu' },
+  { value: 'BI',    label: 'Bahasa Inggeris' },
   { value: 'Math',  label: 'Matematik' },
   { value: 'Sains', label: 'Sains' },
   { value: 'BKD',   label: 'Bahasa Kadazan Dusun (BKD)' },
@@ -11167,8 +11184,8 @@ var LK_SUBJEK_T1_PBD = [
 ];
 
 var LK_SUBJEK_T2_PBD = [
-  { value: 'BM',      label: 'Bahasa Malaysia' },
-  { value: 'BI',      label: 'English Language' },
+  { value: 'BM',      label: 'Bahasa Melayu' },
+  { value: 'BI',      label: 'Bahasa Inggeris' },
   { value: 'Math',    label: 'Matematik' },
   { value: 'Sains',   label: 'Sains' },
   { value: 'Sejarah', label: 'Sejarah' },
@@ -11182,8 +11199,8 @@ var LK_SUBJEK_T2_PBD = [
 ];
 
 var LK_SUBJEK_UASA = [
-  { value: 'BM',      label: 'Bahasa Malaysia' },
-  { value: 'BI',      label: 'English Language' },
+  { value: 'BM',      label: 'Bahasa Melayu' },
+  { value: 'BI',      label: 'Bahasa Inggeris' },
   { value: 'Math',    label: 'Matematik' },
   { value: 'Sains',   label: 'Sains' },
   { value: 'Sejarah', label: 'Sejarah' },
@@ -11303,7 +11320,7 @@ function lkOnJenisChange() {
 
   if (note) {
     if (jenis === 'uasa') {
-      note.textContent = 'UASA Tahap 2: BM, BI, Matematik, Sains, Sejarah — semua mata pelajaran Tahap 2 terlibat dalam peperiksaan.';
+      note.textContent = 'UASA Tahap 2: BM, BI, Matematik, Sains, Sejarah — Semua mata pelajaran ini mempunyai format soalan khusus KPM.';
     } else if (tahap === 1) {
       note.textContent = 'PBD Tahap 1 (Tahun 1–3): BM, BI, Matematik, Sains, BKD, Moral, PI, PJ.';
     } else if (jenis === 'pbd-pt') {
@@ -11584,10 +11601,10 @@ function lkSetStatus(type, msg) {
   txt.textContent = msg;
 }
 
-function lkBinaSumber() {
-  var jenis = lkGetJenis();
-  var jenisLabel = { 'pbd-pt': 'Lembaran Kerja PDPC', 'pbd-at': 'PBD Berterusan', 'uasa': 'UASA (Ujian Akhir Sesi Akademik)' };
-  var tahun = document.getElementById('lkTahun').value;
+function lkBinaSumber(phase) {
+  var tahun = (document.getElementById('lkTahun') || {}).value || '1';
+  var jenis = document.querySelector('input[name="lkJenis"]:checked') ? document.querySelector('input[name="lkJenis"]:checked').value : 'pdpc';
+  var jenisLabel = { 'pdpc': 'PDPC / Lembaran Kerja', 'pbd-pt': 'PBD Berterusan', 'pbd-at': 'PBD Akhir Tahun', 'uasa': 'UASA' };
   var sel = document.getElementById('lkSubjek');
   var subjekLabel = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : sel.value) : '';
   var subjekVal = sel ? sel.value : '';
@@ -11624,18 +11641,22 @@ function lkBinaSumber() {
     p += '- Topik: Pilih topik sesuai dari DSKP Tahun ' + tahun + '\n';
   }
   if (sk) p += '- Standard Kandungan:\n' + sk.split('\n').map(function(s){ return '  ' + s; }).join('\n') + '\n';
-  p += '- Jumlah Soalan: ' + bilSoalan + '\n';
+  p += '- Jumlah Soalan Keseluruhan: ' + bilSoalan + '\n';
   p += '- Aras: ' + (arasLabel[aras] || aras) + '\n';
   p += '- Bahasa: ' + bahasa + '\n';
   if (nota) p += '- Nota: ' + nota + '\n';
-  if (subjekVal === 'RBT') {
-    p += '\nNota khusus RBT: Jana soalan berasaskan proses reka bentuk, projek, dan teknologi sesuai Tahun ' + tahun + '.';
+
+  if (!phase) {
+    p += '\n\nJana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, kemudian SKEMA JAWAPAN.';
+    p += '\nAgihkan ' + bilSoalan + ' soalan. Sertakan arahan ringkas. Jangan guna markdown. Jika perlu gambar, hasilkan secara terus.';
+  } else {
+    p += '\n\nFASA PENJANAAN: ' + phase + '\n';
+    if (phase === 'A') p += 'SILA JANA BAHAGIAN A SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'B') p += 'SILA JANA BAHAGIAN B SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'CD') p += 'SILA JANA BAHAGIAN C (dan D jika ada) SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'JAWAPAN') p += 'SILA JANA SKEMA JAWAPAN LENGKAP untuk semua bahagian yang dinyatakan dalam format UASA/PBD untuk ' + subjekLabel + '.';
+    p += '\nPastikan output adalah TEKS BIASA tanpa markdown. Imej dijana secara terus (native).';
   }
-  if (subjekVal === 'BKD') {
-    p += '\nNota khusus BKD: Bahasa Kadazan Dusun — gunakan istilah dan kosa kata Kadazan Dusun yang betul. Jana soalan dalam konteks budaya dan bahasa KadazanDusun Sabah sesuai Tahun ' + tahun + '.';
-  }
-  p += '\n\nJana: BAHAGIAN A (Aneka Pilihan), BAHAGIAN B (Isi Tempat Kosong), BAHAGIAN C (Struktur), kemudian SKEMA JAWAPAN.';
-  p += '\nAgihkan ' + bilSoalan + ' soalan. Sertakan arahan ringkas. Jangan guna markdown. Jika perlu gambar, hasilkan secara terus.';
 
   return p;
 }
@@ -11645,7 +11666,56 @@ function lkGetEngine() {
   return r ? r.value : 'deepseek';
 }
 
+function lkSimpanLocalAiKey() {
+  var key = document.getElementById('configLocalGeminiKey').value;
+  if (!key) { showToast('Sila masukkan kunci API.', 'error'); return; }
+  localStorage.setItem('ssh_local_gemini_key', key.trim());
+  showToast('Kunci API Gemini Tempatan disimpan! Penjanaan kini akan menghubungi Google secara terus (Bypass Cloudflare).', 'success');
+}
+
+function lkPadamLocalAiKey() {
+  localStorage.removeItem('ssh_local_gemini_key');
+  var inp = document.getElementById('configLocalGeminiKey');
+  if (inp) inp.value = '';
+  showToast('Kunci API tempatan dipadam. Sistem akan kembali menggunakan Cloudflare Worker.', 'info');
+}
+
 async function callWorkerAIGemini(prompt, withImage) {
+  var localKey = localStorage.getItem('ssh_local_gemini_key');
+  if (localKey && localKey.trim()) {
+    // MOD: Direct call to Google Gemini API (Bypassing Cloudflare 524 timeout)
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + localKey.trim();
+    var payload = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
+    };
+    if (withImage) {
+      payload.responseModalities = ["TEXT", "IMAGE"];
+    }
+
+    var res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!res.ok) {
+      var err = await res.json().catch(function(){ return {error:{message:res.statusText}}; });
+      throw new Error('Google API Error: ' + (err.error ? err.error.message : res.statusText));
+    }
+    
+    var data = await res.json();
+    var content = '';
+    var images = [];
+    if (data.candidates && data.candidates[0].content) {
+      data.candidates[0].content.parts.forEach(function(p) {
+        if (p.text) content += p.text;
+        if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
+      });
+    }
+    return { success: true, content: content, images: images };
+  }
+
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
   var url = APP.workerUrl.replace(/\/+$/, '') + '/ai/gemini';
   var res = await fetch(url, {
@@ -11653,7 +11723,13 @@ async function callWorkerAIGemini(prompt, withImage) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt: prompt, type: 'lembaran_kerja', withImage: withImage })
   });
-  return await res.json();
+  var text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    if (text.includes('524')) throw new Error('Masa tamat (524). Server Cloudflare mengambil masa terlalu lama. Sila gunakan Kunci API Gemini Tempatan di menu Konfigurasi untuk mengelakkan had ini.');
+    throw new Error('Ralat format respons AI: ' + text.substring(0, 100));
+  }
 }
 
 // Update engine note when radio changes
@@ -11663,7 +11739,7 @@ async function callWorkerAIGemini(prompt, withImage) {
       var note = document.getElementById('lkEngineNote');
       if (!note) return;
       if (e.target.value === 'gemini') {
-        note.innerHTML = '✅ <strong>Gemini 3.1 Flash:</strong> AI menjana teks dan imej secara terus (Nano Banana 2). Paling canggih untuk janaan lembaran kerja.';
+        note.innerHTML = '✅ <strong>Gemini 2.0 Flash:</strong> AI menjana teks dan imej secara terus (Nano Banana 2). Paling canggih untuk janaan lembaran kerja.';
       } else {
         note.innerHTML = '[Info] <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }
@@ -11678,7 +11754,7 @@ async function janaLembaranKerja() {
 
   var engine = lkGetEngine();
   _lkGenerating = true;
-  var engineLabel = engine === 'gemini' ? 'Gemini 3.1 Flash' : 'DeepSeek';
+  var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
   document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>'; 
 
@@ -11691,37 +11767,52 @@ async function janaLembaranKerja() {
   if (imejGrid) imejGrid.innerHTML = '';
 
   try {
-    var prompt = lkBinaSumber();
-    var result;
-
-    if (engine === 'gemini') {
-      result = await callWorkerAIGemini(prompt, true);
-      // Handle Gemini-specific errors
-      if (result.error === 'gemini_key_missing') {
-        lkSetStatus('error', 'GEMINI_API_KEY belum dikonfigurasi dalam Worker secrets. Hubungi pentadbir.');
-        document.getElementById('lkOutputBox').textContent = '⚠️ GEMINI_API_KEY belum dikonfigurasi.';
-        return;
+    var jenis = document.querySelector('input[name="lkJenis"]:checked').value;
+    var isLongExam = (jenis === 'uasa' || jenis === 'pbd-pt' || jenis === 'pbd-at');
+    var finalContent = '';
+    
+    if (engine === 'gemini' && isLongExam) {
+      var phases = ['A', 'B', 'CD', 'JAWAPAN'];
+      var phaseNames = { 'A': 'Bahagian A', 'B': 'Bahagian B', 'CD': 'Bahagian C/D', 'JAWAPAN': 'Skema Jawapan' };
+      
+      for (var i = 0; i < phases.length; i++) {
+        var pKey = phases[i];
+        lkSetStatus('loading', '[' + (i+1) + '/4] Menjana ' + phaseNames[pKey] + '... Sila tunggu.');
+        var pPrompt = lkBinaSumber(pKey);
+        var pRes = await callWorkerAIGemini(pPrompt, true);
+        
+        if (pRes.success) {
+          finalContent += '<div class="lk-phase-result" style="margin-bottom:30px; border-bottom:1px dashed #ccc; padding-bottom:10px;">' + pRes.content + '</div>';
+          document.getElementById('lkOutputBox').innerHTML = finalContent;
+          // Scroll to bottom
+          document.getElementById('lkOutputBox').scrollTop = document.getElementById('lkOutputBox').scrollHeight;
+        } else {
+          // Check for specific errors
+          if (pRes.error === 'gemini_limit') throw new Error('Had Gemini API dicapai. Cuba sebentar lagi.');
+          throw new Error(pRes.message || 'Gagal menjana ' + phaseNames[pKey]);
+        }
       }
-      if (result.error === 'gemini_limit') {
-        lkSetStatus('error', 'Kuota Gemini API dicapai. Cuba sebentar lagi atau tukar ke DeepSeek.');
-        document.getElementById('lkOutputBox').textContent = '⚠️ Had Gemini API dicapai.';
-        return;
-      }
-      if (result.error === 'gemini_key_invalid') {
-        lkSetStatus('error', 'Gemini API key tidak sah. Semak GEMINI_API_KEY dalam Worker secrets.');
-        document.getElementById('lkOutputBox').textContent = '⚠️ Gemini API key tidak sah.';
-        return;
-      }
+      
+      lkSetStatus('success', 'Berjaya menjana kertas ' + engineLabel + ' secara berperingkat.');
+      if (imejBtn) imejBtn.style.display = 'inline-flex';
     } else {
-      result = await callWorkerAI(prompt, 'lembaran_kerja');
-      if (result.error === 'kredit_habis') {
-        lkSetStatus('error', 'Kredit DeepSeek habis. Hubungi pentadbir untuk menambah kredit.');
-        document.getElementById('lkOutputBox').textContent = '⚠️ Kredit AI tidak mencukupi.';
-        return;
+      // Mod biasa (DeepSeek atau PBD harian)
+      var prompt = lkBinaSumber();
+      var result;
+      if (engine === 'gemini') {
+        result = await callWorkerAIGemini(prompt, true);
+      } else {
+        result = await callWorkerAI(prompt, 'lembaran_kerja');
+      }
+
+      if (result.success) {
+        document.getElementById('lkOutputBox').innerHTML = result.content;
+        lkSetStatus('success', 'Berjaya menjana lembaran kerja (' + engineLabel + ').');
+        if (imejBtn) imejBtn.style.display = 'inline-flex';
+      } else {
+        throw new Error(result.message || 'Gagal menjana lembaran kerja.');
       }
     }
-
-    if (!result.success || !result.content) throw new Error(result.message || result.error || 'Respons AI kosong');
 
     var selOut = document.getElementById('lkSubjek');
     var subjekLabelOut = selOut ? (selOut.options[selOut.selectedIndex] ? selOut.options[selOut.selectedIndex].text : '') : '';
@@ -11755,12 +11846,11 @@ async function janaLembaranKerja() {
       line +
       '</div>';
 
-    var fullContentHtml = '';
-    if (result.isHtml) {
-      fullContentHtml = header + '<div class="lk-html-content">' + result.content + '</div>';
-    } else {
-      fullContentHtml = header + '<pre style="white-space:pre-wrap;font-family:inherit">' + result.content + '</pre>';
-    }
+    var contentWrap = result.isHtml ? 
+      '<div class="lk-html-content">' + result.content + '</div>' :
+      '<pre style="white-space:pre-wrap;font-family:inherit">' + result.content + '</pre>';
+
+    var fullContentHtml = (lkGetJenis() === 'pdpc') ? (header + contentWrap) : contentWrap;
     document.getElementById('lkOutputBox').innerHTML = fullContentHtml;
 
     // We still need a text-only version for placeholder checking (for DeepSeek)
@@ -11776,7 +11866,7 @@ async function janaLembaranKerja() {
         if (imejGrid) {
           imejGrid.innerHTML = '';
           var imejNote = document.getElementById('lkImejNote');
-          if (imejNote) imejNote.textContent = 'Imej dijana oleh Gemini 3.1 Flash. Klik kanan → Simpan imej untuk simpan ke komputer.';
+          if (imejNote) imejNote.textContent = 'Imej dijana oleh Gemini 2.0 Flash. Klik kanan → Simpan imej untuk simpan ke komputer.';
           geminiImages.forEach(function(src, idx) {
             var card = document.createElement('div');
             card.className = 'lk-imej-card';
@@ -11853,9 +11943,9 @@ function lkCetakOutput() {
   var kodKertas = document.getElementById('lkKodKertas').value || '_______________________';
   var bilSoalan = document.getElementById('lkBilSoalan').value || '___';
   
-  var isUjianFormal = (jenis === 'pbd-at' || jenis === 'uasa');
-  var kpmHeader = isUjianFormal ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : 'PENTAKSIRAN BILIK DARJAH (PBD) BERTERUSAN';
-  if (jenis === 'pbd-pt') kpmHeader = 'LEMBARAN KERJA PDPC';
+  var isUjianFormal = (jenis !== 'pdpc');
+  var kpmHeader = (jenis === 'uasa') ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : 'PENTAKSIRAN BILIK DARJAH (PBD)';
+  if (jenis === 'pbd-at') kpmHeader = 'PENTAKSIRAN BILIK DARJAH (AKHIR TAHUN)';
 
   var w = window.open('', '_blank', 'width=850,height=1000');
   if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
@@ -11971,8 +12061,17 @@ function lkCetakOutput() {
   var finalContentHtml = rawContent;
   
   if (isUjianFormal) {
-    // Strip simple header if exists
-    finalContentHtml = rawContent.replace(/<div class="lk-print-header"[\s\S]*?<\/div>/i, '');
+    // Strip simple header if exists (more robustly)
+    finalContentHtml = rawContent.replace(/<div class="lk-print-header"[\s\S]*?<!-- END HEADER -->/i, '')
+                                .replace(/<div class="lk-print-header"[\s\S]*?<hr[\s\S]*?<\/div>/i, ''); // Fallback for old regex
+    // Actually, if we already prevented adding it in janaLembaranKerja, this is just a safety measure.
+    // Let's just remove anything with class lk-print-header.
+    var tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rawContent;
+    var oldHeaders = tempDiv.querySelectorAll('.lk-print-header');
+    oldHeaders.forEach(function(h) { h.remove(); });
+    finalContentHtml = tempDiv.innerHTML;
+    
     finalContentHtml = '<div class="page page-break content-area">' + finalContentHtml + '</div>';
   } else {
     // For PDPC, maintain the header but wrap in page
@@ -12035,7 +12134,7 @@ async function lkJanaImej() {
   var placeholders = lkExtractImejPlaceholders(box.textContent);
   if (!placeholders.length) { showToast('Tiada penanda [GAMBAR:] ditemui.', 'info'); return; }
 
-  if (!confirm('Jana ' + placeholders.length + ' imej menggunakan Gemini 3.1 Flash?\n\nTeruskan?')) return;
+  if (!confirm('Jana ' + placeholders.length + ' imej menggunakan Gemini 2.0 Flash?\n\nTeruskan?')) return;
 
   _lkImejGenerating = true;
   var imejBtn = document.getElementById('lkJanaImejBtn');
