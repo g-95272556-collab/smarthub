@@ -706,7 +706,7 @@ function applyBackendOperationalConfig(config) {
     } catch (e) {}
   }
 
-  // Muat kunci Gemini dari Apps Script config ke localStorage
+  // Muat kunci Gemini dari Apps Script config ke localStorage (dikongsi semua guru)
   if (cfg.GEMINI_API_KEY) {
     localStorage.setItem('ssh_local_gemini_key', String(cfg.GEMINI_API_KEY).trim());
   }
@@ -718,6 +718,7 @@ function applyBackendOperationalConfig(config) {
       localStorage.removeItem('ssh_gemini_key_' + _gn);
     }
   }
+  if (typeof geminiKemaskiniStatusUI === 'function') geminiKemaskiniStatusUI();
 }
 function applyNotificationRuntimeConfig(config) {
   const cfg = config || {};
@@ -11833,9 +11834,10 @@ async function callWorkerAIGemini(prompt, withImage) {
 async function janaLembaranKerja() {
   if (_lkGenerating) { showToast('Sila tunggu - AI sedang memproses...', 'info'); return; }
   if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
-  if (!APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
-
   var engine = lkGetEngine();
+  if (engine !== 'gemini' && !APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
+  if (engine === 'gemini' && !geminiDapatkanKunci()) { showToast('Tiada Kunci API Gemini aktif. Hubungi pentadbir.', 'error'); return; }
+
   _lkGenerating = true;
   var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
