@@ -38,3 +38,6 @@ Thumbs.db
 
 # Capacitor web assets
 /www/
+
+# Claude Code worktrees
+.claude/worktrees/
