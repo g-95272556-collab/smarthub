@@ -11687,33 +11687,39 @@ async function callWorkerAIGemini(prompt, withImage) {
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + localKey.trim();
     var payload = {
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
+      generationConfig: { 
+        maxOutputTokens: 8192, 
+        temperature: 0.7
+      },
+      response_modalities: withImage ? ["TEXT", "IMAGE"] : ["TEXT"]
     };
-    if (withImage) {
-      payload.responseModalities = ["TEXT", "IMAGE"];
-    }
 
-    var res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    
-    if (!res.ok) {
-      var err = await res.json().catch(function(){ return {error:{message:res.statusText}}; });
-      throw new Error('Google API Error: ' + (err.error ? err.error.message : res.statusText));
-    }
-    
-    var data = await res.json();
-    var content = '';
-    var images = [];
-    if (data.candidates && data.candidates[0].content) {
-      data.candidates[0].content.parts.forEach(function(p) {
-        if (p.text) content += p.text;
-        if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
+    try {
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
+      
+      if (!res.ok) {
+        var err = await res.json().catch(function(){ return {error:{message:res.statusText}}; });
+        throw new Error('Google API Error: ' + (err.error ? err.error.message : res.statusText));
+      }
+      
+      var data = await res.json();
+      var content = '';
+      var images = [];
+      if (data.candidates && data.candidates[0].content) {
+        data.candidates[0].content.parts.forEach(function(p) {
+          if (p.text) content += p.text;
+          if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
+        });
+      }
+      return { success: true, content: content, images: images };
+    } catch (directError) {
+      console.warn('Direct AI call failed, falling back to Worker:', directError.message);
+      // Fallback: Proceed to Worker call below
     }
-    return { success: true, content: content, images: images };
   }
 
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');

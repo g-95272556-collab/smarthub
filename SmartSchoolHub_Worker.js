@@ -1499,11 +1499,12 @@ PERATURAN ARAS & KPM (WAJIB):
   const reqBody = {
     systemInstruction: { parts: [{ text: systemPromptLK }] },
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
+    generationConfig: { 
+      maxOutputTokens: 8192, 
+      temperature: 0.7
+    },
+    response_modalities: useImage ? ["TEXT", "IMAGE"] : ["TEXT"]
   };
-  if (useImage) {
-    reqBody.responseModalities = ["TEXT", "IMAGE"];
-  }
 
   try {
     const aiResp = await fetch(apiUrl, {
