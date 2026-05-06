@@ -706,9 +706,17 @@ function applyBackendOperationalConfig(config) {
     } catch (e) {}
   }
 
-  // MOD: Automatik muat Kunci API Gemini untuk bypass Cloudflare 524
+  // Muat kunci Gemini dari Apps Script config ke localStorage
   if (cfg.GEMINI_API_KEY) {
     localStorage.setItem('ssh_local_gemini_key', String(cfg.GEMINI_API_KEY).trim());
+  }
+  for (var _gn = 1; _gn <= 3; _gn++) {
+    var _gKey = cfg['GEMINI_API_KEY_' + _gn];
+    if (_gKey && String(_gKey).trim()) {
+      localStorage.setItem('ssh_gemini_key_' + _gn, String(_gKey).trim());
+    } else if (_gKey === '') {
+      localStorage.removeItem('ssh_gemini_key_' + _gn);
+    }
   }
 }
 function applyNotificationRuntimeConfig(config) {
@@ -11683,22 +11691,37 @@ function geminiKemaskiniStatusUI() {
   }
 }
 
-function geminiSimpanKunci(n) {
+async function geminiSimpanKunci(n) {
   var inp = document.getElementById('geminiKey' + n);
   if (!inp || !inp.value.trim()) { showToast('Sila masukkan kunci API.', 'error'); return; }
-  localStorage.setItem('ssh_gemini_key_' + n, inp.value.trim());
-  localStorage.removeItem('ssh_gemini_exhausted_' + n);
-  geminiKemaskiniStatusUI();
-  showToast('Kunci ' + n + ' disimpan.', 'success');
+  var keyVal = inp.value.trim();
+  try {
+    if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
+    var data = await callWorker({ action: 'setConfig', config: { ['GEMINI_API_KEY_' + n]: keyVal } });
+    if (!data.success) throw new Error(data.error || 'Gagal simpan ke Apps Script.');
+    localStorage.setItem('ssh_gemini_key_' + n, keyVal);
+    localStorage.removeItem('ssh_gemini_exhausted_' + n);
+    geminiKemaskiniStatusUI();
+    showToast('Kunci ' + n + ' disimpan ke Apps Script.', 'success');
+  } catch (e) {
+    showToast('Gagal simpan: ' + e.message, 'error');
+  }
 }
 
-function geminiPadamKunci(n) {
-  localStorage.removeItem('ssh_gemini_key_' + n);
-  localStorage.removeItem('ssh_gemini_exhausted_' + n);
-  var inp = document.getElementById('geminiKey' + n);
-  if (inp) inp.value = '';
-  geminiKemaskiniStatusUI();
-  showToast('Kunci ' + n + ' dipadam.', 'info');
+async function geminiPadamKunci(n) {
+  try {
+    if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
+    var data = await callWorker({ action: 'setConfig', config: { ['GEMINI_API_KEY_' + n]: '' } });
+    if (!data.success) throw new Error(data.error || 'Gagal padam dari Apps Script.');
+    localStorage.removeItem('ssh_gemini_key_' + n);
+    localStorage.removeItem('ssh_gemini_exhausted_' + n);
+    var inp = document.getElementById('geminiKey' + n);
+    if (inp) inp.value = '';
+    geminiKemaskiniStatusUI();
+    showToast('Kunci ' + n + ' dipadam.', 'info');
+  } catch (e) {
+    showToast('Gagal padam: ' + e.message, 'error');
+  }
 }
 
 function geminiResetKuota() {
