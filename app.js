@@ -11848,9 +11848,6 @@ async function callWorkerAIGemini(prompt, withImage) {
 }
 
 // ── HYBRID: DeepSeek (teks) + Gemini (imej) ─────────────────────
-// Step 1: DeepSeek jana teks + placeholder [IMEJ: deskripsi]
-// Step 2: Gemini jana setiap imej dari placeholder secara parallel
-// Step 3: Selitkan imej inline pada posisi placeholder
 async function callHybridDeepSeekGemini(prompt) {
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
 
@@ -11861,32 +11858,34 @@ async function callHybridDeepSeekGemini(prompt) {
   var rawText = dsResult.content || '';
   if (!rawText.trim()) throw new Error('DeepSeek tidak menghasilkan teks.');
 
-  // ── STEP 2: Parse [GAMBAR:] atau [IMEJ:] placeholder ──
-  var imgPlaceholders = [];
+  // ── STEP 2: Parse semua placeholder [GAMBAR:] atau [IMEJ:] ──
   var placeholderRegex = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
-  var match;
-  while ((match = placeholderRegex.exec(rawText)) !== null) {
-    imgPlaceholders.push({ full: match[0], desc: match[1].trim() });
+  var imgPlaceholders = []; // { index, full, desc }
+  var m;
+  var idx = 0;
+  while ((m = placeholderRegex.exec(rawText)) !== null) {
+    imgPlaceholders.push({ index: idx++, full: m[0], desc: m[1].trim() });
   }
 
-  var imgMap = {};
+  // ── STEP 3: Jana imej Gemini — simpan mengikut index ──
+  var imgByIndex = {}; // { 0: dataUri, 1: dataUri, ... }
   if (imgPlaceholders.length > 0) {
     var geminiAttempt = geminiDapatkanKunci();
     if (!geminiAttempt) {
-      // Tiada kunci Gemini — render teks sahaja dengan placeholder kotak
       showToast('Tiada kunci Gemini aktif — teks sahaja dipaparkan.', 'info');
     } else {
       lkSetStatus('loading', '🎨 Langkah 2/2: Gemini jana ' + imgPlaceholders.length + ' imej...');
       await Promise.all(imgPlaceholders.map(async function(ph) {
-        var imgPrompt = 'Lukis gambar untuk soalan murid Tahun 1-6 Malaysia: ' + ph.desc +
-          '. WAJIB: clean black and white line art sahaja untuk dicetak. DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, perkataan atau aksara dalam gambar. Hanya lukisan/rajah sahaja.';
+        var imgPrompt = 'Lukis ilustrasi untuk soalan murid sekolah rendah Malaysia: ' + ph.desc +
+          '. WAJIB: clean black and white line art sahaja untuk dicetak. ' +
+          'DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, atau perkataan dalam gambar. Hanya lukisan/rajah sahaja.';
         try {
           var imgData = await _geminiApiCall(geminiAttempt.key, imgPrompt, 'IMAGE', null);
           var iParts = (imgData.candidates && imgData.candidates[0] && imgData.candidates[0].content)
             ? imgData.candidates[0].content.parts : [];
-          iParts.forEach(function(p) {
-            if (p.inlineData) {
-              imgMap[ph.full] = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
+          iParts.forEach(function(part) {
+            if (part.inlineData) {
+              imgByIndex[ph.index] = 'data:' + part.inlineData.mimeType + ';base64,' + part.inlineData.data;
             }
           });
         } catch(imgErr) {
@@ -11894,33 +11893,36 @@ async function callHybridDeepSeekGemini(prompt) {
             geminiTandaHabisKuota(geminiAttempt.slot);
             showToast('Kuota Gemini habis semasa jana imej.', 'info');
           }
-          console.warn('Gagal jana imej hybrid:', imgErr.message);
+          console.warn('Gagal jana imej [' + ph.index + ']:', imgErr.message);
         }
       }));
     }
   }
 
-  // ── STEP 3: Bina HTML — selitkan imej pada posisi placeholder ──
-  var imgCount = 0;
+  // ── STEP 4: Replace placeholder dengan imej atau kotak fallback ──
+  var imgCounter = 0;
   var htmlContent = rawText
     .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
-      imgCount++;
-      var dataUri = imgMap[full];
+      var currentIdx = imgCounter++;
+      var dataUri = imgByIndex[currentIdx];
+      var rajahNum = currentIdx + 1;
       if (dataUri) {
         return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
-          '<img src="' + dataUri + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + imgCount + '">' +
-          '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + imgCount + '</small>' +
+          '<img src="' + dataUri + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
+          '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
           '</div>';
       } else {
         return '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
-          '<span style="color:#888;font-style:italic">[Rajah ' + imgCount + ': ' + desc + ']</span>' +
+          '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + desc.trim() + ']</span>' +
           '</div>';
       }
     })
     .replace(/\n/g, '<br>');
 
-  return { success: true, content: htmlContent, images: [], isHtml: true };
+  var totalJana = Object.keys(imgByIndex).length;
+  return { success: true, content: htmlContent, images: [], isHtml: true, _imgCount: totalJana };
 }
+
 
 // Update engine note when radio changes
 (function() {
