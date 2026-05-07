@@ -1420,8 +1420,9 @@ async function handleAIImage(request, env, corsHeaders) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: safePrompt }] }],
-        responseModalities: ["TEXT", "IMAGE"],
-        generationConfig: {}
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"]
+        }
       }),
     });
 
