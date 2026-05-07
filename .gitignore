@@ -9,6 +9,7 @@
 # Local environment files and runtime overrides
 /.env
 /.env.*
+!/.env.example
 /env.js
 
 # Generated Apps Script deploy artifact

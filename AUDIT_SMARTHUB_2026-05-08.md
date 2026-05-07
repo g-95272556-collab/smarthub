@@ -231,11 +231,15 @@ Keputusan audit:
 
 ### 3. Dokumentasi deployment dan modul
 
-Cadangan:
+Status semasa:
 
-- Tambah nota cara tambah modul baru.
-- Tambah `.env.example` jika workflow env tempatan hendak diperkenalkan.
-- Dokumentasikan aliran `build:web`, `build:android`, Apps Script sync, Cloudflare Worker, dan Netlify function.
+- `.env.example` telah ditambah sebagai template nama pembolehubah tanpa secret.
+- `DEPLOYMENT_SECURITY.md` telah ditambah untuk checklist deployment, secret, dan verifikasi sebelum push.
+- `README.md` kini merujuk kedua-dua fail tersebut.
+
+Cadangan baki:
+
+- Tambah nota cara menambah modul baru apabila refactor modul dimulakan.
 
 ## Dapatan Kurang Relevan Atau Perlu Dilaraskan
 
@@ -309,8 +313,9 @@ Kandungan:
 
 Kandungan:
 
-- Tambah dokumentasi `.env.example` jika perlu.
-- Perketat polisi runtime secret dan deployment notes.
+- Tambah `.env.example`.
+- Tambah `DEPLOYMENT_SECURITY.md`.
+- Perketat polisi runtime secret dan deployment notes dalam README.
 
 ### Commit 3: auth/backend hardening
 

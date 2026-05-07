@@ -47,6 +47,13 @@ Pasang dependency:
 npm install
 ```
 
+Rujukan konfigurasi:
+
+- `.env.example`
+  Contoh nama pembolehubah untuk nota tempatan/deployment. Jangan commit `.env` sebenar.
+- `DEPLOYMENT_SECURITY.md`
+  Checklist deployment, secret, dan verifikasi sebelum push.
+
 ## Aliran Apps Script
 
 1. Salin `.clasp.json.example` menjadi `.clasp.json`
@@ -131,6 +138,7 @@ Repo ini telah dibersihkan untuk GitHub:
 ## Security and Data Handling
 
 - Rujuk `SECURITY.md` sebelum berkongsi repo ini lebih luas.
+- Rujuk `DEPLOYMENT_SECURITY.md` sebelum deploy atau push perubahan berkaitan backend/config.
 - Jangan simpan token hidup atau secret operasi terus dalam source code.
 - Repo ini masih menjejak beberapa fail dokumen sekolah yang perlu dinilai semula jika repo ingin dijadikan awam.
 - Rujuk `DATA_MIGRATION_PLAN.md` untuk laluan migrasi daripada data sebenar kepada sample/template.
