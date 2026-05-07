@@ -11558,7 +11558,7 @@ function lkBinaSumber(phase) {
   var topikArr = lkGetCheckedTopiks();
   var topikManual = ((document.getElementById('lkTopikManual') || {}).value || '').trim();
   if (topikManual) topikArr.push(topikManual);
-  var sk = (document.getElementById('lkSK').value || '').trim();
+  var sk = ((document.getElementById('lkSK') || {}).value || '').trim();
   
   var bilSoalanInput = document.getElementById('lkBilSoalan');
   var bilSoalan = 10;
@@ -11568,9 +11568,9 @@ function lkBinaSumber(phase) {
     bilSoalan = parseInt(bilSoalanInput.value) || 10;
   }
   
-  var aras = document.getElementById('lkAras').value;
+  var aras = (document.getElementById('lkAras') || {value:''}).value;
   var bahasa = lkGetBahasa();
-  var nota = (document.getElementById('lkNota').value || '').trim();
+  var nota = ((document.getElementById('lkNota') || {}).value || '').trim();
   var arasLabel = { campuran: 'Campuran LOTS + HOTS', mudah: 'Mudah (LOTS sahaja)', sederhana: 'Sederhana', susah: 'Susah / HOTS' };
 
   var tahap = lkGetTahap();
@@ -12022,8 +12022,8 @@ async function janaLembaranKerja() {
       var selOutFasa = document.getElementById('lkSubjek');
       var subjekLabelFasa = selOutFasa && selOutFasa.selectedIndex >= 0 ? selOutFasa.options[selOutFasa.selectedIndex].text : '';
       var tahunFasa = document.getElementById('lkTahun').value;
-      var masaFasa = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
-      var kodFasa = document.getElementById('lkKodKertas').value || '';
+      var masaFasa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
+      var kodFasa = (document.getElementById('lkKodKertas') || {}).value || '';
       var jenisMapFasa = { 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
       var jenisTxtFasa = jenisMapFasa[jenis] || jenis.toUpperCase();
       var lineFasa = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
@@ -12066,9 +12066,9 @@ async function janaLembaranKerja() {
     var jenisLabelMap = { 'pbd-pt': 'LEMBARAN KERJA PDPC', 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
     var jenisTxt = jenisLabelMap[lkGetJenis()] || '';
     var line = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
-    var masaMenjawab = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
-    var guruPenyedia = document.getElementById('lkGuruPenyedia').value || '';
-    var kodKertas = document.getElementById('lkKodKertas').value || '';
+    var masaMenjawab = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
+    var guruPenyedia = '' ;
+    var kodKertas = (document.getElementById('lkKodKertas') || {}).value || '';
     
     var header = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
       line +
@@ -12258,10 +12258,10 @@ function lkCetakOutput() {
   var subjekSel = document.getElementById('lkSubjek');
   var subjekLabel = subjekSel ? (subjekSel.options[subjekSel.selectedIndex] ? subjekSel.options[subjekSel.selectedIndex].text : '') : '';
   var tahun = document.getElementById('lkTahun').value;
-  var masa = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
-  var guru = document.getElementById('lkGuruPenyedia').value || '_______________________';
-  var kodKertas = document.getElementById('lkKodKertas').value || '_______________________';
-  var bilSoalan = document.getElementById('lkBilSoalan').value || '___';
+  var masa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
+  var guru = '';
+  var kodKertas = (document.getElementById('lkKodKertas') || {}).value || '_______________________';
+  var bilSoalan = (document.getElementById('lkBilSoalan') || {}).value || '___';
   
   // pbd-pt = Lembaran Kerja PDPC (worksheet harian, simple)
   // pbd-at + uasa = format peperiksaan formal dengan cover page KPM
@@ -12537,7 +12537,7 @@ async function lkCetakSemuaMurid() {
     var subjekLabel = subjekSel && subjekSel.options[subjekSel.selectedIndex] ? subjekSel.options[subjekSel.selectedIndex].text : '';
     var tahun = (document.getElementById('lkTahun') || {}).value || '';
     var masa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
-    var guru = (document.getElementById('lkGuruPenyedia') || {}).value || '_______________________';
+    var guru = '';
     var kodKertas = (document.getElementById('lkKodKertas') || {}).value || '_______________________';
     var bilSoalan = (document.getElementById('lkBilSoalan') || {}).value || '___';
     var isUjianFormal = (jenis === 'uasa' || jenis === 'pbd-at');
