@@ -1149,7 +1149,7 @@ async function loadAdminConfig() {
   updateNotifAutoStatusUI();
   updateHLNotifStatusUI();
   renderGroupFonnteSetupUI();
-  loadBirthdayNotificationConfig();
+  populateBirthdayNotifConfigInputs(_backendConfigCache || {});
   // Auto-muatkan pentadbir dari Data Guru
   await muatGuruAutoAdmin();
   renderAdminList();
