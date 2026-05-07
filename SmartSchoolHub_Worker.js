@@ -77,6 +77,13 @@ const SENSITIVE_ACTIONS = new Set([
   "storeLetterFile",
   "verifySession"
 ]);
+const SECURITY_HEADERS = {
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; img-src 'self' data: https://lh3.googleusercontent.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xbasmarthub.netlify.app https://smartschoolhub-skkiandongo.g-95272556.workers.dev https://smartschoolhub-google-oauth.g-95272556.workers.dev https://api.open-meteo.com https://api.waktusolat.app https://accounts.google.com https://api.telegram.org https://api.fonnte.com https://docs.google.com https://generativelanguage.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.googleusercontent.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "geolocation=(self), microphone=(), camera=()"
+};
 const DUTY_SCHEDULE_2026 = [
   { isnin: "2026-01-12", guru: "BETTY BINTI JIM", telefon: "01124135966", pembantu: "FAZILAH BINTI ALI", telefonPembantu: "0134461416" },
   { isnin: "2026-01-19", guru: "FAZILAH BINTI ALI", telefon: "0134461416", pembantu: "OKTOVYANTI KOH", telefonPembantu: "0138665663" },
@@ -198,7 +205,7 @@ export default {
 
     // Handle OPTIONS preflight — mesti return 204
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders });
+      return new Response(null, { status: 204, headers: withSecurityHeaders(corsHeaders) });
     }
 
     try {
@@ -229,7 +236,7 @@ export default {
       }
 
       if (env.ASSETS && typeof env.ASSETS.fetch === "function") {
-        return env.ASSETS.fetch(request);
+        return withSecurityHeaders(await env.ASSETS.fetch(request));
       }
 
       return jsonResp({ success: false, error: "Laluan tidak dijumpai" }, 404, corsHeaders);
@@ -1628,8 +1635,28 @@ PERATURAN ARAS & KPM (WAJIB):
 function jsonResp(data, status = 200, corsHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: withSecurityHeaders({ ...corsHeaders, "Content-Type": "application/json" }),
   });
+}
+
+function withSecurityHeaders(responseOrHeaders) {
+  if (responseOrHeaders instanceof Response) {
+    const headers = new Headers(responseOrHeaders.headers);
+    for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+      headers.set(key, value);
+    }
+    return new Response(responseOrHeaders.body, {
+      status: responseOrHeaders.status,
+      statusText: responseOrHeaders.statusText,
+      headers
+    });
+  }
+
+  const headers = new Headers(responseOrHeaders || {});
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(key, value);
+  }
+  return headers;
 }
 
 function escapeHtml(value) {
