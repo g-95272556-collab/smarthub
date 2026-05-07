@@ -11,6 +11,9 @@ Sebelum commit APA-APA perubahan, semak semua perkara berikut:
 5. **Konsistensi placeholder** — Worker (DeepSeek) dan app.js (Gemini) mesti guna placeholder yang **sama**: `[GAMBAR: deskripsi]`. Jangan campur `[IMEJ:]` dan `[GAMBAR:]`.
 6. **Max tokens Worker** — `lembaran_kerja: 6000`. Jangan kurangkan — output akan terpotong.
 7. **Selesai SEMUA isu yang dijangka sebelum commit** — jangan commit separuh siap.
+8. **`node --check app.js` WAJIB dijalankan selepas setiap perubahan** — syntax error akan crash seluruh app.
+9. **Brace balance** — selepas edit fungsi, pastikan `{` dan `}` seimbang. Elak `} else { } else {`.
+10. **Fasa vs mod biasa** — arahan yang hanya relevan untuk mod biasa (HAD MUTLAK, bilImej) mesti guna `if (!phase)` supaya tidak masuk dalam fasa A/B/CD/JAWAPAN.
 
 ---
 

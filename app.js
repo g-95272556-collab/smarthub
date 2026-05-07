@@ -11137,7 +11137,7 @@ var LK_SUBJEK_UASA = [
 ];
 
 function lkGetTahap() {
-  var t = parseInt(document.getElementById('lkTahun').value) || 4;
+  var t = parseInt((document.getElementById('lkTahun') || {value:'4'}).value) || 4;
   return t <= 3 ? 1 : 2;
 }
 
@@ -11565,7 +11565,7 @@ function lkBinaSumber(phase) {
   if (_lkSoalanMode === 'auto') {
     bilSoalan = lkGetKpmSoalanCount(jenis, subjekVal);
   } else {
-    bilSoalan = parseInt(bilSoalanInput.value) || 10;
+    bilSoalan = parseInt((bilSoalanInput || {value:'10'}).value) || 10;
   }
   
   var aras = (document.getElementById('lkAras') || {value:''}).value;
@@ -11583,7 +11583,7 @@ function lkBinaSumber(phase) {
 
   // ── Bina prompt — had imej di baris PERTAMA supaya AI baca dahulu ──
   var p = '';
-  if (bilImej > 0 && bilImej < bilSoalan) {
+  if (!phase && bilImej > 0 && bilImej < bilSoalan) {
     p += '⚠️ HAD MUTLAK: Jana TEPAT ' + bilImej + ' soalan bergambar [GAMBAR:] dan TEPAT ' + (bilSoalan - bilImej) + ' soalan tanpa gambar. JANGAN melebihi ' + bilImej + ' placeholder [GAMBAR:].\n\n';
   }
   p += 'Jana lembaran kerja untuk murid Tahun ' + tahun + ' (Tahap ' + tahap + '), Sekolah Kebangsaan Malaysia.\n\n';
@@ -11630,13 +11630,13 @@ function lkBinaSumber(phase) {
       p += '\nJika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].';
     }
   } else {
-    // ── Fasa Gemini (untuk PBD Berterusan / UASA) ──
+    // ── Fasa untuk PBD Berterusan / UASA ──
     p += '\n\nFASA PENJANAAN: ' + phase + '\n';
     if (phase === 'A') p += 'SILA JANA BAHAGIAN A SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'B') p += 'SILA JANA BAHAGIAN B SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'CD') p += 'SILA JANA BAHAGIAN C (dan D jika ada) SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'JAWAPAN') p += 'SILA JANA SKEMA JAWAPAN LENGKAP untuk semua bahagian dalam format UASA/PBD Berterusan untuk ' + subjekLabel + '.';
-    p += '\nPastikan output adalah TEKS BIASA tanpa markdown. Imej dijana secara terus (native).';
+    p += '\nPastikan output adalah TEKS BIASA tanpa markdown. Jika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].';
   }
 
   // ══ ARAHAN KHAS GURU (WAJIB IKUT — keutamaan tertinggi) ══
@@ -11882,7 +11882,7 @@ async function callHybridDeepSeekGemini(prompt) {
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
 
   // ── STEP 1: DeepSeek jana teks ──
-  lkSetStatus('loading', '⏳ Langkah 1/2: DeepSeek menjana teks soalan...');
+  if (_lkCancelled) throw new Error('__cancelled__');
   var dsResult = await callWorkerAI(prompt, 'lembaran_kerja');
   if (!dsResult.success) throw new Error(dsResult.message || 'DeepSeek gagal menjana teks.');
   var rawText = dsResult.content || '';
@@ -11903,7 +11903,6 @@ async function callHybridDeepSeekGemini(prompt) {
     var geminiAttempt = geminiDapatkanKunci();
     if (!geminiAttempt) {
       showToast('Tiada kunci Gemini aktif — teks sahaja dipaparkan.', 'info');
-    } else {
     } else {
       lkSetStatus('loading', '🎨 Langkah 2/2: Gemini jana ' + imgPlaceholders.length + ' imej...');
       for (let hi = 0; hi < imgPlaceholders.length; hi++) {
@@ -12009,7 +12008,8 @@ async function janaLembaranKerja() {
   if (imejGrid) imejGrid.innerHTML = '';
 
   try {
-    var jenis = document.querySelector('input[name="lkJenis"]:checked').value;
+    var jenisEl = document.querySelector('input[name="lkJenis"]:checked');
+    var jenis = jenisEl ? jenisEl.value : 'pbd-pt';
     // pbd-pt (Lembaran Kerja PDPC) bukan format peperiksaan — tidak perlu fasa A/B/C/D
     var isLongExam = (jenis === 'uasa' || jenis === 'pbd-at');
     var finalContent = '';
@@ -12018,29 +12018,39 @@ async function janaLembaranKerja() {
       var phases = ['A', 'B', 'CD', 'JAWAPAN'];
       var phaseNames = { 'A': 'Bahagian A', 'B': 'Bahagian B', 'CD': 'Bahagian C/D', 'JAWAPAN': 'Skema Jawapan' };
 
-      // Jana semua fasa serentak (parallel) — ~4x lebih laju
-      lkSetStatus('loading', '⚡ Menjana semua bahagian serentak (A + B + C/D + Skema)... Sila tunggu.');
       document.getElementById('lkOutputBox').innerHTML =
         '<div style="text-align:center;padding:30px;color:var(--muted)">' +
-        '<div style="font-size:1.5rem;margin-bottom:8px">⚡</div>' +
-        '<div>Menjana <strong>4 bahagian serentak</strong> — lebih pantas!</div>' +
+        '<div style="font-size:1.5rem;margin-bottom:8px">⏳</div>' +
+        '<div>Menjana <strong>4 bahagian</strong> satu persatu...</div>' +
         '<div style="margin-top:8px;font-size:0.85rem;display:flex;justify-content:center;gap:16px">' +
         phases.map(function(p) { return '<span id="lkPhaseStatus_' + p + '">⏳ ' + phaseNames[p] + '</span>'; }).join('') +
         '</div></div>';
 
       if (_lkCancelled) throw new Error('__cancelled__');
 
-      var phaseResults = await Promise.all(phases.map(function(pKey) {
-        var phaseFn = (engine === 'hybrid')
-          ? callHybridDeepSeekGemini(lkBinaSumber(pKey))
-          : callWorkerAIGemini(lkBinaSumber(pKey), true);
-        return phaseFn.then(function(res) {
-          // Kemaskini status fasa individual bila siap
+      // Sequential untuk hybrid (elak beban berat Worker) — parallel untuk Gemini sahaja
+      var phaseResults = [];
+      if (engine === 'hybrid') {
+        for (var pi = 0; pi < phases.length; pi++) {
+          if (_lkCancelled) throw new Error('__cancelled__');
+          var pKey = phases[pi];
+          lkSetStatus('loading', '⏳ Menjana ' + phaseNames[pKey] + ' (' + (pi+1) + '/4)...');
           var statusEl = document.getElementById('lkPhaseStatus_' + pKey);
+          var pRes = await callHybridDeepSeekGemini(lkBinaSumber(pKey));
           if (statusEl) statusEl.innerHTML = '<span style="color:var(--green)">✅ ' + phaseNames[pKey] + '</span>';
-          return { key: pKey, res: res };
-        });
-      }));
+          phaseResults.push({ key: pKey, res: pRes });
+        }
+      } else {
+        // Gemini: parallel OK
+        lkSetStatus('loading', '⚡ Menjana semua bahagian serentak (A + B + C/D + Skema)...');
+        phaseResults = await Promise.all(phases.map(function(pKey) {
+          return callWorkerAIGemini(lkBinaSumber(pKey), true).then(function(res) {
+            var statusEl = document.getElementById('lkPhaseStatus_' + pKey);
+            if (statusEl) statusEl.innerHTML = '<span style="color:var(--green)">✅ ' + phaseNames[pKey] + '</span>';
+            return { key: pKey, res: res };
+          });
+        }));
+      }
 
       if (_lkCancelled) throw new Error('__cancelled__');
 
@@ -12060,7 +12070,7 @@ async function janaLembaranKerja() {
       // Tambah header di atas output fasa (PBD Berterusan / UASA)
       var selOutFasa = document.getElementById('lkSubjek');
       var subjekLabelFasa = selOutFasa && selOutFasa.selectedIndex >= 0 ? selOutFasa.options[selOutFasa.selectedIndex].text : '';
-      var tahunFasa = document.getElementById('lkTahun').value;
+      var tahunFasa = (document.getElementById('lkTahun') || {value:''}).value;
       var masaFasa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
       var kodFasa = (document.getElementById('lkKodKertas') || {}).value || '';
       var jenisMapFasa = { 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
@@ -12101,7 +12111,7 @@ async function janaLembaranKerja() {
 
     var selOut = document.getElementById('lkSubjek');
     var subjekLabelOut = selOut ? (selOut.options[selOut.selectedIndex] ? selOut.options[selOut.selectedIndex].text : '') : '';
-    var tahunOut = document.getElementById('lkTahun').value;
+    var tahunOut = (document.getElementById('lkTahun') || {value:''}).value;
     var jenisLabelMap = { 'pbd-pt': 'LEMBARAN KERJA PDPC', 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
     var jenisTxt = jenisLabelMap[lkGetJenis()] || '';
     var line = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
@@ -12298,7 +12308,7 @@ function lkCetakOutput() {
   var jenis = lkGetJenis();
   var subjekSel = document.getElementById('lkSubjek');
   var subjekLabel = subjekSel ? (subjekSel.options[subjekSel.selectedIndex] ? subjekSel.options[subjekSel.selectedIndex].text : '') : '';
-  var tahun = document.getElementById('lkTahun').value;
+  var tahun = (document.getElementById('lkTahun') || {value:''}).value;
   var masa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
   var guru = '';
   var kodKertas = (document.getElementById('lkKodKertas') || {}).value || '_______________________';
