@@ -126,22 +126,21 @@ Cadangan:
 
 - Pastikan production secret terus berada di platform secret / backend config, bukan source code.
 
-### 2. Google token verification belum konsisten antara Worker
+### 2. Google token verification Worker utama
 
 Status semasa:
 
 - `workers/google-oauth-core.mjs` sudah verify Google ID token menggunakan JWK/WebCrypto.
-- `SmartSchoolHub_Worker.js` utama masih menggunakan endpoint `tokeninfo`.
+- `SmartSchoolHub_Worker.js` utama kini verify Google ID token menggunakan JWK/WebCrypto.
+- Semakan `aud`, `iss`, `exp`, `nbf`, `email_verified`, dan domain email dikekalkan.
 
-Risiko:
+Status:
 
-- `tokeninfo` bergantung kepada panggilan luar setiap token yang belum cached.
-- Corak verification tidak konsisten antara OAuth worker dan worker utama.
+- Selesai. Corak verification Google lebih konsisten antara OAuth worker dan Worker utama.
 
-Cadangan:
+Catatan:
 
-- Pindahkan atau kongsi corak JWK verification ke `SmartSchoolHub_Worker.js`.
-- Kekalkan cache JWK dan actor cache.
+- JWK dan actor cache masih dalam memori Worker. Ini sesuai sebagai hardening ringan.
 
 ### 3. Token notifikasi dan Gemini masih boleh berada di `localStorage`
 
@@ -172,17 +171,33 @@ Cadangan:
 - Validasi semula di backend sebelum tulis D1/Apps Script.
 - Pastikan mesej error jelas dan tidak menyimpan row separuh rosak.
 
-### 5. Rate limit dan logging API belum jelas menyeluruh
+### 5. Rate limit dan logging API
 
 Status semasa:
 
 - Worker sudah ada method check, `WORKER_SECRET`, Google identity, dan `authorizeRequest`.
-- Rate limit umum tidak jelas dalam kod semasa.
+- Rate limit memori ringan sudah ditambah untuk `/ai/*`, `/token`, dan action API.
+- Logging ringkas ditambah untuk permintaan sensitif dan rate limited event tanpa mencetak secret.
 
-Cadangan:
+Status:
 
-- Tambah rate limit ringan untuk endpoint sensitif seperti AI, notification, config write, dan letter generation.
-- Tambah structured logging minimum tanpa mencetak secret.
+- Selesai untuk baseline.
+
+Cadangan production:
+
+- Jika trafik meningkat, pindahkan rate limit ke Durable Object atau KV supaya konsisten antara isolate/region.
+
+### 6. Worker AI output hardening
+
+Status semasa:
+
+- URL Gemini dalam Worker kini encode `GEMINI_API_KEY`.
+- Teks Gemini fallback dalam Worker kini di-escape sebelum dijadikan HTML.
+- `DEEPSEEK_API_KEY` yang tiada dipulangkan sebagai ralat konfigurasi khusus.
+
+Status:
+
+- Selesai untuk baseline.
 
 ## Dapatan Jangka Panjang
 

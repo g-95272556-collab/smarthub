@@ -53,6 +53,30 @@ const TEACHER_READABLE_SHEETS = [
   "BIRTHDAY_LOG",
   "HARI_LAHIR"
 ];
+const GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
+const GOOGLE_KEYS_CACHE = {
+  expiresAt: 0,
+  keys: new Map()
+};
+const RATE_LIMIT_CACHE = new Map();
+const RATE_LIMIT_RULES = {
+  apiRead: { limit: 180, windowMs: 60 * 1000 },
+  apiWrite: { limit: 60, windowMs: 60 * 1000 },
+  apiSensitive: { limit: 20, windowMs: 60 * 1000 },
+  ai: { limit: 12, windowMs: 60 * 1000 },
+  token: { limit: 20, windowMs: 60 * 1000 }
+};
+const SENSITIVE_ACTIONS = new Set([
+  "setConfig",
+  "appendRow",
+  "appendRows",
+  "replaceSheet",
+  "updateSheet",
+  "batchUpdate",
+  "setupAllSheets",
+  "storeLetterFile",
+  "verifySession"
+]);
 const DUTY_SCHEDULE_2026 = [
   { isnin: "2026-01-12", guru: "BETTY BINTI JIM", telefon: "01124135966", pembantu: "FAZILAH BINTI ALI", telefonPembantu: "0134461416" },
   { isnin: "2026-01-19", guru: "FAZILAH BINTI ALI", telefon: "0134461416", pembantu: "OKTOVYANTI KOH", telefonPembantu: "0138665663" },
@@ -185,15 +209,19 @@ export default {
         return await handleAPI(request, env, corsHeaders);
       }
       if (path === "/ai/image") {
+        enforceRateLimit(request, "ai", RATE_LIMIT_RULES.ai);
         return await handleAIImage(request, env, corsHeaders);
       }
       if (path === "/ai/gemini") {
+        enforceRateLimit(request, "ai", RATE_LIMIT_RULES.ai);
         return await handleAIGemini(request, env, corsHeaders);
       }
       if (path === "/ai" || path.startsWith("/ai/")) {
+        enforceRateLimit(request, "ai", RATE_LIMIT_RULES.ai);
         return await handleAI(request, env, corsHeaders);
       }
       if (path === "/token") {
+        enforceRateLimit(request, "token", RATE_LIMIT_RULES.token);
         return await generateTokenEndpoint(request, env, corsHeaders);
       }
       if (path.startsWith("/letter/")) {
@@ -206,7 +234,11 @@ export default {
 
       return jsonResp({ success: false, error: "Laluan tidak dijumpai" }, 404, corsHeaders);
     } catch (err) {
-      return jsonResp({ success: false, error: err.message }, 500, corsHeaders);
+      return jsonResp(
+        { success: false, error: err.message || "Ralat dalaman Worker", code: err.code || "WORKER_ERROR" },
+        err.status || 500,
+        corsHeaders
+      );
     }
   }
 };
@@ -241,6 +273,19 @@ async function handleAPI(request, env, corsHeaders) {
     body = await request.json();
   } else {
     body = Object.fromEntries(new URL(request.url).searchParams);
+  }
+
+  enforceRateLimit(
+    request,
+    "api:" + String(body.action || "unknown"),
+    SENSITIVE_ACTIONS.has(String(body.action || "")) ? RATE_LIMIT_RULES.apiSensitive :
+      request.method === "POST" ? RATE_LIMIT_RULES.apiWrite : RATE_LIMIT_RULES.apiRead
+  );
+  if (SENSITIVE_ACTIONS.has(String(body.action || ""))) {
+    logWorkerEvent("sensitive_api_request", {
+      action: String(body.action || "unknown"),
+      client: maskClientIdentifier(getClientIdentifier(request))
+    });
   }
 
   if (body.action === "ping") {
@@ -1332,8 +1377,14 @@ async function handleAI(request, env, corsHeaders) {
   if (request.method !== "POST") {
     return jsonResp({ success: false, error: "POST sahaja" }, 405, corsHeaders);
   }
+  if (!env.DEEPSEEK_API_KEY) {
+    return jsonResp({ success: false, error: "deepseek_key_missing", message: "DEEPSEEK_API_KEY belum dikonfigurasi dalam Worker secrets." }, 503, corsHeaders);
+  }
 
-  const { prompt, type } = await request.json();
+  let body;
+  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
+
+  const { prompt, type } = body;
   if (!prompt) {
     return jsonResp({ success: false, error: "Prompt diperlukan" }, 400, corsHeaders);
   }
@@ -1430,7 +1481,7 @@ async function handleAIImage(request, env, corsHeaders) {
     `Style: clean black and white line art, child-friendly, white background, simple textbook diagram style.`;
 
   const model = "gemini-3.1-flash-image-preview";
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
 
   try {
     const aiResp = await fetch(apiUrl, {
@@ -1517,7 +1568,7 @@ PERATURAN ARAS & KPM (WAJIB):
 - Bahasa soalan mestilah sesuai dengan tahap murid`;
 
   const model = "gemini-3.1-flash-image-preview";
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
 
   const reqBody = {
     systemInstruction: { parts: [{ text: systemPromptLK }] },
@@ -1552,7 +1603,7 @@ PERATURAN ARAS & KPM (WAJIB):
     candidates.forEach((p) => {
       if (p.text) {
         // Tukar baris baru kepada <br> untuk paparan HTML
-        htmlContent += p.text.replace(/\n/g, "<br>");
+        htmlContent += escapeHtml(p.text).replace(/\n/g, "<br>");
       }
       if (p.inlineData) {
         imageCount++;
@@ -1577,6 +1628,72 @@ function jsonResp(data, status = 200, corsHeaders = {}) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function enforceRateLimit(request, bucket, rule) {
+  const client = getClientIdentifier(request);
+  const key = `${bucket}:${client}`;
+  const now = Date.now();
+  const current = RATE_LIMIT_CACHE.get(key);
+
+  cleanupRateLimitCache(now);
+  if (!current || current.resetAt <= now) {
+    RATE_LIMIT_CACHE.set(key, { count: 1, resetAt: now + rule.windowMs });
+    return;
+  }
+
+  current.count += 1;
+  if (current.count > rule.limit) {
+    logWorkerEvent("rate_limited", {
+      bucket,
+      client: maskClientIdentifier(client)
+    });
+    throw makeHttpError(429, "Terlalu banyak permintaan. Cuba sebentar lagi.", "RATE_LIMITED");
+  }
+}
+
+function getClientIdentifier(request) {
+  return String(
+    request.headers.get("cf-connecting-ip") ||
+    request.headers.get("x-forwarded-for") ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  ).split(",")[0].trim() || "unknown";
+}
+
+function cleanupRateLimitCache(now) {
+  if (RATE_LIMIT_CACHE.size < 1000) return;
+  for (const [key, value] of RATE_LIMIT_CACHE.entries()) {
+    if (!value || value.resetAt <= now) RATE_LIMIT_CACHE.delete(key);
+  }
+}
+
+function logWorkerEvent(event, details = {}) {
+  try {
+    console.log(JSON.stringify({
+      event,
+      ...details,
+      buildId: WORKER_BUILD_ID,
+      timestamp: new Date().toISOString()
+    }));
+  } catch {
+    // Logging must never break request handling.
+  }
+}
+
+function maskClientIdentifier(value) {
+  const text = String(value || "unknown");
+  if (text === "unknown") return text;
+  return text.length <= 6 ? "***" : `${text.slice(0, 3)}...${text.slice(-3)}`;
 }
 
 function needsAuthenticatedRequest(body) {
@@ -1924,7 +2041,7 @@ function getCurrentDutyEntry() {
 }
 
 function getAllowedGoogleClientIds(env) {
-  const configured = String(env.GOOGLE_CLIENT_ID || "").trim();
+  const configured = String(env.GOOGLE_CLIENT_IDS || env.GOOGLE_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_IDS || env.GOOGLE_OAUTH_CLIENT_ID || "").trim();
   if (!configured) return [DEFAULT_GOOGLE_CLIENT_ID];
   return configured.split(",").map((item) => item.trim()).filter(Boolean);
 }
@@ -1946,6 +2063,87 @@ function isAllowedGoogleEmailDomain(email, env) {
   return getAllowedGoogleEmailDomains(env).includes(domain);
 }
 
+async function getGoogleVerificationKeys() {
+  if (GOOGLE_KEYS_CACHE.expiresAt > Date.now() && GOOGLE_KEYS_CACHE.keys.size) {
+    return GOOGLE_KEYS_CACHE.keys;
+  }
+
+  const response = await fetch(GOOGLE_JWKS_URL, {
+    headers: { Accept: "application/json" }
+  });
+  if (!response.ok) {
+    throw makeHttpError(502, "Gagal memuat kunci Google untuk verifikasi.", "AUTH_UPSTREAM_ERROR");
+  }
+
+  const data = await response.json();
+  const keys = new Map();
+  for (const key of Array.isArray(data && data.keys) ? data.keys : []) {
+    if (!key || !key.kid) continue;
+    keys.set(String(key.kid).trim(), key);
+  }
+  if (!keys.size) {
+    throw makeHttpError(502, "Tiada kunci Google diterima untuk verifikasi.", "AUTH_UPSTREAM_ERROR");
+  }
+
+  GOOGLE_KEYS_CACHE.keys = keys;
+  GOOGLE_KEYS_CACHE.expiresAt = Date.now() + getMaxAgeMs(response.headers.get("cache-control"));
+  return GOOGLE_KEYS_CACHE.keys;
+}
+
+function getMaxAgeMs(cacheControl) {
+  const match = String(cacheControl || "").match(/max-age=(\d+)/i);
+  const seconds = match ? Number(match[1]) : 3600;
+  return Math.max(60, seconds) * 1000;
+}
+
+function parseJwt(token) {
+  const parts = String(token || "").split(".");
+  if (parts.length !== 3) {
+    throw makeHttpError(400, "Format token Google tidak sah.", "AUTH_REQUIRED");
+  }
+
+  const [headerPart, payloadPart, signaturePart] = parts;
+  let header;
+  let payload;
+  try {
+    header = JSON.parse(base64UrlDecodeToText(headerPart));
+    payload = JSON.parse(base64UrlDecodeToText(payloadPart));
+  } catch {
+    throw makeHttpError(400, "Token Google tidak dapat dibaca.", "AUTH_REQUIRED");
+  }
+
+  return {
+    header,
+    payload,
+    signingInput: `${headerPart}.${payloadPart}`,
+    signatureBytes: base64UrlDecodeToBytes(signaturePart)
+  };
+}
+
+function base64UrlDecodeToText(value) {
+  const normalized = normalizeBase64(value);
+  return decodeURIComponent(
+    Array.from(atob(normalized))
+      .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
+      .join("")
+  );
+}
+
+function base64UrlDecodeToBytes(value) {
+  const normalized = normalizeBase64(value);
+  const decoded = atob(normalized);
+  const bytes = new Uint8Array(decoded.length);
+  for (let i = 0; i < decoded.length; i += 1) {
+    bytes[i] = decoded.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function normalizeBase64(value) {
+  const normalized = String(value || "").replace(/-/g, "+").replace(/_/g, "/");
+  return normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+}
+
 async function verifyGoogleIdentity(auth, env) {
   const idToken = String((auth && auth.idToken) || "").trim();
   if (!idToken) {
@@ -1957,17 +2155,45 @@ async function verifyGoogleIdentity(auth, env) {
     return cached.actor;
   }
 
-  const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-  const data = await response.json();
-  if (!response.ok || data.error_description) {
-    throw makeHttpError(401, "Pengesahan Google gagal. Sila log masuk semula.", "AUTH_REQUIRED");
+  const jwt = parseJwt(idToken);
+  if (jwt.header.alg !== "RS256") {
+    throw makeHttpError(401, "Algoritma token Google tidak disokong.", "AUTH_REQUIRED");
   }
 
+  const keys = await getGoogleVerificationKeys();
+  const jwk = keys.get(String(jwt.header.kid || "").trim());
+  if (!jwk) {
+    throw makeHttpError(401, "Kunci verifikasi Google tidak ditemui.", "AUTH_REQUIRED");
+  }
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "jwk",
+    jwk,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["verify"]
+  );
+  const verified = await crypto.subtle.verify(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    jwt.signatureBytes,
+    new TextEncoder().encode(jwt.signingInput)
+  );
+  if (!verified) {
+    throw makeHttpError(401, "Tandatangan token Google tidak sah.", "AUTH_REQUIRED");
+  }
+
+  const data = jwt.payload || {};
   if (!getAllowedGoogleClientIds(env).includes(String(data.aud || "").trim())) {
     throw makeHttpError(403, "Client Google tidak dibenarkan.", "AUTH_FORBIDDEN");
   }
   if (!getAllowedGoogleIssuers().includes(String(data.iss || "").trim())) {
     throw makeHttpError(403, "Penerbit token Google tidak sah.", "AUTH_FORBIDDEN");
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const nbf = Number(data.nbf || 0);
+  if (nbf && nbf > now + 60) {
+    throw makeHttpError(401, "Token Google belum aktif.", "AUTH_REQUIRED");
   }
   if (!(data.email_verified === true || data.email_verified === "true")) {
     throw makeHttpError(403, "Email Google belum disahkan.", "AUTH_FORBIDDEN");
@@ -2339,4 +2565,3 @@ async function handleLetterFile(request, env, corsHeaders, path) {
     return new Response("Ralat: " + err.message, { status: 500 });
   }
 }
-
