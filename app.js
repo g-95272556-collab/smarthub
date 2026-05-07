@@ -11592,18 +11592,29 @@ function lkBinaSumber(phase) {
   p += '- Aras: ' + (arasLabel[aras] || aras) + '\n';
   p += '- Bahasa: ' + bahasa + '\n';
 
+  // ── Ekstrak bilangan soalan bergambar dari nota (jika ada) ──
+  var bilImej = 0;
+  if (nota) {
+    var imejMatch = nota.match(/(\d+)\s*soalan\s*bergambar/i);
+    if (imejMatch) bilImej = parseInt(imejMatch[1]);
+  }
+
   if (jenis === 'pbd-pt') {
     // ── FORMAT PDPC: Lembaran kerja latihan harian — BUKAN format peperiksaan ──
     p += '\n\nARAHAN FORMAT (WAJIB IKUT):\n';
     p += '• INI BUKAN PEPERIKSAAN — jangan guna format Bahagian A / Bahagian B / Bahagian C / D.\n';
     p += '• Ini adalah LEMBARAN KERJA PDPC: latihan pengukuhan harian mengikut topik DSKP.\n';
     p += '• Buat TEPAT ' + bilSoalan + ' soalan bernombor (1, 2, 3...) sahaja.\n';
-    p += '• Format ruangan pelajar di atas: Nama: _____________ | Kelas: ______ | Tarikh: ______\n';
     p += '• Sertakan arahan ringkas sebelum setiap kumpulan soalan (jika berbeza jenis).\n';
-    p += '• Soalan boleh campuran: isi tempat kosong, padankan, jawab pendek, soalan bergambar.\n';
+    if (bilImej > 0 && bilImej < bilSoalan) {
+      p += '• Buat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [IMEJ: deskripsi ringkas] pada soalan-soalan tersebut.\n';
+      p += '• Baki ' + (bilSoalan - bilImej) + ' soalan lain: isi tempat kosong, padankan, atau jawab pendek (TANPA gambar).\n';
+    } else {
+      p += '• Soalan boleh campuran: isi tempat kosong, padankan, jawab pendek, soalan bergambar.\n';
+      p += '• Jika perlu gambar/rajah, gunakan placeholder [IMEJ: deskripsi ringkas].\n';
+    }
     p += '• AKHIR sekali: SKEMA JAWAPAN ringkas (bukan skema peperiksaan formal).\n';
     p += '• JANGAN guna markdown (###, **, ```, ---). Gunakan TEKS BIASA sahaja.\n';
-    p += '• Jika perlu gambar/rajah, gunakan placeholder [IMEJ: deskripsi ringkas].\n';
   } else if (!phase) {
     // ── FORMAT PBD Berterusan / UASA: Format peperiksaan formal dengan bahagian ──
     p += '\n\nJana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, kemudian SKEMA JAWAPAN.';
@@ -11620,9 +11631,13 @@ function lkBinaSumber(phase) {
 
   // ══ ARAHAN KHAS GURU (WAJIB IKUT — keutamaan tertinggi) ══
   if (nota) {
-    p += '\n\n⚠️ ARAHAN KHAS DARIPADA GURU (WAJIB DIPATUHI SEPENUHNYA — lebih penting daripada arahan lain di atas):\n';
-    p += nota + '\n';
-    p += 'Pastikan SETIAP soalan yang dijana mematuhi arahan khas ini tanpa pengecualian.';
+    // Buang arahan bilangan soalan bergambar dari nota — dah diproses dalam arahan format
+    var notaBersih = nota.replace(/\d+\s*soalan\s*bergambar/gi, '').replace(/^\s*[\r\n]/gm, '').trim();
+    if (notaBersih) {
+      p += '\n\n⚠️ ARAHAN KHAS DARIPADA GURU (WAJIB DIPATUHI SEPENUHNYA):\n';
+      p += notaBersih + '\n';
+      p += 'Pastikan SETIAP soalan yang dijana mematuhi arahan khas ini tanpa pengecualian.';
+    }
   }
 
   return p;
