@@ -11618,7 +11618,12 @@ function lkBinaSumber(phase) {
   } else if (!phase) {
     // ── FORMAT PBD Berterusan / UASA: Format peperiksaan formal dengan bahagian ──
     p += '\n\nJana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, kemudian SKEMA JAWAPAN.';
-    p += '\nAgihkan ' + bilSoalan + ' soalan mengikut format KPM. Sertakan arahan ringkas tiap bahagian. Jangan guna markdown. Jika perlu gambar, hasilkan secara terus.';
+    p += '\nAgihkan ' + bilSoalan + ' soalan mengikut format KPM. Sertakan arahan ringkas tiap bahagian. Jangan guna markdown.';
+    if (bilImej > 0 && bilImej < bilSoalan) {
+      p += '\nBuat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [GAMBAR: deskripsi ringkas]. Baki ' + (bilSoalan - bilImej) + ' soalan tanpa gambar.';
+    } else {
+      p += '\nJika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].';
+    }
   } else {
     // ── Fasa Gemini (untuk PBD Berterusan / UASA) ──
     p += '\n\nFASA PENJANAAN: ' + phase + '\n';
@@ -11631,8 +11636,8 @@ function lkBinaSumber(phase) {
 
   // ══ ARAHAN KHAS GURU (WAJIB IKUT — keutamaan tertinggi) ══
   if (nota) {
-    // Buang arahan bilangan soalan bergambar dari nota — dah diproses dalam arahan format
-    var notaBersih = nota.replace(/\d+\s*soalan\s*bergambar/gi, '').replace(/^\s*[\r\n]/gm, '').trim();
+    // Buang keseluruhan ayat/baris yang mengandungi arahan bilangan soalan bergambar
+    var notaBersih = nota.replace(/[^.!?\n]*\d+\s*soalan\s*bergambar[^.!?\n]*/gi, '').replace(/^\s*[\r\n]/gm, '').trim();
     if (notaBersih) {
       p += '\n\n⚠️ ARAHAN KHAS DARIPADA GURU (WAJIB DIPATUHI SEPENUHNYA):\n';
       p += notaBersih + '\n';
@@ -11782,15 +11787,17 @@ async function callWorkerAIGemini(prompt, withImage) {
       var imgPlaceholders = [];
       var placeholderRegex = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
       var match;
+      var phIdx = 0;
       while ((match = placeholderRegex.exec(rawText)) !== null) {
-        imgPlaceholders.push({ full: match[0], desc: match[1].trim() });
+        imgPlaceholders.push({ index: phIdx++, full: match[0], desc: match[1].trim() });
       }
 
-      var imgMap = {}; // { placeholderFull: base64DataUri }
+      var imgByIndex = {}; // { 0: dataUri, 1: dataUri, ... }
       if (imgPlaceholders.length > 0) {
         lkSetStatus('loading', '🎨 Langkah 2/2: Jana ' + imgPlaceholders.length + ' imej soalan bergambar...');
-        // Jana semua imej secara parallel untuk kelajuan
-        await Promise.all(imgPlaceholders.map(async function(ph, idx) {
+        for (var gi = 0; gi < imgPlaceholders.length; gi++) {
+          var ph = imgPlaceholders[gi];
+          lkSetStatus('loading', '🎨 Jana imej ' + (gi + 1) + '/' + imgPlaceholders.length + '...');
           var imgPrompt = 'Lukis gambar untuk soalan murid Tahun 1-6 Malaysia: ' + ph.desc +
             '. WAJIB: clean black and white line art sahaja untuk dicetak. DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, perkataan atau aksara dalam gambar. Hanya lukisan/rajah sahaja.';
           try {
@@ -11799,30 +11806,34 @@ async function callWorkerAIGemini(prompt, withImage) {
               ? imgData.candidates[0].content.parts : [];
             imgParts.forEach(function(p) {
               if (p.inlineData) {
-                imgMap[ph.full] = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
+                imgByIndex[ph.index] = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
               }
             });
           } catch(imgErr) {
-            console.warn('Gagal jana imej untuk: ' + ph.desc, imgErr.message);
+            if (imgErr.isQuota) {
+              showToast('Kuota Gemini habis pada imej ' + (gi + 1) + ' — baki dipapar sebagai placeholder.', 'info');
+              break; // henti jana imej seterusnya
+            }
+            console.warn('Gagal jana imej [' + ph.index + ']:', imgErr.message);
           }
-        }));
+        }
       }
 
-      // ══ STEP 3: Bina HTML — selitkan imej inline pada kedudukan placeholder ══
-      var imgCount = 0;
+      // ══ STEP 3: Bina HTML — selitkan imej inline mengikut urutan index ══
+      var imgCounter = 0;
       var htmlContent = rawText
         .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
-          imgCount++;
-          var dataUri = imgMap[full];
+          var currentIdx = imgCounter++;
+          var dataUri = imgByIndex[currentIdx];
+          var rajahNum = currentIdx + 1;
           if (dataUri) {
             return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
-              '<img src="' + dataUri + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + imgCount + '">' +
-              '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + imgCount + '</small>' +
+              '<img src="' + dataUri + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
+              '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
               '</div>';
           } else {
-            // Imej gagal jana — tunjuk kotak placeholder teks
             return '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
-              '<span style="color:#888;font-style:italic">[Rajah ' + imgCount + ': ' + desc + ']</span>' +
+              '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + desc.trim() + ']</span>' +
               '</div>';
           }
         })
@@ -11888,8 +11899,11 @@ async function callHybridDeepSeekGemini(prompt) {
     if (!geminiAttempt) {
       showToast('Tiada kunci Gemini aktif — teks sahaja dipaparkan.', 'info');
     } else {
+    } else {
       lkSetStatus('loading', '🎨 Langkah 2/2: Gemini jana ' + imgPlaceholders.length + ' imej...');
-      await Promise.all(imgPlaceholders.map(async function(ph) {
+      for (var hi = 0; hi < imgPlaceholders.length; hi++) {
+        var ph = imgPlaceholders[hi];
+        lkSetStatus('loading', '🎨 Jana imej ' + (hi + 1) + '/' + imgPlaceholders.length + '...');
         var imgPrompt = 'Lukis ilustrasi untuk soalan murid sekolah rendah Malaysia: ' + ph.desc +
           '. WAJIB: clean black and white line art sahaja untuk dicetak. ' +
           'DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, atau perkataan dalam gambar. Hanya lukisan/rajah sahaja.';
@@ -11905,11 +11919,12 @@ async function callHybridDeepSeekGemini(prompt) {
         } catch(imgErr) {
           if (imgErr.isQuota) {
             geminiTandaHabisKuota(geminiAttempt.slot);
-            showToast('Kuota Gemini habis semasa jana imej.', 'info');
+            showToast('Kuota Gemini habis pada imej ' + (hi + 1) + ' — baki dipapar sebagai placeholder.', 'info');
+            break;
           }
           console.warn('Gagal jana imej [' + ph.index + ']:', imgErr.message);
         }
-      }));
+      }
     }
   }
 

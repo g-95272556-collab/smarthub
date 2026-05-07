@@ -1372,7 +1372,7 @@ PERATURAN ARAS & KPM:
     default: `Anda adalah pembantu sekolah SK Kiandongo yang menulis dalam Bahasa Malaysia formal.`,
   };
 
-  const maxTokensMap = { lembaran_kerja: 3500 };
+  const maxTokensMap = { lembaran_kerja: 6000 };
   const maxTokens = maxTokensMap[type] || 1500;
 
   try {
