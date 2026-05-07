@@ -1420,7 +1420,8 @@ async function handleAIImage(request, env, corsHeaders) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: safePrompt }] }],
-        generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
+        responseModalities: ["TEXT", "IMAGE"],
+        generationConfig: {}
       }),
     });
 
@@ -1501,10 +1502,10 @@ PERATURAN ARAS & KPM (WAJIB):
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: {
       maxOutputTokens: 8192,
-      temperature: 0.7,
-      responseModalities: useImage ? ["TEXT", "IMAGE"] : ["TEXT"]
+      temperature: 0.7
     }
   };
+  if (useImage) reqBody.responseModalities = ["TEXT", "IMAGE"];
 
   try {
     const aiResp = await fetch(apiUrl, {

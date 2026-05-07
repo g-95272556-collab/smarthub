@@ -11765,10 +11765,10 @@ async function callWorkerAIGemini(prompt, withImage) {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         maxOutputTokens: 8192,
-        temperature: 0.7,
-        responseModalities: withImage ? ["TEXT", "IMAGE"] : ["TEXT"]
+        temperature: 0.7
       }
     };
+    if (withImage) payload.responseModalities = ["TEXT", "IMAGE"];
     try {
       var res = await fetch(url, {
         method: 'POST',
