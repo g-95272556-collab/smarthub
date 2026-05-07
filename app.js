@@ -12285,6 +12285,7 @@ function lkCetakOutput() {
   }
 
   // ── PDPC header (untuk lembaran kerja biasa) ──
+  // ── PDPC: ringkas, tiada ruangan Markah/Kod/Masa (lembaran kerja harian bukan peperiksaan) ──
   var pdpcHeader =
     '<div class="pdpc-header">' +
       '<div class="pdpc-school">SK KIANDONGO, TONGOD, SABAH</div>' +
@@ -12295,10 +12296,9 @@ function lkCetakOutput() {
       '</div>' +
       '<div class="pdpc-guru">Guru: ' + guru + '</div>' +
       '<div class="pdpc-murid-row">' +
-        '<span>Nama: <span class="pdpc-line" style="width:220px"></span></span>' +
+        '<span>Nama: <span class="pdpc-line" style="width:240px"></span></span>' +
         '<span>Kelas: <span class="pdpc-line" style="width:90px"></span></span>' +
-        '<span>Tarikh: <span class="pdpc-line" style="width:100px"></span></span>' +
-        '<span>Markah: <span class="pdpc-line" style="width:70px"></span></span>' +
+        '<span>Tarikh: <span class="pdpc-line" style="width:110px"></span></span>' +
       '</div>' +
       '<div class="pdpc-divider"></div>' +
     '</div>';
@@ -12507,7 +12507,7 @@ async function lkCetakSemuaMurid() {
           '<div class="page page-break content-area">' + soalanHtml + '</div>';
         return cover;
       } else {
-        // PDPC — lembaran kerja biasa dengan nama terisi
+        // PDPC — lembaran kerja ringkas (tiada Markah — bukan format peperiksaan)
         var pdpcHdr =
           '<div class="pdpc-header">' +
             '<div class="pdpc-school">SK KIANDONGO, TONGOD, SABAH</div>' +
@@ -12521,7 +12521,6 @@ async function lkCetakSemuaMurid() {
               '<span>Nama: <strong>' + nama + '</strong></span>' +
               '<span>Kelas: <strong>' + kelas + '</strong></span>' +
               '<span>Tarikh: <strong>' + tarikhStr + '</strong></span>' +
-              '<span>Markah: <span class="pdpc-line" style="width:70px"></span></span>' +
             '</div>' +
             '<div class="pdpc-divider"></div>' +
           '</div>';
