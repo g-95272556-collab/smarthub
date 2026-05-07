@@ -11712,7 +11712,7 @@ function lkPadamLocalAiKey() { geminiPadamKunci(1); }
 
 // ── HELPER: Panggil Gemini API (TEXT atau IMAGE sahaja) ──────────
 async function _geminiApiCall(apiKey, prompt, modality, systemPrompt) {
-  var model = (modality === 'IMAGE') ? 'gemini-2.0-flash-preview-image-generation' : 'gemini-2.0-flash';
+  var model = (modality === 'IMAGE') ? 'gemini-3.1-flash-image-preview' : 'gemini-2.0-flash';
   var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
   var userParts = [{ text: prompt }];
   var payload = {
