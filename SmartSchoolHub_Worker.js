@@ -342,6 +342,8 @@ async function handleAPI(request, env, corsHeaders) {
     }
   }
 
+  validateSheetMutationPayload(body);
+
   delete body.auth;
   body.token = workerToken;
 
@@ -1707,6 +1709,66 @@ function needsAuthenticatedRequest(body) {
   if (body.action === "getConfig" || body.action === "setConfig" || body.action === "setupAllSheets") return true;
   if ((body.action === "appendRow" || body.action === "appendRows") && body.sheetKey !== "KEHADIRAN_MURID" && body.sheetKey !== "KEHADIRAN_GURU") return true;
   return false;
+}
+
+function validateSheetMutationPayload(body) {
+  if (!body || !["appendRow", "appendRows", "replaceSheet"].includes(body.action)) return;
+
+  const sheetName = normalizeSheetKey(body.sheetKey);
+  if (!sheetName) {
+    throw makeHttpError(400, "sheetKey diperlukan untuk operasi simpanan.", "MISSING_SHEET_KEY");
+  }
+
+  if (body.action === "appendRow") {
+    validateSheetRows(sheetName, [body.row], false);
+    return;
+  }
+
+  if (body.action === "appendRows") {
+    validateSheetRows(sheetName, body.rows, false);
+    return;
+  }
+
+  if (body.action === "replaceSheet") {
+    validateSheetRows(sheetName, body.rows, true);
+  }
+}
+
+function validateSheetRows(sheetName, rows, allowHeaderRow) {
+  if (!Array.isArray(rows) || !rows.length) {
+    throw makeHttpError(400, "Baris data diperlukan.", "INVALID_ROWS");
+  }
+
+  const header = DIRECT_HEADERS[sheetName] || DIRECT_HEADERS[getDirectKeyByValue(DIRECT_SHEETS, sheetName)] || null;
+  const maxCells = header ? header.length + 8 : 80;
+  const dataRows = allowHeaderRow ? getValidationRows(rows, sheetName) : rows;
+  if (!dataRows.length && !allowHeaderRow) {
+    throw makeHttpError(400, "Baris data kosong.", "INVALID_ROWS");
+  }
+
+  rows.forEach((row, index) => {
+    if (!Array.isArray(row)) {
+      throw makeHttpError(400, `Baris ${index + 1} bukan array data yang sah.`, "INVALID_ROW");
+    }
+    if (!row.length) {
+      throw makeHttpError(400, `Baris ${index + 1} kosong.`, "INVALID_ROW");
+    }
+    if (row.length > maxCells) {
+      throw makeHttpError(400, `Baris ${index + 1} mempunyai terlalu banyak lajur.`, "INVALID_ROW_WIDTH");
+    }
+    row.forEach((cell, cellIndex) => validateSheetCell(cell, index, cellIndex));
+  });
+}
+
+function validateSheetCell(cell, rowIndex, cellIndex) {
+  if (cell == null) return;
+  const type = typeof cell;
+  if (type !== "string" && type !== "number" && type !== "boolean") {
+    throw makeHttpError(400, `Nilai baris ${rowIndex + 1}, lajur ${cellIndex + 1} tidak sah.`, "INVALID_CELL");
+  }
+  if (String(cell).length > 10000) {
+    throw makeHttpError(400, `Nilai baris ${rowIndex + 1}, lajur ${cellIndex + 1} terlalu panjang.`, "CELL_TOO_LONG");
+  }
 }
 
 async function authorizeRequest(body, actor, env, workerToken) {

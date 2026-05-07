@@ -158,18 +158,22 @@ Cadangan:
 - Untuk production, utamakan simpanan secret di Worker/platform secret/D1 config terlindung.
 - Frontend hanya papar status masked, bukan token penuh selepas disimpan.
 
-### 4. Validasi borang belum menyeluruh
+### 4. Validasi backend baseline
 
 Status semasa:
 
-- Banyak render sudah menggunakan escape helper.
-- Namun validasi input menyeluruh untuk semua modul besar belum diaudit satu per satu.
+- Worker kini menolak payload simpanan rosak untuk `appendRow`, `appendRows`, dan `replaceSheet`.
+- Validasi meliputi `sheetKey`, bentuk array row, bilangan lajur munasabah, jenis nilai cell, dan panjang cell.
+- Validasi domain/duplicate sedia ada masih kekal untuk guru, murid, kehadiran, kokum, dan laporan bertugas.
+
+Status:
+
+- Selesai untuk baseline server-side.
 
 Cadangan:
 
-- Tambah helper validasi berpusat untuk tarikh, kelas, telefon, nama, status, dan nilai enum.
-- Validasi semula di backend sebelum tulis D1/Apps Script.
-- Pastikan mesej error jelas dan tidak menyimpan row separuh rosak.
+- Audit borang frontend satu per satu masih sesuai dibuat dalam refactor/QA khusus.
+- Tambah validasi enum/tarikh/telefon lebih ketat secara berperingkat jika ada laporan data rosak.
 
 ### 5. Rate limit dan logging API
 

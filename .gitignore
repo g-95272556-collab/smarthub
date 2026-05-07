@@ -27,6 +27,14 @@
 /_live_kehadiran_test.html
 /_tmp_opr_preview_latest.html
 /_chrome_preview_profile/
+/0001-*.patch
+/gemini-2step-fix.js
+/cetak-nama-murid.html
+/convert_to_png.ps1
+/xbasmarthub_nilai_render.html
+/xbasmarthub_nilai_webapp.png
+/memory/MEMORY.md
+/memory/working-style.md
 
 # OAuth handoff files copied into tracked deployment paths
 /deploy-oauth.ps1
