@@ -11574,7 +11574,19 @@ function lkBinaSumber(phase) {
   var arasLabel = { campuran: 'Campuran LOTS + HOTS', mudah: 'Mudah (LOTS sahaja)', sederhana: 'Sederhana', susah: 'Susah / HOTS' };
 
   var tahap = lkGetTahap();
-  var p = 'Jana lembaran kerja untuk murid Tahun ' + tahun + ' (Tahap ' + tahap + '), Sekolah Kebangsaan Malaysia.\n\n';
+  // ── Ekstrak bilangan soalan bergambar dari nota (jika ada) ──
+  var bilImej = 0;
+  if (nota) {
+    var imejMatch = nota.match(/(\d+)\s*soalan\s*bergambar/i);
+    if (imejMatch) bilImej = parseInt(imejMatch[1]);
+  }
+
+  // ── Bina prompt — had imej di baris PERTAMA supaya AI baca dahulu ──
+  var p = '';
+  if (bilImej > 0 && bilImej < bilSoalan) {
+    p += '⚠️ HAD MUTLAK: Jana TEPAT ' + bilImej + ' soalan bergambar [GAMBAR:] dan TEPAT ' + (bilSoalan - bilImej) + ' soalan tanpa gambar. JANGAN melebihi ' + bilImej + ' placeholder [GAMBAR:].\n\n';
+  }
+  p += 'Jana lembaran kerja untuk murid Tahun ' + tahun + ' (Tahap ' + tahap + '), Sekolah Kebangsaan Malaysia.\n\n';
   p += 'MAKLUMAT:\n';
   p += '- Jenis Penilaian: ' + (jenisLabel[jenis] || jenis) + '\n';
   p += '- Tahun: ' + tahun + ' (Tahap ' + tahap + ')\n';
@@ -11591,13 +11603,6 @@ function lkBinaSumber(phase) {
   p += '- Jumlah Soalan Keseluruhan: ' + bilSoalan + '\n';
   p += '- Aras: ' + (arasLabel[aras] || aras) + '\n';
   p += '- Bahasa: ' + bahasa + '\n';
-
-  // ── Ekstrak bilangan soalan bergambar dari nota (jika ada) ──
-  var bilImej = 0;
-  if (nota) {
-    var imejMatch = nota.match(/(\d+)\s*soalan\s*bergambar/i);
-    if (imejMatch) bilImej = parseInt(imejMatch[1]);
-  }
 
   if (jenis === 'pbd-pt') {
     // ── FORMAT PDPC: Lembaran kerja latihan harian — BUKAN format peperiksaan ──
@@ -11828,7 +11833,7 @@ async function callWorkerAIGemini(prompt, withImage) {
           var rajahNum = currentIdx + 1;
           if (dataUri) {
             return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
-              '<img src="' + dataUri + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
+              '<img src="' + dataUri + '" style="max-width:55%;height:auto;max-height:220px;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
               '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
               '</div>';
           } else {
@@ -11937,7 +11942,7 @@ async function callHybridDeepSeekGemini(prompt) {
       var rajahNum = currentIdx + 1;
       if (dataUri) {
         return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
-          '<img src="' + dataUri + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
+          '<img src="' + dataUri + '" style="max-width:55%;height:auto;max-height:220px;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
           '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
           '</div>';
       } else {
@@ -12338,7 +12343,7 @@ function lkCetakOutput() {
     '.page-break{page-break-before:always;}' +
     '.content-area{font-family:"Courier New", monospace; white-space:pre-wrap; line-height:1.7;}' +
     '.lk-inline-image{margin:20px 0; text-align:center;}' +
-    '.lk-inline-image img{max-width:85%; height:auto; border:1pt solid #000; padding:5px;}' +
+    '.lk-inline-image img{max-width:55%; height:auto; max-height:220px; border:1pt solid #000; padding:5px;}' +
     '.pdpc-header{font-family:Arial,sans-serif; margin-bottom:16px;}' +
     '.pdpc-school{font-size:10pt; text-align:center; text-transform:uppercase; letter-spacing:.04em; color:#444; margin-bottom:2px;}' +
     '.pdpc-title{font-size:15pt; font-weight:bold; text-align:center; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px;}' +
