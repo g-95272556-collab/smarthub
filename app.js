@@ -11768,7 +11768,7 @@ async function callWorkerAIGemini(prompt, withImage) {
         temperature: 0.7
       }
     };
-    if (withImage) payload.responseModalities = ["TEXT", "IMAGE"];
+    if (withImage) payload.generationConfig.responseModalities = ["TEXT", "IMAGE"];
     try {
       var res = await fetch(url, {
         method: 'POST',
