@@ -1479,12 +1479,10 @@ PERATURAN ARAS:
 - Bahasa soalan mestilah sesuai dengan tahap murid`;
 
   const useImage = withImage === true;
-  const model = useImage ? "gemini-2.0-flash-exp" : "gemini-2.0-flash";
+  const model = "gemini-2.0-flash";
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
 
-  const genConfig = useImage
-    ? { responseModalities: ["TEXT", "IMAGE"] }
-    : { maxOutputTokens: 8192, temperature: 0.7 };
+  const genConfig = { maxOutputTokens: 8192, temperature: 0.7 };
 
   const reqBody = {
     systemInstruction: { parts: [{ text: systemPromptLK }] },
