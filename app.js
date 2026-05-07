@@ -11699,6 +11699,38 @@ function geminiTandaHabisKuota(slot) {
 function lkSimpanLocalAiKey() { geminiSimpanKunci(1); }
 function lkPadamLocalAiKey() { geminiPadamKunci(1); }
 
+// ── HELPER: Panggil Gemini API (TEXT atau IMAGE sahaja) ──────────
+async function _geminiApiCall(apiKey, prompt, modality, systemPrompt) {
+  var model = (modality === 'IMAGE') ? 'gemini-2.0-flash-preview-image-generation' : 'gemini-2.0-flash';
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+  var userParts = [{ text: prompt }];
+  var payload = {
+    contents: [{ role: 'user', parts: userParts }],
+    generationConfig: {
+      maxOutputTokens: modality === 'IMAGE' ? 512 : 8192,
+      temperature: modality === 'IMAGE' ? 0.4 : 0.7,
+      responseModalities: modality === 'IMAGE' ? ['TEXT', 'IMAGE'] : ['TEXT']
+    }
+  };
+  if (systemPrompt) payload.systemInstruction = { parts: [{ text: systemPrompt }] };
+  var res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    var errData = await res.json().catch(function(){ return { error: { message: res.statusText, code: res.status } }; });
+    var errCode = (errData.error && errData.error.code) ? errData.error.code : res.status;
+    var errMsg = errData.error ? errData.error.message : res.statusText;
+    var quotaErr = new Error('Google API Error: ' + errMsg);
+    quotaErr.isQuota = (errCode === 429 || errCode === 403);
+    throw quotaErr;
+  }
+  return await res.json();
+}
+
+// ── STEP 1: Jana teks soalan sahaja (TEXT-only, pantas & stabil) ─
+// ── STEP 2: Untuk setiap soalan bergambar, jana imej berasingan ─
 async function callWorkerAIGemini(prompt, withImage) {
   // Migrate legacy single key to slot 1 if slot 1 is empty
   var legacyKey = localStorage.getItem('ssh_local_gemini_key');
@@ -11706,63 +11738,83 @@ async function callWorkerAIGemini(prompt, withImage) {
     localStorage.setItem('ssh_gemini_key_1', legacyKey);
   }
 
-  // System instruction untuk lembaran kerja (sama seperti Worker)
-  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar atau rajah, HASILKAN imej tersebut secara terus (native image generation) sejurus selepas teks soalan berkenaan.\n- JANGAN gunakan placeholder [GAMBAR:]. Hasilkan imej sebenar terus.\n- Imej mestilah dalam gaya clean black and white line art untuk dicetak.';
+  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar/rajah, tulis placeholder tepat ini: [IMEJ: deskripsi ringkas gambar dalam Bahasa Melayu]\n- JANGAN hasilkan imej terus — sistem akan jana imej secara berperingkat selepas teks siap.\n- Satu soalan hanya satu placeholder [IMEJ:].';
 
-  // Try local keys with auto-rotation on quota error
   var attempt = geminiDapatkanKunci();
   while (attempt) {
-    var model = 'gemini-3.1-flash-image-preview';
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + attempt.key;
-    var payload = {
-      systemInstruction: { parts: [{ text: _lkSystemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        maxOutputTokens: 8192,
-        temperature: 0.7,
-        responseModalities: ['TEXT', 'IMAGE']
-      }
-    };
     try {
-      var res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        var err = await res.json().catch(function(){ return {error:{message:res.statusText, code:res.status}}; });
-        var code = (err.error && err.error.code) ? err.error.code : res.status;
-        if (code === 429 || code === 403) {
-          showToast('Kunci ' + attempt.slot + ' kehabisan kuota — cuba kunci seterusnya...', 'info');
-          geminiTandaHabisKuota(attempt.slot);
-          attempt = geminiDapatkanKunci();
-          continue;
-        }
-        throw new Error('Google API Error: ' + (err.error ? err.error.message : res.statusText));
+      // ══ STEP 1: Jana teks sahaja (TEXT-only, stabil & laju) ══
+      lkSetStatus('loading', '⏳ Langkah 1/2: Gemini menjana teks soalan...');
+      var textData = await _geminiApiCall(attempt.key, prompt, 'TEXT', _lkSystemPrompt);
+      var rawText = '';
+      var textParts = (textData.candidates && textData.candidates[0] && textData.candidates[0].content)
+        ? textData.candidates[0].content.parts : [];
+      textParts.forEach(function(p) { if (p.text) rawText += p.text; });
+      if (!rawText.trim()) throw new Error('Tiada teks dihasilkan oleh Gemini');
+
+      // ══ STEP 2: Parse placeholder [IMEJ:...] dan jana setiap imej ══
+      var imgPlaceholders = [];
+      var placeholderRegex = /\[IMEJ:\s*([^\]]+)\]/gi;
+      var match;
+      while ((match = placeholderRegex.exec(rawText)) !== null) {
+        imgPlaceholders.push({ full: match[0], desc: match[1].trim() });
       }
-      var data = await res.json();
-      // Bina HTML yang selitkan gambar terus mengikut urutan asal (inline dengan soalan)
-      var htmlContent = '';
+
+      var imgMap = {}; // { placeholderFull: base64DataUri }
+      if (imgPlaceholders.length > 0) {
+        lkSetStatus('loading', '🎨 Langkah 2/2: Jana ' + imgPlaceholders.length + ' imej soalan bergambar...');
+        // Jana semua imej secara parallel untuk kelajuan
+        await Promise.all(imgPlaceholders.map(async function(ph, idx) {
+          var imgPrompt = 'Lukis gambar untuk soalan murid Tahun 1-6 Malaysia: ' + ph.desc +
+            '. Gaya: clean black and white line art, sesuai untuk dicetak, mudah difahami kanak-kanak, tiada teks dalam gambar kecuali label ringkas jika perlu.';
+          try {
+            var imgData = await _geminiApiCall(attempt.key, imgPrompt, 'IMAGE', null);
+            var imgParts = (imgData.candidates && imgData.candidates[0] && imgData.candidates[0].content)
+              ? imgData.candidates[0].content.parts : [];
+            imgParts.forEach(function(p) {
+              if (p.inlineData) {
+                imgMap[ph.full] = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
+              }
+            });
+          } catch(imgErr) {
+            console.warn('Gagal jana imej untuk: ' + ph.desc, imgErr.message);
+            // Biarkan kosong — placeholder akan gantikan teks deskripsi sahaja
+          }
+        }));
+      }
+
+      // ══ STEP 3: Bina HTML — selitkan imej inline pada kedudukan placeholder ══
       var imgCount = 0;
-      var parts = (data.candidates && data.candidates[0] && data.candidates[0].content) ? data.candidates[0].content.parts : [];
-      parts.forEach(function(p) {
-        if (p.text) {
-          htmlContent += p.text.replace(/\n/g, '<br>');
-        }
-        if (p.inlineData) {
+      var htmlContent = rawText
+        .replace(/\[IMEJ:\s*([^\]]+)\]/gi, function(full, desc) {
           imgCount++;
-          var src = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
-          htmlContent += '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
-            '<img src="' + src + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px">' +
-            '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + imgCount + '</small>' +
-            '</div>';
-        }
-      });
+          var dataUri = imgMap[full];
+          if (dataUri) {
+            return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
+              '<img src="' + dataUri + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + imgCount + '">' +
+              '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + imgCount + '</small>' +
+              '</div>';
+          } else {
+            // Imej gagal jana — tunjuk kotak placeholder teks
+            return '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
+              '<span style="color:#888;font-style:italic">[Rajah ' + imgCount + ': ' + desc + ']</span>' +
+              '</div>';
+          }
+        })
+        .replace(/\n/g, '<br>');
+
       if (!htmlContent) throw new Error('Tiada kandungan dihasilkan oleh Gemini');
       return { success: true, content: htmlContent, images: [], isHtml: true };
+
     } catch (directError) {
+      if (directError.isQuota) {
+        showToast('Kunci ' + attempt.slot + ' kehabisan kuota — cuba kunci seterusnya...', 'info');
+        geminiTandaHabisKuota(attempt.slot);
+        attempt = geminiDapatkanKunci();
+        continue;
+      }
       if (directError.message && directError.message.indexOf('Google API Error') === 0) throw directError;
-      console.warn('Direct AI call failed, falling back to Worker:', directError.message);
+      console.warn('Direct Gemini call failed, falling back to Worker:', directError.message);
       break;
     }
   }
