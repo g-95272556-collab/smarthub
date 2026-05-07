@@ -1,6 +1,7 @@
 *
 !index.html
 !app.js
+!runtime-config.js
 !manifest.webmanifest
 !offline.html
 !service-worker.js
