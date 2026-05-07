@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Local tooling for SmartSchoolHub Worker and Apps Script deployment.",
   "scripts": {
+    "verify": "node scripts/verify-before-push.js",
     "build:web": "node scripts/build-icons.js && terser app.js -o app.min.js -c -m",
     "build:android-web": "node scripts/build-www.js",
     "build:android": "npm run build:web && npm run build:android-web && npx cap sync android",
