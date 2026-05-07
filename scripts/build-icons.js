@@ -21,6 +21,8 @@ dynamicIcons.forEach(i => iconsSet.add(i));
 const iTagRegex = /<i\s+([^>]*?)data-lucide="([^"]+)"([^>]*?)>.*?<\/i>/g;
 const useHrefRegex = /<use\s+href="#lucide-([^"]+)"/g;
 const spriteBlockRegex = /\s*<!-- SVG Sprite for Lucide Icons -->\s*<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" style="display:\s*none;">[\s\S]*?<\/svg>\s*/g;
+const hasExistingSprite = spriteBlockRegex.test(indexHtml);
+spriteBlockRegex.lastIndex = 0;
 
 let match;
 while ((match = iTagRegex.exec(indexHtml)) !== null) {
@@ -83,11 +85,13 @@ indexHtml = indexHtml.replace(iTagRegex, (fullMatch, before, iconName, after) =>
 
 indexHtml = indexHtml.replace(/<script[^>]*src="[^"]*lucide\.min\.js"[^>]*><\/script>\s*/g, '');
 indexHtml = indexHtml.replace(/<script>\s*\/\/\s*Initialize Lucide Icons\s*document\.addEventListener\('DOMContentLoaded',\s*function\(\)\s*{\s*lucide\.createIcons\(\);\s*}\);\s*<\/script>\s*/g, '');
-indexHtml = indexHtml.replace(spriteBlockRegex, '\n');
+indexHtml = indexHtml.replace(spriteBlockRegex, `\n<!-- SVG Sprite for Lucide Icons -->\n${spriteSvg}\n`);
 
-indexHtml = indexHtml.replace(/<body[^>]*>/i, (match) => {
-  return `${match}\n\n<!-- SVG Sprite for Lucide Icons -->\n${spriteSvg}\n`;
-});
+if (!hasExistingSprite) {
+  indexHtml = indexHtml.replace(/<body[^>]*>/i, (match) => {
+    return `${match}\n\n<!-- SVG Sprite for Lucide Icons -->\n${spriteSvg}\n`;
+  });
+}
 
 fs.writeFileSync(indexHtmlPath, indexHtml, 'utf-8');
 console.log('Updated index.html');

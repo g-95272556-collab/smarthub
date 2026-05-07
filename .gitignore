@@ -6,6 +6,11 @@
 /.wrangler/
 /.clasp.json
 
+# Local environment files and runtime overrides
+/.env
+/.env.*
+/env.js
+
 # Generated Apps Script deploy artifact
 /apps-script/Code.gs
 

@@ -11738,7 +11738,7 @@ function lkPadamLocalAiKey() { geminiPadamKunci(1); }
 // ── HELPER: Panggil Gemini API (TEXT atau IMAGE sahaja) ──────────
 async function _geminiApiCall(apiKey, prompt, modality, systemPrompt) {
   var model = (modality === 'IMAGE') ? 'gemini-3.1-flash-image-preview' : 'gemini-2.0-flash';
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(apiKey);
   var userParts = [{ text: prompt }];
   var payload = {
     contents: [{ role: 'user', parts: userParts }],
@@ -11826,22 +11826,28 @@ async function callWorkerAIGemini(prompt, withImage) {
 
       // ══ STEP 3: Bina HTML — selitkan imej inline mengikut urutan index ══
       var imgCounter = 0;
+      var htmlTokens = {};
       var htmlContent = rawText
         .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
           var currentIdx = imgCounter++;
           var dataUri = imgByIndex[currentIdx];
           var rajahNum = currentIdx + 1;
+          var token = '%%LK_INLINE_IMAGE_' + rajahNum + '%%';
           if (dataUri) {
-            return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
+            htmlTokens[token] = '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
               '<img src="' + dataUri + '" style="max-width:55%;height:auto;max-height:220px;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
               '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
               '</div>';
           } else {
-            return '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
-              '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + desc.trim() + ']</span>' +
+            htmlTokens[token] = '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
+              '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + escapeHtml(desc.trim()) + ']</span>' +
               '</div>';
           }
+          return token;
         })
+        .split(/(%%LK_INLINE_IMAGE_\d+%%)/g)
+        .map(function(part) { return htmlTokens[part] || escapeHtml(part); })
+        .join('')
         .replace(/\n/g, '<br>');
 
       if (!htmlContent) throw new Error('Tiada kandungan dihasilkan oleh Gemini');

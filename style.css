@@ -39,12 +39,60 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  /* Pastikan background extend ke belakang Dynamic Island (iOS black-translucent) */
+  background: var(--bg);
+  /* Elak bounce scroll iOS menyebabkan layout shift */
+  overscroll-behavior: none;
+}
+
 html, body {
   min-height: 100%;
+  min-height: 100dvh; /* Dynamic Viewport Height — ambil kira Safari bottom bar */
   font-family: 'Plus Jakarta Sans', sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* ─────────────────────────────────────────── */
+/* iOS / SAFARI FIXES                          */
+/* ─────────────────────────────────────────── */
+
+/* 1. Elak kotak kelabu semasa tap pada iOS */
+a, button, [role="button"], input, select, textarea, label {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 2. Butang hover transform tidak kekal selepas tap pada iOS */
+@media (hover: none) {
+  .btn:hover { transform: none; box-shadow: none; }
+  .nav-item:hover { background: none; }
+}
+
+/* 3. Input/select/textarea — elak iOS auto-zoom (font < 16px = zoom) */
+@media (max-width: 900px) {
+  input, select, textarea,
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* 4. Butang minimum 44px touch target (Apple HIG) */
+@media (max-width: 900px) {
+  .btn {
+    min-height: 44px;
+  }
+  .btn-sm {
+    min-height: 38px;
+  }
+  /* Nav item touch target */
+  .nav-item {
+    min-height: 48px;
+  }
 }
 
 /* ─────────────────────────────────────────── */
@@ -155,11 +203,16 @@ html, body {
   position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
   border-right: 1px solid rgba(255,255,255,0.05);
   z-index: 50;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 10px 0 40px rgba(0,0,0,0.1);
 }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 4px; }
 
 /* Sidebar collapsed state */
 .sidebar.collapsed {
@@ -195,33 +248,46 @@ html, body {
   .desktop-nav-toggle {
     display: flex;
     align-items: center; justify-content: center;
-    width: 40px; height: 40px;
+    width: 36px; height: 36px;
     border-radius: 50%;
     background: #fff;
     color: var(--navy);
     border: 1px solid var(--border);
     cursor: pointer;
-    position: absolute;
-    right: -20px; top: 38px;
-    z-index: 60;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: transform 0.3s;
+    /* Keluar dari sidebar — posisi fixed supaya tak terpotong overflow sidebar */
+    position: fixed;
+    left: calc(260px - 18px);
+    top: 42px;
+    z-index: 200;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    transition: left 0.4s cubic-bezier(0.16,1,0.3,1), transform 0.3s, background 0.2s;
   }
   .desktop-nav-toggle:hover {
     background: var(--gold);
   }
-  .sidebar.collapsed .desktop-nav-toggle {
+  /* Bila sidebar collapsed, anjak butang ke kiri */
+  .app-layout.collapsed .desktop-nav-toggle {
+    left: calc(88px - 18px);
+  }
+  /* Ikon rotate bila collapsed */
+  .app-layout.collapsed .desktop-nav-toggle svg {
     transform: rotate(180deg);
+    transition: transform 0.3s;
+  }
+  .desktop-nav-toggle svg {
+    transition: transform 0.3s;
   }
 }
 
 .sidebar-logo {
   display: flex; align-items: center; gap: 14px;
-  padding: 0 12px 32px;
+  padding: 0 4px 32px;
   margin-bottom: 8px;
+  overflow: visible;
 }
 .sidebar-logo .mark {
   width: 44px; height: 44px;
+  min-width: 44px;
   background: linear-gradient(135deg, var(--gold), var(--gold2));
   border-radius: 14px;
   display: grid; place-items: center;
@@ -1859,6 +1925,10 @@ table tbody tr:last-child td { border-bottom: none; }
   }
 }
 @media (max-width: 640px) {
+  /* Sembunyikan teks label butang modal yang panjang — ikon sahaja ditampilkan */
+  .modal-btn-label {
+    display: none;
+  }
   .modal-header,
   .modal-body,
   .modal-footer {
@@ -1866,7 +1936,11 @@ table tbody tr:last-child td { border-bottom: none; }
     padding-right: 18px;
   }
   .modal-body { padding-top: 18px; padding-bottom: 18px; }
-  .modal-footer { padding-top: 14px; padding-bottom: 14px; }
+  /* iOS home indicator — pastikan butang modal tidak tertutup */
+  .modal-footer {
+    padding-top: 14px;
+    padding-bottom: calc(14px + var(--safe-bottom, 0px));
+  }
   .murid-attendance-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2198,7 +2272,24 @@ table tbody tr:last-child td { border-bottom: none; }
   font-family: 'Space Grotesk', sans-serif;
   font-size: 1.1rem; font-weight: 700;
   min-width: 0;
+  flex: 1;
   overflow-wrap: anywhere;
+  word-break: break-word;
+}
+/* Input & teks panjang dalam Konfigurasi */
+#mod-konfigurasi input[type="text"],
+#mod-konfigurasi input[type="url"],
+#mod-konfigurasi input[type="password"],
+#mod-konfigurasi .form-group input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#mod-konfigurasi .form-group label,
+#mod-konfigurasi .stat-card,
+#mod-konfigurasi small {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ─────────────────────────────────────────── */
@@ -2323,13 +2414,18 @@ table tbody tr:last-child td { border-bottom: none; }
     padding: 16px;
   }
   .main-content {
-    margin-left: 0;
+    margin-left: 0 !important;
     flex: none;
+    /* padding-top: 0 — mobile-app-bar di dalam sini sudah handle safe-top */
     padding:
-      calc(16px + var(--safe-top))
+      0
       calc(18px + var(--safe-right))
       calc(20px + var(--safe-bottom))
       calc(18px + var(--safe-left));
+  }
+  /* Collapsed sidebar tidak boleh tolak main-content pada mobile */
+  .app-layout.collapsed .main-content {
+    margin-left: 0 !important;
   }
   .page-header > :last-child:not(:first-child),
   .section-header > :last-child:not(:first-child) {
@@ -2476,9 +2572,11 @@ table tbody tr:last-child td { border-bottom: none; }
     grid-template-columns: 1fr !important;
   }
   .mobile-app-bar {
-    top: calc(8px + var(--safe-top));
+    /* iOS black-translucent: sticky position ambil kira Dynamic Island */
+    top: 0;
+    /* padding-top = safe area + spacing supaya kandungan clear Dynamic Island */
+    padding: calc(var(--safe-top) + 8px) 12px 8px;
     margin-bottom: 14px;
-    padding: 10px 12px;
   }
   .mobile-nav-toggle {
     padding: 0 12px;
@@ -2538,7 +2636,7 @@ table tbody tr:last-child td { border-bottom: none; }
   }
   .responsive-mobile-table td {
     display: grid;
-    grid-template-columns: minmax(112px, 42%) minmax(0, 1fr);
+    grid-template-columns: minmax(100px, 36%) minmax(0, 1fr);
     gap: 8px 10px;
     padding: 12px 14px;
     border-bottom: 1px solid rgba(15,23,42,0.06);
@@ -2554,6 +2652,11 @@ table tbody tr:last-child td { border-bottom: none; }
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    align-self: start;
+    padding-top: 2px;
   }
   .responsive-mobile-table td[data-label="Tindakan"] {
     display: flex;
