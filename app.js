@@ -11591,11 +11591,10 @@ function lkBinaSumber(phase) {
   p += '- Jumlah Soalan Keseluruhan: ' + bilSoalan + '\n';
   p += '- Aras: ' + (arasLabel[aras] || aras) + '\n';
   p += '- Bahasa: ' + bahasa + '\n';
-  if (nota) p += '- Nota: ' + nota + '\n';
 
   if (jenis === 'pbd-pt') {
     // ── FORMAT PDPC: Lembaran kerja latihan harian — BUKAN format peperiksaan ──
-    p += '\n\nARahan FORMAT (WAJIB IKUT):\n';
+    p += '\n\nARAHAN FORMAT (WAJIB IKUT):\n';
     p += '• INI BUKAN PEPERIKSAAN — jangan guna format Bahagian A / Bahagian B / Bahagian C / D.\n';
     p += '• Ini adalah LEMBARAN KERJA PDPC: latihan pengukuhan harian mengikut topik DSKP.\n';
     p += '• Buat TEPAT ' + bilSoalan + ' soalan bernombor (1, 2, 3...) sahaja.\n';
@@ -11604,7 +11603,7 @@ function lkBinaSumber(phase) {
     p += '• Soalan boleh campuran: isi tempat kosong, padankan, jawab pendek, soalan bergambar.\n';
     p += '• AKHIR sekali: SKEMA JAWAPAN ringkas (bukan skema peperiksaan formal).\n';
     p += '• JANGAN guna markdown (###, **, ```, ---). Gunakan TEKS BIASA sahaja.\n';
-    p += '• Jika perlu gambar/rajah, hasilkan secara terus (native image).\n';
+    p += '• Jika perlu gambar/rajah, gunakan placeholder [IMEJ: deskripsi ringkas].\n';
   } else if (!phase) {
     // ── FORMAT PBD Berterusan / UASA: Format peperiksaan formal dengan bahagian ──
     p += '\n\nJana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, kemudian SKEMA JAWAPAN.';
@@ -11617,6 +11616,13 @@ function lkBinaSumber(phase) {
     if (phase === 'CD') p += 'SILA JANA BAHAGIAN C (dan D jika ada) SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'JAWAPAN') p += 'SILA JANA SKEMA JAWAPAN LENGKAP untuk semua bahagian dalam format UASA/PBD Berterusan untuk ' + subjekLabel + '.';
     p += '\nPastikan output adalah TEKS BIASA tanpa markdown. Imej dijana secara terus (native).';
+  }
+
+  // ══ ARAHAN KHAS GURU (WAJIB IKUT — keutamaan tertinggi) ══
+  if (nota) {
+    p += '\n\n⚠️ ARAHAN KHAS DARIPADA GURU (WAJIB DIPATUHI SEPENUHNYA — lebih penting daripada arahan lain di atas):\n';
+    p += nota + '\n';
+    p += 'Pastikan SETIAP soalan yang dijana mematuhi arahan khas ini tanpa pengecualian.';
   }
 
   return p;
