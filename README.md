@@ -1,4 +1,4 @@
-# SmartSchoolHub
+# SmartSchoolHub [![Netlify Status](https://api.netlify.com/api/v1/badges/b8bb4f36-22fd-4692-9d82-ad68454061f5/deploy-status)](https://app.netlify.com/sites/imaginative-lebkuchen-9ca3f1/deploys)
 
 SmartSchoolHub ialah aplikasi sekolah berasaskan SPA statik untuk pengurusan operasi harian sekolah seperti kehadiran guru, kehadiran murid, laporan guru bertugas mingguan, data guru dan murid, notifikasi, konfigurasi, serta integrasi backend melalui Cloudflare Worker dan Google Apps Script.
 
@@ -146,3 +146,12 @@ Repo ini menggunakan lesen konservatif `All Rights Reserved` setakat ini supaya 
 - Frontend utama masih berasaskan fail statik tunggal `index.html` + `app.js`
 - Backend boleh menggunakan Cloudflare Worker / D1 dan aliran Apps Script bergantung kepada konfigurasi semasa
 - Beberapa dokumen sekolah dan fail rujukan dimasukkan kerana ia menjadi sumber kerja sebenar untuk modul tertentu
+
+## Janaan Lembaran Kerja AI
+
+Aplikasi ini dilengkapi dengan modul janaan lembaran kerja AI yang canggih:
+
+- **Enjin AI**: Menggunakan **Gemini 2.0 Flash** (Nano Banana 2 Pro) untuk janaan teks dan imej pendidikan secara *native*.
+- **Kestabilan**: Menggunakan strategi **Penjanaan Berperingkat** (Phased Generation: Bahagian A, B, C/D, Skema) untuk mengelakkan had masa (timeout) 100 saat Cloudflare.
+- **Bypass Direct**: Menyokong penggunaan Kunci API Gemini tempatan untuk komunikasi terus dari pelayar ke Google bagi memintas had rangkaian sepenuhnya.
+- **Format Rasmi**: Menyokong janaan Muka Depan rasmi untuk ujian **UASA** dan **PBD Berterusan**.

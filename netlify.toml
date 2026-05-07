@@ -42,7 +42,7 @@
 [[headers]]
   for = "/auth/google/*"
   [headers.values]
-    Access-Control-Allow-Origin = "https://xbasmarthub.netlify.app"
+    Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
     Access-Control-Max-Age = "86400"

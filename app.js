@@ -187,7 +187,7 @@ function updateMobileNavTitle(moduleId) {
   if (!activeBtn) activeBtn = document.querySelector('.nav-item.active');
   var labels = activeBtn ? activeBtn.querySelectorAll('span') : [];
   var text = labels && labels.length ? labels[labels.length - 1].textContent : '';
-  titleEl.textContent = text || 'Smart School Hub';
+  titleEl.textContent = text || 'SmartSchoolHub';
 }
 
 function setMobileNavOpen(isOpen) {
@@ -705,6 +705,20 @@ function applyBackendOperationalConfig(config) {
       saveLocalKokumProgramConfig(cloneKokumProgramOptions(JSON.parse(cfg.KOKUM_PROGRAM_OPTIONS_JSON)));
     } catch (e) {}
   }
+
+  // Muat kunci Gemini dari Apps Script config ke localStorage (dikongsi semua guru)
+  if (cfg.GEMINI_API_KEY) {
+    localStorage.setItem('ssh_local_gemini_key', String(cfg.GEMINI_API_KEY).trim());
+  }
+  for (var _gn = 1; _gn <= 3; _gn++) {
+    var _gKey = cfg['GEMINI_API_KEY_' + _gn];
+    if (_gKey && String(_gKey).trim()) {
+      localStorage.setItem('ssh_gemini_key_' + _gn, String(_gKey).trim());
+    } else if (_gKey === '') {
+      localStorage.removeItem('ssh_gemini_key_' + _gn);
+    }
+  }
+  if (typeof geminiKemaskiniStatusUI === 'function') geminiKemaskiniStatusUI();
 }
 function applyNotificationRuntimeConfig(config) {
   const cfg = config || {};
@@ -749,12 +763,12 @@ function renderGroupFonnteSetupUI() {
   var testInput = document.getElementById('config-fonnte-test-group');
   if (testInput) testInput.value = testId;
   updateGroupSetupSummary('config-fonnte-test-status', !!testId);
-  setText('config-fonnte-test-id', testId || 'Tiada group disimpan.');
+  setText('config-fonnte-test-id', testId || 'Tiada kumpulan disimpan.');
 
   var guruId = getGroupGuruFonnteId();
   syncGroupGuruFonnteInputs(guruId);
   updateGroupSetupSummary('config-fonnte-guru-status', !!guruId);
-  setText('config-fonnte-guru-id', guruId || 'Tiada group disimpan.');
+  setText('config-fonnte-guru-id', guruId || 'Tiada kumpulan disimpan.');
 
   var activeCount = 0;
   SENARAI_KELAS_MURID.forEach(function(kelas) {
@@ -764,7 +778,7 @@ function renderGroupFonnteSetupUI() {
     var input = document.getElementById(field.input);
     if (input) input.value = id || '';
     updateGroupSetupSummary(field.status, !!id);
-    setText(field.idBox, id || 'Tiada group disimpan.');
+    setText(field.idBox, id || 'Tiada kumpulan disimpan.');
     if (id) activeCount++;
   });
   setText('config-group-kelas-summary', activeCount + '/' + SENARAI_KELAS_MURID.length + ' aktif');
@@ -795,9 +809,9 @@ function renderBirthdayNotifConfigSummary(config) {
   setText('birthdayNotifFonnteStatus', fonnteToken ? 'Aktif' : 'Tidak lengkap');
   setText('birthdayNotifFonnteMeta', fonnteToken ? 'Token: ' + maskConfigValue(fonnteToken, 8) : 'Token Fonnte belum disimpan.');
   setText('birthdayNotifGuruGroupStatus', guruGroup ? 'Aktif' : 'Tidak lengkap');
-  setText('birthdayNotifGuruGroupMeta', guruGroup || 'Group guru belum disimpan.');
+  setText('birthdayNotifGuruGroupMeta', guruGroup || 'Kumpulan guru belum disimpan.');
   setText('birthdayNotifClassGroupStatus', activeClassCount + '/' + SENARAI_KELAS_MURID.length + ' aktif');
-  setText('birthdayNotifClassGroupMeta', activeClassCount === SENARAI_KELAS_MURID.length ? 'Semua group kelas telah diset.' : 'Masih ada group kelas yang belum lengkap.');
+  setText('birthdayNotifClassGroupMeta', activeClassCount === SENARAI_KELAS_MURID.length ? 'Semua kumpulan kelas telah diset.' : 'Masih ada kumpulan kelas yang belum lengkap.');
 
   var tbody = document.getElementById('birthdayNotifGroupBody');
   if (!tbody) return;
@@ -807,7 +821,7 @@ function renderBirthdayNotifConfigSummary(config) {
     var action = groupId
       ? '<button class="btn btn-sm btn-secondary" onclick="testBirthdayFonnteTarget(' + JSON.stringify(kelas) + ')">Uji</button>'
       : '<span style="color:var(--muted);font-size:0.82rem">Tiada ujian</span>';
-    return '<tr><td><strong>' + escapeHtml(kelas) + '</strong></td><td>' + badge + '</td><td style="font-family:monospace;font-size:0.82rem;color:var(--muted)">' + escapeHtml(groupId || 'Tiada group disimpan.') + '</td><td>' + action + '</td></tr>';
+    return '<tr><td><strong>' + escapeHtml(kelas) + '</strong></td><td>' + badge + '</td><td style="font-family:monospace;font-size:0.82rem;color:var(--muted)">' + escapeHtml(groupId || 'Tiada kumpulan disimpan.') + '</td><td>' + action + '</td></tr>';
   }).join('');
 }
 
@@ -871,7 +885,7 @@ async function simpanKonfigHariLahir() {
     var data = await callWorker({ action: 'setConfig', config: payload });
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan konfigurasi notifikasi hari lahir.');
     renderBirthdayNotifConfigSummary(payload);
-    setBirthdayConfigCheckResult('Konfigurasi Telegram, Fonnte, group guru, dan group kelas berjaya disimpan.', false);
+  setBirthdayConfigCheckResult('Konfigurasi Telegram, Fonnte, kumpulan guru, dan kumpulan kelas berjaya disimpan.', false);
     showToast('Konfigurasi notifikasi hari lahir berjaya disimpan.', 'success');
     try { await loadConfig(); } catch (err) {}
   } catch (e) {
@@ -996,23 +1010,23 @@ async function testBirthdayFonnteTarget(targetType) {
   var label = '';
   if (targetType === 'guru') {
     originalTarget = String(getGroupGuruFonnteId() || '').trim();
-    label = 'Group Guru';
+    label = 'Kumpulan Guru';
   } else {
     originalTarget = String(getGroupKelas(targetType) || '').trim();
     label = targetType;
   }
   
-  var target = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Test Group
+  var target = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Kumpulan Ujian
   try {
-    var mesej = '🧪 Semakan konfigurasi Fonnte SmartSchoolHub\nSaluran Asal: ' + label + (originalTarget ? ' (' + originalTarget + ')' : ' (Tiada ID)') + '\nLencongan Ujian: Test Group\nStatus: Berjaya dihubungi.';
+    var mesej = '🧪 Semakan konfigurasi Fonnte SmartSchoolHub\nSaluran Asal: ' + label + (originalTarget ? ' (' + originalTarget + ')' : ' (Tiada ID)') + '\nLencongan Ujian: Kumpulan Ujian\nStatus: Berjaya dihubungi.';
     await callFonnte(target, mesej);
-    logNotif('Test Fonnte Hari Lahir', label + ' (Test Group)', mesej, 'Berjaya');
-    setBirthdayConfigCheckResult('Fonnte berjaya dihantar ke Test Group untuk ' + label + '.', false);
-    showToast('Fonnte berjaya diuji (Test Group): ' + label, 'success');
+    logNotif('Test Fonnte Hari Lahir', label + ' (Kumpulan Ujian)', mesej, 'Berjaya');
+    setBirthdayConfigCheckResult('Fonnte berjaya dihantar ke Kumpulan Ujian untuk ' + label + '.', false);
+    showToast('Fonnte berjaya diuji (Kumpulan Ujian): ' + label, 'success');
   } catch (e) {
-    logNotif('Test Fonnte Hari Lahir', label + ' (Test Group)', String(e.message || e), 'Gagal');
-    setBirthdayConfigCheckResult('Fonnte gagal untuk ' + label + ' (Test Group): ' + e.message, true);
-    showToast('Fonnte gagal untuk ' + label + ' (Test Group).', 'error');
+    logNotif('Test Fonnte Hari Lahir', label + ' (Kumpulan Ujian)', String(e.message || e), 'Gagal');
+    setBirthdayConfigCheckResult('Fonnte gagal untuk ' + label + ' (Kumpulan Ujian): ' + e.message, true);
+    showToast('Fonnte gagal untuk ' + label + ' (Kumpulan Ujian).', 'error');
   }
 }
 
@@ -1022,26 +1036,26 @@ async function testAllBirthdayFonnteGroups() {
   var failed = 0;
   var skipped = 0;
   var notes = [];
-  var testGroup = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Test Group
+  var testGroup = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Kumpulan Ujian
   for (var i = 0; i < targets.length; i++) {
     var target = targets[i];
-    var label = target === 'guru' ? 'Group Guru' : target;
+    var label = target === 'guru' ? 'Kumpulan Guru' : target;
     var originalId = target === 'guru' ? getGroupGuruFonnteId() : getGroupKelas(target);
     
     try {
-      var mesej = '🧪 Semakan Fonnte SmartSchoolHub\nSaluran Asal: ' + label + (originalId ? ' (' + originalId + ')' : ' (Tiada ID)') + '\nLencongan Ujian: Test Group\nStatus: Berjaya dihubungi.';
+      var mesej = '🧪 Semakan Fonnte SmartSchoolHub\nSaluran Asal: ' + label + (originalId ? ' (' + originalId + ')' : ' (Tiada ID)') + '\nLencongan Ujian: Kumpulan Ujian\nStatus: Berjaya dihubungi.';
       await callFonnte(testGroup, mesej);
-      logNotif('Test Semua Group Hari Lahir', label + ' (Test Group)', 'Semakan berjaya', 'Berjaya');
+      logNotif('Test Semua Group Hari Lahir', label + ' (Kumpulan Ujian)', 'Semakan berjaya', 'Berjaya');
       passed++;
       notes.push(label + ': berjaya');
     } catch (e) {
-      logNotif('Test Semua Group Hari Lahir', label + ' (Test Group)', String(e.message || e), 'Gagal');
+      logNotif('Test Semua Group Hari Lahir', label + ' (Kumpulan Ujian)', String(e.message || e), 'Gagal');
       failed++;
       notes.push(label + ': gagal - ' + e.message);
     }
     await sleep(350);
   }
-  setBirthdayConfigCheckResult('Semakan semua group ke Test Group selesai. Berjaya: ' + passed + ', Gagal: ' + failed + '. ' + notes.join(' | '), failed > 0);
+  setBirthdayConfigCheckResult('Semakan semua group ke Kumpulan Ujian selesai. Berjaya: ' + passed + ', Gagal: ' + failed + '. ' + notes.join(' | '), failed > 0);
   showToast('Semakan semua group selesai. Berjaya: ' + passed + ', Gagal: ' + failed + '.', failed > 0 ? 'error' : 'success');
 }
 
@@ -1621,9 +1635,9 @@ function updateAttendanceNotificationStatusUI() {
   setText('attendanceMuridNotifStatus', muridEnabled ? 'Aktif' : 'Dinonaktifkan');
   setText('attendanceMuridNotifMeta', muridEnabled ? 'Makluman murid tidak hadir disasarkan sekitar ' + muridTime + '.' : 'Notifikasi murid tidak akan dihantar secara automatik.');
   setText('attendanceGuruChannelStatus', telegramReady || fonnteReady ? 'Sedia' : 'Belum lengkap');
-  setText('attendanceGuruChannelMeta', 'Telegram: ' + (telegramReady ? 'Aktif' : 'Belum lengkap') + ' | Fonnte: ' + (fonnteReady ? 'Aktif' : 'Belum lengkap') + ' | Group guru: ' + (guruGroupReady ? 'Ada' : 'Tiada'));
-  setText('attendanceMuridChannelStatus', classGroupCount + '/' + SENARAI_KELAS_MURID.length + ' group kelas');
-  setText('attendanceMuridChannelMeta', 'Wali: ' + (shouldNotifyMuridGuardian() ? 'Ya' : 'Tidak') + ' | Group kelas: ' + (shouldNotifyMuridClassGroup() ? 'Ya' : 'Tidak') + ' | Telegram: ' + (shouldNotifyMuridTelegram() ? 'Ya' : 'Tidak'));
+  setText('attendanceGuruChannelMeta', 'Telegram: ' + (telegramReady ? 'Aktif' : 'Belum lengkap') + ' | Fonnte: ' + (fonnteReady ? 'Aktif' : 'Belum lengkap') + ' | Kumpulan guru: ' + (guruGroupReady ? 'Ada' : 'Tiada'));
+  setText('attendanceMuridChannelStatus', classGroupCount + '/' + SENARAI_KELAS_MURID.length + ' kumpulan kelas');
+  setText('attendanceMuridChannelMeta', 'Wali: ' + (shouldNotifyMuridGuardian() ? 'Ya' : 'Tidak') + ' | Kumpulan kelas: ' + (shouldNotifyMuridClassGroup() ? 'Ya' : 'Tidak') + ' | Telegram: ' + (shouldNotifyMuridTelegram() ? 'Ya' : 'Tidak'));
 }
 
 function renderDashGuruTable(rows, isninStr, jumaatStr) {
@@ -1871,6 +1885,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('resize', syncResponsiveAppChrome);
   syncBootstrapConfigInputs();
   renderOPRImageGrid();
+  geminiKemaskiniStatusUI();
   showLoginPage();
   updateLoginReadinessMessage();
   if (!_gsiReady && hasGoogleSignInClient()) {
@@ -2126,6 +2141,14 @@ function formatLoginDebugMessage(err) {
 }
 
 async function verifyStoredGoogleSession(user) {
+  if (!user) {
+    localStorage.removeItem('ssh_user');
+    APP.user = null;
+    showLoginPage();
+    return;
+  }
+  APP.user = user;
+  enterApp(APP.user);
   try {
     const verifiedUser = await verifyGoogleSessionWithBackend(user);
     APP.user = verifiedUser;
@@ -2135,7 +2158,8 @@ async function verifyStoredGoogleSession(user) {
     localStorage.removeItem('ssh_user');
     APP.user = null;
     showLoginPage();
-    showToast('Sesi Google tamat atau tidak dibenarkan. Sila log masuk semula.', 'info');
+    renderPersistentLoginError(e);
+    showToast('Sesi Google tamat atau tidak dapat disahkan. Sila log masuk semula.', 'info');
   }
 }
 
@@ -4113,11 +4137,19 @@ function renderLaporanKelasRows(kelasArr) {
   };
 }
 
+
+
 async function loadLegacyLaporanKelasData() {
-  const bulan = document.getElementById('laporanBulan').value;
-  const kelas = document.getElementById('laporanKelas').value;
+  const bulanEl = document.getElementById('laporanBulan');
+  const kelasEl = document.getElementById('laporanKelas');
   const tbody = document.getElementById('laporanBody');
   const stats = document.getElementById('laporanStats');
+  if (!bulanEl || !kelasEl || !tbody) {
+    showToast('Paparan laporan kelas lama tidak lagi digunakan. Gunakan modul Laporan Guru Bertugas Mingguan.', 'info');
+    return;
+  }
+  const bulan = bulanEl.value;
+  const kelas = kelasEl.value;
   if (!bulan) { showToast('Sila pilih bulan.', 'error'); return; }
   resetLaporanStats(stats);
   tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Memuat data...</td></tr>';
@@ -5107,7 +5139,7 @@ function cetakLaporanGuruBertugasMingguan() {
         <div class="sign-line"><strong>________________</strong><br><span>Guru Besar</span></div>
       </div>
     </div>
-    <div class="print-footer">Laporan ini dijana melalui Smart School Hub dan sedia untuk cetakan rasmi.</div>
+    <div class="print-footer">Laporan ini dijana melalui SmartSchoolHub dan sedia untuk cetakan rasmi.</div>
   </div>
   <script>
     (function(){
@@ -5255,6 +5287,7 @@ async function hantarTelegramTidakHadirMuridManual() {
     resultBox.textContent = 'Ralat: ' + e.message;
     showToast(e.message, 'error');
   }
+  resultBox.textContent = normalizeNotifResultText(resultBox.textContent);
 }
 
 async function hantarTelegramGuruTidakHadirManual() {
@@ -5293,9 +5326,20 @@ async function hantarTelegramGuruTidakHadirManual() {
     resultBox.textContent = 'Ralat: ' + e.message;
     showToast(e.message, 'error');
   }
+  resultBox.textContent = normalizeNotifResultText(resultBox.textContent);
 }
 
 function notifTidakHadirBatch() { showModule('notifikasi'); switchNotifTab('hantar'); showToast('Tetapkan tarikh dan kelas, kemudian klik Hantar.', 'info'); }
+
+function normalizeNotifResultText(text) {
+  return String(text || '')
+    .replaceAll('âš ', '[!]')
+    .replaceAll('âœ…', '[OK]')
+    .replaceAll('âŒ', '[X]')
+    .replaceAll('â†’', '->')
+    .replaceAll('â€”', '-')
+    .replaceAll('â”€â”€â”€â”€â”€', '-----');
+}
 
 async function hantarNotifTersuai() {
   const target = document.getElementById('notifTarget').value.trim();
@@ -5310,6 +5354,7 @@ async function hantarNotifTersuai() {
       document.getElementById('notifResult').textContent = '✅ Mesej berjaya dihantar ke ' + target;
     } else { document.getElementById('notifResult').textContent = '❌ Gagal: ' + JSON.stringify(resp); showToast('Gagal menghantar mesej.', 'error'); }
   } catch(e) { document.getElementById('notifResult').textContent = 'Ralat: ' + e.message; showToast(e.message, 'error'); }
+  document.getElementById('notifResult').textContent = normalizeNotifResultText(document.getElementById('notifResult').textContent);
 }
 
 function switchNotifTab(tab) {
@@ -5476,7 +5521,7 @@ function importHLCSV() {
       });
     }
     const resultEl = document.getElementById('hlImportResult');
-    if (resultEl) resultEl.textContent = '✅ ' + added + ' rekod diimport. ' + skipped + ' dilangkau.';
+    if (resultEl) resultEl.textContent = '[OK] ' + added + ' rekod diimport. ' + skipped + ' dilangkau.';
     showToast(added + ' rekod berjaya diimport!', 'success');
     loadHariLahir();
   };
@@ -5498,7 +5543,7 @@ function openModalHariLahir() {
   const peranan = prompt('Peranan (Guru/Murid):') || 'Guru';
   const kelas = prompt('Kelas (kosong jika guru):') || '';
   const tarikh = prompt('Tarikh Lahir (DD/MM/YYYY):'); if (!tarikh) return;
-  const telefon = prompt('No. Telefon (opsional):') || '';
+  const telefon = prompt('No. Telefon (pilihan):') || '';
   const parts = parseBirthdayParts(tarikh);
   if (!parts) { showToast('Format tarikh tidak sah. Gunakan DD/MM/YYYY.', 'error'); return; }
   upsertHLRecord({
@@ -5777,7 +5822,7 @@ async function sendFonnteMediaOnly(target, blob, filename) {
 async function sendFonnteLetterLink(target, caption, blob, filename) {
   var fileUrl = await uploadLetterToWorker(blob, filename);
   var message = String(caption || '').trim();
-  message += '\n\n📎 Pautan surat rasmi:\n' + fileUrl;
+  message += '\n\n[Fail Surat Rasmi]\n' + fileUrl;
   message += '\n\nSila buka pautan di atas untuk melihat atau memuat turun surat rasmi. Hubungi pihak sekolah sekiranya pautan tidak dapat dibuka.';
   var response = await callFonnte(target, message);
   return { status: true, method: 'Text Link', url: fileUrl, response: response };
@@ -5800,7 +5845,7 @@ async function janaPDFSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariK
   const cfg = await getAmaranSekolahConfigAsync();
   const fullHtml = janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsekutif || 0, { noPrint: true, config: cfg }, { kpm: _amaranLogoKPM, sekolah: _amaranLogoSekolah, cop: _amaranCopSekolah });
 
-  // Extract CSS and body — inject directly into main document to avoid iframe cross-origin issues
+  // Extract CSS and body directly into the main document to avoid iframe issues
   const cssMatch = fullHtml.match(/<style>([\s\S]*?)<\/style>/i);
   const bodyMatch = fullHtml.match(/<body>([\s\S]*?)<\/body>/i);
   const cssContent = cssMatch ? cssMatch[1] : '';
@@ -5920,7 +5965,7 @@ async function hantarPDFDariModal() {
 
 async function testTelegram() {
   try {
-    const mesej = '🧪 *Test dari Smart School Hub v2.0*\n\nSambungan Telegram berjaya! ✅';
+    const mesej = '[Ujian] *Test dari SmartSchoolHub v2.0*\n\nSambungan Telegram berjaya!';
     await sendTelegramLogged('Test Telegram', 'Telegram Admin', mesej);
     showToast('Test Telegram berjaya!', 'success');
   }
@@ -5928,11 +5973,11 @@ async function testTelegram() {
 }
 
 async function testFonnte() {
-  var target = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Test Group
+  var target = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim(); // Kumpulan Ujian
   try {
-    const mesej = '🧪 *Test dari Smart School Hub v2.0*\n\nSambungan Fonnte berjaya dihantar ke Test Group! ✅';
+    const mesej = '[Ujian] *Test dari SmartSchoolHub v2.0*\n\nSambungan Fonnte berjaya dihantar ke Kumpulan Ujian!';
     await callFonnte(target, mesej);
-    showToast('Test Fonnte berjaya dihantar ke Test Group!', 'success');
+    showToast('Test Fonnte berjaya dihantar ke Kumpulan Ujian!', 'success');
   } catch(e) {
     showToast('Fonnte gagal: ' + e.message, 'error');
   }
@@ -6464,7 +6509,7 @@ cetakOPR = function() {
             <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
           </div>
         </div>
-        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+        <div class="opr-footer-note">Laporan ini dijana melalui SmartSchoolHub dalam format satu muka surat.</div>
       </div>
     </div>
     <script>window.onload=function(){window.print();};<\/script>
@@ -6794,7 +6839,7 @@ cetakOPR = function() {
             <span>${escapeHtml(get('opr-gb-jawatan') || 'Guru Besar')}</span>
           </div>
         </div>
-        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+        <div class="opr-footer-note">Laporan ini dijana melalui SmartSchoolHub dalam format satu muka surat.</div>
       </div>
     </div>
     <script>window.onload=function(){window.print();};<\/script>
@@ -7187,7 +7232,7 @@ cetakOPR = function() {
         </div>
       </div>
       <div class="opr-footer">
-        <div class="opr-footer-note">Laporan ini dijana melalui Smart School Hub dalam format satu muka surat.</div>
+        <div class="opr-footer-note">Laporan ini dijana melalui SmartSchoolHub dalam format satu muka surat.</div>
       </div>
     </div>
     <script>
@@ -8476,7 +8521,7 @@ async function cetakPelaporanKokumAsync() {
         <div class="hero-top">
           <img class="logo" src="${escapeHtml(logoUrl)}" alt="Logo SK Kiandongo">
           <div class="identity">
-            <div class="eyebrow">Smart School Hub</div>
+            <div class="eyebrow">SmartSchoolHub</div>
             <h1 class="school">SK Kiandongo</h1>
             <p class="subtitle">Pelaporan Aktiviti Kokurikulum SK Kiandongo.</p>
           </div>
@@ -8553,7 +8598,7 @@ async function cetakPelaporanKokumAsync() {
         </div>
 
         <div class="footer">
-          <div class="note">Dokumen ini dijana melalui Smart School Hub untuk tujuan rekod sekolah, semakan pentadbir, dan arkib pelaksanaan aktiviti kokurikulum.</div>
+          <div class="note">Dokumen ini dijana melalui SmartSchoolHub untuk tujuan rekod sekolah, semakan pentadbir, dan arkib pelaksanaan aktiviti kokurikulum.</div>
         </div>
       </div>
       <div class="mark">SK Kiandongo</div>
@@ -9666,6 +9711,10 @@ async function loadConfig() {
       renderConfigTable(data.config);
       populateBirthdayNotifConfigInputs(data.config || {});
       populateAttendanceNotificationConfig(data.config || {});
+      
+      // Load local Gemini keys (3-key rotation system)
+      geminiKemaskiniStatusUI();
+
       showToast('Config dimuatkan.', 'success');
     }
     else throw new Error(data.error);
@@ -10717,7 +10766,7 @@ function janaHtmlSuratAmaran(nama, kelas, telefon, tahap, jumlahHari, hariKonsek
        pRow(4,'Kerjasama tuan/puan untuk memaklumkan sebab ketidakhadiran serta mengambil tindakan segera amat dihargai.'),
     2: pRow(1,'Dengan segala hormatnya perkara di atas dirujuk.') +
        pRow(2,'Dimaklumkan bahawa anak tuan/puan, <strong>' + escapeHtml(nama) + '</strong> masih gagal hadir ke sekolah walaupun Surat Amaran Pertama telah dikeluarkan.') +
-       pRow(3,'Ketidakhadiran ini telah mencapai <strong>' + jumlahHari + ' hari</strong> terkumpul / tambahan sebepas Amaran 1 dan amat membimbangkan.') +
+       pRow(3,'Ketidakhadiran ini telah mencapai <strong>' + jumlahHari + ' hari</strong> terkumpul / tambahan selepas Amaran 1 dan amat membimbangkan.') +
        pRow(4,'Sehubungan itu, tuan/puan dikehendaki hadir ke sekolah untuk sesi perbincangan bagi tindakan lanjut seperti butiran berikut:') +
        '<div class="indent"><span class="ind-lbl">Tarikh</span><span class="ind-col">:</span><span class="ind-val">' + tarikhPerbincanganStr + '</span></div>' +
        '<div class="indent"><span class="ind-lbl">Masa</span><span class="ind-col">:</span><span class="ind-val">9.00 pagi</span></div>' +
@@ -10936,7 +10985,7 @@ async function hantarAmaranKeGroupUjian() {
         showToast('Hantar pautan surat ' + (i + 1) + '/' + muridAmaran.length + ' — ' + m.nama + '...', 'info');
         var linkResult = await sendFonnteLetterLink(testGroup, caption, blob, filename);
         sent++;
-        logNotif(m.tahapInfo.label + ' GroupUjian', testGroup, caption + '\n\nPautan: ' + linkResult.url, 'Berjaya');
+        logNotif(m.tahapInfo.label + ' Kumpulan Ujian', testGroup, caption + '\n\nPautan: ' + linkResult.url, 'Berjaya');
         await sleep(1500);
       } catch(err) { failed++; console.error('Gagal hantar untuk ' + m.nama + ':', err); showToast('Gagal ' + m.nama + ': ' + (err && err.message ? err.message : 'Ralat tidak diketahui'), 'error'); }
     }
@@ -11040,6 +11089,8 @@ async function loadKehadiranMurid(options) {
 
 var _lkInited = false;
 var _lkGenerating = false;
+var _lkSoalanMode = 'auto'; // Tracks if question count is auto (KPM) or manual
+
 
 // DSKP data — embedded sebagai asas, CSV sheet sebagai pelengkap
 var LK_DSKP_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRHqa-zAQ07wwfAi1oL5axssCCbqBeUMOiwohnK89_22IAf6SOBqUHE_BK-Wlhy-W9x-8Rha6bUeqE4/pub?output=csv';
@@ -11126,8 +11177,8 @@ function lkNormalizeTahun(raw) {
 }
 
 var LK_SUBJEK_T1_PBD = [
-  { value: 'BM',    label: 'Bahasa Malaysia' },
-  { value: 'BI',    label: 'English Language' },
+  { value: 'BM',    label: 'Bahasa Melayu' },
+  { value: 'BI',    label: 'Bahasa Inggeris' },
   { value: 'Math',  label: 'Matematik' },
   { value: 'Sains', label: 'Sains' },
   { value: 'BKD',   label: 'Bahasa Kadazan Dusun (BKD)' },
@@ -11139,8 +11190,8 @@ var LK_SUBJEK_T1_PBD = [
 ];
 
 var LK_SUBJEK_T2_PBD = [
-  { value: 'BM',      label: 'Bahasa Malaysia' },
-  { value: 'BI',      label: 'English Language' },
+  { value: 'BM',      label: 'Bahasa Melayu' },
+  { value: 'BI',      label: 'Bahasa Inggeris' },
   { value: 'Math',    label: 'Matematik' },
   { value: 'Sains',   label: 'Sains' },
   { value: 'Sejarah', label: 'Sejarah' },
@@ -11154,8 +11205,8 @@ var LK_SUBJEK_T2_PBD = [
 ];
 
 var LK_SUBJEK_UASA = [
-  { value: 'BM',      label: 'Bahasa Malaysia' },
-  { value: 'BI',      label: 'English Language' },
+  { value: 'BM',      label: 'Bahasa Melayu' },
+  { value: 'BI',      label: 'Bahasa Inggeris' },
   { value: 'Math',    label: 'Matematik' },
   { value: 'Sains',   label: 'Sains' },
   { value: 'Sejarah', label: 'Sejarah' },
@@ -11200,7 +11251,56 @@ function lkOnTahunChange() {
     if (uasaRadio) uasaRadio.disabled = false;
     if (jenisNote) jenisNote.textContent = '';
   }
+  lkUpdateKpmSoalanCount();
   lkOnJenisChange();
+}
+
+function lkSetSoalanMode(mode) {
+  _lkSoalanMode = mode;
+  var btnAuto = document.getElementById('lkBtnSoalanAuto');
+  var btnManual = document.getElementById('lkBtnSoalanManual');
+  var contAuto = document.getElementById('lkSoalanAutoCont');
+  var contManual = document.getElementById('lkSoalanManualCont');
+  
+  if (mode === 'auto') {
+    if (btnAuto) btnAuto.className = 'btn btn-sm btn-indigo';
+    if (btnManual) btnManual.className = 'btn btn-sm btn-gray';
+    if (contAuto) contAuto.style.display = 'block';
+    if (contManual) contManual.style.display = 'none';
+    lkUpdateKpmSoalanCount();
+  } else {
+    if (btnAuto) btnAuto.className = 'btn btn-sm btn-gray';
+    if (btnManual) btnManual.className = 'btn btn-sm btn-indigo';
+    if (contAuto) contAuto.style.display = 'none';
+    if (contManual) contManual.style.display = 'block';
+  }
+}
+
+function lkGetKpmSoalanCount(jenis, subjek) {
+  if (jenis === 'uasa') {
+    var counts = {
+      'BM': 25,    // 20 Obj + pemahaman + penulisan
+      'BI': 25,    // 7 parts (approx items)
+      'Math': 25,  // 20A + 5B
+      'Sains': 16, // 10A + 2B + 4C
+      'Sejarah': 26 // 20A + 4B + 2C
+    };
+    return counts[subjek] || 20;
+  }
+  // PDPC / PBD Berterusan
+  return 15;
+}
+
+function lkUpdateKpmSoalanCount() {
+  var jenis = lkGetJenis();
+  var sel = document.getElementById('lkSubjek');
+  var subjek = sel ? sel.value : 'BM';
+  var count = lkGetKpmSoalanCount(jenis, subjek);
+  var display = document.getElementById('lkBilSoalanDisplay');
+  if (display) display.textContent = count;
+  // Sync hidden manual input just in case
+  var input = document.getElementById('lkBilSoalan');
+  if (input && _lkSoalanMode === 'auto') input.value = count;
 }
 
 function lkOnJenisChange() {
@@ -11226,15 +11326,16 @@ function lkOnJenisChange() {
 
   if (note) {
     if (jenis === 'uasa') {
-      note.textContent = 'UASA Tahap 2: BM, BI, Matematik, Sains, Sejarah — semua mata pelajaran Tahap 2 terlibat dalam peperiksaan.';
+      note.textContent = 'UASA Tahap 2: BM, BI, Matematik, Sains, Sejarah — Semua mata pelajaran ini mempunyai format soalan khusus KPM.';
     } else if (tahap === 1) {
       note.textContent = 'PBD Tahap 1 (Tahun 1–3): BM, BI, Matematik, Sains, BKD, Moral, PI, PJ.';
     } else if (jenis === 'pbd-pt') {
-      note.textContent = 'PBD Pertengahan Tahun Tahap 2: semua mata pelajaran termasuk RBT, BKD dan Sejarah.';
+      note.textContent = 'Lembaran Kerja PDPC Tahap 2: Latihan pengukuhan harian mengikut topik DSKP.';
     } else {
-      note.textContent = 'PBD Akhir Tahun Tahap 2: semua mata pelajaran termasuk RBT, BKD dan Sejarah.';
+      note.textContent = 'PBD Berterusan Tahap 2: Penilaian sumatif berterusan mengikut aras Taksonomi Bloom.';
     }
   }
+  lkUpdateKpmSoalanCount();
   lkOnSubjekChange();
 }
 
@@ -11389,6 +11490,7 @@ function lkDebugDskp() {
 }
 
 function lkOnSubjekChange() {
+  lkUpdateKpmSoalanCount();
   var tahun = (document.getElementById('lkTahun') || {}).value || '1';
   var sel = document.getElementById('lkSubjek');
   var subjekVal = sel ? sel.value : '';
@@ -11505,10 +11607,10 @@ function lkSetStatus(type, msg) {
   txt.textContent = msg;
 }
 
-function lkBinaSumber() {
-  var jenis = lkGetJenis();
-  var jenisLabel = { 'pbd-pt': 'PBD Pertengahan Tahun', 'pbd-at': 'PBD Akhir Tahun', 'uasa': 'UASA (Ujian Akhir Sesi Akademik)' };
-  var tahun = document.getElementById('lkTahun').value;
+function lkBinaSumber(phase) {
+  var tahun = (document.getElementById('lkTahun') || {}).value || '1';
+  var jenis = document.querySelector('input[name="lkJenis"]:checked') ? document.querySelector('input[name="lkJenis"]:checked').value : 'pdpc';
+  var jenisLabel = { 'pdpc': 'PDPC / Lembaran Kerja', 'pbd-pt': 'PBD Berterusan', 'pbd-at': 'PBD Akhir Tahun', 'uasa': 'UASA' };
   var sel = document.getElementById('lkSubjek');
   var subjekLabel = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : sel.value) : '';
   var subjekVal = sel ? sel.value : '';
@@ -11516,7 +11618,15 @@ function lkBinaSumber() {
   var topikManual = ((document.getElementById('lkTopikManual') || {}).value || '').trim();
   if (topikManual) topikArr.push(topikManual);
   var sk = (document.getElementById('lkSK').value || '').trim();
-  var bilSoalan = parseInt(document.getElementById('lkBilSoalan').value) || 10;
+  
+  var bilSoalanInput = document.getElementById('lkBilSoalan');
+  var bilSoalan = 10;
+  if (_lkSoalanMode === 'auto') {
+    bilSoalan = lkGetKpmSoalanCount(jenis, subjekVal);
+  } else {
+    bilSoalan = parseInt(bilSoalanInput.value) || 10;
+  }
+  
   var aras = document.getElementById('lkAras').value;
   var bahasa = lkGetBahasa();
   var nota = (document.getElementById('lkNota').value || '').trim();
@@ -11537,18 +11647,22 @@ function lkBinaSumber() {
     p += '- Topik: Pilih topik sesuai dari DSKP Tahun ' + tahun + '\n';
   }
   if (sk) p += '- Standard Kandungan:\n' + sk.split('\n').map(function(s){ return '  ' + s; }).join('\n') + '\n';
-  p += '- Jumlah Soalan: ' + bilSoalan + '\n';
+  p += '- Jumlah Soalan Keseluruhan: ' + bilSoalan + '\n';
   p += '- Aras: ' + (arasLabel[aras] || aras) + '\n';
   p += '- Bahasa: ' + bahasa + '\n';
   if (nota) p += '- Nota: ' + nota + '\n';
-  if (subjekVal === 'RBT') {
-    p += '\nNota khusus RBT: Jana soalan berasaskan proses reka bentuk, projek, dan teknologi sesuai Tahun ' + tahun + '.';
+
+  if (!phase) {
+    p += '\n\nJana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, kemudian SKEMA JAWAPAN.';
+    p += '\nAgihkan ' + bilSoalan + ' soalan. Sertakan arahan ringkas. Jangan guna markdown. Jika perlu gambar, hasilkan secara terus.';
+  } else {
+    p += '\n\nFASA PENJANAAN: ' + phase + '\n';
+    if (phase === 'A') p += 'SILA JANA BAHAGIAN A SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'B') p += 'SILA JANA BAHAGIAN B SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'CD') p += 'SILA JANA BAHAGIAN C (dan D jika ada) SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'JAWAPAN') p += 'SILA JANA SKEMA JAWAPAN LENGKAP untuk semua bahagian yang dinyatakan dalam format UASA/PBD untuk ' + subjekLabel + '.';
+    p += '\nPastikan output adalah TEKS BIASA tanpa markdown. Imej dijana secara terus (native).';
   }
-  if (subjekVal === 'BKD') {
-    p += '\nNota khusus BKD: Bahasa Kadazan Dusun — gunakan istilah dan kosa kata Kadazan Dusun yang betul. Jana soalan dalam konteks budaya dan bahasa KadazanDusun Sabah sesuai Tahun ' + tahun + '.';
-  }
-  p += '\n\nJana mengikut struktur: BAHAGIAN A (Aneka Pilihan), BAHAGIAN B (Isi Tempat Kosong), BAHAGIAN C (Soalan Struktur), BAHAGIAN D (Esei jika perlu), kemudian SKEMA PEMARKAHAN.';
-  p += '\nAgihkan ' + bilSoalan + ' soalan secara munasabah. Sertakan arahan setiap bahagian. Jangan guna markdown.';
 
   return p;
 }
@@ -11558,15 +11672,152 @@ function lkGetEngine() {
   return r ? r.value : 'deepseek';
 }
 
+// === GEMINI 3-KEY AUTO-ROTATE SYSTEM ===
+
+function geminiKemaskiniStatusUI() {
+  for (var n = 1; n <= 3; n++) {
+    var key = localStorage.getItem('ssh_gemini_key_' + n);
+    var exhausted = localStorage.getItem('ssh_gemini_exhausted_' + n);
+    var badge = document.getElementById('gemini-key-' + n + '-status');
+    var inp = document.getElementById('geminiKey' + n);
+    if (inp && key) inp.value = key;
+    if (!badge) continue;
+    if (!key) {
+      badge.className = 'badge badge-gray'; badge.textContent = 'Tiada Kunci';
+    } else if (exhausted) {
+      badge.className = 'badge badge-red'; badge.textContent = 'Kuota Habis';
+    } else {
+      badge.className = 'badge badge-green'; badge.textContent = 'Aktif';
+    }
+  }
+}
+
+async function geminiSimpanKunci(n) {
+  var inp = document.getElementById('geminiKey' + n);
+  if (!inp || !inp.value.trim()) { showToast('Sila masukkan kunci API.', 'error'); return; }
+  var keyVal = inp.value.trim();
+  try {
+    if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
+    var data = await callWorker({ action: 'setConfig', config: { ['GEMINI_API_KEY_' + n]: keyVal } });
+    if (!data.success) throw new Error(data.error || 'Gagal simpan ke Apps Script.');
+    localStorage.setItem('ssh_gemini_key_' + n, keyVal);
+    localStorage.removeItem('ssh_gemini_exhausted_' + n);
+    geminiKemaskiniStatusUI();
+    showToast('Kunci ' + n + ' disimpan ke Apps Script.', 'success');
+  } catch (e) {
+    showToast('Gagal simpan: ' + e.message, 'error');
+  }
+}
+
+async function geminiPadamKunci(n) {
+  try {
+    if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
+    var data = await callWorker({ action: 'setConfig', config: { ['GEMINI_API_KEY_' + n]: '' } });
+    if (!data.success) throw new Error(data.error || 'Gagal padam dari Apps Script.');
+    localStorage.removeItem('ssh_gemini_key_' + n);
+    localStorage.removeItem('ssh_gemini_exhausted_' + n);
+    var inp = document.getElementById('geminiKey' + n);
+    if (inp) inp.value = '';
+    geminiKemaskiniStatusUI();
+    showToast('Kunci ' + n + ' dipadam.', 'info');
+  } catch (e) {
+    showToast('Gagal padam: ' + e.message, 'error');
+  }
+}
+
+function geminiResetKuota() {
+  for (var n = 1; n <= 3; n++) localStorage.removeItem('ssh_gemini_exhausted_' + n);
+  geminiKemaskiniStatusUI();
+  showToast('Status kuota semua kunci direset. Sedia untuk digunakan semula.', 'success');
+}
+
+function geminiDapatkanKunci() {
+  for (var n = 1; n <= 3; n++) {
+    var key = localStorage.getItem('ssh_gemini_key_' + n);
+    if (key && key.trim() && !localStorage.getItem('ssh_gemini_exhausted_' + n))
+      return { key: key.trim(), slot: n };
+  }
+  return null;
+}
+
+function geminiTandaHabisKuota(slot) {
+  localStorage.setItem('ssh_gemini_exhausted_' + slot, '1');
+  geminiKemaskiniStatusUI();
+}
+
+// Legacy compat wrappers (keep old function names working)
+function lkSimpanLocalAiKey() { geminiSimpanKunci(1); }
+function lkPadamLocalAiKey() { geminiPadamKunci(1); }
+
 async function callWorkerAIGemini(prompt, withImage) {
+  // Migrate legacy single key to slot 1 if slot 1 is empty
+  var legacyKey = localStorage.getItem('ssh_local_gemini_key');
+  if (legacyKey && !localStorage.getItem('ssh_gemini_key_1')) {
+    localStorage.setItem('ssh_gemini_key_1', legacyKey);
+  }
+
+  // Try local keys with auto-rotation on quota error
+  var attempt = geminiDapatkanKunci();
+  while (attempt) {
+    var model = 'gemini-3.1-flash-image-preview';
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + attempt.key;
+    var payload = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        maxOutputTokens: 8192,
+        temperature: 0.7
+      }
+    };
+    if (withImage) payload.responseModalities = ["TEXT", "IMAGE"];
+    try {
+      var res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        var err = await res.json().catch(function(){ return {error:{message:res.statusText, code:res.status}}; });
+        var code = (err.error && err.error.code) ? err.error.code : res.status;
+        if (code === 429 || code === 403) {
+          showToast('Kunci ' + attempt.slot + ' kehabisan kuota — cuba kunci seterusnya...', 'info');
+          geminiTandaHabisKuota(attempt.slot);
+          attempt = geminiDapatkanKunci();
+          continue;
+        }
+        throw new Error('Google API Error: ' + (err.error ? err.error.message : res.statusText));
+      }
+      var data = await res.json();
+      var content = '';
+      var images = [];
+      if (data.candidates && data.candidates[0].content) {
+        data.candidates[0].content.parts.forEach(function(p) {
+          if (p.text) content += p.text;
+          if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
+        });
+      }
+      return { success: true, content: content, images: images };
+    } catch (directError) {
+      if (directError.message && directError.message.indexOf('Google API Error') === 0) throw directError;
+      console.warn('Direct AI call failed, falling back to Worker:', directError.message);
+      break;
+    }
+  }
+
+  // Fallback: Worker
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
-  var url = APP.workerUrl.replace(/\/+$/, '') + '/ai/gemini';
-  var res = await fetch(url, {
+  var wUrl = APP.workerUrl.replace(/\/+$/, '') + '/ai/gemini';
+  var wRes = await fetch(wUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt: prompt, type: 'lembaran_kerja', withImage: withImage })
   });
-  return await res.json();
+  var text = await wRes.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    if (text.includes('524')) throw new Error('Masa tamat (524). Semua kunci tempatan habis kuota atau tiada kunci disimpan. Pergi ke Konfigurasi → Kunci API Gemini untuk tambah kunci.');
+    throw new Error('Ralat format respons AI: ' + text.substring(0, 100));
+  }
 }
 
 // Update engine note when radio changes
@@ -11576,24 +11827,25 @@ async function callWorkerAIGemini(prompt, withImage) {
       var note = document.getElementById('lkEngineNote');
       if (!note) return;
       if (e.target.value === 'gemini') {
-        note.innerHTML = '✅ Gemini: AI akan jana teks <strong>dan</strong> imej serentak dalam satu permintaan. Imej dipapar terus dalam output.';
+        note.innerHTML = '✅ <strong>Gemini 2.0 Flash:</strong> AI menjana teks dan imej secara terus (Nano Banana 2 Pro). Paling canggih untuk janaan lembaran kerja.';
       } else {
-        note.innerHTML = '⚠️ DeepSeek: AI tidak jana imej. Guna <em>[GAMBAR: deskripsi]</em> sebagai placeholder — guru tampal gambar sendiri. Atau tukar ke Gemini untuk jana imej automatik.';
+        note.innerHTML = '[Info] <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }
     }
   });
 })();
 
 async function janaLembaranKerja() {
-  if (_lkGenerating) { showToast('Sila tunggu — AI sedang memproses...', 'info'); return; }
+  if (_lkGenerating) { showToast('Sila tunggu - AI sedang memproses...', 'info'); return; }
   if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
-  if (!APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
-
   var engine = lkGetEngine();
+  if (engine !== 'gemini' && !APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
+  if (engine === 'gemini' && !geminiDapatkanKunci()) { showToast('Tiada Kunci API Gemini aktif. Hubungi pentadbir.', 'error'); return; }
+
   _lkGenerating = true;
   var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek';
-  lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30–90 saat).');
-  document.getElementById('lkOutputBox').textContent = '⏳ Memproses permintaan ' + engineLabel + '...';
+  lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
+  document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>'; 
 
   // Reset image section
   var imejBtn = document.getElementById('lkJanaImejBtn');
@@ -11604,54 +11856,96 @@ async function janaLembaranKerja() {
   if (imejGrid) imejGrid.innerHTML = '';
 
   try {
-    var prompt = lkBinaSumber();
-    var result;
-
-    if (engine === 'gemini') {
-      result = await callWorkerAIGemini(prompt, true);
-      // Handle Gemini-specific errors
-      if (result.error === 'gemini_key_missing') {
-        lkSetStatus('error', 'GEMINI_API_KEY belum dikonfigurasi dalam Worker secrets. Hubungi pentadbir.');
-        document.getElementById('lkOutputBox').textContent = '⚠️ GEMINI_API_KEY belum dikonfigurasi.';
-        return;
+    var jenis = document.querySelector('input[name="lkJenis"]:checked').value;
+    var isLongExam = (jenis === 'uasa' || jenis === 'pbd-pt' || jenis === 'pbd-at');
+    var finalContent = '';
+    
+    if (engine === 'gemini' && isLongExam) {
+      var phases = ['A', 'B', 'CD', 'JAWAPAN'];
+      var phaseNames = { 'A': 'Bahagian A', 'B': 'Bahagian B', 'CD': 'Bahagian C/D', 'JAWAPAN': 'Skema Jawapan' };
+      
+      for (var i = 0; i < phases.length; i++) {
+        var pKey = phases[i];
+        lkSetStatus('loading', '[' + (i+1) + '/4] Menjana ' + phaseNames[pKey] + '... Sila tunggu.');
+        var pPrompt = lkBinaSumber(pKey);
+        var pRes = await callWorkerAIGemini(pPrompt, true);
+        
+        if (pRes.success) {
+          finalContent += '<div class="lk-phase-result" style="margin-bottom:30px; border-bottom:1px dashed #ccc; padding-bottom:10px;">' + pRes.content + '</div>';
+          document.getElementById('lkOutputBox').innerHTML = finalContent;
+          // Scroll to bottom
+          document.getElementById('lkOutputBox').scrollTop = document.getElementById('lkOutputBox').scrollHeight;
+        } else {
+          // Check for specific errors
+          if (pRes.error === 'gemini_limit') throw new Error('Had Gemini API dicapai. Cuba sebentar lagi.');
+          throw new Error(pRes.message || 'Gagal menjana ' + phaseNames[pKey]);
+        }
       }
-      if (result.error === 'gemini_limit') {
-        lkSetStatus('error', 'Kuota Gemini API dicapai. Cuba sebentar lagi atau tukar ke DeepSeek.');
-        document.getElementById('lkOutputBox').textContent = '⚠️ Had Gemini API dicapai.';
-        return;
-      }
-      if (result.error === 'gemini_key_invalid') {
-        lkSetStatus('error', 'Gemini API key tidak sah. Semak GEMINI_API_KEY dalam Worker secrets.');
-        document.getElementById('lkOutputBox').textContent = '⚠️ Gemini API key tidak sah.';
-        return;
-      }
+      
+      lkSetStatus('done', 'Lembaran kerja berjaya dijana oleh ' + engineLabel + ' secara berperingkat!');
+      showToast('Lembaran kerja berjaya dijana.', 'success');
+      if (imejBtn) imejBtn.style.display = 'inline-flex';
+      return;
     } else {
-      result = await callWorkerAI(prompt, 'lembaran_kerja');
-      if (result.error === 'kredit_habis') {
-        lkSetStatus('error', 'Kredit DeepSeek habis. Hubungi pentadbir untuk menambah kredit.');
-        document.getElementById('lkOutputBox').textContent = '⚠️ Kredit AI tidak mencukupi.';
-        return;
+      // Mod biasa (DeepSeek atau PBD harian)
+      var prompt = lkBinaSumber();
+      var result;
+      if (engine === 'gemini') {
+        result = await callWorkerAIGemini(prompt, true);
+      } else {
+        result = await callWorkerAI(prompt, 'lembaran_kerja');
+      }
+
+      if (result.success) {
+        document.getElementById('lkOutputBox').innerHTML = result.content;
+        lkSetStatus('success', 'Berjaya menjana lembaran kerja (' + engineLabel + ').');
+        if (imejBtn) imejBtn.style.display = 'inline-flex';
+      } else {
+        throw new Error(result.message || 'Gagal menjana lembaran kerja.');
       }
     }
-
-    if (!result.success || !result.content) throw new Error(result.message || result.error || 'Respons AI kosong');
 
     var selOut = document.getElementById('lkSubjek');
     var subjekLabelOut = selOut ? (selOut.options[selOut.selectedIndex] ? selOut.options[selOut.selectedIndex].text : '') : '';
     var tahunOut = document.getElementById('lkTahun').value;
-    var jenisLabelMap = { 'pbd-pt': 'PBD PERTENGAHAN TAHUN', 'pbd-at': 'PBD AKHIR TAHUN', 'uasa': 'UASA' };
+    var jenisLabelMap = { 'pbd-pt': 'LEMBARAN KERJA PDPC', 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
     var jenisTxt = jenisLabelMap[lkGetJenis()] || '';
-    var line = '════════════════════════════════════════════';
-    var header = line + '\n';
-    header += 'SK KIANDONGO\n';
-    header += 'LEMBARAN KERJA — ' + jenisTxt + '\n';
-    header += 'Mata Pelajaran: ' + subjekLabelOut + '     Tahun: ' + tahunOut + '\n';
-    header += 'Nama: _______________________________     Kelas: ________\n';
-    header += 'Tarikh: ______________     Markah: _______ / _______\n';
-    header += line + '\n\n';
+    var line = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
+    var masaMenjawab = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
+    var guruPenyedia = document.getElementById('lkGuruPenyedia').value || '';
+    var kodKertas = document.getElementById('lkKodKertas').value || '';
+    
+    var header = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
+      line +
+      '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:10px">SK KIANDONGO</div>' +
+      '<div style="text-align:center;font-weight:bold;margin-bottom:10px">LEMBARAN KERJA — ' + jenisTxt + '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+        '<span>Mata Pelajaran: ' + subjekLabelOut + '</span>' +
+        '<span>Tahun: ' + tahunOut + '</span>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+        '<span>Masa: ' + masaMenjawab + '</span>' +
+        (kodKertas ? '<span>Kod: ' + kodKertas + '</span>' : '<span>Tarikh: ______________</span>') +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+        '<span>Nama: _______________________________</span>' +
+        '<span>Kelas: ________</span>' +
+      '</div>' +
+      '<div style="text-align:right;margin-bottom:8px">' +
+        '<span>Markah: _______ / _______</span>' +
+      '</div>' +
+      line +
+      '</div>';
 
-    var fullText = header + result.content;
-    document.getElementById('lkOutputBox').textContent = fullText;
+    var contentWrap = result.isHtml ? 
+      '<div class="lk-html-content">' + result.content + '</div>' :
+      '<pre style="white-space:pre-wrap;font-family:inherit">' + result.content + '</pre>';
+
+    var fullContentHtml = (lkGetJenis() === 'pdpc') ? (header + contentWrap) : contentWrap;
+    document.getElementById('lkOutputBox').innerHTML = fullContentHtml;
+
+    // We still need a text-only version for placeholder checking (for DeepSeek)
+    var fullText = result.isHtml ? result.content : result.content; 
 
     var statusMsg = 'Lembaran kerja berjaya dijana oleh ' + engineLabel + '!';
 
@@ -11663,7 +11957,7 @@ async function janaLembaranKerja() {
         if (imejGrid) {
           imejGrid.innerHTML = '';
           var imejNote = document.getElementById('lkImejNote');
-          if (imejNote) imejNote.textContent = 'Imej dijana oleh Gemini 2.0 Flash (percuma). Klik kanan → Simpan imej untuk simpan ke komputer.';
+          if (imejNote) imejNote.textContent = 'Imej dijana oleh Gemini 2.0 Flash. Klik kanan → Simpan imej untuk simpan ke komputer.';
           geminiImages.forEach(function(src, idx) {
             var card = document.createElement('div');
             card.className = 'lk-imej-card';
@@ -11678,7 +11972,7 @@ async function janaLembaranKerja() {
         var placeholders = lkExtractImejPlaceholders(fullText);
         if (placeholders.length) {
           if (imejBtn) imejBtn.style.display = 'inline-block';
-          statusMsg += ' ' + placeholders.length + ' placeholder imej — klik 🖼️ Jana Imej jika perlu (DALL-E).';
+      statusMsg += ' ' + placeholders.length + ' penanda imej - klik 🖼️ Jana Imej jika perlu.';
         } else {
           statusMsg += ' Tiada imej dalam output ini.';
         }
@@ -11688,7 +11982,7 @@ async function janaLembaranKerja() {
       var placeholders = lkExtractImejPlaceholders(fullText);
       if (imejBtn) imejBtn.style.display = placeholders.length ? 'inline-block' : 'none';
       if (placeholders.length) {
-        statusMsg += ' Terdapat ' + placeholders.length + ' placeholder imej — klik 🖼️ Jana Imej untuk jana (USD $' + (placeholders.length * 0.04).toFixed(2) + ' anggaran).';
+        statusMsg += ' Terdapat ' + placeholders.length + ' penanda imej - klik 🖼️ Jana Imej untuk jana menggunakan Gemini.';
       } else {
         statusMsg += ' Semak dan cetak jika perlu.';
       }
@@ -11727,51 +12021,167 @@ function lkSalinFallback(text) {
 
 function lkCetakOutput() {
   var box = document.getElementById('lkOutputBox');
-  if (!box || !box.textContent.trim() || box.textContent.startsWith('Hasil lembaran')) {
+  if (!box || !box.innerHTML.trim() || box.innerHTML.includes('Hasil lembaran kerja akan dipaparkan')) {
     showToast('Jana lembaran kerja dahulu sebelum cetak.', 'error'); return;
   }
+  
+  var jenis = lkGetJenis();
+  var subjekSel = document.getElementById('lkSubjek');
+  var subjekLabel = subjekSel ? (subjekSel.options[subjekSel.selectedIndex] ? subjekSel.options[subjekSel.selectedIndex].text : '') : '';
+  var tahun = document.getElementById('lkTahun').value;
+  var masa = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
+  var guru = document.getElementById('lkGuruPenyedia').value || '_______________________';
+  var kodKertas = document.getElementById('lkKodKertas').value || '_______________________';
+  var bilSoalan = document.getElementById('lkBilSoalan').value || '___';
+  
+  var isUjianFormal = (jenis !== 'pdpc');
+  var kpmHeader = (jenis === 'uasa') ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : 'PENTAKSIRAN BILIK DARJAH (PBD)';
+  if (jenis === 'pbd-at') kpmHeader = 'PENTAKSIRAN BILIK DARJAH (AKHIR TAHUN)';
+
   var w = window.open('', '_blank', 'width=850,height=1000');
   if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
 
-  // Build print HTML — text content
-  var textContent = box.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  var style = '<style>' +
+    '@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap");' +
+    'body{font-family: Arial, Helvetica, sans-serif; font-size:11pt; line-height:1.5; padding:0; margin:0; color:#000;}' +
+    '.page{padding:15mm 20mm 15mm 20mm; position:relative; background:#fff; min-height: 297mm; box-sizing: border-box;}' +
+    '.cover-page{text-align:center; font-family: Arial, sans-serif; display: block;}' +
+    '.kpm-header{font-size:14pt; font-weight:bold; margin-bottom:5px; text-transform:uppercase;}' +
+    '.sr-label{font-size:12pt; margin-bottom:20px; font-weight:bold;}' +
+    '.school-logo{width:120px; margin:10px auto 30px; display:block;}' +
+    '.info-table{width:100%; margin-bottom:30px; border-collapse: collapse;}' +
+    '.info-table td{padding:5px 0; font-size:11pt; vertical-align: top;}' +
+    '.info-table td:first-child{width:180px; font-weight:bold; text-transform:uppercase;}' +
+    '.info-table td:nth-child(2){width:20px; text-align:center;}' +
+    '.info-table td:last-child{border-bottom:1px solid #000; text-align:left; padding-left:10px; font-weight:bold;}' +
+    '.section-table{width:100%; border:1.5pt solid #000; border-collapse: collapse; margin-bottom:20px;}' +
+    '.section-header{background-color:#f2f2f2; font-weight:bold; text-align:center; padding:8px; text-transform:uppercase; border-bottom:1.5pt solid #000; font-size:11pt;}' +
+    '.blue-header{background-color:#D9EAF7;}' +
+    '.orange-header{background-color:#FDE9D9;}' +
+    '.green-header{background-color:#EBF1DE;}' +
+    '.section-body{padding:15px; text-align:left;}' +
+    '.section-body table{width:100%; border-collapse: collapse;}' +
+    '.section-body td{padding:8px 0; border-bottom:1px solid #ddd;}' +
+    '.section-body td:first-child{width:150px; font-weight:bold;}' +
+    '.section-body td:last-child{border-bottom:1px solid #000;}' +
+    '.instruction-list{margin:0; padding-left:20px; list-style-type: decimal;}' +
+    '.instruction-list li{margin-bottom:5px; font-size:10.5pt;}' +
+    '.sig-grid{display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:1pt solid #000;}' +
+    '.sig-col{padding:15px; border-right:1pt solid #000; position:relative; min-height:180px;}' +
+    '.sig-col:last-child{border-right:none;}' +
+    '.sig-label{font-size:10pt; margin-bottom:60px;}' +
+    '.sig-line{border-bottom:1px solid #000; width:80%; margin:40px 0 10px;}' +
+    '.sig-meta{font-size:10pt; line-height:1.8; text-align:left;}' +
+    '.footer-text{position:absolute; bottom:10mm; left:0; width:100%; text-align:center; font-size:9pt; color:#666; border-top:0.5pt solid #ccc; padding-top:5px;}' +
+    '.page-break{page-break-before:always;}' +
+    '.content-area{font-family:"Courier New", monospace; white-space:pre-wrap; line-height:1.7;}' +
+    '.lk-inline-image{margin:20px 0; text-align:center;}' +
+    '.lk-inline-image img{max-width:85%; height:auto; border:1pt solid #000; padding:5px;}' +
+    '@media print{' +
+      '@page{margin:0; size:A4;}' +
+      '.page{height:297mm;}' +
+      '.no-print{display:none;}' +
+    '}' +
+    '</style>';
 
-  // Collect generated images (if any)
-  var imejCards = document.querySelectorAll('#lkImejGrid .lk-imej-card');
-  var imejHtml = '';
-  if (imejCards.length) {
-    imejHtml += '<div style="page-break-before:always;margin-top:20mm">';
-    imejHtml += '<h2 style="font-family:Arial,sans-serif;font-size:12pt;margin-bottom:12pt">Imej Lembaran Kerja</h2>';
-    imejHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14pt">';
-    imejCards.forEach(function(card) {
-      var img = card.querySelector('img');
-      var caption = card.querySelector('.lk-imej-caption');
-      if (img) {
-        imejHtml += '<div style="border:1pt solid #ccc;padding:6pt;text-align:center">';
-        imejHtml += '<img src="' + img.src + '" style="max-width:100%;height:auto;display:block;margin:0 auto">';
-        if (caption) imejHtml += '<p style="font-family:Arial,sans-serif;font-size:8pt;margin:4pt 0 0;color:#555">' + escapeHtml(caption.textContent) + '</p>';
-        imejHtml += '</div>';
-      }
-    });
-    imejHtml += '</div></div>';
+  var coverPageHtml = '';
+  if (isUjianFormal) {
+    coverPageHtml = '<div class="page cover-page">' +
+      '<div class="kpm-header">KEMENTERIAN PENDIDIKAN MALAYSIA</div>' +
+      '<div class="kpm-header">' + kpmHeader + '</div>' +
+      '<div class="sr-label">SEKOLAH RENDAH</div>' +
+      '<img src="assets/sk-kiandongo-logo.png" class="school-logo" alt="Logo">' +
+      
+      '<table class="info-table">' +
+        '<tr><td>SEKOLAH</td><td>:</td><td>SK KIANDONGO</td></tr>' +
+        '<tr><td>TAHUN</td><td>:</td><td>' + tahun + '</td></tr>' +
+        '<tr><td>MATA PELAJARAN</td><td>:</td><td>' + subjekLabel.toUpperCase() + '</td></tr>' +
+        '<tr><td>KOD KERTAS</td><td>:</td><td>' + kodKertas.toUpperCase() + '</td></tr>' +
+        '<tr><td>MASA</td><td>:</td><td>' + masa.toUpperCase() + '</td></tr>' +
+      '</table>' +
+      
+      '<div class="section-table">' +
+        '<div class="section-header blue-header">MAKLUMAT CALON</div>' +
+        '<div class="section-body">' +
+          '<table>' +
+            '<tr><td>NAMA MURID</td><td>:</td><td style="border-bottom:1px solid #000"></td></tr>' +
+            '<tr><td>KELAS</td><td>:</td><td style="border-bottom:1px solid #000"></td></tr>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div class="section-table">' +
+        '<div class="section-header orange-header">ARAHAN</div>' +
+        '<div class="section-body">' +
+          '<ol class="instruction-list">' +
+            '<li>Kertas ini mengandungi <strong>' + bilSoalan + '</strong> soalan.</li>' +
+            '<li>Jawab semua soalan.</li>' +
+            '<li>Tulis jawapan pada ruang yang disediakan.</li>' +
+            '<li>Dilarang membuka kertas sehingga diberitahu.</li>' +
+          '</ol>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div class="section-table" style="margin-bottom:0">' +
+        '<div class="section-header green-header">PENGESAHAN PENYEDIAAN DAN SEMAKAN SOALAN</div>' +
+        '<div class="sig-grid">' +
+          '<div class="sig-col">' +
+            '<div class="sig-label">Disediakan oleh<br>(Guru Penyedia)</div>' +
+            '<div class="sig-line"></div>' +
+            '<div class="sig-meta">Nama: ' + guru + '<br>Tarikh:</div>' +
+          '</div>' +
+          '<div class="sig-col">' +
+            '<div class="sig-label">Disemak oleh<br>(Ketua Panitia / PK)</div>' +
+            '<div class="sig-line"></div>' +
+            '<div class="sig-meta">Nama:<br>Tarikh:</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:15px; text-align:left; border-top:1pt solid #000">' +
+          '<div class="sig-label" style="margin-bottom:40px">Disahkan oleh (Guru Besar)</div>' +
+          '<div class="sig-line" style="width:40%"></div>' +
+          '<div class="sig-meta">Nama:<br>Tarikh:<br>Cop Rasmi Sekolah:</div>' +
+        '</div>' +
+      '</div>' +
+      
+      '<div class="footer-text">Dokumen Rasmi ' + (jenis === 'uasa' ? 'UASA' : 'PBD') + ' • SK Kiandongo</div>' +
+    '</div>';
   }
 
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lembaran Kerja</title>' +
-    '<style>' +
-    'body{font-family:"Courier New",monospace;font-size:11pt;line-height:1.9;padding:20mm 20mm 15mm 25mm;}' +
-    'pre{white-space:pre-wrap;margin:0;font-family:inherit;font-size:inherit;}' +
-    '@media print{@page{margin:15mm 15mm 15mm 20mm;}body{padding:0;}}' +
-    '</style></head><body>' +
-    '<pre>' + textContent + '</pre>' +
-    imejHtml +
+  // Content processing
+  var rawContent = box.innerHTML;
+  var finalContentHtml = rawContent;
+  
+  if (isUjianFormal) {
+    // Strip simple header if exists (more robustly)
+    finalContentHtml = rawContent.replace(/<div class="lk-print-header"[\s\S]*?<!-- END HEADER -->/i, '')
+                                .replace(/<div class="lk-print-header"[\s\S]*?<hr[\s\S]*?<\/div>/i, ''); // Fallback for old regex
+    // Actually, if we already prevented adding it in janaLembaranKerja, this is just a safety measure.
+    // Let's just remove anything with class lk-print-header.
+    var tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rawContent;
+    var oldHeaders = tempDiv.querySelectorAll('.lk-print-header');
+    oldHeaders.forEach(function(h) { h.remove(); });
+    finalContentHtml = tempDiv.innerHTML;
+    
+    finalContentHtml = '<div class="page page-break content-area">' + finalContentHtml + '</div>';
+  } else {
+    // For PDPC, maintain the header but wrap in page
+    finalContentHtml = '<div class="page content-area">' + finalContentHtml + '</div>';
+  }
+
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kertas Peperiksaan</title>' +
+    style + '</head><body>' +
+    coverPageHtml +
+    finalContentHtml +
     '</body></html>');
+  
   w.document.close();
   w.onload = function(){ w.focus(); w.print(); };
 }
 
 function lkBersihOutput() {
   var box = document.getElementById('lkOutputBox');
-  if (box) box.textContent = 'Hasil lembaran kerja akan dipaparkan di sini setelah dijana...';
+  if (box) box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Hasil lembaran kerja akan dipaparkan di sini setelah dijana...</div>';
   var imejBtn = document.getElementById('lkJanaImejBtn');
   if (imejBtn) imejBtn.style.display = 'none';
   var imejSection = document.getElementById('lkImejSection');
@@ -11813,10 +12223,9 @@ async function lkJanaImej() {
   if (!box || !box.textContent) { showToast('Jana lembaran kerja dahulu.', 'error'); return; }
 
   var placeholders = lkExtractImejPlaceholders(box.textContent);
-  if (!placeholders.length) { showToast('Tiada placeholder [GAMBAR:] ditemui.', 'info'); return; }
+  if (!placeholders.length) { showToast('Tiada penanda [GAMBAR:] ditemui.', 'info'); return; }
 
-  var anggaran = (placeholders.length * 0.04).toFixed(2);
-  if (!confirm('Jana ' + placeholders.length + ' imej menggunakan DALL-E 3?\n\nAnggaran kos: USD $' + anggaran + '\n\nTeruskan?')) return;
+  if (!confirm('Jana ' + placeholders.length + ' imej menggunakan Gemini 2.0 Flash?\n\nTeruskan?')) return;
 
   _lkImejGenerating = true;
   var imejBtn = document.getElementById('lkJanaImejBtn');

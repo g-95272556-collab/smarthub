@@ -1,4 +1,4 @@
-const CACHE_NAME = "ssh-pwa-v6-surat-amaran-assets";
+const CACHE_NAME = "ssh-pwa-v7-gemini-fix";
 const APP_SHELL = [
   "./",
   "./index.html",
