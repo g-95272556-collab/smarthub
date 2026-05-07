@@ -1356,13 +1356,12 @@ PERATURAN FORMAT (WAJIB IKUT):
 
 PERATURAN TOPIK:
 - Jika dinyatakan lebih daripada satu topik, agihkan soalan secara seimbang merentasi semua topik tersebut
-- Label setiap soalan dengan topiknya jika perlu (cth: [Topik: Pecahan])
 
-PERATURAN SOALAN BERGAMBAR:
-- AI tidak boleh menjana atau embed imej sebenar
+PERATURAN SOALAN BERGAMBAR (WAJIB IKUT):
 - Jika soalan memerlukan gambar, tulis placeholder: [GAMBAR: deskripsi ringkas gambar yang diperlukan]
 - Contoh: [GAMBAR: Rajah pokok dengan 5 dahan dan 3 buah pada setiap dahan]
-- Guru akan menyediakan/melukis gambar berdasarkan deskripsi tersebut
+- PENTING: Jika arahan menyatakan bilangan TEPAT soalan bergambar, WAJIB patuhi — jangan lebih, jangan kurang
+- Bilangan soalan bergambar yang dinyatakan dalam ARAHAN FORMAT atau ARAHAN KHAS adalah MUTLAK
 
 PERATURAN ARAS & KPM:
 - PBD: Fokus pada penguasaan Standard Kandungan dan Standard Pembelajaran. Soalan mestilah pelbagai aras bagi membolehkan guru menilai Tahap Penguasaan (TP).

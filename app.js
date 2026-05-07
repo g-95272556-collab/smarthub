@@ -11607,11 +11607,11 @@ function lkBinaSumber(phase) {
     p += '• Buat TEPAT ' + bilSoalan + ' soalan bernombor (1, 2, 3...) sahaja.\n';
     p += '• Sertakan arahan ringkas sebelum setiap kumpulan soalan (jika berbeza jenis).\n';
     if (bilImej > 0 && bilImej < bilSoalan) {
-      p += '• Buat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [IMEJ: deskripsi ringkas] pada soalan-soalan tersebut.\n';
+      p += '• Buat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [GAMBAR: deskripsi ringkas] pada soalan-soalan tersebut.\n';
       p += '• Baki ' + (bilSoalan - bilImej) + ' soalan lain: isi tempat kosong, padankan, atau jawab pendek (TANPA gambar).\n';
     } else {
       p += '• Soalan boleh campuran: isi tempat kosong, padankan, jawab pendek, soalan bergambar.\n';
-      p += '• Jika perlu gambar/rajah, gunakan placeholder [IMEJ: deskripsi ringkas].\n';
+      p += '• Jika perlu gambar/rajah, gunakan placeholder [GAMBAR: deskripsi ringkas].\n';
     }
     p += '• AKHIR sekali: SKEMA JAWAPAN ringkas (bukan skema peperiksaan formal).\n';
     p += '• JANGAN guna markdown (###, **, ```, ---). Gunakan TEKS BIASA sahaja.\n';
@@ -11764,7 +11764,7 @@ async function callWorkerAIGemini(prompt, withImage) {
     localStorage.setItem('ssh_gemini_key_1', legacyKey);
   }
 
-  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar/rajah, tulis placeholder tepat ini: [IMEJ: deskripsi ringkas gambar dalam Bahasa Melayu]\n- JANGAN hasilkan imej terus — sistem akan jana imej secara berperingkat selepas teks siap.\n- Satu soalan hanya satu placeholder [IMEJ:].';
+  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar/rajah, tulis placeholder tepat ini: [GAMBAR: deskripsi ringkas gambar dalam Bahasa Melayu]\n- JANGAN hasilkan imej terus — sistem akan jana imej secara berperingkat selepas teks siap.\n- Satu soalan hanya satu placeholder [GAMBAR:].\n- PENTING: Jika arahan menyatakan bilangan TEPAT soalan bergambar, WAJIB patuhi — jangan lebih, jangan kurang.';
 
   var attempt = geminiDapatkanKunci();
   while (attempt) {
@@ -11778,9 +11778,9 @@ async function callWorkerAIGemini(prompt, withImage) {
       textParts.forEach(function(p) { if (p.text) rawText += p.text; });
       if (!rawText.trim()) throw new Error('Tiada teks dihasilkan oleh Gemini');
 
-      // ══ STEP 2: Parse placeholder [IMEJ:...] dan jana setiap imej ══
+      // ══ STEP 2: Parse placeholder [GAMBAR:] atau [IMEJ:] dan jana setiap imej ══
       var imgPlaceholders = [];
-      var placeholderRegex = /\[IMEJ:\s*([^\]]+)\]/gi;
+      var placeholderRegex = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
       var match;
       while ((match = placeholderRegex.exec(rawText)) !== null) {
         imgPlaceholders.push({ full: match[0], desc: match[1].trim() });
@@ -11804,7 +11804,6 @@ async function callWorkerAIGemini(prompt, withImage) {
             });
           } catch(imgErr) {
             console.warn('Gagal jana imej untuk: ' + ph.desc, imgErr.message);
-            // Biarkan kosong — placeholder akan gantikan teks deskripsi sahaja
           }
         }));
       }
@@ -11812,7 +11811,7 @@ async function callWorkerAIGemini(prompt, withImage) {
       // ══ STEP 3: Bina HTML — selitkan imej inline pada kedudukan placeholder ══
       var imgCount = 0;
       var htmlContent = rawText
-        .replace(/\[IMEJ:\s*([^\]]+)\]/gi, function(full, desc) {
+        .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
           imgCount++;
           var dataUri = imgMap[full];
           if (dataUri) {
