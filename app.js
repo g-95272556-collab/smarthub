@@ -11836,6 +11836,81 @@ async function callWorkerAIGemini(prompt, withImage) {
   }
 }
 
+// ── HYBRID: DeepSeek (teks) + Gemini (imej) ─────────────────────
+// Step 1: DeepSeek jana teks + placeholder [IMEJ: deskripsi]
+// Step 2: Gemini jana setiap imej dari placeholder secara parallel
+// Step 3: Selitkan imej inline pada posisi placeholder
+async function callHybridDeepSeekGemini(prompt) {
+  if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
+
+  // ── STEP 1: DeepSeek jana teks ──
+  lkSetStatus('loading', '⏳ Langkah 1/2: DeepSeek menjana teks soalan...');
+  var dsResult = await callWorkerAI(prompt, 'lembaran_kerja');
+  if (!dsResult.success) throw new Error(dsResult.message || 'DeepSeek gagal menjana teks.');
+  var rawText = dsResult.content || '';
+  if (!rawText.trim()) throw new Error('DeepSeek tidak menghasilkan teks.');
+
+  // ── STEP 2: Parse [GAMBAR:] atau [IMEJ:] placeholder ──
+  var imgPlaceholders = [];
+  var placeholderRegex = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
+  var match;
+  while ((match = placeholderRegex.exec(rawText)) !== null) {
+    imgPlaceholders.push({ full: match[0], desc: match[1].trim() });
+  }
+
+  var imgMap = {};
+  if (imgPlaceholders.length > 0) {
+    var geminiAttempt = geminiDapatkanKunci();
+    if (!geminiAttempt) {
+      // Tiada kunci Gemini — render teks sahaja dengan placeholder kotak
+      showToast('Tiada kunci Gemini aktif — teks sahaja dipaparkan.', 'info');
+    } else {
+      lkSetStatus('loading', '🎨 Langkah 2/2: Gemini jana ' + imgPlaceholders.length + ' imej...');
+      await Promise.all(imgPlaceholders.map(async function(ph) {
+        var imgPrompt = 'Lukis gambar untuk soalan murid Tahun 1-6 Malaysia: ' + ph.desc +
+          '. Gaya: clean black and white line art, sesuai untuk dicetak, mudah difahami kanak-kanak, tiada teks dalam gambar kecuali label ringkas jika perlu.';
+        try {
+          var imgData = await _geminiApiCall(geminiAttempt.key, imgPrompt, 'IMAGE', null);
+          var iParts = (imgData.candidates && imgData.candidates[0] && imgData.candidates[0].content)
+            ? imgData.candidates[0].content.parts : [];
+          iParts.forEach(function(p) {
+            if (p.inlineData) {
+              imgMap[ph.full] = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
+            }
+          });
+        } catch(imgErr) {
+          if (imgErr.isQuota) {
+            geminiTandaHabisKuota(geminiAttempt.slot);
+            showToast('Kuota Gemini habis semasa jana imej.', 'info');
+          }
+          console.warn('Gagal jana imej hybrid:', imgErr.message);
+        }
+      }));
+    }
+  }
+
+  // ── STEP 3: Bina HTML — selitkan imej pada posisi placeholder ──
+  var imgCount = 0;
+  var htmlContent = rawText
+    .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
+      imgCount++;
+      var dataUri = imgMap[full];
+      if (dataUri) {
+        return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
+          '<img src="' + dataUri + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + imgCount + '">' +
+          '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + imgCount + '</small>' +
+          '</div>';
+      } else {
+        return '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
+          '<span style="color:#888;font-style:italic">[Rajah ' + imgCount + ': ' + desc + ']</span>' +
+          '</div>';
+      }
+    })
+    .replace(/\n/g, '<br>');
+
+  return { success: true, content: htmlContent, images: [], isHtml: true };
+}
+
 // Update engine note when radio changes
 (function() {
   document.addEventListener('change', function(e) {
@@ -11844,6 +11919,8 @@ async function callWorkerAIGemini(prompt, withImage) {
       if (!note) return;
       if (e.target.value === 'gemini') {
         note.innerHTML = '✅ <strong>Gemini 2.0 Flash:</strong> AI menjana teks dan imej secara terus (Nano Banana 2 Pro). Paling canggih untuk janaan lembaran kerja.';
+      } else if (e.target.value === 'hybrid') {
+        note.innerHTML = '⚡ <strong>Hybrid (DeepSeek + Gemini):</strong> DeepSeek jana teks soalan, Gemini jana imej sahaja. Jimat kuota Gemini, kualiti imej terjamin.';
       } else {
         note.innerHTML = '[Info] <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }
@@ -11872,7 +11949,7 @@ async function janaLembaranKerja() {
   _lkCancelled = false;
   var batalBtn = document.getElementById('lkBatalBtn');
   if (batalBtn) batalBtn.style.display = 'inline-flex';
-  var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek';
+  var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : engine === 'hybrid' ? 'DeepSeek + Gemini (Hybrid)' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
   document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>';
 
@@ -11954,11 +12031,13 @@ async function janaLembaranKerja() {
       if (imejBtn) imejBtn.style.display = 'inline-flex';
       return;
     } else {
-      // Mod biasa (DeepSeek atau PBD harian)
+      // Mod biasa (DeepSeek, Gemini, atau Hybrid)
       var prompt = lkBinaSumber();
       var result;
       if (engine === 'gemini') {
         result = await callWorkerAIGemini(prompt, true);
+      } else if (engine === 'hybrid') {
+        result = await callHybridDeepSeekGemini(prompt);
       } else {
         result = await callWorkerAI(prompt, 'lembaran_kerja');
       }
@@ -12016,9 +12095,8 @@ async function janaLembaranKerja() {
 
     var statusMsg = 'Lembaran kerja berjaya dijana oleh ' + engineLabel + '!';
 
-    if (engine === 'gemini') {
-      // Gemini: imej sudah diselit inline dalam content (isHtml:true)
-      // Kira berapa imej ada dalam output untuk status message
+    if (engine === 'gemini' || engine === 'hybrid') {
+      // Gemini / Hybrid: imej sudah diselit inline dalam content (isHtml:true)
       var inlineImgCount = (result.content.match(/class="lk-inline-image"/g) || []).length;
       if (inlineImgCount > 0) {
         statusMsg += ' ' + inlineImgCount + ' imej dijana terus inline — tiada langkah tambahan diperlukan.';
