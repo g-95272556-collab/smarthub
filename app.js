@@ -12306,7 +12306,7 @@ function lkCetakOutput() {
   if (jenis === 'pbd-at') kpmHeader = 'PENTAKSIRAN BILIK DARJAH (AKHIR TAHUN)';
 
   var w = window.open('', '_blank', 'width=850,height=1000');
-  if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
+  if (!w) { showToast('Pop-up disekat oleh browser. Klik ikon 🔒 di address bar → benarkan Pop-ups → cuba cetak semula.', 'error'); return; }
 
   var style = '<style>' +
     '@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap");' +
@@ -12487,7 +12487,7 @@ function lkCetakOutput() {
   if (skemaFound && skemaHtml.trim()) {
     setTimeout(function() {
       var ws = window.open('', '_blank', 'width=850,height=1000');
-      if (!ws) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak skema guru.', 'error'); return; }
+      if (!ws) { showToast('Pop-up disekat. Klik ikon 🔒 di address bar → benarkan Pop-ups → cuba cetak semula.', 'error'); return; }
 
       var jenisTajuk = isUjianFormal ? (jenis === 'uasa' ? 'UASA' : 'PBD BERTERUSAN') : 'PDPC';
       var skemaGuruBanner =
@@ -12700,7 +12700,7 @@ async function lkCetakSemuaMurid() {
 
     // ── 6. Buka window cetak ──
     var w = window.open('', '_blank', 'width=850,height=1000');
-    if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
+    if (!w) { showToast('Pop-up disekat oleh browser. Klik ikon 🔒 di address bar → benarkan Pop-ups → cuba cetak semula.', 'error'); return; }
     var fullHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lembaran Kerja — ' + kelas + '</title>' + style + '</head><body>' + allPages.join('') + '</body></html>';
     w.document.write(fullHtml);
     w.document.close();
