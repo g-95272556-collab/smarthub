@@ -3514,10 +3514,6 @@ _{SEKOLAH}_</textarea>
                 <label>Masa Menjawab</label>
                 <input type="text" id="lkMasaMenjawab" value="1 Jam 15 Minit" placeholder="cth: 1 Jam">
               </div>
-              <div class="lk-form-group">
-                <label>Guru Penyedia</label>
-                <input type="text" id="lkGuruPenyedia" placeholder="Nama penuh guru">
-              </div>
             </div>
             <div class="lk-form-group">
               <label>Kod Kertas <span style="font-weight:400;text-transform:none">(pilihan)</span></label>
@@ -3559,12 +3555,12 @@ _{SEKOLAH}_</textarea>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
               <h3 style="margin:0;font-size:1rem;color:var(--text)">📄 Output Lembaran Kerja</h3>
               <div class="lk-actions">
+                <button id="lkBatalBtn" class="btn btn-sm btn-danger" onclick="batalLembaranKerja()" title="Batal janaan" style="display:none;font-weight:700">🛑 Batal Jana</button>
                 <button class="btn btn-sm" id="lkSimpanDriveBtn" onclick="lkSimpanDrive()" title="Simpan ke Google Drive" style="background:#1a73e8;color:#fff;border:none">
                   <svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg>
                   Simpan ke Drive
                 </button>
                   <button id="lkJanaImejBtn" class="btn btn-sm" style="display:none;background:#f59e0b;color:#fff;border:none" onclick="lkJanaImej()" title="Jana imej untuk penanda bergambar">🖼️ Jana Imej</button>
-                <button id="lkBatalBtn" class="btn btn-sm btn-danger" onclick="batalLembaranKerja()" title="Batal janaan" style="display:none">🛑 Batal</button>
                 <button class="btn btn-sm btn-success" onclick="lkCetakOutput()" title="Cetak 1 salinan">🖨️ Cetak</button>
                 <button class="btn btn-sm btn-indigo" onclick="lkCetakSemuaMurid()" title="Cetak untuk semua murid dalam kelas yang dipilih" id="lkCetakMuridBtn">👥 Cetak Untuk Semua Murid</button>
                 <button class="btn btn-sm btn-gray" onclick="lkBersihOutput()" title="Bersih">🗑️ Bersih</button>

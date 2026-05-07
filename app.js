@@ -2435,6 +2435,11 @@ async function callWorkerAI(prompt, type) {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt, type })
   });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    if (res.status === 524 || txt.includes('524')) throw new Error('Masa tamat (524) — Worker mengambil masa terlalu lama. Cuba kurangkan bilangan soalan atau cuba semula.');
+    throw new Error('Worker error ' + res.status + ': ' + txt.substring(0, 80));
+  }
   return await res.json();
 }
 
@@ -11766,7 +11771,7 @@ async function callWorkerAIGemini(prompt, withImage) {
         // Jana semua imej secara parallel untuk kelajuan
         await Promise.all(imgPlaceholders.map(async function(ph, idx) {
           var imgPrompt = 'Lukis gambar untuk soalan murid Tahun 1-6 Malaysia: ' + ph.desc +
-            '. Gaya: clean black and white line art, sesuai untuk dicetak, mudah difahami kanak-kanak, tiada teks dalam gambar kecuali label ringkas jika perlu.';
+            '. WAJIB: clean black and white line art sahaja untuk dicetak. DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, perkataan atau aksara dalam gambar. Hanya lukisan/rajah sahaja.';
           try {
             var imgData = await _geminiApiCall(attempt.key, imgPrompt, 'IMAGE', null);
             var imgParts = (imgData.candidates && imgData.candidates[0] && imgData.candidates[0].content)
@@ -11868,7 +11873,7 @@ async function callHybridDeepSeekGemini(prompt) {
       lkSetStatus('loading', '🎨 Langkah 2/2: Gemini jana ' + imgPlaceholders.length + ' imej...');
       await Promise.all(imgPlaceholders.map(async function(ph) {
         var imgPrompt = 'Lukis gambar untuk soalan murid Tahun 1-6 Malaysia: ' + ph.desc +
-          '. Gaya: clean black and white line art, sesuai untuk dicetak, mudah difahami kanak-kanak, tiada teks dalam gambar kecuali label ringkas jika perlu.';
+          '. WAJIB: clean black and white line art sahaja untuk dicetak. DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, perkataan atau aksara dalam gambar. Hanya lukisan/rajah sahaja.';
         try {
           var imgData = await _geminiApiCall(geminiAttempt.key, imgPrompt, 'IMAGE', null);
           var iParts = (imgData.candidates && imgData.candidates[0] && imgData.candidates[0].content)
@@ -11942,8 +11947,8 @@ async function janaLembaranKerja() {
   if (_lkGenerating) { showToast('Sila tunggu - AI sedang memproses...', 'info'); return; }
   if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
   var engine = lkGetEngine();
-  if (engine !== 'gemini' && !APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
-  if (engine === 'gemini' && !geminiDapatkanKunci()) { showToast('Tiada Kunci API Gemini aktif. Hubungi pentadbir.', 'error'); return; }
+  if ((engine === 'deepseek' || engine === 'hybrid') && !APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
+  if ((engine === 'gemini' || engine === 'hybrid') && !geminiDapatkanKunci()) { showToast('Tiada Kunci API Gemini aktif. Pergi ke Konfigurasi → Kunci API Gemini.', 'error'); return; }
 
   _lkGenerating = true;
   _lkCancelled = false;
@@ -12061,22 +12066,17 @@ async function janaLembaranKerja() {
     
     var header = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
       line +
-      '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:10px">SK KIANDONGO</div>' +
-      '<div style="text-align:center;font-weight:bold;margin-bottom:10px">LEMBARAN KERJA — ' + jenisTxt + '</div>' +
-      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
-        '<span>Mata Pelajaran: ' + subjekLabelOut + '</span>' +
-        '<span>Tahun: ' + tahunOut + '</span>' +
+      '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:6px">SK KIANDONGO, TONGOD, SABAH</div>' +
+      '<div style="text-align:center;font-weight:bold;font-size:1rem;margin-bottom:8px">LEMBARAN KERJA — ' + jenisTxt + '</div>' +
+      '<div style="display:flex;justify-content:center;gap:32px;margin-bottom:6px">' +
+        '<span>Mata Pelajaran: <strong>' + subjekLabelOut + '</strong></span>' +
+        '<span>Tahun: <strong>' + tahunOut + '</strong></span>' +
       '</div>' +
-      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
-        '<span>Masa: ' + masaMenjawab + '</span>' +
-        (kodKertas ? '<span>Kod: ' + kodKertas + '</span>' : '<span>Tarikh: ______________</span>') +
-      '</div>' +
-      '<div style="display:flex;justify-content:space-between;margin-bottom:8px">' +
+      line +
+      '<div style="display:flex;justify-content:space-between;margin-top:8px;margin-bottom:4px">' +
         '<span>Nama: _______________________________</span>' +
         '<span>Kelas: ________</span>' +
-      '</div>' +
-      '<div style="text-align:right;margin-bottom:8px">' +
-        '<span>Markah: _______ / _______</span>' +
+        '<span>Tarikh: ______________</span>' +
       '</div>' +
       line +
       '</div>';
@@ -12424,7 +12424,6 @@ function lkCetakOutput() {
         '<span>Mata Pelajaran: <strong>' + subjekLabel.toUpperCase() + '</strong></span>' +
         '<span>Tahun: <strong>' + tahun + '</strong></span>' +
       '</div>' +
-      '<div class="pdpc-guru">Guru: ' + guru + '</div>' +
       '<div class="pdpc-murid-row">' +
         '<span>Nama: <span class="pdpc-line" style="width:240px"></span></span>' +
         '<span>Kelas: <span class="pdpc-line" style="width:90px"></span></span>' +
@@ -12646,7 +12645,6 @@ async function lkCetakSemuaMurid() {
               '<span>Mata Pelajaran: <strong>' + subjekLabel.toUpperCase() + '</strong></span>' +
               '<span>Tahun: <strong>' + tahun + '</strong></span>' +
             '</div>' +
-            '<div class="pdpc-guru">Guru: ' + guru + '</div>' +
             '<div class="pdpc-murid-row">' +
               '<span>Nama: <strong>' + nama + '</strong></span>' +
               '<span>Kelas: <strong>' + kelas + '</strong></span>' +
