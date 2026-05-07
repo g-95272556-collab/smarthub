@@ -349,6 +349,25 @@ async function handleAPI(request, env, corsHeaders) {
     }
   }
 
+  // ── getMurid: Senarai murid mengikut kelas untuk cetakan lembaran kerja ──
+  if (body.action === "getMurid") {
+    try {
+      const kelas = String(body.kelas || "").trim();
+      if (!kelas) return jsonResp({ success: false, error: "Parameter kelas diperlukan." }, 400, corsHeaders);
+      const rows = await readBackendSheetRows(env, "MURID", workerToken);
+      const murid = rows
+        .filter(row => {
+          const kelasRow = String(Array.isArray(row) ? (row[1] || "") : "").trim();
+          return kelasRow.toLowerCase() === kelas.toLowerCase();
+        })
+        .map(row => String(Array.isArray(row) ? (row[0] || "") : "").trim())
+        .filter(n => n.length > 0);
+      return jsonResp({ success: true, murid, kelas, jumlah: murid.length }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message || "Gagal mendapatkan senarai murid." }, 500, corsHeaders);
+    }
+  }
+
   if (shouldUseCloudflareD1(env)) {
     try {
       const data = await handleD1Action(body, env, workerToken);
@@ -1477,7 +1496,11 @@ PERATURAN SOALAN BERGAMBAR:
 - Jika soalan memerlukan gambar atau rajah, HASILKAN imej tersebut secara terus (native image generation) sejurus selepas teks soalan berkenaan.
 - JANGAN gunakan placeholder [GAMBAR:]. Hasilkan imej sebenar.
 - Pastikan imej adalah relevan dengan kandungan soalan tersebut.
-- Imej mestilah dalam gaya "clean black and white line art" yang sesuai untuk dicetak.
+- Imej WAJIB hitam putih (black and white line art) sahaja. TIADA warna langsung.
+- Imej mesti KECIL dan SEDERHANA — lebar tidak melebihi 380 piksel, tinggi tidak melebihi 280 piksel.
+- Resolusi RENDAH — cukup jelas untuk cetakan A4, tiada butiran halus yang tidak perlu.
+- Gaya: diagram textbook ringkas, bersih, garisan tebal, latar belakang putih tulen.
+- Hadkan kepada 1-2 imej per lembaran kerja sahaja.
 
 PERATURAN TOPIK:
 - Jika dinyatakan lebih daripada satu topik, agihkan soalan secara seimbang
@@ -1535,10 +1558,10 @@ PERATURAN ARAS & KPM (WAJIB):
       if (p.inlineData) {
         imageCount++;
         const src = `data:${p.inlineData.mimeType};base64,${p.inlineData.data}`;
-        htmlContent += `<div class="lk-inline-image" style="margin: 15px 0; text-align: center;">
-          <img src="${src}" style="max-width: 100%; height: auto; border: 1px solid #ddd; padding: 5px; border-radius: 4px; display: block; margin: 0 auto;">
-          <small style="color: #666; font-style: italic; display: block; margin-top: 5px;">Rajah ${imageCount}</small>
-        </div>`;
+        htmlContent += `<div class="lk-inline-image" style="margin:10px 0;text-align:center;page-break-inside:avoid;break-inside:avoid;">` +
+          `<img src="${src}" alt="Rajah ${imageCount}" style="max-width:60%;max-height:65mm;width:auto;height:auto;display:block;margin:0 auto;border:1pt solid #333;padding:3px;filter:grayscale(100%) contrast(1.2);">` +
+          `<small style="color:#444;font-style:italic;display:block;margin-top:3px;font-size:8.5pt;">Rajah ${imageCount}</small>` +
+          `</div>`;
       }
     });
 

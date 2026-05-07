@@ -2311,6 +2311,15 @@ function showModule(id) {
   } else if (id === 'lembaran-kerja') {
     lkInitModule();
     currentAutoRefreshInterval = null;
+    // Auto-runtuhkan sidebar desktop untuk luas ruang kerja lembaran kerja
+    if (!isMobileViewport()) {
+      var _lkSidebar = document.getElementById('appSidebar');
+      var _lkLayout = document.querySelector('.app-layout');
+      if (_lkSidebar && !_lkSidebar.classList.contains('collapsed')) {
+        _lkSidebar.classList.add('collapsed');
+        if (_lkLayout) _lkLayout.classList.add('collapsed');
+      }
+    }
   } else if (id === 'notifikasi') {
     loadNotifLog();
     currentAutoRefreshInterval = setInterval(loadNotifLog, 600000);
@@ -3792,6 +3801,9 @@ function refreshMuridAttendanceSummary() {
   if (hadirEl) hadirEl.textContent = String(counts.hadir);
   if (tidakEl) tidakEl.textContent = String(counts.tidak);
   if (lainEl) lainEl.textContent = String(counts.lain);
+  // Tunjuk hint bila kelas belum dipilih (semua 0)
+  var hintEl = document.getElementById('muridAttendanceHint');
+  if (hintEl) hintEl.style.display = (rows.length === 0) ? 'block' : 'none';
 }
 
 function filterSenaraiKelasRows() {
@@ -10643,7 +10655,11 @@ async function loadAmaranKehadiran() {
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
     if (!data.success) throw new Error(data.error || 'Gagal membaca data');
-    const allRows = (data.rows || []).map(parseKehadiranMuridRow).filter(function(r) { return r.nama && r.nama.toLowerCase() !== 'nama'; });
+    const allRows = (data.rows || []).map(parseKehadiranMuridRow).filter(function(r) {
+      if (!r.nama || r.nama.toLowerCase() === 'nama') return false;
+      if (r.nama.toLowerCase().startsWith('[ujian]')) return false; // tapis data dummy/ujian
+      return true;
+    });
     if (!allRows.length) { container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Tiada data kehadiran</td></tr>'; return; }
     const muridMap = kiraTidakHadirMurid(allRows);
     const allMurid = Object.values(muridMap);
@@ -10862,104 +10878,6 @@ async function hantarNotifSuratAmaran(nama, kelas, telefon, tahap, jumlahHari) {
   } catch(e) { showToast('Ralat hantar notifikasi: ' + e.message, 'error'); }
 }
 
-async function insertDummyDataAmaranLegacy() {
-  const btn = event && event.target;
-  if (btn) { btn.disabled = true; btn.textContent = 'Memasukkan...'; }
-  const guruEmail = (APP.user && APP.user.email) ? APP.user.email : 'ujian@sekolah.edu.my';
-  const tahun = new Date().getFullYear();
-  // 12 hari tidak hadir → Amaran 1 (≥10 hari)
-  const tarikhList = [
-    tahun + '-01-06', tahun + '-01-07', tahun + '-01-08',
-    tahun + '-01-13', tahun + '-01-14', tahun + '-01-20',
-    tahun + '-02-03', tahun + '-02-10', tahun + '-02-17',
-    tahun + '-03-03', tahun + '-03-10', tahun + '-03-17'
-  ];
-  const rows = tarikhList.map(function(tarikh) {
-    return ['[UJIAN] Ali bin Abu', '4 MUTIARA', tarikh, 'Tidak Hadir', '60123456789', 'Data ujian amaran', guruEmail];
-  });
-  try {
-    let ok = 0;
-    for (const row of rows) {
-      const res = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_MURID', row: row });
-      if (res.success) ok++;
-      await sleep(200);
-    }
-    showToast(ok + ' rekod ujian berjaya dimasukkan. Klik "Semak Amaran" untuk lihat hasilnya.', 'success');
-    await loadAmaranKehadiran();
-  } catch(e) {
-    showToast('Gagal masukkan data ujian: ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="lucide-icon" width="14" height="14"><use href="#lucide-flask-conical"></use></svg> Masuk Data Ujian'; }
-  }
-}
-
-async function buangDummyDataAmaran() {
-  try {
-    const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
-    if (!data.success) throw new Error(data.error);
-    const allRows = data.rows || [];
-    // Kekal baris header + baris BUKAN [UJIAN]
-    const filtered = allRows.filter(function(r) {
-      // Data disimpan dalam format [nama, kelas, tarikh, status, ...] — nama sentiasa di r[0]
-      const nama = String(Array.isArray(r) ? (r[0] || '') : '');
-      return !nama.toLowerCase().startsWith('[ujian]');
-    });
-    if (filtered.length === allRows.length) { showToast('Tiada data ujian untuk dibuang.', 'info'); return false; }
-    const res = await callWorker({ action: 'replaceSheet', sheetKey: 'KEHADIRAN_MURID', rows: filtered });
-    if (!res.success) throw new Error(res.error);
-    showToast((allRows.length - filtered.length) + ' rekod ujian dibuang.', 'success');
-    return true;
-  } catch(e) {
-    showToast('Gagal buang data ujian: ' + e.message, 'error');
-    return false;
-  }
-}
-
-async function insertDummyDataAmaran() {
-  const btn = event && event.target;
-  if (btn) { btn.disabled = true; btn.textContent = 'Memasukkan...'; }
-  const guruEmail = (APP.user && APP.user.email) ? APP.user.email : 'ujian@sekolah.edu.my';
-  const tahun = new Date().getFullYear();
-  const pad = function(n) { return String(n).padStart(2, '0'); };
-  const janaTarikh = function(month, count) {
-    const dates = [];
-    for (let i = 1; i <= count; i++) {
-      dates.push(tahun + '-' + pad(month + Math.floor((i - 1) / 25)) + '-' + pad(((i - 1) % 25) + 1));
-    }
-    return dates;
-  };
-  // Semua tarikh mesti lepas (sebelum hari ini) — Jana dalam tahun semasa, bulan 1-4 sahaja
-  // Tahap 1: ≥10 hari | Tahap 2: ≥20 | Tahap 3: ≥40 | Tahap 4 (Buang): ≥60
-  const senaraiUjian = [
-    { nama: '[UJIAN] Ali bin Abu', kelas: '4 MUTIARA', telefon: '60123456789', hari: 12, bulan: 1, catatan: 'Data ujian Amaran 1' },
-    { nama: '[UJIAN] Balan anak Bujang', kelas: '5 DELIMA', telefon: '60123456780', hari: 22, bulan: 1, catatan: 'Data ujian Amaran 2' },
-    { nama: '[UJIAN] Chong Mei Lin', kelas: '6 BAIDURI', telefon: '60123456781', hari: 42, bulan: 1, catatan: 'Data ujian Amaran 3' },
-    { nama: '[UJIAN] Dayang Nur Aina', kelas: '3 KRISTAL', telefon: '60123456782', hari: 62, bulan: 1, catatan: 'Data ujian Buang Sekolah' }
-  ];
-  const rows = [];
-  senaraiUjian.forEach(function(item) {
-    janaTarikh(item.bulan, item.hari).forEach(function(tarikh) {
-      rows.push([item.nama, item.kelas, tarikh, 'Tidak Hadir', item.telefon, item.catatan, guruEmail]);
-    });
-  });
-  try {
-    // Buang data ujian lama dahulu untuk elak duplicate error
-    if (btn) btn.textContent = 'Semak data lama...';
-    await buangDummyDataAmaran();
-    if (btn) btn.textContent = 'Memasukkan ' + rows.length + ' rekod...';
-    const res = await callWorker({ action: 'appendRows', sheetKey: 'KEHADIRAN_MURID', rows: rows });
-    if (res.success) {
-      showToast(rows.length + ' rekod ujian (4 tahap amaran) berjaya dimasukkan.', 'success');
-      await loadAmaranKehadiran();
-    } else {
-      throw new Error(res.error || 'Gagal menyimpan rekod.');
-    }
-  } catch(e) {
-    showToast('Gagal masukkan data ujian: ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg class="lucide-icon" width="14" height="14"><use href="#lucide-flask-conical"></use></svg> Masuk Data Ujian'; }
-  }
-}
 
 async function hantarAmaranKeGroupUjian() {
   const testGroup = String(hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim();
@@ -11089,6 +11007,7 @@ async function loadKehadiranMurid(options) {
 
 var _lkInited = false;
 var _lkGenerating = false;
+var _lkCancelled = false;
 var _lkSoalanMode = 'auto'; // Tracks if question count is auto (KPM) or manual
 
 
@@ -11337,6 +11256,23 @@ function lkOnJenisChange() {
   }
   lkUpdateKpmSoalanCount();
   lkOnSubjekChange();
+
+  // Lembaran Kerja PDPC: paksa Manual & disable blok Maklumat Cetakan
+  var cetakanBlock = document.getElementById('lkMaklumatCetakanBlock');
+  if (jenis === 'pbd-pt') {
+    lkSetSoalanMode('manual');
+    if (cetakanBlock) {
+      cetakanBlock.style.opacity = '0.35';
+      cetakanBlock.style.pointerEvents = 'none';
+      cetakanBlock.title = 'Tidak diperlukan untuk Lembaran Kerja PDPC';
+    }
+  } else {
+    if (cetakanBlock) {
+      cetakanBlock.style.opacity = '';
+      cetakanBlock.style.pointerEvents = '';
+      cetakanBlock.title = '';
+    }
+  }
 }
 
 function lkGetJenis() {
@@ -11652,15 +11588,29 @@ function lkBinaSumber(phase) {
   p += '- Bahasa: ' + bahasa + '\n';
   if (nota) p += '- Nota: ' + nota + '\n';
 
-  if (!phase) {
+  if (jenis === 'pbd-pt') {
+    // ── FORMAT PDPC: Lembaran kerja latihan harian — BUKAN format peperiksaan ──
+    p += '\n\nARahan FORMAT (WAJIB IKUT):\n';
+    p += '• INI BUKAN PEPERIKSAAN — jangan guna format Bahagian A / Bahagian B / Bahagian C / D.\n';
+    p += '• Ini adalah LEMBARAN KERJA PDPC: latihan pengukuhan harian mengikut topik DSKP.\n';
+    p += '• Buat TEPAT ' + bilSoalan + ' soalan bernombor (1, 2, 3...) sahaja.\n';
+    p += '• Format ruangan pelajar di atas: Nama: _____________ | Kelas: ______ | Tarikh: ______\n';
+    p += '• Sertakan arahan ringkas sebelum setiap kumpulan soalan (jika berbeza jenis).\n';
+    p += '• Soalan boleh campuran: isi tempat kosong, padankan, jawab pendek, soalan bergambar.\n';
+    p += '• AKHIR sekali: SKEMA JAWAPAN ringkas (bukan skema peperiksaan formal).\n';
+    p += '• JANGAN guna markdown (###, **, ```, ---). Gunakan TEKS BIASA sahaja.\n';
+    p += '• Jika perlu gambar/rajah, hasilkan secara terus (native image).\n';
+  } else if (!phase) {
+    // ── FORMAT PBD Berterusan / UASA: Format peperiksaan formal dengan bahagian ──
     p += '\n\nJana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, kemudian SKEMA JAWAPAN.';
-    p += '\nAgihkan ' + bilSoalan + ' soalan. Sertakan arahan ringkas. Jangan guna markdown. Jika perlu gambar, hasilkan secara terus.';
+    p += '\nAgihkan ' + bilSoalan + ' soalan mengikut format KPM. Sertakan arahan ringkas tiap bahagian. Jangan guna markdown. Jika perlu gambar, hasilkan secara terus.';
   } else {
+    // ── Fasa Gemini (untuk PBD Berterusan / UASA) ──
     p += '\n\nFASA PENJANAAN: ' + phase + '\n';
     if (phase === 'A') p += 'SILA JANA BAHAGIAN A SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'B') p += 'SILA JANA BAHAGIAN B SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'CD') p += 'SILA JANA BAHAGIAN C (dan D jika ada) SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
-    if (phase === 'JAWAPAN') p += 'SILA JANA SKEMA JAWAPAN LENGKAP untuk semua bahagian yang dinyatakan dalam format UASA/PBD untuk ' + subjekLabel + '.';
+    if (phase === 'JAWAPAN') p += 'SILA JANA SKEMA JAWAPAN LENGKAP untuk semua bahagian dalam format UASA/PBD Berterusan untuk ' + subjekLabel + '.';
     p += '\nPastikan output adalah TEKS BIASA tanpa markdown. Imej dijana secara terus (native).';
   }
 
@@ -11756,19 +11706,23 @@ async function callWorkerAIGemini(prompt, withImage) {
     localStorage.setItem('ssh_gemini_key_1', legacyKey);
   }
 
+  // System instruction untuk lembaran kerja (sama seperti Worker)
+  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar atau rajah, HASILKAN imej tersebut secara terus (native image generation) sejurus selepas teks soalan berkenaan.\n- JANGAN gunakan placeholder [GAMBAR:]. Hasilkan imej sebenar terus.\n- Imej mestilah dalam gaya clean black and white line art untuk dicetak.';
+
   // Try local keys with auto-rotation on quota error
   var attempt = geminiDapatkanKunci();
   while (attempt) {
     var model = 'gemini-3.1-flash-image-preview';
     var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + attempt.key;
     var payload = {
-      contents: [{ parts: [{ text: prompt }] }],
+      systemInstruction: { parts: [{ text: _lkSystemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         maxOutputTokens: 8192,
-        temperature: 0.7
+        temperature: 0.7,
+        responseModalities: ['TEXT', 'IMAGE']
       }
     };
-    if (withImage) payload.generationConfig.responseModalities = ["TEXT", "IMAGE"];
     try {
       var res = await fetch(url, {
         method: 'POST',
@@ -11787,15 +11741,25 @@ async function callWorkerAIGemini(prompt, withImage) {
         throw new Error('Google API Error: ' + (err.error ? err.error.message : res.statusText));
       }
       var data = await res.json();
-      var content = '';
-      var images = [];
-      if (data.candidates && data.candidates[0].content) {
-        data.candidates[0].content.parts.forEach(function(p) {
-          if (p.text) content += p.text;
-          if (p.inlineData) images.push('data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data);
-        });
-      }
-      return { success: true, content: content, images: images };
+      // Bina HTML yang selitkan gambar terus mengikut urutan asal (inline dengan soalan)
+      var htmlContent = '';
+      var imgCount = 0;
+      var parts = (data.candidates && data.candidates[0] && data.candidates[0].content) ? data.candidates[0].content.parts : [];
+      parts.forEach(function(p) {
+        if (p.text) {
+          htmlContent += p.text.replace(/\n/g, '<br>');
+        }
+        if (p.inlineData) {
+          imgCount++;
+          var src = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
+          htmlContent += '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
+            '<img src="' + src + '" style="max-width:85%;height:auto;border:1pt solid #ccc;padding:4px;border-radius:3px">' +
+            '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + imgCount + '</small>' +
+            '</div>';
+        }
+      });
+      if (!htmlContent) throw new Error('Tiada kandungan dihasilkan oleh Gemini');
+      return { success: true, content: htmlContent, images: [], isHtml: true };
     } catch (directError) {
       if (directError.message && directError.message.indexOf('Google API Error') === 0) throw directError;
       console.warn('Direct AI call failed, falling back to Worker:', directError.message);
@@ -11835,6 +11799,16 @@ async function callWorkerAIGemini(prompt, withImage) {
   });
 })();
 
+function batalLembaranKerja() {
+  if (!_lkGenerating) return;
+  _lkCancelled = true;
+  _lkGenerating = false;
+  var batalBtn = document.getElementById('lkBatalBtn');
+  if (batalBtn) batalBtn.style.display = 'none';
+  lkSetStatus('idle', '🛑 Janaan dibatalkan. Anda boleh edit soalan di atas atau jana semula.');
+  showToast('Janaan dibatalkan.', 'info');
+}
+
 async function janaLembaranKerja() {
   if (_lkGenerating) { showToast('Sila tunggu - AI sedang memproses...', 'info'); return; }
   if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
@@ -11843,9 +11817,12 @@ async function janaLembaranKerja() {
   if (engine === 'gemini' && !geminiDapatkanKunci()) { showToast('Tiada Kunci API Gemini aktif. Hubungi pentadbir.', 'error'); return; }
 
   _lkGenerating = true;
+  _lkCancelled = false;
+  var batalBtn = document.getElementById('lkBatalBtn');
+  if (batalBtn) batalBtn.style.display = 'inline-flex';
   var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
-  document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>'; 
+  document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>';
 
   // Reset image section
   var imejBtn = document.getElementById('lkJanaImejBtn');
@@ -11857,31 +11834,69 @@ async function janaLembaranKerja() {
 
   try {
     var jenis = document.querySelector('input[name="lkJenis"]:checked').value;
-    var isLongExam = (jenis === 'uasa' || jenis === 'pbd-pt' || jenis === 'pbd-at');
+    // pbd-pt (Lembaran Kerja PDPC) bukan format peperiksaan — tidak perlu fasa A/B/C/D
+    var isLongExam = (jenis === 'uasa' || jenis === 'pbd-at');
     var finalContent = '';
     
     if (engine === 'gemini' && isLongExam) {
       var phases = ['A', 'B', 'CD', 'JAWAPAN'];
       var phaseNames = { 'A': 'Bahagian A', 'B': 'Bahagian B', 'CD': 'Bahagian C/D', 'JAWAPAN': 'Skema Jawapan' };
-      
-      for (var i = 0; i < phases.length; i++) {
-        var pKey = phases[i];
-        lkSetStatus('loading', '[' + (i+1) + '/4] Menjana ' + phaseNames[pKey] + '... Sila tunggu.');
-        var pPrompt = lkBinaSumber(pKey);
-        var pRes = await callWorkerAIGemini(pPrompt, true);
-        
+
+      // Jana semua fasa serentak (parallel) — ~4x lebih laju
+      lkSetStatus('loading', '⚡ Menjana semua bahagian serentak (A + B + C/D + Skema)... Sila tunggu.');
+      document.getElementById('lkOutputBox').innerHTML =
+        '<div style="text-align:center;padding:30px;color:var(--muted)">' +
+        '<div style="font-size:1.5rem;margin-bottom:8px">⚡</div>' +
+        '<div>Menjana <strong>4 bahagian serentak</strong> — lebih pantas!</div>' +
+        '<div style="margin-top:8px;font-size:0.85rem;display:flex;justify-content:center;gap:16px">' +
+        phases.map(function(p) { return '<span id="lkPhaseStatus_' + p + '">⏳ ' + phaseNames[p] + '</span>'; }).join('') +
+        '</div></div>';
+
+      if (_lkCancelled) throw new Error('__cancelled__');
+
+      var phaseResults = await Promise.all(phases.map(function(pKey) {
+        return callWorkerAIGemini(lkBinaSumber(pKey), true).then(function(res) {
+          // Kemaskini status fasa individual bila siap
+          var statusEl = document.getElementById('lkPhaseStatus_' + pKey);
+          if (statusEl) statusEl.innerHTML = '<span style="color:var(--green)">✅ ' + phaseNames[pKey] + '</span>';
+          return { key: pKey, res: res };
+        });
+      }));
+
+      if (_lkCancelled) throw new Error('__cancelled__');
+
+      // Susun semula mengikut urutan asal dan bina output
+      phases.forEach(function(pKey) {
+        var found = phaseResults.find(function(r) { return r.key === pKey; });
+        if (!found) return;
+        var pRes = found.res;
         if (pRes.success) {
           finalContent += '<div class="lk-phase-result" style="margin-bottom:30px; border-bottom:1px dashed #ccc; padding-bottom:10px;">' + pRes.content + '</div>';
-          document.getElementById('lkOutputBox').innerHTML = finalContent;
-          // Scroll to bottom
-          document.getElementById('lkOutputBox').scrollTop = document.getElementById('lkOutputBox').scrollHeight;
         } else {
-          // Check for specific errors
           if (pRes.error === 'gemini_limit') throw new Error('Had Gemini API dicapai. Cuba sebentar lagi.');
           throw new Error(pRes.message || 'Gagal menjana ' + phaseNames[pKey]);
         }
-      }
+      });
       
+      // Tambah header di atas output fasa (PBD Berterusan / UASA)
+      var selOutFasa = document.getElementById('lkSubjek');
+      var subjekLabelFasa = selOutFasa && selOutFasa.selectedIndex >= 0 ? selOutFasa.options[selOutFasa.selectedIndex].text : '';
+      var tahunFasa = document.getElementById('lkTahun').value;
+      var masaFasa = document.getElementById('lkMasaMenjawab').value || '1 Jam 15 Minit';
+      var kodFasa = document.getElementById('lkKodKertas').value || '';
+      var jenisMapFasa = { 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
+      var jenisTxtFasa = jenisMapFasa[jenis] || jenis.toUpperCase();
+      var lineFasa = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
+      var headerFasa = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
+        lineFasa +
+        '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:6px">SK KIANDONGO</div>' +
+        '<div style="text-align:center;font-weight:bold;margin-bottom:8px">' + jenisTxtFasa + '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Mata Pelajaran: ' + subjekLabelFasa + '</span><span>Tahun: ' + tahunFasa + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Masa: ' + masaFasa + '</span>' + (kodFasa ? '<span>Kod: ' + kodFasa + '</span>' : '<span>Tarikh: ______________</span>') + '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Nama: _______________________________</span><span>Kelas: ________</span></div>' +
+        '<div style="text-align:right;margin-bottom:6px"><span>Markah: _______ / _______</span></div>' +
+        lineFasa + '</div>';
+      document.getElementById('lkOutputBox').innerHTML = headerFasa + finalContent;
       lkSetStatus('done', 'Lembaran kerja berjaya dijana oleh ' + engineLabel + ' secara berperingkat!');
       showToast('Lembaran kerja berjaya dijana.', 'success');
       if (imejBtn) imejBtn.style.display = 'inline-flex';
@@ -11897,9 +11912,7 @@ async function janaLembaranKerja() {
       }
 
       if (result.success) {
-        document.getElementById('lkOutputBox').innerHTML = result.content;
-        lkSetStatus('success', 'Berjaya menjana lembaran kerja (' + engineLabel + ').');
-        if (imejBtn) imejBtn.style.display = 'inline-flex';
+        // Simpan content sementara — header akan ditambah di bawah
       } else {
         throw new Error(result.message || 'Gagal menjana lembaran kerja.');
       }
@@ -11937,12 +11950,14 @@ async function janaLembaranKerja() {
       line +
       '</div>';
 
-    var contentWrap = result.isHtml ? 
+    var contentWrap = result.isHtml ?
       '<div class="lk-html-content">' + result.content + '</div>' :
       '<pre style="white-space:pre-wrap;font-family:inherit">' + result.content + '</pre>';
 
-    var fullContentHtml = (lkGetJenis() === 'pdpc') ? (header + contentWrap) : contentWrap;
+    // Tambah header untuk SEMUA jenis (pbd-pt, pbd-at, uasa) — bukan hanya 'pdpc' (nilai tidak wujud)
+    var fullContentHtml = header + contentWrap;
     document.getElementById('lkOutputBox').innerHTML = fullContentHtml;
+    if (imejBtn) imejBtn.style.display = 'inline-flex';
 
     // We still need a text-only version for placeholder checking (for DeepSeek)
     var fullText = result.isHtml ? result.content : result.content; 
@@ -11950,39 +11965,23 @@ async function janaLembaranKerja() {
     var statusMsg = 'Lembaran kerja berjaya dijana oleh ' + engineLabel + '!';
 
     if (engine === 'gemini') {
-      // Gemini: display inline images directly
-      var geminiImages = result.images || [];
-      if (geminiImages.length) {
-        if (imejSection) imejSection.style.display = 'block';
-        if (imejGrid) {
-          imejGrid.innerHTML = '';
-          var imejNote = document.getElementById('lkImejNote');
-          if (imejNote) imejNote.textContent = 'Imej dijana oleh Gemini 2.0 Flash. Klik kanan → Simpan imej untuk simpan ke komputer.';
-          geminiImages.forEach(function(src, idx) {
-            var card = document.createElement('div');
-            card.className = 'lk-imej-card';
-            card.innerHTML = '<img src="' + src + '" alt="Imej ' + (idx+1) + '" loading="lazy">' +
-              '<div class="lk-imej-caption">🖼️ Gambar ' + (idx+1) + ' (dijana oleh Gemini)</div>';
-            imejGrid.appendChild(card);
-          });
-        }
-        statusMsg += ' ' + geminiImages.length + ' imej dijana serentak — percuma!';
+      // Gemini: imej sudah diselit inline dalam content (isHtml:true)
+      // Kira berapa imej ada dalam output untuk status message
+      var inlineImgCount = (result.content.match(/class="lk-inline-image"/g) || []).length;
+      if (inlineImgCount > 0) {
+        statusMsg += ' ' + inlineImgCount + ' imej dijana terus inline — tiada langkah tambahan diperlukan.';
       } else {
-        // Gemini returned text only — check for placeholders fallback
-        var placeholders = lkExtractImejPlaceholders(fullText);
-        if (placeholders.length) {
-          if (imejBtn) imejBtn.style.display = 'inline-block';
-      statusMsg += ' ' + placeholders.length + ' penanda imej - klik 🖼️ Jana Imej jika perlu.';
-        } else {
-          statusMsg += ' Tiada imej dalam output ini.';
-        }
+        statusMsg += ' Teks berjaya dijana (tiada soalan bergambar dalam output ini).';
       }
+      // Sembunyikan bahagian imej berasingan — gambar dah dalam output
+      if (imejSection) imejSection.style.display = 'none';
+      if (imejBtn) imejBtn.style.display = 'none';
     } else {
-      // DeepSeek: check for [GAMBAR:] placeholders
+      // DeepSeek: semak [GAMBAR:] placeholder
       var placeholders = lkExtractImejPlaceholders(fullText);
       if (imejBtn) imejBtn.style.display = placeholders.length ? 'inline-block' : 'none';
       if (placeholders.length) {
-        statusMsg += ' Terdapat ' + placeholders.length + ' penanda imej - klik 🖼️ Jana Imej untuk jana menggunakan Gemini.';
+        statusMsg += ' Terdapat ' + placeholders.length + ' penanda imej — klik 🖼️ Jana Imej untuk jana menggunakan Gemini.';
       } else {
         statusMsg += ' Semak dan cetak jika perlu.';
       }
@@ -11991,11 +11990,19 @@ async function janaLembaranKerja() {
     lkSetStatus('done', statusMsg);
     showToast('Lembaran kerja berjaya dijana.', 'success');
   } catch(e) {
-    lkSetStatus('error', 'Ralat: ' + e.message);
-    document.getElementById('lkOutputBox').textContent = '❌ Ralat: ' + e.message;
-    showToast('Ralat AI: ' + e.message, 'error');
+    if (e.message === '__cancelled__') {
+      lkSetStatus('idle', '🛑 Janaan dibatalkan. Anda boleh edit soalan di atas atau jana semula.');
+      showToast('Janaan dibatalkan.', 'info');
+    } else {
+      lkSetStatus('error', 'Ralat: ' + e.message);
+      document.getElementById('lkOutputBox').textContent = '❌ Ralat: ' + e.message;
+      showToast('Ralat AI: ' + e.message, 'error');
+    }
   } finally {
     _lkGenerating = false;
+    _lkCancelled = false;
+    var _finalBatalBtn = document.getElementById('lkBatalBtn');
+    if (_finalBatalBtn) _finalBatalBtn.style.display = 'none';
   }
 }
 
@@ -12019,6 +12026,92 @@ function lkSalinFallback(text) {
   document.body.removeChild(ta);
 }
 
+// ── SIMPAN KE GOOGLE DRIVE ──────────────────────────────────────
+var _lkDriveTokenClient = null;
+
+function lkSimpanDrive() {
+  var box = document.getElementById('lkOutputBox');
+  if (!box || !box.textContent.trim() || box.textContent.startsWith('Hasil lembaran')) {
+    showToast('Jana lembaran kerja dahulu sebelum simpan.', 'error'); return;
+  }
+  if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+    showToast('Google API tidak tersedia. Cuba muat semula halaman.', 'error'); return;
+  }
+  var clientId = (APP && APP.googleClientId) || '';
+  if (!clientId) { showToast('Client ID Google belum dikonfigurasi.', 'error'); return; }
+
+  var btn = document.getElementById('lkSimpanDriveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyambung...'; }
+
+  if (!_lkDriveTokenClient || _lkDriveTokenClient._clientId !== clientId) {
+    _lkDriveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: function(tokenResponse) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg> Simpan ke Drive'; }
+        if (tokenResponse.error) {
+          showToast('Kebenaran Drive ditolak: ' + tokenResponse.error, 'error'); return;
+        }
+        _lkDoSaveToDrive(tokenResponse.access_token);
+      }
+    });
+    _lkDriveTokenClient._clientId = clientId;
+  } else {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg> Simpan ke Drive'; }
+  }
+  _lkDriveTokenClient.requestAccessToken({ prompt: '' });
+}
+
+async function _lkDoSaveToDrive(accessToken) {
+  var box = document.getElementById('lkOutputBox');
+  var content = box ? box.textContent : '';
+  var subjekSel = document.getElementById('lkSubjek');
+  var subjekLabel = subjekSel && subjekSel.selectedIndex >= 0 ? subjekSel.options[subjekSel.selectedIndex].text : 'Subjek';
+  var tahun = document.getElementById('lkTahun') ? document.getElementById('lkTahun').value : '';
+  var now = new Date();
+  var dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  var filename = 'LembaranKerja_' + subjekLabel.replace(/[\/\\:*?"<>|]/g,'_') + '_T' + tahun + '_' + dateStr + '.txt';
+
+  var btn = document.getElementById('lkSimpanDriveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
+  showToast('Menyimpan ke Google Drive...', 'info');
+
+  try {
+    var metadata = { name: filename, mimeType: 'text/plain' };
+    var form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', new Blob([content], { type: 'text/plain' }));
+
+    var resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + accessToken },
+      body: form
+    });
+
+    if (!resp.ok) {
+      var errData = await resp.json().catch(function(){ return {}; });
+      throw new Error((errData.error && errData.error.message) || 'HTTP ' + resp.status);
+    }
+
+    var data = await resp.json();
+    showToast('✅ Disimpan: ' + data.name, 'success');
+
+    var lkStatus = document.getElementById('lkStatusBar');
+    if (lkStatus && data.webViewLink) {
+      lkStatus.className = 'lk-status-bar lk-status-done';
+      lkStatus.innerHTML = '<span>✅</span><span>Disimpan ke Google Drive sebagai <strong>' + data.name + '</strong>. ' +
+        '<a href="' + data.webViewLink + '" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Buka fail ↗</a></span>';
+    }
+  } catch(e) {
+    showToast('Gagal simpan ke Drive: ' + e.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg> Simpan ke Drive';
+    }
+  }
+}
+
 function lkCetakOutput() {
   var box = document.getElementById('lkOutputBox');
   if (!box || !box.innerHTML.trim() || box.innerHTML.includes('Hasil lembaran kerja akan dipaparkan')) {
@@ -12034,8 +12127,10 @@ function lkCetakOutput() {
   var kodKertas = document.getElementById('lkKodKertas').value || '_______________________';
   var bilSoalan = document.getElementById('lkBilSoalan').value || '___';
   
-  var isUjianFormal = (jenis !== 'pdpc');
-  var kpmHeader = (jenis === 'uasa') ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : 'PENTAKSIRAN BILIK DARJAH (PBD)';
+  // pbd-pt = Lembaran Kerja PDPC (worksheet harian, simple)
+  // pbd-at + uasa = format peperiksaan formal dengan cover page KPM
+  var isUjianFormal = (jenis === 'uasa' || jenis === 'pbd-at');
+  var kpmHeader = (jenis === 'uasa') ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : 'PENTAKSIRAN BILIK DARJAH (PBD) BERTERUSAN';
   if (jenis === 'pbd-at') kpmHeader = 'PENTAKSIRAN BILIK DARJAH (AKHIR TAHUN)';
 
   var w = window.open('', '_blank', 'width=850,height=1000');
@@ -12077,10 +12172,19 @@ function lkCetakOutput() {
     '.content-area{font-family:"Courier New", monospace; white-space:pre-wrap; line-height:1.7;}' +
     '.lk-inline-image{margin:20px 0; text-align:center;}' +
     '.lk-inline-image img{max-width:85%; height:auto; border:1pt solid #000; padding:5px;}' +
+    '.pdpc-header{font-family:Arial,sans-serif; margin-bottom:16px;}' +
+    '.pdpc-school{font-size:10pt; text-align:center; text-transform:uppercase; letter-spacing:.04em; color:#444; margin-bottom:2px;}' +
+    '.pdpc-title{font-size:15pt; font-weight:bold; text-align:center; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px;}' +
+    '.pdpc-meta{display:flex; justify-content:center; gap:28px; font-size:10pt; margin-bottom:4px; flex-wrap:wrap;}' +
+    '.pdpc-guru{font-size:9.5pt; text-align:center; color:#555; margin-bottom:10px;}' +
+    '.pdpc-murid-row{display:flex; gap:16px; flex-wrap:wrap; font-size:10.5pt; align-items:baseline; border:1pt solid #bbb; border-radius:4pt; padding:8px 12px; background:#fafafa; margin-bottom:4px;}' +
+    '.pdpc-line{display:inline-block; border-bottom:1pt solid #333; vertical-align:bottom; margin:0 4px;}' +
+    '.pdpc-divider{border:none; border-top:2pt solid #333; margin:10px 0 14px;}' +
     '@media print{' +
       '@page{margin:0; size:A4;}' +
       '.page{height:297mm;}' +
       '.no-print{display:none;}' +
+      '.pdpc-murid-row{background:#fff !important;}' +
     '}' +
     '</style>';
 
@@ -12149,34 +12253,326 @@ function lkCetakOutput() {
 
   // Content processing
   var rawContent = box.innerHTML;
-  var finalContentHtml = rawContent;
-  
-  if (isUjianFormal) {
-    // Strip simple header if exists (more robustly)
-    finalContentHtml = rawContent.replace(/<div class="lk-print-header"[\s\S]*?<!-- END HEADER -->/i, '')
-                                .replace(/<div class="lk-print-header"[\s\S]*?<hr[\s\S]*?<\/div>/i, ''); // Fallback for old regex
-    // Actually, if we already prevented adding it in janaLembaranKerja, this is just a safety measure.
-    // Let's just remove anything with class lk-print-header.
-    var tempDiv = document.createElement('div');
-    tempDiv.innerHTML = rawContent;
-    var oldHeaders = tempDiv.querySelectorAll('.lk-print-header');
-    oldHeaders.forEach(function(h) { h.remove(); });
-    finalContentHtml = tempDiv.innerHTML;
-    
-    finalContentHtml = '<div class="page page-break content-area">' + finalContentHtml + '</div>';
-  } else {
-    // For PDPC, maintain the header but wrap in page
-    finalContentHtml = '<div class="page content-area">' + finalContentHtml + '</div>';
+
+  // Buang header lk-print-header dari output box (akan dijana semula oleh template cetak)
+  var tempDiv = document.createElement('div');
+  tempDiv.innerHTML = rawContent;
+  tempDiv.querySelectorAll('.lk-print-header').forEach(function(h) { h.remove(); });
+  var cleanContent = tempDiv.innerHTML;
+
+  // ── Pisahkan Soalan dan Skema Jawapan ──
+  var soalanHtml = cleanContent;
+  var skemaHtml = '';
+  var skemaFound = false;
+  var skemaKeywords = ['SKEMA JAWAPAN', 'Skema Jawapan', 'SKEMA PEMARKAHAN', 'Skema Pemarkahan'];
+  var lcClean = cleanContent.toLowerCase();
+  for (var si = 0; si < skemaKeywords.length; si++) {
+    var lcKw = skemaKeywords[si].toLowerCase();
+    var kwIdx = lcClean.indexOf(lcKw);
+    if (kwIdx !== -1) {
+      // Walk back to nearest tag boundary or line start
+      soalanHtml = cleanContent.substring(0, kwIdx).replace(/[\s<>]*$/, '');
+      skemaHtml  = cleanContent.substring(kwIdx);
+      skemaFound = true;
+      break;
+    }
   }
 
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kertas Peperiksaan</title>' +
-    style + '</head><body>' +
-    coverPageHtml +
-    finalContentHtml +
-    '</body></html>');
-  
+  // ── Helper: bina dokumen HTML lengkap ──
+  function buildPrintDoc(titleStr, bodyHtml, extraStyle) {
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titleStr + '</title>' +
+      style + (extraStyle || '') + '</head><body>' + bodyHtml + '</body></html>';
+  }
+
+  // ── PDPC header (untuk lembaran kerja biasa) ──
+  var pdpcHeader =
+    '<div class="pdpc-header">' +
+      '<div class="pdpc-school">SK KIANDONGO, TONGOD, SABAH</div>' +
+      '<div class="pdpc-title">LEMBARAN KERJA PDPC</div>' +
+      '<div class="pdpc-meta">' +
+        '<span>Mata Pelajaran: <strong>' + subjekLabel.toUpperCase() + '</strong></span>' +
+        '<span>Tahun: <strong>' + tahun + '</strong></span>' +
+      '</div>' +
+      '<div class="pdpc-guru">Guru: ' + guru + '</div>' +
+      '<div class="pdpc-murid-row">' +
+        '<span>Nama: <span class="pdpc-line" style="width:220px"></span></span>' +
+        '<span>Kelas: <span class="pdpc-line" style="width:90px"></span></span>' +
+        '<span>Tarikh: <span class="pdpc-line" style="width:100px"></span></span>' +
+        '<span>Markah: <span class="pdpc-line" style="width:70px"></span></span>' +
+      '</div>' +
+      '<div class="pdpc-divider"></div>' +
+    '</div>';
+
+  // ── Window 1: Soalan Murid ──
+  var studentBodyHtml = isUjianFormal
+    ? coverPageHtml + '<div class="page page-break content-area">' + soalanHtml + '</div>'
+    : '<div class="page content-area">' + pdpcHeader + soalanHtml + '</div>';
+
+  w.document.write(buildPrintDoc('Kertas Soalan', studentBodyHtml));
   w.document.close();
-  w.onload = function(){ w.focus(); w.print(); };
+  w.onload = function() { w.focus(); w.print(); };
+
+  // ── Window 2: Skema Jawapan Guru (1 salinan sahaja) ──
+  if (skemaFound && skemaHtml.trim()) {
+    setTimeout(function() {
+      var ws = window.open('', '_blank', 'width=850,height=1000');
+      if (!ws) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak skema guru.', 'error'); return; }
+
+      var jenisTajuk = isUjianFormal ? (jenis === 'uasa' ? 'UASA' : 'PBD BERTERUSAN') : 'PDPC';
+      var skemaGuruBanner =
+        '<div style="background:#fff3cd;border:3px solid #cc0000;border-radius:4px;padding:14px 20px;margin-bottom:22px;font-family:Arial,sans-serif;text-align:center;page-break-inside:avoid">' +
+          '<div style="font-size:14pt;font-weight:bold;color:#cc0000;letter-spacing:.05em">⚠ SULIT — UNTUK GURU SAHAJA</div>' +
+          '<div style="font-size:11pt;font-weight:bold;margin-top:6px">SKEMA JAWAPAN ' + jenisTajuk + ' | ' + subjekLabel.toUpperCase() + ' | TAHUN ' + tahun + '</div>' +
+          '<div style="font-size:10.5pt;color:#cc0000;margin-top:6px;font-weight:bold">SILA CETAK 1 SALINAN SAHAJA &nbsp;•&nbsp; JANGAN EDAR KEPADA MURID</div>' +
+        '</div>';
+
+      var skemaExtraStyle =
+        '<style>' +
+        '@media print{' +
+          '@page{margin:15mm 20mm;}' +
+          '.skema-banner{border:3px solid #cc0000 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+        '}' +
+        '</style>';
+
+      var schemeBodyHtml = '<div class="page content-area"><div class="skema-banner">' + skemaGuruBanner + '</div>' + skemaHtml + '</div>';
+      ws.document.write(buildPrintDoc('SKEMA GURU - SULIT', schemeBodyHtml, skemaExtraStyle));
+      ws.document.close();
+      ws.onload = function() { ws.focus(); ws.print(); };
+    }, 1500);
+  }
+}
+
+async function lkCetakSemuaMurid() {
+  var box = document.getElementById('lkOutputBox');
+  if (!box || !box.innerHTML.trim() || box.innerHTML.includes('Hasil lembaran kerja akan dipaparkan')) {
+    showToast('Jana lembaran kerja dahulu sebelum cetak.', 'error'); return;
+  }
+  var tahunVal = parseInt((document.getElementById('lkTahun') || {}).value || '0');
+  var kelas = SENARAI_KELAS_MURID[tahunVal - 1] || '';
+  if (!kelas) { showToast('Sila pilih tahun dahulu.', 'error'); return; }
+  if (!APP.workerUrl) { showToast('Worker URL diperlukan. Pergi ke Konfigurasi.', 'error'); return; }
+
+  var btn = document.getElementById('lkCetakMuridBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Memuatkan...'; }
+
+  try {
+    // ── 1. Ambil senarai murid dari D1 ──
+    var data = await callWorker({ action: 'getMurid', kelas: kelas });
+    if (!data.success || !data.murid || !data.murid.length) {
+      showToast('Tiada murid dijumpai untuk kelas ' + kelas + '.', 'error'); return;
+    }
+    var muridList = data.murid;
+    showToast('Menjana ' + muridList.length + ' halaman untuk ' + kelas + '...', 'info');
+
+    // ── 2. Bina semula kandungan soalan (tanpa header lama) ──
+    var rawContent = box.innerHTML;
+    var tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rawContent;
+    tempDiv.querySelectorAll('.lk-print-header').forEach(function(h) { h.remove(); });
+    var cleanContent = tempDiv.innerHTML;
+
+    // ── Deduplikasi imej base64 — simpan sekali, rujuk via data-lkref ──
+    // Ini elak dokumen cetak jadi terlalu besar (N murid × saiz imej)
+    window._lkPrintImages = {};
+    var _lkImgIdx = 0;
+    var cleanContentDedupe = cleanContent.replace(/<img([^>]*)src="(data:[^"]{20,})"([^>]*)>/gi, function(match, pre, src, post) {
+      var ref = '_lki' + (_lkImgIdx++);
+      window._lkPrintImages[ref] = src;
+      return '<img' + pre + 'data-lkref="' + ref + '" src=""' + post + '>';
+    });
+    var hasSharedImages = _lkImgIdx > 0;
+
+    // Pisah skema jawapan
+    var soalanHtml = cleanContentDedupe;
+    var skemaHtml = '';
+    var skemaKeywords = ['SKEMA JAWAPAN', 'Skema Jawapan', 'SKEMA PEMARKAHAN', 'Skema Pemarkahan'];
+    var lcClean = cleanContent.toLowerCase();
+    for (var si = 0; si < skemaKeywords.length; si++) {
+      var kwIdx = lcClean.indexOf(skemaKeywords[si].toLowerCase());
+      if (kwIdx !== -1) {
+        soalanHtml = cleanContent.substring(0, kwIdx).replace(/[\s<>]*$/, '');
+        skemaHtml = cleanContent.substring(kwIdx);
+        break;
+      }
+    }
+
+    // ── 3. Metadata lembaran kerja ──
+    var jenis = lkGetJenis();
+    var subjekSel = document.getElementById('lkSubjek');
+    var subjekLabel = subjekSel && subjekSel.options[subjekSel.selectedIndex] ? subjekSel.options[subjekSel.selectedIndex].text : '';
+    var tahun = (document.getElementById('lkTahun') || {}).value || '';
+    var masa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
+    var guru = (document.getElementById('lkGuruPenyedia') || {}).value || '_______________________';
+    var kodKertas = (document.getElementById('lkKodKertas') || {}).value || '_______________________';
+    var bilSoalan = (document.getElementById('lkBilSoalan') || {}).value || '___';
+    var isUjianFormal = (jenis === 'uasa' || jenis === 'pbd-at');
+    var kpmHeader = jenis === 'uasa' ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : (jenis === 'pbd-at' ? 'PENTAKSIRAN BILIK DARJAH (AKHIR TAHUN)' : 'PENTAKSIRAN BILIK DARJAH (PBD) BERTERUSAN');
+
+    // Tarikh hari ini
+    var tHari = new Date();
+    var tarikhStr = String(tHari.getDate()).padStart(2,'0') + '/' + String(tHari.getMonth()+1).padStart(2,'0') + '/' + tHari.getFullYear();
+
+    // ── 4. CSS (sama seperti lkCetakOutput) ──
+    var style = '<style>' +
+      '@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap");' +
+      'body{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.5;padding:0;margin:0;color:#000;}' +
+      '.page{padding:15mm 20mm 15mm 20mm;position:relative;background:#fff;min-height:297mm;box-sizing:border-box;}' +
+      '.cover-page{text-align:center;font-family:Arial,sans-serif;display:block;}' +
+      '.kpm-header{font-size:14pt;font-weight:bold;margin-bottom:5px;text-transform:uppercase;}' +
+      '.sr-label{font-size:12pt;margin-bottom:20px;font-weight:bold;}' +
+      '.school-logo{width:120px;margin:10px auto 30px;display:block;}' +
+      '.info-table{width:100%;margin-bottom:30px;border-collapse:collapse;}' +
+      '.info-table td{padding:5px 0;font-size:11pt;vertical-align:top;}' +
+      '.info-table td:first-child{width:180px;font-weight:bold;text-transform:uppercase;}' +
+      '.info-table td:nth-child(2){width:20px;text-align:center;}' +
+      '.info-table td:last-child{border-bottom:1px solid #000;text-align:left;padding-left:10px;font-weight:bold;}' +
+      '.section-table{width:100%;border:1.5pt solid #000;border-collapse:collapse;margin-bottom:20px;}' +
+      '.section-header{background-color:#f2f2f2;font-weight:bold;text-align:center;padding:8px;text-transform:uppercase;border-bottom:1.5pt solid #000;font-size:11pt;}' +
+      '.blue-header{background-color:#D9EAF7;}.orange-header{background-color:#FDE9D9;}.green-header{background-color:#EBF1DE;}' +
+      '.section-body{padding:15px;text-align:left;}' +
+      '.section-body table{width:100%;border-collapse:collapse;}' +
+      '.section-body td{padding:8px 0;border-bottom:1px solid #ddd;}' +
+      '.section-body td:first-child{width:150px;font-weight:bold;}' +
+      '.section-body td:last-child{border-bottom:1px solid #000;}' +
+      '.instruction-list{margin:0;padding-left:20px;list-style-type:decimal;}' +
+      '.instruction-list li{margin-bottom:5px;font-size:10.5pt;}' +
+      '.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1pt solid #000;}' +
+      '.sig-col{padding:15px;border-right:1pt solid #000;position:relative;min-height:180px;}' +
+      '.sig-col:last-child{border-right:none;}' +
+      '.sig-label{font-size:10pt;margin-bottom:60px;}' +
+      '.sig-line{border-bottom:1px solid #000;width:80%;margin:40px 0 10px;}' +
+      '.sig-meta{font-size:10pt;line-height:1.8;text-align:left;}' +
+      '.footer-text{position:absolute;bottom:10mm;left:0;width:100%;text-align:center;font-size:9pt;color:#666;border-top:0.5pt solid #ccc;padding-top:5px;}' +
+      '.page-break{page-break-before:always;}' +
+      '.content-area{font-family:"Courier New",monospace;white-space:pre-wrap;line-height:1.7;}' +
+      '.lk-inline-image{margin:10px 0;text-align:center;page-break-inside:avoid;break-inside:avoid;}' +
+      '.lk-inline-image img{max-width:60%;max-height:65mm;width:auto;height:auto;border:1pt solid #333;padding:3px;filter:grayscale(100%) contrast(1.2);}' +
+      '.pdpc-header{font-family:Arial,sans-serif;margin-bottom:16px;}' +
+      '.pdpc-school{font-size:10pt;text-align:center;text-transform:uppercase;letter-spacing:.04em;color:#444;margin-bottom:2px;}' +
+      '.pdpc-title{font-size:15pt;font-weight:bold;text-align:center;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}' +
+      '.pdpc-meta{display:flex;justify-content:center;gap:28px;font-size:10pt;margin-bottom:4px;flex-wrap:wrap;}' +
+      '.pdpc-guru{font-size:9.5pt;text-align:center;color:#555;margin-bottom:10px;}' +
+      '.pdpc-murid-row{display:flex;gap:16px;flex-wrap:wrap;font-size:10.5pt;align-items:baseline;border:1pt solid #bbb;border-radius:4pt;padding:8px 12px;background:#fafafa;margin-bottom:4px;}' +
+      '.pdpc-line{display:inline-block;border-bottom:1pt solid #333;vertical-align:bottom;margin:0 4px;}' +
+      '.pdpc-divider{border:none;border-top:2pt solid #333;margin:10px 0 14px;}' +
+      '@media print{@page{margin:0;size:A4;}.page{height:297mm;}.no-print{display:none;}.pdpc-murid-row{background:#fff !important;}}' +
+      '</style>';
+
+    // ── 5. Jana HTML untuk setiap murid ──
+    var allPages = muridList.map(function(nama, idx) {
+      var isFirst = (idx === 0);
+      var pageBreak = isFirst ? '' : '<div class="page-break"></div>';
+
+      if (isUjianFormal) {
+        // Cover page untuk UASA / PBD-AT
+        var cover = pageBreak +
+          '<div class="page cover-page">' +
+          '<div class="kpm-header">KEMENTERIAN PENDIDIKAN MALAYSIA</div>' +
+          '<div class="kpm-header">' + kpmHeader + '</div>' +
+          '<div class="sr-label">SEKOLAH RENDAH</div>' +
+          '<img src="assets/sk-kiandongo-logo.png" class="school-logo" alt="Logo">' +
+          '<table class="info-table">' +
+            '<tr><td>SEKOLAH</td><td>:</td><td>SK KIANDONGO</td></tr>' +
+            '<tr><td>TAHUN</td><td>:</td><td>' + tahun + '</td></tr>' +
+            '<tr><td>MATA PELAJARAN</td><td>:</td><td>' + subjekLabel.toUpperCase() + '</td></tr>' +
+            '<tr><td>KOD KERTAS</td><td>:</td><td>' + kodKertas.toUpperCase() + '</td></tr>' +
+            '<tr><td>MASA</td><td>:</td><td>' + masa.toUpperCase() + '</td></tr>' +
+          '</table>' +
+          '<div class="section-table">' +
+            '<div class="section-header blue-header">MAKLUMAT CALON</div>' +
+            '<div class="section-body"><table>' +
+              '<tr><td>NAMA MURID</td><td>:</td><td style="border-bottom:1px solid #000;font-weight:bold;padding-left:8px">' + nama + '</td></tr>' +
+              '<tr><td>KELAS</td><td>:</td><td style="border-bottom:1px solid #000;font-weight:bold;padding-left:8px">' + kelas + '</td></tr>' +
+            '</table></div>' +
+          '</div>' +
+          '<div class="section-table">' +
+            '<div class="section-header orange-header">ARAHAN</div>' +
+            '<div class="section-body"><ol class="instruction-list">' +
+              '<li>Kertas ini mengandungi <strong>' + bilSoalan + '</strong> soalan.</li>' +
+              '<li>Jawab semua soalan.</li>' +
+              '<li>Tulis jawapan pada ruang yang disediakan.</li>' +
+              '<li>Dilarang membuka kertas sehingga diberitahu.</li>' +
+            '</ol></div>' +
+          '</div>' +
+          '<div class="section-table" style="margin-bottom:0">' +
+            '<div class="section-header green-header">PENGESAHAN PENYEDIAAN DAN SEMAKAN SOALAN</div>' +
+            '<div class="sig-grid">' +
+              '<div class="sig-col"><div class="sig-label">Disediakan oleh<br>(Guru Penyedia)</div><div class="sig-line"></div><div class="sig-meta">Nama: ' + guru + '<br>Tarikh:</div></div>' +
+              '<div class="sig-col"><div class="sig-label">Disemak oleh<br>(Ketua Panitia / PK)</div><div class="sig-line"></div><div class="sig-meta">Nama:<br>Tarikh:</div></div>' +
+            '</div>' +
+            '<div style="padding:15px;text-align:left;border-top:1pt solid #000"><div class="sig-label" style="margin-bottom:40px">Disahkan oleh (Guru Besar)</div><div class="sig-line" style="width:40%"></div><div class="sig-meta">Nama:<br>Tarikh:<br>Cop Rasmi Sekolah:</div></div>' +
+          '</div>' +
+          '<div class="footer-text">Dokumen Rasmi ' + (jenis === 'uasa' ? 'UASA' : 'PBD') + ' • SK Kiandongo</div>' +
+          '</div>' +
+          '<div class="page page-break content-area">' + soalanHtml + '</div>';
+        return cover;
+      } else {
+        // PDPC — lembaran kerja biasa dengan nama terisi
+        var pdpcHdr =
+          '<div class="pdpc-header">' +
+            '<div class="pdpc-school">SK KIANDONGO, TONGOD, SABAH</div>' +
+            '<div class="pdpc-title">LEMBARAN KERJA PDPC</div>' +
+            '<div class="pdpc-meta">' +
+              '<span>Mata Pelajaran: <strong>' + subjekLabel.toUpperCase() + '</strong></span>' +
+              '<span>Tahun: <strong>' + tahun + '</strong></span>' +
+            '</div>' +
+            '<div class="pdpc-guru">Guru: ' + guru + '</div>' +
+            '<div class="pdpc-murid-row">' +
+              '<span>Nama: <strong>' + nama + '</strong></span>' +
+              '<span>Kelas: <strong>' + kelas + '</strong></span>' +
+              '<span>Tarikh: <strong>' + tarikhStr + '</strong></span>' +
+              '<span>Markah: <span class="pdpc-line" style="width:70px"></span></span>' +
+            '</div>' +
+            '<div class="pdpc-divider"></div>' +
+          '</div>';
+        return pageBreak + '<div class="page content-area">' + pdpcHdr + soalanHtml + '</div>';
+      }
+    });
+
+    // ── 6. Buka window cetak ──
+    var w = window.open('', '_blank', 'width=850,height=1000');
+    if (!w) { showToast('Pop-up disekat. Benarkan pop-up untuk cetak.', 'error'); return; }
+    var fullHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lembaran Kerja — ' + kelas + '</title>' + style + '</head><body>' + allPages.join('') + '</body></html>';
+    w.document.write(fullHtml);
+    w.document.close();
+    w.onload = function() {
+      // Restore imej yang telah dideduplikasi dari window.opener
+      if (hasSharedImages && w.opener && w.opener._lkPrintImages) {
+        var srcs = w.opener._lkPrintImages;
+        w.document.querySelectorAll('img[data-lkref]').forEach(function(img) {
+          var ref = img.getAttribute('data-lkref');
+          if (srcs[ref]) img.src = srcs[ref];
+        });
+        // Beri masa untuk imej dimuatkan sebelum cetak
+        setTimeout(function() { w.focus(); w.print(); }, 900);
+      } else {
+        w.focus(); w.print();
+      }
+    };
+
+    // Skema Jawapan Guru (1 salinan — sama seperti lkCetakOutput)
+    if (skemaHtml.trim()) {
+      setTimeout(function() {
+        var ws = window.open('', '_blank', 'width=850,height=1000');
+        if (!ws) return;
+        var jenisTajuk = isUjianFormal ? (jenis === 'uasa' ? 'UASA' : 'PBD BERTERUSAN') : 'PDPC';
+        var skemaBanner = '<div style="background:#fff3cd;border:3px solid #cc0000;border-radius:4px;padding:14px 20px;margin-bottom:22px;font-family:Arial,sans-serif;text-align:center">' +
+          '<div style="font-size:14pt;font-weight:bold;color:#cc0000">⚠ SULIT — UNTUK GURU SAHAJA</div>' +
+          '<div style="font-size:11pt;font-weight:bold;margin-top:6px">SKEMA JAWAPAN ' + jenisTajuk + ' | ' + subjekLabel.toUpperCase() + ' | TAHUN ' + tahun + '</div>' +
+          '<div style="font-size:10.5pt;color:#cc0000;margin-top:6px;font-weight:bold">SILA CETAK 1 SALINAN SAHAJA &nbsp;•&nbsp; JANGAN EDAR KEPADA MURID</div></div>';
+        ws.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SKEMA GURU - SULIT</title>' + style + '</head><body><div class="page content-area">' + skemaBanner + skemaHtml + '</div></body></html>');
+        ws.document.close();
+        ws.onload = function() { ws.focus(); ws.print(); };
+      }, 1500);
+    }
+
+    showToast('✅ ' + muridList.length + ' halaman berjaya dijana untuk ' + kelas + '.', 'success');
+
+  } catch (e) {
+    showToast('Ralat: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '👥 Cetak Untuk Semua Murid'; }
+  }
 }
 
 function lkBersihOutput() {

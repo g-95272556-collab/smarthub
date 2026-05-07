@@ -2,13 +2,15 @@
 <html lang="ms">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#08152B">
 <meta name="description" content="SmartSchoolHub SK Kiandongo untuk pengurusan kehadiran, laporan guru, kokurikulum, notifikasi dan data sekolah secara berpusat.">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SmartSchoolHub">
+<!-- iOS Splash Screen — elak flash putih masa launch PWA -->
+<meta name="apple-touch-startup-image" content="assets/icon-512.png">
 <meta name="application-name" content="SmartSchoolHub">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
@@ -24,6 +26,578 @@
 
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SPLASH SCREEN PELANCARAN RASMI — SmartSchoolHub SK Kiandongo v2
+     GRAND EDITION: Starfield twinkling + Aurora blobs + Orbit rings
+     + Sequential text reveal + Countdown 3-2-1 + Flash + Fireworks + Confetti
+     Dibuang automatik dari DOM selepas GB klik Rasmikan.
+     localStorage['smarthubLaunched'] = '1' → 0 kesan kepada load time.
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="splashLaunch">
+  <canvas id="splashCanvas" style="position:absolute;inset:0;pointer-events:none;z-index:2;"></canvas>
+
+  <!-- Aurora light blobs -->
+  <div class="splash-aurora sa1"></div>
+  <div class="splash-aurora sa2"></div>
+  <div class="splash-aurora sa3"></div>
+
+  <!-- Ribbon bar atas -->
+  <div class="splash-ribbon-top">
+    <div class="splash-ribbon-line"></div>
+    <div class="splash-ribbon-text">✦ &nbsp; Majlis Perasmian Rasmi &nbsp; ✦</div>
+    <div class="splash-ribbon-line" style="background:linear-gradient(90deg,rgba(255,215,0,0.55),transparent);"></div>
+  </div>
+  <div class="splash-ribbon-bottom"></div>
+
+  <!-- Kad utama -->
+  <div id="splashCard">
+
+    <!-- Logo dengan orbit rings -->
+    <div class="splash-rv" style="position:relative;width:120px;height:120px;margin:0 auto 22px;">
+      <div class="splash-orbit-o"></div>
+      <div class="splash-orbit-i"></div>
+      <div class="splash-crest-wrap">
+        <img src="assets/sk-kiandongo-logo.png" class="splash-crest-img" alt="Logo SK Kiandongo"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="splash-crest-svg" style="display:none">
+          <svg viewBox="0 0 96 96" width="84" height="84">
+            <circle cx="48" cy="48" r="44" fill="none" stroke="rgba(255,215,0,0.55)" stroke-width="1.5"/>
+            <circle cx="48" cy="48" r="38" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="0.8"/>
+            <polygon points="48,12 50.8,20 59,20 52.5,25 55,33 48,28 41,33 43.5,25 37,20 45.2,20" fill="#ffd700" opacity="0.92"/>
+            <text x="48" y="62" text-anchor="middle" font-size="17" font-weight="800" fill="#ffd700" font-family="'Space Grotesk',sans-serif" letter-spacing="-0.3">SSH</text>
+            <text x="48" y="76" text-anchor="middle" font-size="5.8" fill="rgba(255,215,0,0.5)" letter-spacing="1.8" font-family="'Plus Jakarta Sans',sans-serif">SK KIANDONGO</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text reveals — stagger via JS -->
+    <div class="splash-rv splash-kpm">Kementerian Pendidikan Malaysia</div>
+    <div class="splash-rv splash-sekolah">Sekolah Kebangsaan Kiandongo</div>
+
+    <div class="splash-rv splash-sep">
+      <div class="splash-sep-line"></div>
+      <div class="splash-sep-diamond">◆</div>
+      <div class="splash-sep-line" style="background:linear-gradient(90deg,rgba(255,215,0,0.3),transparent);"></div>
+    </div>
+
+    <div class="splash-rv splash-subtitle">Majlis Pelancaran Rasmi</div>
+    <div class="splash-rv splash-title">SmartSchool<span style="color:#ffd700">Hub</span></div>
+    <div class="splash-rv splash-desc">Sistem Pengurusan Sekolah Pintar Bersepadu</div>
+    <div class="splash-rv splash-ver">Versi 2.0 &nbsp;·&nbsp; <span id="splashTarikh"></span></div>
+
+    <div class="splash-rv splash-sep">
+      <div class="splash-sep-line"></div>
+      <div class="splash-sep-diamond" style="color:rgba(255,215,0,0.25)">◇</div>
+      <div class="splash-sep-line" style="background:linear-gradient(90deg,rgba(255,215,0,0.2),transparent);"></div>
+    </div>
+
+    <!-- Kad GB -->
+    <div class="splash-rv splash-gb-card">
+      <div class="splash-gb-card-top"></div>
+      <div class="splash-gb-label">Yang Berhormat Guru Besar</div>
+      <div id="splashGBName" class="splash-gb-name">——————————————</div>
+      <div class="splash-gb-sub">SK Kiandongo, Tongod, Sabah</div>
+      <div class="splash-gb-card-bot"></div>
+    </div>
+
+    <div class="splash-rv splash-msg">Sila klik butang di bawah untuk merasmikan<br>penggunaan sistem ini secara rasmi.</div>
+
+    <div class="splash-rv">
+      <button id="splashBtn" onclick="splashRasmikan()">🎉 &nbsp;RASMIKAN SEKARANG</button>
+    </div>
+    <div class="splash-rv splash-footnote">Tindakan ini disimpan &nbsp;·&nbsp; Splash screen dipadam automatik selepas perasmian</div>
+  </div>
+
+  <!-- Countdown 3-2-1 -->
+  <div id="splashCountdown">
+    <div id="splashCountNum"></div>
+    <div class="splash-count-label">Bersiap sedia...</div>
+  </div>
+
+  <!-- Flash putih masa launch -->
+  <div id="splashFlash"></div>
+
+  <!-- Celebration -->
+  <div id="splashCelebration">
+    <div id="splashCelebTitle" class="splash-celeb-title"></div>
+    <div class="splash-celeb-sub">SmartSchoolHub SK Kiandongo<br>kini aktif secara rasmi.</div>
+    <div class="splash-celeb-note">Splash screen dipadam selepas ini...</div>
+  </div>
+</div>
+
+<style>
+/* ─── Splash Screen Grand Edition ───────────────────────────────── */
+#splashLaunch {
+  position: fixed; inset: 0; z-index: 99999;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #03071e 0%, #08152B 45%, #0d2137 70%, #162c45 100%);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+/* Aurora blobs */
+.splash-aurora {
+  position: absolute; border-radius: 50%; z-index: 0; pointer-events: none;
+}
+.sa1 {
+  width: 520px; height: 520px; left: -150px; top: -120px;
+  background: radial-gradient(circle, rgba(25,80,220,0.11), transparent 70%);
+  animation: splashAA 9s ease-in-out infinite;
+}
+.sa2 {
+  width: 420px; height: 420px; right: -100px; bottom: -80px;
+  background: radial-gradient(circle, rgba(255,190,0,0.09), transparent 70%);
+  animation: splashAB 11s ease-in-out infinite 2.5s;
+}
+.sa3 {
+  width: 350px; height: 350px; left: 32%; bottom: -100px;
+  background: radial-gradient(circle, rgba(0,200,150,0.07), transparent 70%);
+  animation: splashAC 14s ease-in-out infinite 5s;
+}
+/* Ribbon */
+.splash-ribbon-top {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 6;
+  display: flex; align-items: center; height: 42px;
+  border-bottom: 1px solid rgba(255,215,0,0.12);
+}
+.splash-ribbon-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.55));
+}
+.splash-ribbon-text {
+  padding: 0 24px; font-size: 8.5pt; font-weight: 600; color: #ffd700;
+  letter-spacing: 4px; text-transform: uppercase; white-space: nowrap;
+  animation: splashShimmer 3.5s ease-in-out infinite;
+}
+.splash-ribbon-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 6; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.3), transparent);
+}
+/* Card */
+#splashCard {
+  position: relative; z-index: 4;
+  text-align: center; padding: 52px 56px 44px;
+  max-width: 680px; width: 90%;
+}
+/* Orbit rings */
+.splash-orbit-o {
+  position: absolute; inset: -12px; border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: rgba(255,215,0,0.95);
+  border-right-color: rgba(255,215,0,0.2);
+  animation: splashSpin1 3.5s linear infinite;
+}
+.splash-orbit-i {
+  position: absolute; inset: -20px; border-radius: 50%;
+  border: 1px dashed rgba(255,215,0,0.13);
+  animation: splashSpin2 14s linear infinite;
+}
+.splash-crest-wrap {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(8,21,43,0.96);
+  display: flex; align-items: center; justify-content: center;
+  animation: splashCrestP 3s ease-in-out infinite;
+}
+.splash-crest-img {
+  width: 82px; height: 82px; object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(255,215,0,0.4));
+}
+/* Text elements */
+.splash-kpm {
+  font-size: 10pt; color: #90c4ff; letter-spacing: 2.5px;
+  text-transform: uppercase; margin-bottom: 5px;
+}
+.splash-sekolah {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12.5pt; font-weight: 700; color: #ffd700;
+  letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 16px;
+  text-shadow: 0 0 18px rgba(255,215,0,0.25);
+}
+.splash-sep {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.splash-sep-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.3));
+}
+.splash-sep-diamond {
+  font-size: 10px; color: rgba(255,215,0,0.4); letter-spacing: 0;
+}
+.splash-subtitle {
+  font-size: 8.5pt; color: #90c4ff; letter-spacing: 5.5px;
+  text-transform: uppercase; margin-bottom: 9px;
+}
+.splash-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 38pt; font-weight: 800; color: #fff;
+  line-height: 1.05; margin-bottom: 8px; letter-spacing: -0.5px;
+  text-shadow: 0 0 50px rgba(144,196,255,0.35);
+}
+.splash-desc {
+  font-size: 10.5pt; color: #90c4ff; margin-bottom: 4px; letter-spacing: 0.3px;
+}
+.splash-ver {
+  font-size: 8.5pt; color: rgba(255,255,255,0.28); margin-bottom: 0;
+}
+/* GB card */
+.splash-gb-card {
+  border: 1px solid rgba(255,215,0,0.22); border-radius: 10px;
+  padding: 16px 24px; margin-bottom: 20px;
+  background: rgba(255,215,0,0.03); position: relative; overflow: hidden;
+}
+.splash-gb-card-top, .splash-gb-card-bot {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  width: 38%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.6), transparent);
+}
+.splash-gb-card-top { top: -1px; }
+.splash-gb-card-bot { bottom: -1px; }
+.splash-gb-label {
+  font-size: 8.5pt; color: rgba(255,255,255,0.38);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 7px;
+}
+#splashGBName {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15pt; font-weight: 700; color: #ffd700;
+  letter-spacing: 0.3px; margin-bottom: 4px; min-height: 1.4em;
+}
+.splash-gb-sub {
+  font-size: 8.5pt; color: rgba(255,255,255,0.3); letter-spacing: 0.5px;
+}
+.splash-msg {
+  font-size: 10pt; color: rgba(255,255,255,0.48); line-height: 1.8; margin-bottom: 24px;
+}
+/* Button */
+#splashBtn {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb300 100%);
+  color: #08152B; border: none; border-radius: 50px;
+  padding: 19px 58px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14pt; font-weight: 800;
+  cursor: pointer; letter-spacing: 1.2px;
+  box-shadow: 0 8px 32px rgba(255,215,0,0.4);
+  animation: splashBtnPulse 2.2s ease-in-out infinite;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+#splashBtn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+#splashBtn:active { transform: scale(0.97); }
+#splashBtn:disabled { opacity: 0.55; cursor: default; animation: none; transform: none; }
+.splash-footnote {
+  font-size: 8pt; color: rgba(255,255,255,0.18); margin-top: 13px;
+}
+/* Countdown */
+#splashCountdown {
+  display: none; position: absolute; inset: 0; z-index: 10;
+  align-items: center; justify-content: center; flex-direction: column;
+  pointer-events: none;
+}
+#splashCountNum {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 120pt; font-weight: 800; color: #ffd700; line-height: 1;
+  text-shadow: 0 0 60px rgba(255,215,0,0.7);
+}
+.splash-count-label {
+  font-size: 11pt; color: rgba(255,215,0,0.5); letter-spacing: 4px;
+  text-transform: uppercase; margin-top: 10px;
+}
+/* Flash */
+#splashFlash {
+  position: absolute; inset: 0; z-index: 11;
+  background: #fff; opacity: 0; pointer-events: none;
+  transition: opacity 0.07s ease;
+}
+/* Celebration */
+#splashCelebration {
+  display: none; position: absolute; inset: 0; z-index: 9;
+  align-items: center; justify-content: center; flex-direction: column;
+  pointer-events: none; gap: 14px;
+}
+.splash-celeb-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30pt; font-weight: 800; color: #ffd700; text-align: center;
+  text-shadow: 0 0 50px rgba(255,215,0,0.8);
+}
+.splash-celeb-sub {
+  font-size: 13pt; color: #fff; text-align: center; line-height: 1.75; opacity: 0.9;
+}
+.splash-celeb-note {
+  font-size: 9pt; color: rgba(255,255,255,0.32); margin-top: 4px;
+}
+/* Animations */
+@keyframes splashAA { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(55px,40px) scale(1.12)} }
+@keyframes splashAB { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-40px,-28px) scale(0.87)} }
+@keyframes splashAC { 0%,100%{transform:translate(0,0)} 50%{transform:translate(28px,-50px)} }
+@keyframes splashSpin1 { to{transform:rotate(360deg)} }
+@keyframes splashSpin2 { to{transform:rotate(-360deg)} }
+@keyframes splashCrestP { 0%,100%{opacity:0.88} 50%{opacity:1} }
+@keyframes splashShimmer { 0%,100%{opacity:0.65} 50%{opacity:1} }
+@keyframes splashBtnPulse {
+  0%,100% { box-shadow: 0 8px 32px rgba(255,215,0,0.4), 0 0 0 0   rgba(255,215,0,0.3); }
+  55%     { box-shadow: 0 8px 32px rgba(255,215,0,0.65),0 0 0 18px rgba(255,215,0,0); }
+}
+@keyframes splashCelebPop {
+  from { transform: scale(0.3); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+/* ─── End Splash Grand Edition ──────────────────────────────────── */
+</style>
+
+<script>
+/* ── Splash: semak flag SEGERA sebelum page render ── */
+(function () {
+  /* ── 1. Sudah dilancarkan — buang terus ── */
+  if (localStorage.getItem('smarthubLaunched') === '1') {
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('splashLaunch');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+    return;
+  }
+
+  /* ── 2. Belum sampai tarikh pelancaran — buang terus, deploy bebas ── */
+  var LAUNCH_DATE = '2026-06-08'; /* 8 Jun 2026 — Tarikh Bertuah Perasmian */
+  var today = new Date().toISOString().slice(0, 10);
+  if (today < LAUNCH_DATE) {
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('splashLaunch');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+    return;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    /* Tarikh */
+    var t = new Date();
+    var HARI  = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+    var BULAN = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+    var tEl = document.getElementById('splashTarikh');
+    if (tEl) tEl.textContent = HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
+
+    /* Nama GB dari profil app */
+    var tries = 0;
+    var gbTimer = setInterval(function () {
+      tries++;
+      var el = document.getElementById('splashGBName');
+      if (!el) { clearInterval(gbTimer); return; }
+      var n = (window.APP && window.APP.userProfile && window.APP.userProfile.name) ? window.APP.userProfile.name : '';
+      if (n) { el.textContent = n; clearInterval(gbTimer); }
+      if (tries > 24) clearInterval(gbTimer);
+    }, 500);
+
+    /* Sequential reveal — stagger tiap elemen */
+    var rvEls = document.querySelectorAll('#splashCard .splash-rv');
+    rvEls.forEach(function (el, i) {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.55s ease, transform 0.55s ease';
+      setTimeout(function () {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, 250 + i * 110);
+    });
+
+    /* Starfield twinkling */
+    var canvas = document.getElementById('splashCanvas');
+    if (!canvas) return;
+    function rsz() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    rsz();
+    window.addEventListener('resize', rsz);
+    var ctx = canvas.getContext('2d');
+    var stars = [];
+    for (var i = 0; i < 140; i++) {
+      stars.push({
+        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+        r: Math.random() * 1.6 + 0.3,
+        phase: Math.random() * Math.PI * 2,
+        spd: Math.random() * 0.013 + 0.004,
+        gold: Math.random() > 0.62
+      });
+    }
+    var raf;
+    function animStars(ts) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach(function (s) {
+        var a = 0.12 + 0.55 * Math.abs(Math.sin(s.phase + (ts || 0) * s.spd * 0.01));
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = s.gold ? 'rgba(255,215,0,' + a + ')' : 'rgba(155,210,255,' + a + ')';
+        ctx.fill();
+      });
+      raf = requestAnimationFrame(animStars);
+    }
+    animStars();
+    window._splashRaf = raf;
+  });
+})();
+
+/* ── Fungsi Rasmikan ─────────────────────────────────────────────── */
+function splashRasmikan() {
+  var btn = document.getElementById('splashBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Merakamkan perasmian...'; }
+  try { localStorage.setItem('smarthubLaunched', '1'); } catch (e) {}
+
+  /* Shoot particles from button */
+  splashShootParticles();
+
+  setTimeout(function () {
+    /* Fade out card */
+    var card = document.getElementById('splashCard');
+    if (card) { card.style.transition = 'opacity 0.4s ease'; card.style.opacity = '0'; }
+
+    /* Countdown 3 → 2 → 1 */
+    var cd = document.getElementById('splashCountdown');
+    if (cd) cd.style.display = 'flex';
+    splashShowCount('3', function () {
+      splashShowCount('2', function () {
+        splashShowCount('1', function () {
+          if (cd) cd.style.display = 'none';
+          /* Flash! */
+          var flash = document.getElementById('splashFlash');
+          if (flash) {
+            flash.style.opacity = '1';
+            setTimeout(function () { flash.style.transition = 'opacity 0.55s ease'; flash.style.opacity = '0'; }, 80);
+          }
+          /* Fireworks + Confetti */
+          splashDoFireworks();
+          splashDoConfetti();
+          /* Celebration text */
+          var celeb = document.getElementById('splashCelebration');
+          var ct    = document.getElementById('splashCelebTitle');
+          if (celeb) celeb.style.display = 'flex';
+          if (ct) {
+            setTimeout(function () {
+              ct.style.animation = 'splashCelebPop 0.55s cubic-bezier(0.175,0.885,0.32,1.275) forwards';
+              ct.textContent = '🎊 RASMI DILANCARKAN! 🎊';
+            }, 100);
+          }
+          /* Fade out & buang dari DOM selepas 5.5s */
+          setTimeout(function () {
+            var splash = document.getElementById('splashLaunch');
+            if (!splash) return;
+            splash.style.transition = 'opacity 1.2s ease';
+            splash.style.opacity = '0';
+            setTimeout(function () {
+              if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+              if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
+            }, 1200);
+          }, 5500);
+        });
+      });
+    });
+  }, 700);
+}
+
+function splashShowCount(n, cb) {
+  var el = document.getElementById('splashCountNum');
+  if (!el) { cb(); return; }
+  el.style.transition = 'none'; el.style.opacity = '0'; el.style.transform = 'scale(0.2)';
+  el.textContent = n;
+  el.getBoundingClientRect(); /* force reflow */
+  el.style.transition = 'opacity 0.3s ease, transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275)';
+  el.style.opacity = '1'; el.style.transform = 'scale(1)';
+  setTimeout(function () {
+    el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    el.style.opacity = '0'; el.style.transform = 'scale(1.9)';
+    setTimeout(cb, 260);
+  }, 750);
+}
+
+function splashShootParticles() {
+  var canvas = document.getElementById('splashCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var cx = canvas.width / 2, cy = canvas.height * 0.8;
+  var pw = [];
+  for (var i = 0; i < 70; i++) {
+    var ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.3;
+    var spd = Math.random() * 9 + 3;
+    pw.push({ x: cx, y: cy, dx: Math.cos(ang)*spd, dy: Math.sin(ang)*spd,
+      r: Math.random()*3+0.8, a: 1, g: 0.2,
+      c: ['#ffd700','#fff','#90c4ff','#ffb300'][Math.floor(Math.random()*4)] });
+  }
+  function a() {
+    pw = pw.filter(function (p) {
+      p.x+=p.dx; p.y+=p.dy; p.dy+=p.g; p.a-=0.032;
+      if (p.a<=0) return false;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.c; ctx.globalAlpha=p.a; ctx.fill(); ctx.globalAlpha=1;
+      return true;
+    });
+    if (pw.length>0) requestAnimationFrame(a);
+  }
+  a();
+}
+
+function splashDoFireworks() {
+  var canvas = document.getElementById('splashCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
+  var COLS = ['#ffd700','#ff4455','#44ee88','#4499ff','#ff88cc','#ffaa00','#00ffcc','#fff','#ff6600','#ee44ff'];
+  var fw = [];
+  function burst(x, y, n) {
+    n = n || 90;
+    for (var i = 0; i < n; i++) {
+      var ang = (Math.PI*2/n)*i + (Math.random()-0.5)*0.5;
+      var spd = Math.random()*8+2.5;
+      fw.push({ x:x, y:y, dx:Math.cos(ang)*spd, dy:Math.sin(ang)*spd,
+        r:Math.random()*3.5+0.8, c:COLS[Math.floor(Math.random()*COLS.length)], a:1, g:0.11 });
+    }
+  }
+  var cx = canvas.width/2, cy = canvas.height/2;
+  burst(cx, cy*0.38, 130);
+  setTimeout(function(){ burst(cx*0.25, cy*0.55); }, 300);
+  setTimeout(function(){ burst(cx*1.75, cy*0.55); }, 520);
+  setTimeout(function(){ burst(cx, cy*0.28, 115); }, 780);
+  setTimeout(function(){ burst(cx*0.4, cy*0.68); burst(cx*1.6, cy*0.48); }, 1050);
+  setTimeout(function(){ burst(cx, cy*0.42, 120); }, 1380);
+  setTimeout(function(){ burst(cx*0.28, cy*0.38); burst(cx*1.72, cy*0.65); }, 1700);
+  setTimeout(function(){ burst(cx, cy*0.32, 110); }, 2050);
+  function animFw() {
+    ctx.fillStyle = 'rgba(3,7,30,0.11)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    fw = fw.filter(function (p) {
+      p.x+=p.dx; p.y+=p.dy; p.dy+=p.g; p.a-=0.012;
+      if (p.a<=0) return false;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.c; ctx.globalAlpha=p.a; ctx.fill(); ctx.globalAlpha=1;
+      return true;
+    });
+    if (fw.length>0) requestAnimationFrame(animFw);
+  }
+  animFw();
+}
+
+function splashDoConfetti() {
+  var canvas = document.getElementById('splashCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var COLS = ['#ffd700','#ff4455','#44ee88','#4499ff','#ff88cc','#ffaa00','#00ffcc','#ff6600','#ee44ff','#fff'];
+  var pieces = [];
+  for (var i = 0; i < 220; i++) {
+    pieces.push({
+      x: Math.random()*canvas.width, y: -20 - Math.random()*canvas.height*0.5,
+      w: Math.random()*11+4, h: Math.random()*6+2,
+      rot: Math.random()*360, rs: (Math.random()-0.5)*9,
+      dx: (Math.random()-0.5)*3.5, dy: Math.random()*4.5+1.5,
+      c: COLS[Math.floor(Math.random()*COLS.length)], a: 1
+    });
+  }
+  function animC() {
+    pieces = pieces.filter(function (p) {
+      p.x+=p.dx; p.y+=p.dy; p.rot+=p.rs;
+      if (p.y > canvas.height+20) return false;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.c; ctx.globalAlpha=p.a;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore(); ctx.globalAlpha=1;
+      return true;
+    });
+    if (pieces.length>0) requestAnimationFrame(animC);
+  }
+  animC();
+}
+</script>
 
 <!-- SVG Sprite for Lucide Icons -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
@@ -449,11 +1023,13 @@
   <button class="mobile-nav-backdrop" type="button" aria-label="Tutup menu" onclick="closeMobileNav()"></button>
   <div class="app-layout">
 
+    <!-- Butang toggle sidebar desktop — di luar aside supaya tak terpotong scrollbar -->
+    <button class="desktop-nav-toggle" type="button" aria-label="Toggle Desktop Menu" onclick="toggleDesktopNav()">
+      <svg class="lucide-icon" width="16" height="16"><use href="#lucide-chevron-left"></use></svg>
+    </button>
+
     <!-- SIDEBAR -->
     <aside class="sidebar" id="appSidebar">
-      <button class="desktop-nav-toggle" type="button" aria-label="Toggle Desktop Menu" onclick="toggleDesktopNav()">
-        <svg class="lucide-icon" width="16" height="16"><use href="#lucide-chevron-left"></use></svg>
-      </button>
       <button class="mobile-nav-close" type="button" aria-label="Tutup menu" onclick="closeMobileNav()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
@@ -980,9 +1556,9 @@
         <div style="background:#fff;border-radius:16px;width:min(900px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.35)">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border,#e2e8f0);flex-shrink:0">
             <strong id="modalPratinjauSuratAmaranTitle" style="font-size:1rem;color:var(--text)">Pratinjau Surat Amaran</strong>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-primary" onclick="cetakSuratAmaranDariModal()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-printer"></use></svg> Cetak / Simpan PDF</button>
-              <button class="btn btn-success" onclick="hantarPDFDariModal()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-send"></use></svg> Hantar Pautan Surat ke WhatsApp</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <button class="btn btn-primary" onclick="cetakSuratAmaranDariModal()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-printer"></use></svg> <span class="modal-btn-label">Cetak / </span>PDF</button>
+              <button class="btn btn-success" onclick="hantarPDFDariModal()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-send"></use></svg> <span class="modal-btn-label">Hantar </span>WhatsApp</button>
               <button class="btn btn-secondary" onclick="tutupModalPratinjauSuratAmaran()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-x"></use></svg> Tutup</button>
             </div>
           </div>
@@ -1012,7 +1588,6 @@
             <p>Analisis automatik dan jana surat amaran digital mengikut standard disiplin KPM</p>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <button class="btn btn-secondary" onclick="insertDummyDataAmaran()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-flask-conical"></use></svg> Masuk Data Ujian</button>
             <button class="btn btn-primary" onclick="loadAmaranKehadiran()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-search"></use></svg> Semak Amaran</button>
           </div>
         </div>
@@ -2797,17 +3372,22 @@ _{SEKOLAH}_</textarea>
           .lk-tag { display:inline-block; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:20px; margin-left:6px; vertical-align:middle; }
           .lk-tag-uasa { background:#fee2e2; color:#b91c1c; }
           .lk-tag-pbd { background:#d1fae5; color:#065f46; }
-          .lk-output-box { min-height:420px; background:var(--bg-alt,#f8fafc); border:1px solid var(--border); border-radius:8px; padding:16px; font-family:'Courier New',monospace; font-size:0.84rem; line-height:1.7; white-space:pre-wrap; color:var(--text); overflow:auto; max-height:70vh; }
-          .lk-status-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.88rem; font-weight:500; }
+          /* Output box: tinggi fleksibel, panel yang mengawal ketinggian */
+          .lk-output-box { flex:1 1 auto; min-height:200px; background:var(--bg-alt,#f8fafc); border:1px solid var(--border); border-radius:8px; padding:16px; font-family:'Courier New',monospace; font-size:0.84rem; line-height:1.7; white-space:pre-wrap; color:var(--text); overflow:auto; }
+          .lk-status-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.88rem; font-weight:500; flex-shrink:0; }
           .lk-status-idle { background:#f1f5f9; color:#64748b; }
           .lk-status-loading { background:#eff6ff; color:#1d4ed8; }
           .lk-status-done { background:#f0fdf4; color:#15803d; }
           .lk-status-error { background:#fef2f2; color:#b91c1c; }
           .lk-spin { display:inline-block; animation:lk-spin 1s linear infinite; }
           @keyframes lk-spin { to { transform:rotate(360deg); } }
-          .lk-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-          .lk-sticky-panel { position: sticky; top: 20px; z-index: 10; align-self: start; }
-          @media(max-width:900px){ .lk-sticky-panel { position: static; } }
+          /* Butang aksi kekal kelihatan — flex-shrink:0 supaya tak terpinggir */
+          .lk-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; flex-shrink:0; }
+          /* Panel sticky: display flex column supaya output box isi ruang baki, butang sentiasa di atas */
+          .lk-sticky-panel { position: sticky; top: 20px; z-index: 10; align-self: start;
+            max-height: calc(100vh - 48px); display:flex; flex-direction:column; padding:20px !important; overflow:hidden; }
+          .lk-sticky-panel > div:first-child { flex-shrink:0; }  /* header + butang */
+          @media(max-width:900px){ .lk-sticky-panel { position: static; max-height:none; overflow:visible; } }
           .lk-constraint-note { font-size:0.79rem; color:var(--muted); margin-top:4px; }
           .lk-divider { border:none; border-top:1px solid var(--border); margin:14px 0; }
           .lk-tema-group { margin-bottom:8px; }
@@ -2926,6 +3506,7 @@ _{SEKOLAH}_</textarea>
               <textarea id="lkNota" placeholder="cth: Fokus pada pengiraan, lebih soalan bercerita, dll..."></textarea>
             </div>
 
+            <div id="lkMaklumatCetakanBlock" style="transition:opacity .2s">
             <div class="lk-divider"></div>
             <h4 style="margin:0 0 12px;font-size:0.85rem;color:var(--text);font-weight:700;text-transform:uppercase;letter-spacing:.05em">🖨️ Maklumat Cetakan</h4>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -2941,6 +3522,7 @@ _{SEKOLAH}_</textarea>
             <div class="lk-form-group">
               <label>Kod Kertas <span style="font-weight:400;text-transform:none">(pilihan)</span></label>
               <input type="text" id="lkKodKertas" placeholder="cth: SN01/1">
+            </div>
             </div>
 
             <div class="lk-form-group" style="background:var(--surface-alt,#f8fafc);border:1.5px solid var(--border,#e2e8f0);border-radius:8px;padding:10px 14px">
@@ -2972,13 +3554,18 @@ _{SEKOLAH}_</textarea>
           </div>
 
           <!-- PANEL KANAN: OUTPUT -->
-          <div class="card lk-sticky-panel" style="padding:20px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card lk-sticky-panel">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-shrink:0">
               <h3 style="margin:0;font-size:1rem;color:var(--text)">📄 Output Lembaran Kerja</h3>
               <div class="lk-actions">
-                <button class="btn btn-sm" onclick="lkSalinOutput()" title="Salin teks">📋 Salin</button>
+                <button class="btn btn-sm" id="lkSimpanDriveBtn" onclick="lkSimpanDrive()" title="Simpan ke Google Drive" style="background:#1a73e8;color:#fff;border:none">
+                  <svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg>
+                  Simpan ke Drive
+                </button>
                   <button id="lkJanaImejBtn" class="btn btn-sm" style="display:none;background:#f59e0b;color:#fff;border:none" onclick="lkJanaImej()" title="Jana imej untuk penanda bergambar">🖼️ Jana Imej</button>
-                <button class="btn btn-sm btn-success" onclick="lkCetakOutput()" title="Cetak">🖨️ Cetak</button>
+                <button id="lkBatalBtn" class="btn btn-sm btn-danger" onclick="batalLembaranKerja()" title="Batal janaan" style="display:none">🛑 Batal</button>
+                <button class="btn btn-sm btn-success" onclick="lkCetakOutput()" title="Cetak 1 salinan">🖨️ Cetak</button>
+                <button class="btn btn-sm btn-indigo" onclick="lkCetakSemuaMurid()" title="Cetak untuk semua murid dalam kelas yang dipilih" id="lkCetakMuridBtn">👥 Cetak Untuk Semua Murid</button>
                 <button class="btn btn-sm btn-gray" onclick="lkBersihOutput()" title="Bersih">🗑️ Bersih</button>
               </div>
             </div>
@@ -2990,7 +3577,7 @@ _{SEKOLAH}_</textarea>
             <div class="lk-output-box" id="lkOutputBox">Hasil lembaran kerja akan dipaparkan di sini setelah dijana...</div>
 
             <!-- Bahagian imej yang dijana -->
-            <div id="lkImejSection" style="display:none;margin-top:14px">
+            <div id="lkImejSection" style="display:none;margin-top:14px;flex-shrink:0;overflow:auto;max-height:200px">
               <div style="font-size:0.82rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🖼️ Imej Lembaran Kerja</div>
               <div id="lkImejGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px"></div>
               <div class="lk-constraint-note" style="margin-top:8px" id="lkImejNote">Imej dijana oleh AI. Klik kanan → Simpan imej untuk simpan ke komputer.</div>
@@ -3263,6 +3850,9 @@ _{SEKOLAH}_</textarea>
             <small>Lain-lain</small>
             <strong id="muridAttendanceCountLain">0</strong>
           </div>
+        </div>
+        <div id="muridAttendanceHint" style="font-size:0.78rem;color:var(--muted);text-align:center;margin-top:4px;display:none">
+          ☝️ Pilih kelas di bawah untuk muatkan senarai murid
         </div>
       </div>
       <div class="form-row">
