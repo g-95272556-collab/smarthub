@@ -11550,7 +11550,7 @@ function lkSetStatus(type, msg) {
 
 function lkBinaSumber(phase) {
   var tahun = (document.getElementById('lkTahun') || {}).value || '1';
-  var jenis = document.querySelector('input[name="lkJenis"]:checked') ? document.querySelector('input[name="lkJenis"]:checked').value : 'pdpc';
+  var jenis = document.querySelector('input[name="lkJenis"]:checked') ? document.querySelector('input[name="lkJenis"]:checked').value : 'pbd-pt';
   var jenisLabel = { 'pdpc': 'PDPC / Lembaran Kerja', 'pbd-pt': 'PBD Berterusan', 'pbd-at': 'PBD Akhir Tahun', 'uasa': 'UASA' };
   var sel = document.getElementById('lkSubjek');
   var subjekLabel = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : sel.value) : '';
@@ -11800,8 +11800,8 @@ async function callWorkerAIGemini(prompt, withImage) {
       var imgByIndex = {}; // { 0: dataUri, 1: dataUri, ... }
       if (imgPlaceholders.length > 0) {
         lkSetStatus('loading', '🎨 Langkah 2/2: Jana ' + imgPlaceholders.length + ' imej soalan bergambar...');
-        for (var gi = 0; gi < imgPlaceholders.length; gi++) {
-          var ph = imgPlaceholders[gi];
+        for (let gi = 0; gi < imgPlaceholders.length; gi++) {
+          let ph = imgPlaceholders[gi];
           lkSetStatus('loading', '🎨 Jana imej ' + (gi + 1) + '/' + imgPlaceholders.length + '...');
           var imgPrompt = 'Lukis gambar untuk soalan murid Tahun 1-6 Malaysia: ' + ph.desc +
             '. WAJIB: clean black and white line art sahaja untuk dicetak. DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, perkataan atau aksara dalam gambar. Hanya lukisan/rajah sahaja.';
@@ -11906,8 +11906,8 @@ async function callHybridDeepSeekGemini(prompt) {
     } else {
     } else {
       lkSetStatus('loading', '🎨 Langkah 2/2: Gemini jana ' + imgPlaceholders.length + ' imej...');
-      for (var hi = 0; hi < imgPlaceholders.length; hi++) {
-        var ph = imgPlaceholders[hi];
+      for (let hi = 0; hi < imgPlaceholders.length; hi++) {
+        let ph = imgPlaceholders[hi];
         lkSetStatus('loading', '🎨 Jana imej ' + (hi + 1) + '/' + imgPlaceholders.length + '...');
         var imgPrompt = 'Lukis ilustrasi untuk soalan murid sekolah rendah Malaysia: ' + ph.desc +
           '. WAJIB: clean black and white line art sahaja untuk dicetak. ' +
@@ -12014,7 +12014,7 @@ async function janaLembaranKerja() {
     var isLongExam = (jenis === 'uasa' || jenis === 'pbd-at');
     var finalContent = '';
     
-    if (engine === 'gemini' && isLongExam) {
+    if ((engine === 'gemini' || engine === 'hybrid') && isLongExam) {
       var phases = ['A', 'B', 'CD', 'JAWAPAN'];
       var phaseNames = { 'A': 'Bahagian A', 'B': 'Bahagian B', 'CD': 'Bahagian C/D', 'JAWAPAN': 'Skema Jawapan' };
 
@@ -12031,7 +12031,10 @@ async function janaLembaranKerja() {
       if (_lkCancelled) throw new Error('__cancelled__');
 
       var phaseResults = await Promise.all(phases.map(function(pKey) {
-        return callWorkerAIGemini(lkBinaSumber(pKey), true).then(function(res) {
+        var phaseFn = (engine === 'hybrid')
+          ? callHybridDeepSeekGemini(lkBinaSumber(pKey))
+          : callWorkerAIGemini(lkBinaSumber(pKey), true);
+        return phaseFn.then(function(res) {
           // Kemaskini status fasa individual bila siap
           var statusEl = document.getElementById('lkPhaseStatus_' + pKey);
           if (statusEl) statusEl.innerHTML = '<span style="color:var(--green)">✅ ' + phaseNames[pKey] + '</span>';
@@ -12139,11 +12142,13 @@ async function janaLembaranKerja() {
 
     if (engine === 'gemini' || engine === 'hybrid') {
       // Gemini / Hybrid: imej sudah diselit inline dalam content (isHtml:true)
-      var inlineImgCount = (result.content.match(/class="lk-inline-image"/g) || []).length;
+      var inlineImgCount = (result.content.match(/src="data:/g) || []).length;
+      var placeholderCount = (result.content.match(/class="lk-inline-image"/g) || []).length - inlineImgCount;
       if (inlineImgCount > 0) {
-        statusMsg += ' ' + inlineImgCount + ' imej dijana terus inline — tiada langkah tambahan diperlukan.';
+        statusMsg += ' ' + inlineImgCount + ' imej berjaya dijana inline.';
+        if (placeholderCount > 0) statusMsg += ' ' + placeholderCount + ' placeholder (imej gagal jana).';
       } else {
-        statusMsg += ' Teks berjaya dijana (tiada soalan bergambar dalam output ini).';
+        statusMsg += ' Teks berjaya dijana (tiada imej dalam output ini).';
       }
       // Sembunyikan bahagian imej berasingan — gambar dah dalam output
       if (imejSection) imejSection.style.display = 'none';
@@ -12517,6 +12522,14 @@ async function lkCetakSemuaMurid() {
   var box = document.getElementById('lkOutputBox');
   if (!box || !box.innerHTML.trim() || box.innerHTML.includes('Hasil lembaran kerja akan dipaparkan')) {
     showToast('Jana lembaran kerja dahulu sebelum cetak.', 'error'); return;
+  }
+
+  // Semak imej base64 — jika ada, amaran prestasi
+  var imgCount = (box.innerHTML.match(/src="data:/g) || []).length;
+  if (imgCount > 0) {
+    var muridEst = 30; // anggaran murid
+    var saizMB = (imgCount * muridEst * 100 / 1024).toFixed(0);
+    if (!confirm('Output mengandungi ' + imgCount + ' imej. Cetak untuk ~' + muridEst + ' murid akan jana dokumen ~' + saizMB + 'MB dan mungkin lambat.\n\nTeruskan?')) return;
   }
   var tahunVal = parseInt((document.getElementById('lkTahun') || {}).value || '0');
   var kelas = SENARAI_KELAS_MURID[tahunVal - 1] || '';
