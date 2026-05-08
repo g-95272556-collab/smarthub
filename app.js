@@ -5483,7 +5483,7 @@ async function loadHariLahir(forceHydrate) {
     const days = daysUntilBirthday(p.bulan, p.hari);
     const umur = hitungUmur(p.bulan, p.hari, p.tahun);
     const daysLbl = days === 0 ? '<span class="badge" style="background:rgba(245,197,24,0.2);color:#b45309">🎂 HARI INI!</span>' : days <= 7 ? '<span class="badge badge-amber">' + days + ' hari lagi</span>' : '<span style="color:var(--muted);font-size:0.82rem">' + days + ' hari</span>';
-    return '<tr><td data-label="Nama"><strong>' + p.nama + '</strong></td><td data-label="Peranan"><span class="badge ' + (p.peranan === 'Murid' ? 'badge-blue' : 'badge-green') + '">' + p.peranan + '</span></td><td data-label="Kelas">' + (p.kelas || '—') + '</td><td data-label="Tarikh Lahir">' + p.hari + ' ' + BULAN[p.bulan] + ' ' + (p.tahun || '') + '</td><td data-label="Umur">' + (umur ? umur + ' thn' : '—') + '</td><td data-label="Hari Tinggal">' + daysLbl + '</td><td data-label="No. Telefon" style="font-size:0.82rem">' + (p.telefon || '—') + '</td><td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap">' + (days === 0 ? '<button class="btn btn-sm btn-success" onclick="hantarUcapanSeorang(' + i + ')">🎉</button>' : '') + '<button class="btn btn-sm btn-danger" onclick="hapusHL(' + i + ')">✕</button></td></tr>';
+    return '<tr><td data-label="Nama"><strong>' + escapeHtml(p.nama) + '</strong></td><td data-label="Peranan"><span class="badge ' + (p.peranan === 'Murid' ? 'badge-blue' : 'badge-green') + '">' + escapeHtml(p.peranan) + '</span></td><td data-label="Kelas">' + escapeHtml(p.kelas || '—') + '</td><td data-label="Tarikh Lahir">' + escapeHtml(p.hari) + ' ' + escapeHtml(BULAN[p.bulan] || '') + ' ' + escapeHtml(p.tahun || '') + '</td><td data-label="Umur">' + (umur ? escapeHtml(umur) + ' thn' : '—') + '</td><td data-label="Hari Tinggal">' + daysLbl + '</td><td data-label="No. Telefon" style="font-size:0.82rem">' + escapeHtml(p.telefon || '—') + '</td><td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap">' + (days === 0 ? '<button class="btn btn-sm btn-success" onclick="hantarUcapanSeorang(' + i + ')">🎉</button>' : '') + '<button class="btn btn-sm btn-danger" onclick="hapusHL(' + i + ')">✕</button></td></tr>';
   }).join('');
   if (APP.workerUrl && (forceHydrate || !_birthdayHydratedOnce)) {
     try {
@@ -9491,6 +9491,10 @@ async function importKokumGuruConfigCSV() {
         setKokumConfigImportResult('kokumGuruConfigResult', 'Tiada padanan guru ditemui. Semak lajur Nama atau Emel.', true);
         return;
       }
+      if (!window.confirm('Import ini akan mengemas kini ' + updated + ' rekod guru dan menulis semula sheet GURU.\n\nExport CSV dahulu jika perlu backup. Teruskan?')) {
+        setKokumConfigImportResult('kokumGuruConfigResult', 'Import dibatalkan. Export CSV dahulu jika perlu backup.', true);
+        return;
+      }
       await pushFullSheet('GURU', GURU_SHEET_HEADERS, rows);
       _guruData = rows.slice();
       window._guruCache = [];
@@ -9537,6 +9541,10 @@ async function importKokumMuridConfigCSV() {
       });
       if (!updated) {
         setKokumConfigImportResult('kokumMuridConfigResult', 'Tiada padanan murid ditemui. Gunakan kombinasi Nama dan Kelas.', true);
+        return;
+      }
+      if (!window.confirm('Import ini akan mengemas kini ' + updated + ' rekod murid dan menulis semula sheet MURID.\n\nExport CSV dahulu jika perlu backup. Teruskan?')) {
+        setKokumConfigImportResult('kokumMuridConfigResult', 'Import dibatalkan. Export CSV dahulu jika perlu backup.', true);
         return;
       }
       await pushFullSheet('MURID', MURID_SHEET_HEADERS, rows);
@@ -10425,12 +10433,60 @@ function resetD1Editor() {
   loadD1EditableSheet();
 }
 
+function d1CsvCell(value) {
+  return '"' + String(value == null ? '' : value).replace(/"/g, '""') + '"';
+}
+
+function exportD1EditableSheetCSV() {
+  syncD1EditorFromInputs();
+  const sheetKey = APP.d1Editor.sheetKey || getD1SelectedSheetKey();
+  const rows = getD1EditorRows();
+  if (!rows.length) {
+    setD1EditorStatus('Tiada data untuk dieksport.', 'error');
+    return false;
+  }
+  const csv = rows.map(function(row) {
+    return row.map(d1CsvCell).join(',');
+  }).join('\n');
+  const stamp = new Date().toISOString().slice(0, 10);
+  downloadCSV(csv, 'backup_d1_' + String(sheetKey || 'sheet').toLowerCase() + '_' + stamp + '.csv');
+  setD1EditorStatus('Backup CSV untuk sheet ' + sheetKey + ' telah dijana.', 'success');
+  return true;
+}
+
+function confirmD1SheetReplace(sheetKey, rows) {
+  return window.confirm(
+    'Simpan Perubahan akan menggantikan keseluruhan sheet ' + sheetKey + ' dengan ' + rows.length + ' baris daripada editor.\n\n' +
+    'Pastikan anda sudah tekan Export CSV untuk backup jika data ini penting.\n\nTeruskan simpan?'
+  );
+}
+
+function confirmD1SheetClear(sheetKey) {
+  return window.confirm(
+    'Anda akan mengosongkan semua data dalam sheet ' + sheetKey + '.\n\n' +
+    'Tindakan ini hanya untuk admin dan tidak boleh dibatalkan dari UI. Export CSV dahulu jika perlu backup.\n\nTeruskan kosongkan sheet ini?'
+  );
+}
+
+function confirmD1ClearAllData() {
+  const phrase = 'KOSONGKAN SEMUA D1';
+  const typed = window.prompt(
+    'AMARAN: Semua data dalam D1 akan dikosongkan.\n\n' +
+    'Pastikan backup/export telah dibuat. Untuk teruskan, taip tepat:\n' + phrase
+  );
+  return typed === phrase;
+}
+
 async function saveD1EditableSheet() {
   syncD1EditorFromInputs();
   const sheetKey = APP.d1Editor.sheetKey || getD1SelectedSheetKey();
   const rows = getD1EditorRows();
   if (!rows.length) {
     setD1EditorStatus('Tiada data untuk disimpan.', 'error');
+    return;
+  }
+  if (!confirmD1SheetReplace(sheetKey, rows)) {
+    setD1EditorStatus('Simpan dibatalkan. Export CSV dahulu jika perlu backup.', 'info');
     return;
   }
   setD1EditorStatus('Menyimpan sheet ' + sheetKey + '...', 'info');
@@ -10454,6 +10510,10 @@ async function saveD1EditableSheet() {
 
 async function clearD1SelectedSheet() {
   const sheetKey = APP.d1Editor.sheetKey || getD1SelectedSheetKey();
+  if (!confirmD1SheetClear(sheetKey)) {
+    setD1EditorStatus('Kosongkan sheet dibatalkan.', 'info');
+    return;
+  }
   setD1EditorStatus('Mengosongkan sheet ' + sheetKey + '...', 'info');
   try {
     const data = await callWorker({ action: 'clearSheet', sheetKey: sheetKey });
@@ -10472,6 +10532,10 @@ async function clearD1SelectedSheet() {
 }
 
 async function clearD1AllData() {
+  if (!confirmD1ClearAllData()) {
+    setD1EditorStatus('Kosongkan semua D1 dibatalkan.', 'info');
+    return;
+  }
   setD1EditorStatus('Mengosongkan semua data D1...', 'info');
   try {
     const data = await callWorker({ action: 'clearAllData' });
@@ -12103,12 +12167,17 @@ async function janaLembaranKerja() {
       var jenisMapFasa = { 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
       var jenisTxtFasa = jenisMapFasa[jenis] || jenis.toUpperCase();
       var lineFasa = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
+      var subjekLabelFasaSafe = escapeHtml(subjekLabelFasa);
+      var tahunFasaSafe = escapeHtml(tahunFasa);
+      var masaFasaSafe = escapeHtml(masaFasa);
+      var kodFasaSafe = escapeHtml(kodFasa);
+      var jenisTxtFasaSafe = escapeHtml(jenisTxtFasa);
       var headerFasa = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
         lineFasa +
         '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:6px">SK KIANDONGO</div>' +
-        '<div style="text-align:center;font-weight:bold;margin-bottom:8px">' + jenisTxtFasa + '</div>' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Mata Pelajaran: ' + subjekLabelFasa + '</span><span>Tahun: ' + tahunFasa + '</span></div>' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Masa: ' + masaFasa + '</span>' + (kodFasa ? '<span>Kod: ' + kodFasa + '</span>' : '<span>Tarikh: ______________</span>') + '</div>' +
+        '<div style="text-align:center;font-weight:bold;margin-bottom:8px">' + jenisTxtFasaSafe + '</div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Mata Pelajaran: ' + subjekLabelFasaSafe + '</span><span>Tahun: ' + tahunFasaSafe + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Masa: ' + masaFasaSafe + '</span>' + (kodFasa ? '<span>Kod: ' + kodFasaSafe + '</span>' : '<span>Tarikh: ______________</span>') + '</div>' +
         '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Nama: _______________________________</span><span>Kelas: ________</span></div>' +
         '<div style="text-align:right;margin-bottom:6px"><span>Markah: _______ / _______</span></div>' +
         lineFasa + '</div>';
@@ -12145,14 +12214,17 @@ async function janaLembaranKerja() {
     var masaMenjawab = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
     var guruPenyedia = '' ;
     var kodKertas = (document.getElementById('lkKodKertas') || {}).value || '';
+    var subjekLabelOutSafe = escapeHtml(subjekLabelOut);
+    var tahunOutSafe = escapeHtml(tahunOut);
+    var jenisTxtSafe = escapeHtml(jenisTxt);
     
     var header = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
       line +
       '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:6px">SK KIANDONGO, TONGOD, SABAH</div>' +
-      '<div style="text-align:center;font-weight:bold;font-size:1rem;margin-bottom:8px">LEMBARAN KERJA — ' + jenisTxt + '</div>' +
+      '<div style="text-align:center;font-weight:bold;font-size:1rem;margin-bottom:8px">LEMBARAN KERJA — ' + jenisTxtSafe + '</div>' +
       '<div style="display:flex;justify-content:center;gap:32px;margin-bottom:6px">' +
-        '<span>Mata Pelajaran: <strong>' + subjekLabelOut + '</strong></span>' +
-        '<span>Tahun: <strong>' + tahunOut + '</strong></span>' +
+        '<span>Mata Pelajaran: <strong>' + subjekLabelOutSafe + '</strong></span>' +
+        '<span>Tahun: <strong>' + tahunOutSafe + '</strong></span>' +
       '</div>' +
       line +
       '<div style="display:flex;justify-content:space-between;margin-top:8px;margin-bottom:4px">' +
@@ -12165,7 +12237,7 @@ async function janaLembaranKerja() {
 
     var contentWrap = result.isHtml ?
       '<div class="lk-html-content">' + result.content + '</div>' :
-      '<pre style="white-space:pre-wrap;font-family:inherit">' + result.content + '</pre>';
+      '<pre style="white-space:pre-wrap;font-family:inherit">' + escapeHtml(result.content) + '</pre>';
 
     // Tambah header untuk SEMUA jenis (pbd-pt, pbd-at, uasa) — bukan hanya 'pdpc' (nilai tidak wujud)
     var fullContentHtml = header + contentWrap;
@@ -12313,8 +12385,8 @@ async function _lkDoSaveToDrive(accessToken) {
     var lkStatus = document.getElementById('lkStatusBar');
     if (lkStatus && data.webViewLink) {
       lkStatus.className = 'lk-status-bar lk-status-done';
-      lkStatus.innerHTML = '<span>✅</span><span>Disimpan ke Google Drive sebagai <strong>' + data.name + '</strong>. ' +
-        '<a href="' + data.webViewLink + '" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Buka fail ↗</a></span>';
+      lkStatus.innerHTML = '<span>✅</span><span>Disimpan ke Google Drive sebagai <strong>' + escapeHtml(data.name) + '</strong>. ' +
+        '<a href="' + escapeHtml(data.webViewLink) + '" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Buka fail ↗</a></span>';
     }
   } catch(e) {
     showToast('Gagal simpan ke Drive: ' + e.message, 'error');
@@ -12346,6 +12418,13 @@ function lkCetakOutput() {
   var isUjianFormal = (jenis === 'uasa' || jenis === 'pbd-at');
   var kpmHeader = (jenis === 'uasa') ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : 'PENTAKSIRAN BILIK DARJAH (PBD) BERTERUSAN';
   if (jenis === 'pbd-at') kpmHeader = 'PENTAKSIRAN BILIK DARJAH (AKHIR TAHUN)';
+  var kpmHeaderSafe = escapeHtml(kpmHeader);
+  var tahunSafe = escapeHtml(tahun);
+  var subjekUpperSafe = escapeHtml(subjekLabel.toUpperCase());
+  var kodKertasUpperSafe = escapeHtml(kodKertas.toUpperCase());
+  var masaUpperSafe = escapeHtml(masa.toUpperCase());
+  var bilSoalanSafe = escapeHtml(bilSoalan);
+  var guruSafe = escapeHtml(guru);
 
   var w = window.open('', '_blank', 'width=850,height=1000');
   if (!w) { showToast('Pop-up disekat oleh browser. Klik ikon 🔒 di address bar → benarkan Pop-ups → cuba cetak semula.', 'error'); return; }
@@ -12406,16 +12485,16 @@ function lkCetakOutput() {
   if (isUjianFormal) {
     coverPageHtml = '<div class="page cover-page">' +
       '<div class="kpm-header">KEMENTERIAN PENDIDIKAN MALAYSIA</div>' +
-      '<div class="kpm-header">' + kpmHeader + '</div>' +
+      '<div class="kpm-header">' + kpmHeaderSafe + '</div>' +
       '<div class="sr-label">SEKOLAH RENDAH</div>' +
       '<img src="assets/sk-kiandongo-logo.png" class="school-logo" alt="Logo">' +
       
       '<table class="info-table">' +
         '<tr><td>SEKOLAH</td><td>:</td><td>SK KIANDONGO</td></tr>' +
-        '<tr><td>TAHUN</td><td>:</td><td>' + tahun + '</td></tr>' +
-        '<tr><td>MATA PELAJARAN</td><td>:</td><td>' + subjekLabel.toUpperCase() + '</td></tr>' +
-        '<tr><td>KOD KERTAS</td><td>:</td><td>' + kodKertas.toUpperCase() + '</td></tr>' +
-        '<tr><td>MASA</td><td>:</td><td>' + masa.toUpperCase() + '</td></tr>' +
+        '<tr><td>TAHUN</td><td>:</td><td>' + tahunSafe + '</td></tr>' +
+        '<tr><td>MATA PELAJARAN</td><td>:</td><td>' + subjekUpperSafe + '</td></tr>' +
+        '<tr><td>KOD KERTAS</td><td>:</td><td>' + kodKertasUpperSafe + '</td></tr>' +
+        '<tr><td>MASA</td><td>:</td><td>' + masaUpperSafe + '</td></tr>' +
       '</table>' +
       
       '<div class="section-table">' +
@@ -12432,7 +12511,7 @@ function lkCetakOutput() {
         '<div class="section-header orange-header">ARAHAN</div>' +
         '<div class="section-body">' +
           '<ol class="instruction-list">' +
-            '<li>Kertas ini mengandungi <strong>' + bilSoalan + '</strong> soalan.</li>' +
+            '<li>Kertas ini mengandungi <strong>' + bilSoalanSafe + '</strong> soalan.</li>' +
             '<li>Jawab semua soalan.</li>' +
             '<li>Tulis jawapan pada ruang yang disediakan.</li>' +
             '<li>Dilarang membuka kertas sehingga diberitahu.</li>' +
@@ -12446,7 +12525,7 @@ function lkCetakOutput() {
           '<div class="sig-col">' +
             '<div class="sig-label">Disediakan oleh<br>(Guru Penyedia)</div>' +
             '<div class="sig-line"></div>' +
-            '<div class="sig-meta">Nama: ' + guru + '<br>Tarikh:</div>' +
+            '<div class="sig-meta">Nama: ' + guruSafe + '<br>Tarikh:</div>' +
           '</div>' +
           '<div class="sig-col">' +
             '<div class="sig-label">Disemak oleh<br>(Ketua Panitia / PK)</div>' +
@@ -12494,7 +12573,7 @@ function lkCetakOutput() {
 
   // ── Helper: bina dokumen HTML lengkap ──
   function buildPrintDoc(titleStr, bodyHtml, extraStyle) {
-    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titleStr + '</title>' +
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + escapeHtml(titleStr) + '</title>' +
       style + (extraStyle || '') + '</head><body>' + bodyHtml + '</body></html>';
   }
 
@@ -12505,8 +12584,8 @@ function lkCetakOutput() {
       '<div class="pdpc-school">SK KIANDONGO, TONGOD, SABAH</div>' +
       '<div class="pdpc-title">LEMBARAN KERJA PDPC</div>' +
       '<div class="pdpc-meta">' +
-        '<span>Mata Pelajaran: <strong>' + subjekLabel.toUpperCase() + '</strong></span>' +
-        '<span>Tahun: <strong>' + tahun + '</strong></span>' +
+        '<span>Mata Pelajaran: <strong>' + subjekUpperSafe + '</strong></span>' +
+        '<span>Tahun: <strong>' + tahunSafe + '</strong></span>' +
       '</div>' +
       '<div class="pdpc-murid-row">' +
         '<span>Nama: <span class="pdpc-line" style="width:240px"></span></span>' +
@@ -12535,7 +12614,7 @@ function lkCetakOutput() {
       var skemaGuruBanner =
         '<div style="background:#fff3cd;border:3px solid #cc0000;border-radius:4px;padding:14px 20px;margin-bottom:22px;font-family:Arial,sans-serif;text-align:center;page-break-inside:avoid">' +
           '<div style="font-size:14pt;font-weight:bold;color:#cc0000;letter-spacing:.05em">⚠ SULIT — UNTUK GURU SAHAJA</div>' +
-          '<div style="font-size:11pt;font-weight:bold;margin-top:6px">SKEMA JAWAPAN ' + jenisTajuk + ' | ' + subjekLabel.toUpperCase() + ' | TAHUN ' + tahun + '</div>' +
+          '<div style="font-size:11pt;font-weight:bold;margin-top:6px">SKEMA JAWAPAN ' + escapeHtml(jenisTajuk) + ' | ' + subjekUpperSafe + ' | TAHUN ' + tahunSafe + '</div>' +
           '<div style="font-size:10.5pt;color:#cc0000;margin-top:6px;font-weight:bold">SILA CETAK 1 SALINAN SAHAJA &nbsp;•&nbsp; JANGAN EDAR KEPADA MURID</div>' +
         '</div>';
 
@@ -12628,10 +12707,19 @@ async function lkCetakSemuaMurid() {
     var bilSoalan = (document.getElementById('lkBilSoalan') || {}).value || '___';
     var isUjianFormal = (jenis === 'uasa' || jenis === 'pbd-at');
     var kpmHeader = jenis === 'uasa' ? 'UJIAN AKHIR SESI AKADEMIK (UASA)' : (jenis === 'pbd-at' ? 'PENTAKSIRAN BILIK DARJAH (AKHIR TAHUN)' : 'PENTAKSIRAN BILIK DARJAH (PBD) BERTERUSAN');
+    var kpmHeaderSafe = escapeHtml(kpmHeader);
+    var tahunSafe = escapeHtml(tahun);
+    var subjekUpperSafe = escapeHtml(subjekLabel.toUpperCase());
+    var kodKertasUpperSafe = escapeHtml(kodKertas.toUpperCase());
+    var masaUpperSafe = escapeHtml(masa.toUpperCase());
+    var bilSoalanSafe = escapeHtml(bilSoalan);
+    var guruSafe = escapeHtml(guru);
+    var kelasSafe = escapeHtml(kelas);
 
     // Tarikh hari ini
     var tHari = new Date();
     var tarikhStr = String(tHari.getDate()).padStart(2,'0') + '/' + String(tHari.getMonth()+1).padStart(2,'0') + '/' + tHari.getFullYear();
+    var tarikhStrSafe = escapeHtml(tarikhStr);
 
     // ── 4. CSS (sama seperti lkCetakOutput) ──
     var style = '<style>' +
@@ -12689,27 +12777,27 @@ async function lkCetakSemuaMurid() {
         var cover = pageBreak +
           '<div class="page cover-page">' +
           '<div class="kpm-header">KEMENTERIAN PENDIDIKAN MALAYSIA</div>' +
-          '<div class="kpm-header">' + kpmHeader + '</div>' +
+          '<div class="kpm-header">' + kpmHeaderSafe + '</div>' +
           '<div class="sr-label">SEKOLAH RENDAH</div>' +
           '<img src="assets/sk-kiandongo-logo.png" class="school-logo" alt="Logo">' +
           '<table class="info-table">' +
             '<tr><td>SEKOLAH</td><td>:</td><td>SK KIANDONGO</td></tr>' +
-            '<tr><td>TAHUN</td><td>:</td><td>' + tahun + '</td></tr>' +
-            '<tr><td>MATA PELAJARAN</td><td>:</td><td>' + subjekLabel.toUpperCase() + '</td></tr>' +
-            '<tr><td>KOD KERTAS</td><td>:</td><td>' + kodKertas.toUpperCase() + '</td></tr>' +
-            '<tr><td>MASA</td><td>:</td><td>' + masa.toUpperCase() + '</td></tr>' +
+            '<tr><td>TAHUN</td><td>:</td><td>' + tahunSafe + '</td></tr>' +
+            '<tr><td>MATA PELAJARAN</td><td>:</td><td>' + subjekUpperSafe + '</td></tr>' +
+            '<tr><td>KOD KERTAS</td><td>:</td><td>' + kodKertasUpperSafe + '</td></tr>' +
+            '<tr><td>MASA</td><td>:</td><td>' + masaUpperSafe + '</td></tr>' +
           '</table>' +
           '<div class="section-table">' +
             '<div class="section-header blue-header">MAKLUMAT CALON</div>' +
             '<div class="section-body"><table>' +
-              '<tr><td>NAMA MURID</td><td>:</td><td style="border-bottom:1px solid #000;font-weight:bold;padding-left:8px">' + nama + '</td></tr>' +
-              '<tr><td>KELAS</td><td>:</td><td style="border-bottom:1px solid #000;font-weight:bold;padding-left:8px">' + kelas + '</td></tr>' +
+              '<tr><td>NAMA MURID</td><td>:</td><td style="border-bottom:1px solid #000;font-weight:bold;padding-left:8px">' + escapeHtml(nama) + '</td></tr>' +
+              '<tr><td>KELAS</td><td>:</td><td style="border-bottom:1px solid #000;font-weight:bold;padding-left:8px">' + kelasSafe + '</td></tr>' +
             '</table></div>' +
           '</div>' +
           '<div class="section-table">' +
             '<div class="section-header orange-header">ARAHAN</div>' +
             '<div class="section-body"><ol class="instruction-list">' +
-              '<li>Kertas ini mengandungi <strong>' + bilSoalan + '</strong> soalan.</li>' +
+              '<li>Kertas ini mengandungi <strong>' + bilSoalanSafe + '</strong> soalan.</li>' +
               '<li>Jawab semua soalan.</li>' +
               '<li>Tulis jawapan pada ruang yang disediakan.</li>' +
               '<li>Dilarang membuka kertas sehingga diberitahu.</li>' +
@@ -12718,7 +12806,7 @@ async function lkCetakSemuaMurid() {
           '<div class="section-table" style="margin-bottom:0">' +
             '<div class="section-header green-header">PENGESAHAN PENYEDIAAN DAN SEMAKAN SOALAN</div>' +
             '<div class="sig-grid">' +
-              '<div class="sig-col"><div class="sig-label">Disediakan oleh<br>(Guru Penyedia)</div><div class="sig-line"></div><div class="sig-meta">Nama: ' + guru + '<br>Tarikh:</div></div>' +
+              '<div class="sig-col"><div class="sig-label">Disediakan oleh<br>(Guru Penyedia)</div><div class="sig-line"></div><div class="sig-meta">Nama: ' + guruSafe + '<br>Tarikh:</div></div>' +
               '<div class="sig-col"><div class="sig-label">Disemak oleh<br>(Ketua Panitia / PK)</div><div class="sig-line"></div><div class="sig-meta">Nama:<br>Tarikh:</div></div>' +
             '</div>' +
             '<div style="padding:15px;text-align:left;border-top:1pt solid #000"><div class="sig-label" style="margin-bottom:40px">Disahkan oleh (Guru Besar)</div><div class="sig-line" style="width:40%"></div><div class="sig-meta">Nama:<br>Tarikh:<br>Cop Rasmi Sekolah:</div></div>' +
@@ -12734,13 +12822,13 @@ async function lkCetakSemuaMurid() {
             '<div class="pdpc-school">SK KIANDONGO, TONGOD, SABAH</div>' +
             '<div class="pdpc-title">LEMBARAN KERJA PDPC</div>' +
             '<div class="pdpc-meta">' +
-              '<span>Mata Pelajaran: <strong>' + subjekLabel.toUpperCase() + '</strong></span>' +
-              '<span>Tahun: <strong>' + tahun + '</strong></span>' +
+              '<span>Mata Pelajaran: <strong>' + subjekUpperSafe + '</strong></span>' +
+              '<span>Tahun: <strong>' + tahunSafe + '</strong></span>' +
             '</div>' +
             '<div class="pdpc-murid-row">' +
-              '<span>Nama: <strong>' + nama + '</strong></span>' +
-              '<span>Kelas: <strong>' + kelas + '</strong></span>' +
-              '<span>Tarikh: <strong>' + tarikhStr + '</strong></span>' +
+              '<span>Nama: <strong>' + escapeHtml(nama) + '</strong></span>' +
+              '<span>Kelas: <strong>' + kelasSafe + '</strong></span>' +
+              '<span>Tarikh: <strong>' + tarikhStrSafe + '</strong></span>' +
             '</div>' +
             '<div class="pdpc-divider"></div>' +
           '</div>';
@@ -12751,7 +12839,7 @@ async function lkCetakSemuaMurid() {
     // ── 6. Buka window cetak ──
     var w = window.open('', '_blank', 'width=850,height=1000');
     if (!w) { showToast('Pop-up disekat oleh browser. Klik ikon 🔒 di address bar → benarkan Pop-ups → cuba cetak semula.', 'error'); return; }
-    var fullHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lembaran Kerja — ' + kelas + '</title>' + style + '</head><body>' + allPages.join('') + '</body></html>';
+    var fullHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lembaran Kerja - ' + kelasSafe + '</title>' + style + '</head><body>' + allPages.join('') + '</body></html>';
     w.document.write(fullHtml);
     w.document.close();
     w.onload = function() {
@@ -12777,7 +12865,7 @@ async function lkCetakSemuaMurid() {
         var jenisTajuk = isUjianFormal ? (jenis === 'uasa' ? 'UASA' : 'PBD BERTERUSAN') : 'PDPC';
         var skemaBanner = '<div style="background:#fff3cd;border:3px solid #cc0000;border-radius:4px;padding:14px 20px;margin-bottom:22px;font-family:Arial,sans-serif;text-align:center">' +
           '<div style="font-size:14pt;font-weight:bold;color:#cc0000">⚠ SULIT — UNTUK GURU SAHAJA</div>' +
-          '<div style="font-size:11pt;font-weight:bold;margin-top:6px">SKEMA JAWAPAN ' + jenisTajuk + ' | ' + subjekLabel.toUpperCase() + ' | TAHUN ' + tahun + '</div>' +
+          '<div style="font-size:11pt;font-weight:bold;margin-top:6px">SKEMA JAWAPAN ' + escapeHtml(jenisTajuk) + ' | ' + subjekUpperSafe + ' | TAHUN ' + tahunSafe + '</div>' +
           '<div style="font-size:10.5pt;color:#cc0000;margin-top:6px;font-weight:bold">SILA CETAK 1 SALINAN SAHAJA &nbsp;•&nbsp; JANGAN EDAR KEPADA MURID</div></div>';
         ws.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SKEMA GURU - SULIT</title>' + style + '</head><body><div class="page content-area">' + skemaBanner + skemaHtml + '</div></body></html>');
         ws.document.close();

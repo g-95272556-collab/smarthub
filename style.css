@@ -2508,6 +2508,9 @@ table tbody tr:last-child td { border-bottom: none; }
     grid-template-columns: 1fr 1fr;
     align-items: stretch;
   }
+  .d1-editor-layout {
+    grid-template-columns: 1fr !important;
+  }
   .d1-editor-toolbar > * {
     min-width: 0 !important;
   }
