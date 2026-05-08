@@ -2135,19 +2135,19 @@ _SK Kiandongo_</textarea>
           </div>
         </div>
 
-        <div class="card" style="margin-bottom:20px;border:1px solid rgba(37,99,235,.14);background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%)">
+        <div class="card config-menu-card">
           <div class="section-header">
             <h2>Menu Konfigurasi</h2>
             <span class="badge badge-blue">Pusat Tetapan</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
-            <button class="btn btn-secondary" onclick="document.getElementById('config-ai-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (AI)</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-worker-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pangkalan Data (D1)</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-comm-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-message-square"></use></svg> Komunikasi (WA & TG)</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-birthday-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-gift"></use></svg> Notifikasi Modul</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-kokum-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-award"></use></svg> Konfigurasi Kokum</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-admin-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-shield-check"></use></svg> Pentadbiran & Akses</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('config-monitor-card').scrollIntoView({behavior:'smooth', block:'start'})"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-activity"></use></svg> Pemantauan & Log</button>
+          <div class="config-menu-grid">
+            <button class="btn btn-secondary" onclick="scrollToConfigSection('config-ai-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (AI)</button>
+            <button class="btn btn-secondary" onclick="scrollToConfigSection('config-worker-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pangkalan Data (D1)</button>
+            <button class="btn btn-secondary" onclick="scrollToConfigSection('config-comm-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-message-square"></use></svg> Komunikasi (WA & TG)</button>
+            <button class="btn btn-secondary" onclick="scrollToConfigSection('config-birthday-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-gift"></use></svg> Notifikasi Modul</button>
+            <button class="btn btn-secondary" onclick="scrollToConfigSection('config-kokum-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-award"></use></svg> Konfigurasi Kokum</button>
+            <button class="btn btn-secondary" onclick="scrollToConfigSection('config-admin-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-shield-check"></use></svg> Pentadbiran & Akses</button>
+            <button class="btn btn-secondary" onclick="scrollToConfigSection('config-monitor-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-activity"></use></svg> Pemantauan & Log</button>
           </div>
         </div>
 
@@ -2155,7 +2155,7 @@ _SK Kiandongo_</textarea>
           <div class="card" id="config-worker-card">
             <div class="section-header">
               <h2>Worker & Cloudflare D1</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Kembali ke Menu Konfigurasi</button>
             </div>
             <div style="display:grid;gap:14px">
               <div class="form-group">
@@ -2191,7 +2191,7 @@ _SK Kiandongo_</textarea>
           <div class="card" id="config-comm-card" style="border:1px solid rgba(26,79,160,0.14);background:linear-gradient(180deg,#ffffff 0%,#f0f4ff 100%)">
             <div class="section-header">
               <h2>Komunikasi (WhatsApp & Telegram)</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
             </div>
             <div style="display:grid;gap:14px">
               <div class="form-row">
@@ -2237,7 +2237,7 @@ _SK Kiandongo_</textarea>
           <div class="card" id="config-ai-card" style="border: 2px solid var(--primary-light);">
             <div class="section-header">
               <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (Auto-Rotate)</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth',block:'start'})">Menu</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
             </div>
             <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
               Masukkan sehingga <strong>3 Kunci API Gemini</strong>. Sistem akan cuba Kunci 1 dahulu — jika kehabisan kuota (ralat 429), Kunci 2 digunakan secara automatik, kemudian Kunci 3. Ini mengelakkan ralat <strong>524 Cloudflare</strong> dan had kuota harian.
@@ -2299,7 +2299,7 @@ _SK Kiandongo_</textarea>
           <div class="card">
             <div class="section-header">
               <h2>Konfigurasi Kunci (Lanjutan)</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
             </div>
             <div style="display:grid;gap:14px">
               <div class="form-group">
@@ -2320,7 +2320,7 @@ _SK Kiandongo_</textarea>
           <div class="card" id="config-group-card">
             <div class="section-header">
               <h2>Setup Group WhatsApp Kelas</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
             </div>
             <p style="font-size:0.9rem;color:var(--muted);margin-bottom:14px;line-height:1.7">
               ID kumpulan kelas digunakan untuk menghantar notifikasi kehadiran murid dan ucapan hari lahir kepada kumpulan kelas masing-masing.
@@ -2399,7 +2399,7 @@ _SK Kiandongo_</textarea>
               </p>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Kembali ke Menu Konfigurasi</button>
               <span class="badge badge-green">Konfigurasi Berpusat</span>
             </div>
           </div>
@@ -2474,7 +2474,7 @@ _SK Kiandongo_</textarea>
               </p>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Kembali ke Menu Konfigurasi</button>
               <span class="badge badge-amber">Kehadiran</span>
             </div>
           </div>
@@ -2640,7 +2640,7 @@ _{SEKOLAH}_</textarea>
           <div class="card" id="config-admin-card" style="margin-top:20px">
             <div class="section-header">
               <h2>Pentadbiran & Akses</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
             </div>
             
             <div style="background:rgba(26,79,160,0.03);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px">
@@ -2677,7 +2677,7 @@ _{SEKOLAH}_</textarea>
           <div class="card" id="config-monitor-card" style="margin-top:20px;border:1px solid rgba(148,163,184,0.2)">
             <div class="section-header">
               <h2>Pemantauan & Log</h2>
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Menu</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
             </div>
             
             <div style="display:grid;gap:16px">
@@ -2727,7 +2727,7 @@ _{SEKOLAH}_</textarea>
               </p>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Kembali ke Menu Konfigurasi</button>
               <span id="kokumConfigProgramMeta" class="badge badge-green">Memuat konfigurasi...</span>
             </div>
           </div>
@@ -2796,7 +2796,7 @@ _{SEKOLAH}_</textarea>
               </p>
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-              <button class="btn btn-sm btn-secondary" onclick="document.getElementById('mod-konfigurasi').scrollIntoView({behavior:'smooth', block:'start'})">Kembali ke Menu Konfigurasi</button>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Kembali ke Menu Konfigurasi</button>
               <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#e8f3ff;color:#1d4ed8;font-weight:700;font-size:0.8rem">
                 <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block"></span>
                 Cloudflare D1 aktif
@@ -2957,7 +2957,7 @@ _{SEKOLAH}_</textarea>
             Semua tetapan Telegram, token Fonnte, kumpulan guru dan kumpulan kelas kini diuruskan dalam modul <strong>Konfigurasi</strong> supaya semakan dan pengesahan notifikasi lebih jelas.
           </p>
           <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-            <button class="btn btn-primary" onclick="showModule('konfigurasi'); setTimeout(function(){ var el = document.getElementById('config-birthday-card'); if (el) el.scrollIntoView({behavior:'smooth', block:'start'}); }, 120)">Buka Konfigurasi Hari Lahir</button>
+            <button class="btn btn-primary" onclick="showModule('konfigurasi'); setTimeout(function(){ scrollToConfigSection('config-birthday-card'); }, 120)">Buka Konfigurasi Hari Lahir</button>
             <button class="btn btn-success" onclick="hantarUcapanHariIni()">🎉 Hantar Ucapan Hari Ini</button>
             <button class="btn btn-secondary" onclick="resetNotifHariLahirHariIni()">Reset Guard Hari Ini</button>
           </div>

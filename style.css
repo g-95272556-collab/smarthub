@@ -2421,6 +2421,42 @@ table tbody tr:last-child td { border-bottom: none; }
 .config-grid {
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 20px;
+  align-items: start;
+}
+.config-grid > .card {
+  min-width: 0;
+}
+.config-grid > .card > .section-header {
+  gap: 12px;
+}
+.config-grid > .card > .section-header .btn {
+  flex-shrink: 0;
+}
+.config-menu-card {
+  margin-bottom: 20px;
+  border: 1px solid rgba(37,99,235,.14);
+  background: linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+}
+.config-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.config-menu-grid .btn {
+  justify-content: flex-start;
+  min-height: 44px;
+  text-align: left;
+}
+#mod-konfigurasi,
+#mod-konfigurasi .card[id^="config-"] {
+  scroll-margin-top: calc(var(--safe-top) + 24px);
+}
+#mod-konfigurasi .card {
+  overflow-wrap: anywhere;
+}
+#mod-konfigurasi .section-header .badge,
+#mod-konfigurasi .section-header .btn {
+  max-width: 100%;
 }
 .result-box {
   background: rgba(26,79,160,0.04);
@@ -2543,6 +2579,14 @@ table tbody tr:last-child td { border-bottom: none; }
     flex: 1 1 180px;
     min-width: 0;
   }
+  #mod-konfigurasi .section-header > .btn,
+  #mod-konfigurasi .section-header > .badge,
+  #mod-konfigurasi .section-header > div:last-child {
+    width: 100%;
+  }
+  #mod-konfigurasi .section-header > .btn {
+    justify-content: center;
+  }
   .page-header > button:last-child {
     width: 100%;
   }
@@ -2618,9 +2662,8 @@ table tbody tr:last-child td { border-bottom: none; }
   }
   .d1-editor-table-wrap { max-height: 65vh; }
   
-  /* Centralized Menu Fix */
-  #mod-konfigurasi .card div[style*="display:grid"] {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  .config-menu-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 }
 @media (max-width: 640px) {
@@ -2669,9 +2712,8 @@ table tbody tr:last-child td { border-bottom: none; }
     font-size: 0.58rem;
   }
   
-  /* Force 1 column for config menu on mobile */
-  #mod-konfigurasi .card div[style*="display:grid"] {
-    grid-template-columns: 1fr !important;
+  .config-menu-grid {
+    grid-template-columns: 1fr;
   }
   .mobile-app-bar {
     /* iOS black-translucent: sticky position ambil kira Dynamic Island */

@@ -2407,6 +2407,15 @@ function showModule(id) {
 }
 
 // ── WORKER API ─────────────────────────────────────────────────
+function scrollToConfigSection(id) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  target.scrollIntoView({
+    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    block: 'start'
+  });
+}
+
 function initWorkerUrl() {
   syncBootstrapConfigInputs();
   // Auto-check status if URL is set
