@@ -1736,7 +1736,10 @@ function needsAuthenticatedRequest(body) {
   if (!body) return false;
   if (body.action === "verifySession") return true;
   if (body.action === "readSheet") return true;
+  if (body.action === "getMurid") return true;
+  if (body.action === "storeLetterFile") return true;
   if (body.action === "getKokumAttendanceSummary") return true;
+  if (body.action === "getSummary" || body.action === "clearSheet" || body.action === "clearAllData") return true;
   if (body.action === "appendRow" && (body.sheetKey === "KEHADIRAN_MURID" || body.sheetKey === "KEHADIRAN_GURU")) return true;
   if (body.action === "appendRows" && (body.sheetKey === "KEHADIRAN_MURID" || body.sheetKey === "KEHADIRAN_GURU")) return true;
   if (body.action === "replaceSheet") return true;
@@ -1815,6 +1818,15 @@ async function authorizeRequest(body, actor, env, workerToken) {
   }
   if (body.action === "getKokumAttendanceSummary") {
     return authorizeTeacherRead(body, actor, env, workerToken);
+  }
+  if (body.action === "getMurid") {
+    return authorizeClassScopedRead(body, actor, env, workerToken);
+  }
+  if (body.action === "storeLetterFile") {
+    return authorizeTeacherRead(body, actor, env, workerToken);
+  }
+  if (body.action === "getSummary" || body.action === "clearSheet" || body.action === "clearAllData") {
+    return authorizeAdminRequest(body, actor, env, workerToken);
   }
   if (body.action === "appendRow" && body.sheetKey === "KEHADIRAN_MURID") {
     return authorizeStudentAttendanceWrite(body, actor, env, workerToken);
@@ -2461,6 +2473,30 @@ async function authorizeTeacherRead(body, actor, env, workerToken) {
   const adminEmails = await getConfiguredAdminEmails(env, workerToken);
   if (!guru && !isSystemAdminActor(actor, null, adminEmails)) {
     throw makeHttpError(403, "Akaun ini tiada dalam senarai guru.", "TEACHER_NOT_FOUND");
+  }
+}
+
+async function authorizeClassScopedRead(body, actor, env, workerToken) {
+  const kelas = String(body.kelas || "").trim();
+  if (!kelas) {
+    throw makeHttpError(400, "Kelas diperlukan untuk tindakan ini.", "MISSING_CLASS");
+  }
+
+  const guruRows = await getGuruSheetRows(env, workerToken);
+  const guru = findGuruByIdentity(guruRows, actor, true);
+  const adminEmails = await getConfiguredAdminEmails(env, workerToken);
+  if (!guru && !isSystemAdminActor(actor, null, adminEmails)) {
+    throw makeHttpError(403, "Akaun ini tiada dalam senarai guru.", "TEACHER_NOT_FOUND");
+  }
+
+  if (!isSystemAdminActor(actor, guru, adminEmails) && !isTeacherAllowedAllClasses(guru) && !isCurrentDutyTeacher(guru)) {
+    const allowedClasses = normalizeClassList(guru.kelas);
+    if (!allowedClasses.length) {
+      throw makeHttpError(403, "Tiada kelas ditetapkan untuk akaun ini.", "NO_ASSIGNED_CLASS");
+    }
+    if (!allowedClasses.includes(kelas)) {
+      throw makeHttpError(403, "Anda hanya dibenarkan membaca data kelas sendiri.", "CLASS_FORBIDDEN");
+    }
   }
 }
 

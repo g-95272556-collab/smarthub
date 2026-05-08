@@ -2343,6 +2343,9 @@ function needsAuthenticatedWorkerAction(payload) {
   if (!payload || !payload.action) return false;
   if (payload.action === 'ping') return false;
   if (payload.action === 'readSheet') return true;
+  if (payload.action === 'getMurid') return true;
+  if (payload.action === 'storeLetterFile') return true;
+  if (payload.action === 'getKokumAttendanceSummary') return true;
   if (payload.action === 'appendRow' || payload.action === 'appendRows' || payload.action === 'replaceSheet') return true;
   if (payload.action === 'getConfig' || payload.action === 'setConfig' || payload.action === 'setupAllSheets') return true;
   if (payload.action === 'getSummary' || payload.action === 'clearSheet' || payload.action === 'clearAllData') return true;
@@ -3850,7 +3853,7 @@ async function loadSenaraKelas() {
   refreshMuridAttendanceSummary();
   const murid = await getMuridByKelas(kelas);
   if (!murid.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--red)">Tiada murid dalam kelas ' + kelas + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--red)">Tiada murid dalam kelas ' + escapeHtml(kelas) + '</td></tr>';
     window._senaraKelasData = [];
     window._senaraKelasDataKelas = '';
     if (infoEl) infoEl.textContent = access.mesej || '';
@@ -3858,7 +3861,7 @@ async function loadSenaraKelas() {
     return;
   }
   tbody.innerHTML = murid.map((m, i) =>
-    '<tr style="border-bottom:1px solid var(--border)"><td data-label="#" style="padding:10px 14px;color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama Murid" style="padding:10px 14px"><strong style="font-size:0.88rem">' + m.nama + '</strong><div style="font-size:0.75rem;color:var(--muted)">' + (m.wali ? 'Wali: ' + m.wali : '') + '</div></td><td data-label="Status" style="padding:8px 10px"><select id="status_' + i + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;background:#fff;width:100%"><option value="Hadir">✅ Hadir</option><option value="Tidak Hadir">❌ Tidak Hadir</option><option value="MC">🏥 MC</option><option value="Cuti">📋 Cuti</option><option value="Ponteng">🚫 Ponteng</option><option value="Lewat">⚠️ Lewat</option></select></td><td data-label="Catatan" style="padding:8px 10px"><input id="catatan_' + i + '" type="text" placeholder="catatan..." style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;width:100%;background:#fff"></td></tr>'
+    '<tr style="border-bottom:1px solid var(--border)"><td data-label="#" style="padding:10px 14px;color:var(--muted);font-size:0.8rem">' + (i+1) + '</td><td data-label="Nama Murid" style="padding:10px 14px"><strong style="font-size:0.88rem">' + escapeHtml(m.nama || '') + '</strong><div style="font-size:0.75rem;color:var(--muted)">' + escapeHtml(m.wali ? 'Wali: ' + m.wali : '') + '</div></td><td data-label="Status" style="padding:8px 10px"><select id="status_' + i + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;background:#fff;width:100%"><option value="Hadir">✅ Hadir</option><option value="Tidak Hadir">❌ Tidak Hadir</option><option value="MC">🏥 MC</option><option value="Cuti">📋 Cuti</option><option value="Ponteng">🚫 Ponteng</option><option value="Lewat">⚠️ Lewat</option></select></td><td data-label="Catatan" style="padding:8px 10px"><input id="catatan_' + i + '" type="text" placeholder="catatan..." style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;width:100%;background:#fff"></td></tr>'
   ).join('');
   if (infoEl) infoEl.textContent = murid.length + ' murid dalam ' + kelas + ' • ' + (access.mesej || '');
   window._senaraKelasData = murid;
@@ -4035,13 +4038,13 @@ function submitKehadiran() { submitKehadiranKelas(); }
   tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted)">Memuatkan...</td></tr>';
   const murid = await getMuridByKelas(kelas);
   if (!murid.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--red)">Tiada murid dalam kelas ' + kelas + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--red)">Tiada murid dalam kelas ' + escapeHtml(kelas) + '</td></tr>';
     return;
   }
   tbody.innerHTML = murid.map((m, i) =>
     '<tr style="border-bottom:1px solid var(--border)">' +
       '<td style="padding:10px 14px;color:var(--muted);font-size:0.8rem">' + (i + 1) + '</td>' +
-      '<td style="padding:10px 14px"><strong style="font-size:0.88rem">' + m.nama + '</strong><div style="font-size:0.75rem;color:var(--muted)">' + (m.wali ? 'Wali: ' + m.wali : '') + '</div></td>' +
+      '<td style="padding:10px 14px"><strong style="font-size:0.88rem">' + escapeHtml(m.nama || '') + '</strong><div style="font-size:0.75rem;color:var(--muted)">' + escapeHtml(m.wali ? 'Wali: ' + m.wali : '') + '</div></td>' +
       '<td style="padding:8px 10px"><select id="status_' + i + '" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;background:#fff;width:100%">' +
         '<option value="Hadir" selected>Hadir</option>' +
         '<option value="Tidak Hadir">Tidak Hadir</option>' +
@@ -5779,13 +5782,12 @@ async function uploadLetterToWorker(blob, filename) {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
-  const url = APP.workerUrl.replace(/\/+$/, '') + '/api';
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'storeLetterFile', data: base64, mimeType: blob.type || 'image/jpeg', filename: filename || 'SuratAmaran.jpg' })
+  const data = await callWorker({
+    action: 'storeLetterFile',
+    data: base64,
+    mimeType: blob.type || 'image/jpeg',
+    filename: filename || 'SuratAmaran.jpg'
   });
-  const data = await res.json();
   if (!data.success) throw new Error(data.error || 'Gagal simpan fail ke Worker');
   if (!data.url || !/^https?:\/\//i.test(String(data.url))) {
     throw new Error('Worker tidak memulangkan URL fail surat yang sah.');
@@ -6040,16 +6042,17 @@ async function janaSemuaOPR() {
 
 function cetakOPR() {
   const get = function(id) { const el = document.getElementById(id); return el ? el.value : ''; };
+  const safe = function(id, fallback) { return escapeHtml(get(id) || fallback || ''); };
   const nama = get('opr-nama');
   if (!nama) { showToast('Sila isi Nama Program dahulu.', 'error'); return; }
   const tarikh = get('opr-tarikh');
   const tarikhDate = tarikh ? parseLocalDateYMD(tarikh) : null;
-  const tarikhFmt = tarikhDate ? tarikhDate.toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+  const tarikhFmt = tarikhDate ? tarikhDate.toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
   const win = window.open('', '_blank');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Laporan OPR - ' + nama + '</title><style>body{font-family:Arial,sans-serif;font-size:12pt;margin:2cm;color:#000}h1{font-size:14pt;text-align:center;text-transform:uppercase;margin-bottom:4px}h2{font-size:13pt;text-align:center;margin-bottom:20px}.header{text-align:center;margin-bottom:24px;border-bottom:2px solid #000;padding-bottom:14px}table{width:100%;border-collapse:collapse;margin-bottom:16px}td{padding:6px 10px;border:1px solid #999;vertical-align:top}td:first-child{width:35%;font-weight:bold;background:#f5f5f5}.section{margin:16px 0}.section h3{font-size:12pt;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:8px}.section p{white-space:pre-wrap;line-height:1.7}.sign-row{display:flex;justify-content:space-between;margin-top:40px}.sign-box{text-align:center;width:40%}.sign-line{border-top:1px solid #000;margin-top:50px;padding-top:6px}@media print{body{margin:1.5cm}}</style></head><body><div class="header"><h1>' + get('opr-institusi') + '</h1><div style="font-size:11pt">' + get('opr-alamat') + '</div><h2 style="margin-top:16px">LAPORAN ONE PAGE REPORT (OPR)</h2></div><table><tr><td>Nama Program / Aktiviti</td><td>' + nama + '</td></tr><tr><td>Anjuran</td><td>' + (get('opr-anjuran') || '—') + '</td></tr><tr><td>Tarikh</td><td>' + tarikhFmt + '</td></tr><tr><td>Tempat</td><td>' + (get('opr-tempat') || '—') + '</td></tr><tr><td>Bilangan Peserta</td><td>' + (get('opr-peserta') || '—') + '</td></tr></table>' + (get('opr-objektif') ? '<div class="section"><h3>1. Objektif</h3><p>' + get('opr-objektif') + '</p></div>' : '') + (get('opr-aktiviti') ? '<div class="section"><h3>2. Aktiviti yang Dijalankan</h3><p>' + get('opr-aktiviti') + '</p></div>' : '') + (get('opr-kekuatan') ? '<div class="section"><h3>3. Kekuatan / Kejayaan</h3><p>' + get('opr-kekuatan') + '</p></div>' : '') + (get('opr-kelemahan') ? '<div class="section"><h3>4. Kelemahan / Cadangan</h3><p>' + get('opr-kelemahan') + '</p></div>' : '') + '<div class="sign-row"><div class="sign-box"><div class="sign-line"><strong>' + (get('opr-penyedia') || '( ........................... )') + '</strong><br><span style="font-size:10pt">' + (get('opr-jawatan') || 'Penyedia Laporan') + '</span></div></div><div class="sign-box"><div class="sign-line"><strong>' + (get('opr-gb') || '( ........................... )') + '</strong><br><span style="font-size:10pt">' + (get('opr-gb-jawatan') || 'Guru Besar') + '</span></div></div></div><script>window.onload=function(){window.print();};<\/script></body></html>');
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Laporan OPR - ' + escapeHtml(nama) + '</title><style>body{font-family:Arial,sans-serif;font-size:12pt;margin:2cm;color:#000}h1{font-size:14pt;text-align:center;text-transform:uppercase;margin-bottom:4px}h2{font-size:13pt;text-align:center;margin-bottom:20px}.header{text-align:center;margin-bottom:24px;border-bottom:2px solid #000;padding-bottom:14px}table{width:100%;border-collapse:collapse;margin-bottom:16px}td{padding:6px 10px;border:1px solid #999;vertical-align:top}td:first-child{width:35%;font-weight:bold;background:#f5f5f5}.section{margin:16px 0}.section h3{font-size:12pt;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:8px}.section p{white-space:pre-wrap;line-height:1.7}.sign-row{display:flex;justify-content:space-between;margin-top:40px}.sign-box{text-align:center;width:40%}.sign-line{border-top:1px solid #000;margin-top:50px;padding-top:6px}@media print{body{margin:1.5cm}}</style></head><body><div class="header"><h1>' + safe('opr-institusi') + '</h1><div style="font-size:11pt">' + safe('opr-alamat') + '</div><h2 style="margin-top:16px">LAPORAN ONE PAGE REPORT (OPR)</h2></div><table><tr><td>Nama Program / Aktiviti</td><td>' + escapeHtml(nama) + '</td></tr><tr><td>Anjuran</td><td>' + safe('opr-anjuran', '-') + '</td></tr><tr><td>Tarikh</td><td>' + escapeHtml(tarikhFmt) + '</td></tr><tr><td>Tempat</td><td>' + safe('opr-tempat', '-') + '</td></tr><tr><td>Bilangan Peserta</td><td>' + safe('opr-peserta', '-') + '</td></tr></table>' + (get('opr-objektif') ? '<div class="section"><h3>1. Objektif</h3><p>' + safe('opr-objektif') + '</p></div>' : '') + (get('opr-aktiviti') ? '<div class="section"><h3>2. Aktiviti yang Dijalankan</h3><p>' + safe('opr-aktiviti') + '</p></div>' : '') + (get('opr-kekuatan') ? '<div class="section"><h3>3. Kekuatan / Kejayaan</h3><p>' + safe('opr-kekuatan') + '</p></div>' : '') + (get('opr-kelemahan') ? '<div class="section"><h3>4. Kelemahan / Cadangan</h3><p>' + safe('opr-kelemahan') + '</p></div>' : '') + '<div class="sign-row"><div class="sign-box"><div class="sign-line"><strong>' + safe('opr-penyedia', '( ........................... )') + '</strong><br><span style="font-size:10pt">' + safe('opr-jawatan', 'Penyedia Laporan') + '</span></div></div><div class="sign-box"><div class="sign-line"><strong>' + safe('opr-gb', '( ........................... )') + '</strong><br><span style="font-size:10pt">' + safe('opr-gb-jawatan', 'Guru Besar') + '</span></div></div></div><script>window.onload=function(){window.print();};<\/script></body></html>';
+  win.document.write(html);
   win.document.close();
 }
-
 function openOPRImagePicker(inputId, targetIndex) {
   const input = document.getElementById(inputId);
   _oprImageTargetIndex = Number.isInteger(targetIndex) ? targetIndex : -1;
