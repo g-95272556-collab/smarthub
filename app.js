@@ -70,6 +70,12 @@ function getCurrentOriginBaseUrl() {
   return normalizeConfigUrl(window.location.origin);
 }
 
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 function buildGoogleAuthBaseUrlCandidates() {
   const candidates = [];
   const pushCandidate = (value) => {
@@ -284,6 +290,11 @@ function setText(id, value) {
 function animateCounter(id, target) {
   const el = $id(id);
   if (!el) return;
+  if (prefersReducedMotion()) {
+    el.textContent = target;
+    el.classList.remove('pulse');
+    return;
+  }
   
   const isPercent = typeof target === 'string' && target.endsWith('%');
   const targetVal = parseFloat(target) || 0;

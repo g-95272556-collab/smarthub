@@ -3336,51 +3336,7 @@ _{SEKOLAH}_</textarea>
           </div>
         </div>
 
-        <style>
-          .lk-split { display:grid; grid-template-columns:380px 1fr; gap:16px; align-items:start; }
-          @media(max-width:900px){ .lk-split { grid-template-columns:1fr; } }
-          .lk-form-group { margin-bottom:14px; }
-          .lk-form-group label { display:block; font-size:0.82rem; font-weight:600; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.04em; }
-          .lk-form-group select, .lk-form-group input[type=text], .lk-form-group input[type=number], .lk-form-group textarea { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:var(--bg); color:var(--text); font-size:0.93rem; box-sizing:border-box; }
-          .lk-form-group textarea { resize:vertical; min-height:72px; }
-          .lk-radio-group { display:flex; gap:8px; flex-wrap:wrap; }
-          .lk-radio-group label { display:flex; align-items:center; gap:5px; font-size:0.9rem; font-weight:500; cursor:pointer; color:var(--text); text-transform:none; letter-spacing:0; }
-          .lk-radio-group input[type=radio] { accent-color:var(--primary); }
-          .lk-tag { display:inline-block; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:20px; margin-left:6px; vertical-align:middle; }
-          .lk-tag-uasa { background:#fee2e2; color:#b91c1c; }
-          .lk-tag-pbd { background:#d1fae5; color:#065f46; }
-          /* Output box: tinggi fleksibel, panel yang mengawal ketinggian */
-          .lk-output-box { flex:1 1 auto; min-height:200px; background:var(--bg-alt,#f8fafc); border:1px solid var(--border); border-radius:8px; padding:16px; font-family:'Courier New',monospace; font-size:0.84rem; line-height:1.7; white-space:pre-wrap; color:var(--text); overflow:auto; }
-          .lk-status-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.88rem; font-weight:500; flex-shrink:0; }
-          .lk-status-idle { background:#f1f5f9; color:#64748b; }
-          .lk-status-loading { background:#eff6ff; color:#1d4ed8; }
-          .lk-status-done { background:#f0fdf4; color:#15803d; }
-          .lk-status-error { background:#fef2f2; color:#b91c1c; }
-          .lk-spin { display:inline-block; animation:lk-spin 1s linear infinite; }
-          @keyframes lk-spin { to { transform:rotate(360deg); } }
-          /* Butang aksi kekal kelihatan — flex-shrink:0 supaya tak terpinggir */
-          .lk-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; flex-shrink:0; }
-          /* Panel sticky: display flex column supaya output box isi ruang baki, butang sentiasa di atas */
-          .lk-sticky-panel { position: sticky; top: 20px; z-index: 10; align-self: start;
-            max-height: calc(100vh - 48px); display:flex; flex-direction:column; padding:20px !important; overflow:hidden; }
-          .lk-sticky-panel > div:first-child { flex-shrink:0; }  /* header + butang */
-          @media(max-width:900px){ .lk-sticky-panel { position: static; max-height:none; overflow:visible; } }
-          .lk-constraint-note { font-size:0.79rem; color:var(--muted); margin-top:4px; }
-          .lk-divider { border:none; border-top:1px solid var(--border); margin:14px 0; }
-          .lk-tema-group { margin-bottom:8px; }
-          .lk-tema-label { font-size:0.75rem; font-weight:700; color:#6366f1; text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; padding-bottom:2px; border-bottom:1px solid #e0e7ff; }
-          .lk-check-label { display:flex; align-items:flex-start; gap:6px; padding:3px 0; cursor:pointer; color:var(--text); font-weight:400; text-transform:none; letter-spacing:0; line-height:1.4; }
-          .lk-check-label:hover { color:#6366f1; }
-          .lk-check-label input[type=checkbox] { margin-top:2px; accent-color:#6366f1; flex-shrink:0; }
-          .lk-img-note { display:flex; align-items:flex-start; gap:6px; background:#fefce8; border:1px solid #fde047; border-radius:7px; padding:8px 10px; font-size:0.8rem; color:#854d0e; margin-bottom:10px; }
-          .lk-no-data { color:var(--muted); font-size:0.85rem; padding:4px 0; }
-          .lk-imej-card { border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--bg); }
-          .lk-imej-card img { width:100%; display:block; }
-          .lk-imej-caption { font-size:0.75rem; color:var(--muted); padding:6px 8px; line-height:1.4; }
-          .lk-imej-loading { padding:40px 10px; text-align:center; color:#6366f1; font-size:0.85rem; border:1px dashed #c7d2fe; border-radius:8px; }
-          .btn-indigo { background:#6366f1; color:#fff; border:none; }
-          .btn-indigo:hover { background:#4f46e5; }
-        </style>
+        
 
         <div class="lk-split">
           <!-- PANEL KIRI: FORM INPUT -->
