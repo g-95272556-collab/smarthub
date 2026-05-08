@@ -3207,3 +3207,7 @@ tr.jadual-row-depan {
 tr.jadual-row-lepas td {
   opacity: 0.5;
 }
+
+details[open] > summary svg {
+  transform: rotate(90deg);
+}

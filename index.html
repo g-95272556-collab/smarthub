@@ -2156,7 +2156,7 @@ _SK Kiandongo_</textarea>
             <button class="btn btn-secondary config-menu-item" data-config-group="notifikasi" onclick="scrollToConfigSection('config-attendance-notif-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-bell"></use></svg> Notifikasi Kehadiran</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="data" onclick="scrollToConfigSection('config-kokum-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-award"></use></svg> Konfigurasi Kokum</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="data" onclick="scrollToConfigSection('config-admin-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-shield-check"></use></svg> Pentadbiran & Akses</button>
-            <button class="btn btn-secondary config-menu-item" data-config-group="data" onclick="scrollToConfigSection('config-d1-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pengurusan D1</button>
+            <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-d1-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pengurusan D1</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-monitor-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-activity"></use></svg> Pemantauan & Log</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-advanced-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-settings"></use></svg> Kunci Lanjutan</button>
           </div>
@@ -2217,27 +2217,35 @@ _SK Kiandongo_</textarea>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Telegram Topic ID</label>
-                <input id="hl-tg-topic" type="text" placeholder="ID topik (jika ada)">
-                </div>
-                <div class="form-group">
                   <label>Fonnte API Token</label>
                   <input id="hl-fonnte-token" type="text" placeholder="token Fonnte">
                 </div>
-              </div>
-              <hr style="border:0;border-top:1px dashed var(--border);margin:8px 0">
-              <div class="form-row">
                 <div class="form-group">
-                    <label style="display:flex;justify-content:space-between">ID Kumpulan Ujian (Fonnte) <span id="config-fonnte-test-status" class="badge badge-gray">-</span></label>
-                  <input id="config-fonnte-test-group" type="text" placeholder="contoh: 120363423994004887@g.us">
-                  <div id="config-fonnte-test-id" style="margin-top:4px;font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
-                </div>
-                <div class="form-group">
-                <label style="display:flex;justify-content:space-between">ID Kumpulan Guru (Fonnte) <span id="config-fonnte-guru-status" class="badge badge-gray">-</span></label>
+                  <label style="display:flex;justify-content:space-between">ID Kumpulan Guru (Fonnte) <span id="config-fonnte-guru-status" class="badge badge-gray">-</span></label>
                   <input id="config-fonnte-guru-group" type="text" placeholder="contoh: 60148608242-1434600192@g.us" oninput="syncGroupGuruFonnteInputsFrom('config-fonnte-guru-group')">
                   <div id="config-fonnte-guru-id" style="margin-top:4px;font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
                 </div>
               </div>
+              <details style="margin-top:4px">
+                <summary style="cursor:pointer;font-size:0.85rem;color:var(--muted);user-select:none;padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px">
+                  <svg class="lucide-icon" width="14" height="14" style="transition:transform 0.2s"><use href="#lucide-chevron-right"></use></svg>
+                  Tetapan Lanjutan
+                </summary>
+                <div style="display:grid;gap:14px;margin-top:12px;padding:14px;border:1px dashed var(--border);border-radius:10px;background:rgba(15,23,42,0.02)">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Telegram Topic ID</label>
+                      <input id="hl-tg-topic" type="text" placeholder="ID topik (jika ada)">
+                      <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Hanya diperlukan jika Telegram menggunakan forum topic.</div>
+                    </div>
+                    <div class="form-group">
+                      <label style="display:flex;justify-content:space-between">ID Kumpulan Ujian (Fonnte) <span id="config-fonnte-test-status" class="badge badge-gray">-</span></label>
+                      <input id="config-fonnte-test-group" type="text" placeholder="contoh: 120363423994004887@g.us">
+                      <div id="config-fonnte-test-id" style="margin-top:4px;font-family:monospace;font-size:0.75rem;color:var(--muted);word-break:break-all"></div>
+                    </div>
+                  </div>
+                </div>
+              </details>
               <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
                 <button class="btn btn-primary" onclick="simpanKonfigHariLahir()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-save"></use></svg> Simpan Semua Tetapan Komunikasi</button>
                 <button class="btn btn-secondary" onclick="loadConfig()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-refresh-cw"></use></svg> Muat Semula</button>
@@ -2834,7 +2842,7 @@ _{SEKOLAH}_</textarea>
         </div>
 
 
-        <div class="card config-section-card" id="config-d1-card" data-config-group="data" style="margin-top:20px;border:1px solid rgba(37,99,235,.14);background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);box-shadow:0 18px 40px rgba(15,23,42,.08)">
+        <div class="card config-section-card" id="config-d1-card" data-config-group="lanjutan" style="margin-top:20px;border:1px solid rgba(37,99,235,.14);background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);box-shadow:0 18px 40px rgba(15,23,42,.08)">
           <div class="section-header" style="align-items:flex-start;gap:14px;margin-bottom:8px">
             <div style="flex:1;min-width:0">
               <h2>Pengurusan D1</h2>
