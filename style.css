@@ -88,6 +88,7 @@ html, body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 /* ─────────────────────────────────────────── */
@@ -139,6 +140,9 @@ a, button, [role="button"], input, select, textarea, label {
   align-items: center; justify-content: center;
   gap: 32px;
   transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+body.is-loading {
   overflow: hidden;
 }
 
@@ -2027,12 +2031,14 @@ table tbody tr:last-child td { border-bottom: none; }
 /* ─────────────────────────────────────────── */
 #loginPage {
   min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
   display: none;
   background: radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
               radial-gradient(circle at 100% 100%, rgba(250, 204, 21, 0.1) 0%, transparent 50%),
               var(--bg);
   align-items: center; justify-content: center;
-  position: relative; overflow: auto;
+  position: relative; overflow: auto hidden;
   padding: 40px 20px;
 }
 #loginPage.active { display: flex; animation: fadeIn 0.8s ease-out; }
@@ -2117,6 +2123,7 @@ table tbody tr:last-child td { border-bottom: none; }
   background: #fff;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .login-action-title {
@@ -2131,10 +2138,12 @@ table tbody tr:last-child td { border-bottom: none; }
 /* Google Sign-In Button Override */
 #googleSignInBtn {
   width: 100% !important;
+  max-width: 100%;
   min-height: 44px;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
 }
 .g-sign-in-wrapper {
   display: flex;
@@ -2145,6 +2154,7 @@ table tbody tr:last-child td { border-bottom: none; }
 .g-sign-in-wrapper > div,
 #googleSignInBtn > div,
 #googleSignInBtn iframe {
+  max-width: 100% !important;
   margin: 0 auto !important;
 }
 .login-config-card {
@@ -2248,15 +2258,27 @@ table tbody tr:last-child td { border-bottom: none; }
 @media (max-width: 520px) {
   #loginPage {
     align-items: flex-start;
-    padding: 18px 20px 28px; /* Increased side padding */
+    padding: 18px 12px 28px;
     background-size: min(300px, 82vw), auto, auto;
   }
   .login-card {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    flex: 0 1 calc(100vw - 24px);
     padding: 24px 16px 20px;
     border-radius: 16px;
   }
   .login-card h1 {
     font-size: 1.45rem;
+  }
+  .login-card p {
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.92rem;
+  }
+  .login-action-panel p {
+    max-width: 280px;
   }
   .login-config-actions .btn {
     width: 100%;
@@ -2264,6 +2286,15 @@ table tbody tr:last-child td { border-bottom: none; }
   }
   .login-action-panel {
     padding: 14px;
+  }
+  #googleSignInBtn > div {
+    transform: scale(0.88);
+    transform-origin: center;
+  }
+}
+@media (max-width: 380px) {
+  #googleSignInBtn > div {
+    transform: scale(0.82);
   }
 }
 
@@ -2960,7 +2991,8 @@ table tbody tr:last-child td { border-bottom: none; }
   background: rgba(8, 21, 43, 0.4);
   backdrop-filter: blur(8px);
   display: none; align-items: flex-start;
-  justify-content: center; padding-top: 10vh;
+  justify-content: center; padding: 10vh 16px 16px;
+  box-sizing: border-box;
 }
 .cmd-palette-card {
   width: 100%; max-width: 600px; padding: 0 !important;
@@ -2982,7 +3014,7 @@ table tbody tr:last-child td { border-bottom: none; }
 .cmd-palette-footer {
   padding: 12px 20px; background: rgba(241, 245, 249, 0.5);
   border-top: 1px solid var(--border);
-  display: flex; gap: 20px; font-size: 0.75rem; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 0.75rem; color: var(--muted);
 }
 .cmd-palette-footer kbd {
   background: #fff; border: 1px solid rgba(15, 23, 42, 0.1);

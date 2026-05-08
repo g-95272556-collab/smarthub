@@ -1958,7 +1958,15 @@ document.addEventListener('DOMContentLoaded', () => {
   requestAnimationFrame(() => {
     setTimeout(() => {
       const ls = $id('loadingScreen');
-      if (ls) { ls.classList.add('hidden'); setTimeout(() => { ls.style.display = 'none'; }, 500); }
+      if (ls) {
+        ls.classList.add('hidden');
+        setTimeout(() => {
+          ls.style.display = 'none';
+          document.body.classList.remove('is-loading');
+        }, 500);
+      } else {
+        document.body.classList.remove('is-loading');
+      }
       loadGoogleIdentityScript();
     }, 300);
   });
@@ -2056,11 +2064,10 @@ function renderGSIButton() {
   }
   if (_gsiButtonRenderedClientId === APP.googleClientId && container.childElementCount) return;
 
-  // Kira lebar responsif: lalai 320px, tetapi kecilkan pada skrin kecil (< 420px)
-  let targetWidth = 320;
-  if (window.innerWidth < 420) {
-    targetWidth = Math.max(200, Math.min(320, window.innerWidth - 80));
-  }
+  const measuredWidth = Math.floor(container.getBoundingClientRect().width || 0);
+  const viewportWidth = Math.max(0, window.innerWidth || 0);
+  const mobileCap = viewportWidth && viewportWidth < 520 ? Math.max(200, viewportWidth - 120) : 320;
+  const targetWidth = Math.max(200, Math.min(320, mobileCap, measuredWidth || mobileCap));
 
   container.innerHTML = '';
   google.accounts.id.renderButton(container, {
@@ -13116,18 +13123,26 @@ async function lkJanaImej() {
   const palette = document.getElementById('cmdPalette');
   const input = document.getElementById('cmdInput');
   const results = document.getElementById('cmdResults');
+  if (!palette || !input || !results) return;
   let selectedIdx = -1;
+
+  function canOpenPalette() {
+    const app = document.getElementById('appPage');
+    const login = document.getElementById('loginPage');
+    return !!(APP.user && app && app.classList.contains('active') && app.style.display !== 'none' && (!login || login.style.display === 'none'));
+  }
 
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
+      if (!canOpenPalette()) return;
       openPalette();
     }
     if (e.key === 'Escape') closePalette();
   });
 
   function openPalette() {
-    if (!palette || !input) return;
+    if (!canOpenPalette()) return;
     palette.style.display = 'flex';
     input.value = '';
     input.focus();
@@ -13158,7 +13173,6 @@ async function lkJanaImej() {
   });
 
   function renderResults(filtered) {
-    if (!results) return;
     if (!filtered.length && input.value) {
       results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted);">Tiada hasil dijumpai...</div>';
       return;
