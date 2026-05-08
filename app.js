@@ -281,6 +281,38 @@ function setText(id, value) {
   const el = $id(id);
   if (el) el.textContent = value;
 }
+function animateCounter(id, target) {
+  const el = $id(id);
+  if (!el) return;
+  
+  const isPercent = typeof target === 'string' && target.endsWith('%');
+  const targetVal = parseFloat(target) || 0;
+  const currentVal = parseFloat(el.textContent) || 0;
+  
+  if (targetVal === currentVal && el.textContent.includes(target)) return;
+  
+  const duration = 1200;
+  const start = performance.now();
+  
+  el.classList.add('pulse');
+  
+  function update(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeOutExpo = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+    const current = Math.floor(easeOutExpo * targetVal);
+    
+    el.textContent = isPercent ? current + '%' : current;
+    
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      setTimeout(() => el.classList.remove('pulse'), 300);
+      el.textContent = target;
+    }
+  }
+  requestAnimationFrame(update);
+}
 function setHTML(id, html) {
   const el = $id(id);
   if (el) el.innerHTML = html;
@@ -1368,7 +1400,14 @@ function renderGuruBertugasDash() {
 
 function renderMuridTidakHadirDash(rows) {
   var el = document.getElementById('dash-murid-tidak-hadir-list'); if(!el) return;
-  if (!rows.length) { el.innerHTML = '<div style="color:var(--green);font-weight:600;text-align:center;padding:16px">Semua murid hadir hari ini!</div>'; return; }
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty-state animate-fade-up">' +
+      '<svg class="lucide-icon empty-state-icon"><use href="#lucide-check-circle"></use></svg>' +
+      '<div class="empty-state-title">Semua murid hadir!</div>' +
+      '<div class="empty-state-desc">Tiada rekod ketidakhadiran dikesan untuk hari ini. Tahniah!</div>' +
+    '</div>';
+    return;
+  }
   var esc = function(v) {
     return String(v || '')
       .replace(/&/g, '&amp;')
@@ -1416,23 +1455,36 @@ function renderWeeklyChart(allRows) {
   var wrap = document.getElementById('dashChartWrap'); if(!wrap) return;
   var todayStr = getTodayYMD();
   var isnin = new Date(getIsninMingguIni()+'T00:00:00');
-  var bars = '';
+  
+  var html = '<div class="chart-bar-container">';
+  var days = ['Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat'];
+  
   for (var i = 0; i < 5; i++) {
     var d = new Date(isnin); d.setDate(isnin.getDate()+i);
     var ds = formatDateYMD(d);
     var isToday = ds === todayStr, pct = 0;
+    
     if (allRows && allRows.length) {
       var dayRows = allRows.filter(function(r){ return (r.tarikh||r[2]) === ds; });
       if (dayRows.length > 0) {
-        var h = dayRows.filter(function(r){ return (r.status||r[3])==='Hadir'; }).length;
+        var h = dayRows.filter(function(r){ return ['Hadir', 'Lewat'].includes(r.status||r[3]); }).length;
         pct = Math.round((h/dayRows.length)*100);
       }
     }
-    var height = pct ? Math.round((pct/100)*72) : 4;
-    var col = pct>=90?'var(--green)':pct>=80?'var(--gold2)':pct>0?'var(--red)':'var(--border)';
-    bars += '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1"><div style="font-size:0.68rem;color:var(--muted);font-weight:600">'+(pct>0?pct+'%':'')+'</div><div style="width:100%;height:'+height+'px;background:'+col+';border-radius:6px 6px 0 0;transition:height 0.3s'+(isToday?';outline:2px solid var(--gold);outline-offset:2px':'')+'"></div></div>';
+    
+    var height = pct ? Math.round((pct/100)*85) : 8;
+    var gradClass = pct >= 95 ? 'gradient-green' : pct >= 90 ? 'gradient-blue' : pct >= 80 ? 'gradient-amber' : pct > 0 ? 'gradient-red' : 'gradient-blue';
+    if (pct === 0) gradClass = ''; // gray/muted default
+    
+    var dayName = days[i];
+    html += '<div class="chart-bar-group">' +
+              '<div class="chart-bar-value">' + (pct > 0 ? pct + '%' : '-') + '</div>' +
+              '<div class="chart-bar ' + gradClass + '" style="height:' + height + 'px;' + (isToday ? 'box-shadow:0 0 15px var(--gold-glow);border:2px solid var(--gold)' : '') + '" title="' + dayName + ': ' + pct + '%"></div>' +
+              '<div class="chart-bar-label">' + dayName.substring(0, 3) + '</div>' +
+            '</div>';
   }
-  wrap.innerHTML = bars;
+  html += '</div>';
+  wrap.innerHTML = html;
 }
 
 function getNotificationLogs() {
@@ -1468,6 +1520,14 @@ function renderAktivitiTerkini() {
   var el = document.getElementById('dash-aktiviti-list'); if(!el) return;
   var today = getTodayYMD();
   var logs = getNotificationLogs().filter(function(l){ return l.date === today; });
+  if (!logs.length) {
+    el.innerHTML = '<div class="empty-state animate-fade-up" style="padding:24px 12px">' +
+      '<svg class="lucide-icon empty-state-icon" style="width:48px;height:48px"><use href="#lucide-bell-off"></use></svg>' +
+      '<div class="empty-state-title" style="font-size:0.9rem">Tiada aktiviti</div>' +
+      '<div class="empty-state-desc" style="font-size:0.75rem">Belum ada notifikasi dihantar hari ini.</div>' +
+    '</div>';
+    return;
+  }
   el.innerHTML = renderNotificationActivityItems(logs, 6);
 }
 
@@ -2398,6 +2458,26 @@ async function callWorker(payload) {
   }
 }
 
+function showSkeleton(id, type) {
+  const el = $id(id);
+  if (!el) return;
+  if (type === 'table-guru') {
+    el.innerHTML = '<tr><td><div class="skeleton skeleton-text" style="width:120px"></div></td><td><div class="skeleton skeleton-text" style="width:60px"></div></td><td><div class="skeleton skeleton-text" style="width:100px"></div></td><td><div class="skeleton skeleton-text" style="width:50px"></div></td><td><div class="skeleton skeleton-text"></div></td></tr>'.repeat(5);
+  } else if (type === 'list') {
+    el.innerHTML = '<div style="padding:10px"><div class="skeleton skeleton-text" style="height:16px;margin-bottom:12px"></div><div class="skeleton skeleton-text" style="height:16px;margin-bottom:12px;width:80%"></div><div class="skeleton skeleton-text" style="height:16px;width:90%"></div></div>';
+  } else if (type === 'chart') {
+    el.innerHTML = '<div class="chart-bar-container" style="gap:12px">' + 
+      '<div class="chart-bar-group"><div class="skeleton" style="width:100%;height:40px;margin-top:40px"></div><div class="skeleton skeleton-text" style="width:20px;height:10px;margin-top:8px"></div></div>' +
+      '<div class="chart-bar-group"><div class="skeleton" style="width:100%;height:70px;margin-top:10px"></div><div class="skeleton skeleton-text" style="width:20px;height:10px;margin-top:8px"></div></div>' +
+      '<div class="chart-bar-group"><div class="skeleton" style="width:100%;height:50px;margin-top:30px"></div><div class="skeleton skeleton-text" style="width:20px;height:10px;margin-top:8px"></div></div>' +
+      '<div class="chart-bar-group"><div class="skeleton" style="width:100%;height:65px;margin-top:15px"></div><div class="skeleton skeleton-text" style="width:20px;height:10px;margin-top:8px"></div></div>' +
+      '<div class="chart-bar-group"><div class="skeleton" style="width:100%;height:30px;margin-top:50px"></div><div class="skeleton skeleton-text" style="width:20px;height:10px;margin-top:8px"></div></div>' +
+      '</div>';
+  } else if (type === 'grid-birthday') {
+    el.innerHTML = '<div class="skeleton" style="height:60px;width:100%;margin-bottom:10px"></div>'.repeat(2);
+  }
+}
+
 async function pushFullSheet(sheetKey, headers, dataRows) {
   const rows = [headers].concat(dataRows);
   const data = await callWorker({ action: 'replaceSheet', sheetKey: sheetKey, rows: rows });
@@ -2480,6 +2560,12 @@ async function refreshDashboard() {
   });
   if (!APP.workerUrl) return;
 
+  showSkeleton('dashChartWrap', 'chart');
+  showSkeleton('dash-aktiviti-list', 'list');
+  showSkeleton('dashGuruBody', 'table-guru');
+  showSkeleton('dash-murid-tidak-hadir-list', 'list');
+  showSkeleton('dash-birthday-list', 'grid-birthday');
+
   scheduleIdleWork(async function() {
     try {
       var today = getTodayYMD();
@@ -2517,7 +2603,7 @@ function updateDashboardGuru(allGuru, today, julatMinggu) {
     var t = String(r.tarikh || '').split('T')[0];
     return t >= julatMinggu.isnin && t <= julatMinggu.jumaat;
   });
-  setText('dash-guru-hadir', todayGuru.filter(function(r){ return r.status === 'Hadir' || r.status === 'Lewat'; }).length);
+  animateCounter('dash-guru-hadir', todayGuru.filter(function(r){ return r.status === 'Hadir' || r.status === 'Lewat'; }).length);
   setText('dash-guru-sub', 'hadir hari ini daripada 12');
   renderDashGuruTable(weekGuru, julatMinggu.isnin, julatMinggu.jumaat);
 }
@@ -3584,7 +3670,7 @@ async function loadKehadiranGuru(options) {
   if (_kehadiranGuruLoading) return;
   _kehadiranGuruLoading = true;
   if (!opts.preserveTable || !tbody.children.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">Memuat data kehadiran guru secara langsung...</td></tr>';
+    showSkeleton('guruKehadiranBody', 'table');
   }
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
@@ -3856,7 +3942,7 @@ async function loadSenaraKelas() {
     showToast('Akses hanya dibenarkan untuk kelas yang ditetapkan.', 'error');
     return;
   }
-  tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted)">⏳ Memuatkan...</td></tr>';
+  showSkeleton('senaraKelasBody', 'table');
   refreshMuridAttendanceSummary();
   const murid = await getMuridByKelas(kelas);
   if (!murid.length) {
@@ -4597,7 +4683,7 @@ async function loadLaporanGuruBertugasAttendance() {
   const tbody = document.getElementById('laporanBertugasAttendanceBody');
   const summaryEl = document.getElementById('laporanBertugasAttendanceSummary');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">Memuat data kehadiran...</td></tr>';
+  showSkeleton('laporanBertugasAttendanceBody', 'table');
   try {
     const days = getLaporanGuruBertugasWeekDays();
     const muridRes = await callWorker({ action: 'readSheet', sheetKey: 'MURID' });
@@ -5407,6 +5493,7 @@ function simpanTemplat(jenis) {
 async function loadNotifLog() {
   const tbody = document.getElementById('notifLogBody');
   if (!tbody) return;
+  showSkeleton('notifLogBody', 'table');
   const logs = getNotificationLogs();
   const today = getTodayYMD();
   const todayLogs = logs.filter(function(l) { return l.date === today; });
@@ -5468,7 +5555,7 @@ async function loadHariLahir(forceHydrate) {
   const tbody = document.getElementById('hlBody');
   if (!tbody) return;
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px">Tiada rekod. Import CSV atau tambah manual.</td></tr>';
+    showSkeleton('hlBody', 'list');
     if (APP.workerUrl && (forceHydrate || !_birthdayHydratedOnce)) {
       try {
         await hydrateHariLahirFromBackend(!!forceHydrate);
@@ -10681,9 +10768,11 @@ function updateDashboardMurid(allMurid, today) {
   var tidakHadir = todayMurid.filter(function(r){ return ['Tidak Hadir', 'Sakit', 'Ponteng'].includes(r.status); });
   var total = todayMurid.length;
   var pct = total ? Math.round((hadir / total) * 100) : 0;
-  setText('dash-murid-hadir', hadir);
-  setText('dash-tidak-hadir', tidakHadir.length);
-  setText('dash-murid-pct', total ? pct + '% hadir' : '');
+  
+  animateCounter('dash-murid-hadir', hadir);
+  animateCounter('dash-tidak-hadir', tidakHadir.length);
+  animateCounter('dash-murid-pct', total ? pct + '%' : '0%');
+  
   renderWeeklyChart(allMurid);
   renderMuridTidakHadirDash(tidakHadir);
 }
@@ -10739,7 +10828,7 @@ async function loadAmaranKehadiran() {
   const container = document.getElementById('amaranKehadiranBody');
   const statsDiv = document.getElementById('amaranKehadiranStats');
   if (!container) return;
-  container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Menganalisis data kehadiran semua murid...</td></tr>';
+  showSkeleton('amaranKehadiranBody', 'table');
   if (statsDiv) statsDiv.innerHTML = '';
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
@@ -10757,12 +10846,29 @@ async function loadAmaranKehadiran() {
     allMurid.forEach(function(m) { counts[m.tahap]++; });
     if (statsDiv) {
       statsDiv.innerHTML =
-        '<div class="stat-card"><div class="stat-icon amber"><span style="font-size:1rem">⚠️</span></div><div class="stat-info"><small>Amaran 1</small><strong>' + counts[1] + '</strong></div></div>' +
-        '<div class="stat-card"><div class="stat-icon red"><span style="font-size:1rem">🔶</span></div><div class="stat-info"><small>Amaran 2</small><strong>' + counts[2] + '</strong></div></div>' +
-        '<div class="stat-card"><div class="stat-icon red"><span style="font-size:1rem">🚨</span></div><div class="stat-info"><small>Amaran 3</small><strong>' + counts[3] + '</strong></div></div>' +
-        '<div class="stat-card"><div class="stat-icon" style="background:rgba(124,58,237,0.12)"><span style="font-size:1rem">🚫</span></div><div class="stat-info"><small>Buang Sekolah</small><strong>' + counts[4] + '</strong></div></div>';
+        '<div class="stat-card animate-fade-up"><div class="stat-icon amber"><span style="font-size:1rem">⚠️</span></div><div class="stat-info"><small>Amaran 1</small><strong id="amaran-count-1" class="stat-value">0</strong></div></div>' +
+        '<div class="stat-card animate-fade-up" style="animation-delay:0.1s"><div class="stat-icon red"><span style="font-size:1rem">🔶</span></div><div class="stat-info"><small>Amaran 2</small><strong id="amaran-count-2" class="stat-value">0</strong></div></div>' +
+        '<div class="stat-card animate-fade-up" style="animation-delay:0.2s"><div class="stat-icon red"><span style="font-size:1rem">🚨</span></div><div class="stat-info"><small>Amaran 3</small><strong id="amaran-count-3" class="stat-value">0</strong></div></div>' +
+        '<div class="stat-card animate-fade-up" style="animation-delay:0.3s"><div class="stat-icon" style="background:rgba(124,58,237,0.12)"><span style="font-size:1rem">🚫</span></div><div class="stat-info"><small>Buang Sekolah</small><strong id="amaran-count-4" class="stat-value">0</strong></div></div>';
+      
+      setTimeout(() => {
+        animateCounter('amaran-count-1', counts[1]);
+        animateCounter('amaran-count-2', counts[2]);
+        animateCounter('amaran-count-3', counts[3]);
+        animateCounter('amaran-count-4', counts[4]);
+      }, 100);
     }
-    if (!muridAmaran.length) { container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Tiada murid memerlukan surat amaran pada masa ini.</td></tr>'; showToast('Tiada murid yang perlu amaran.', 'success'); return; }
+    if (!muridAmaran.length) {
+      container.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px">' +
+        '<div class="empty-state animate-fade-up">' +
+          '<svg class="lucide-icon empty-state-icon"><use href="#lucide-shield-check"></use></svg>' +
+          '<div class="empty-state-title">Rekod Bersih</div>' +
+          '<div class="empty-state-desc">Tiada murid yang mencapai tahap amaran ketidakhadiran buat masa ini.</div>' +
+        '</div>' +
+      '</td></tr>';
+      showToast('Tiada murid yang perlu amaran.', 'success');
+      return;
+    }
     container.innerHTML = muridAmaran.map(function(m) {
       const info = m.tahapInfo;
       const bs = 'background:' + info.warna + '22;color:' + info.warnaText + ';border:1px solid ' + info.warna + ';padding:2px 8px;border-radius:12px;font-size:0.78rem;font-weight:700';
@@ -11057,7 +11163,7 @@ async function loadKehadiranMurid(options) {
   if (_kehadiranMuridLoading) return;
   _kehadiranMuridLoading = true;
   if (!opts.preserveTable || !tbody.children.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:20px">Memuat data kehadiran murid secara langsung...</td></tr>';
+    showSkeleton('muridKehadiranBody', 'table');
   }
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
@@ -12990,3 +13096,145 @@ async function lkJanaImej() {
 }
 
 // ══ END JANA LEMBARAN KERJA AI ══════════════════════════════════
+
+// ── COMMAND PALETTE (Ctrl+K) ───────────────────────────────────
+(function() {
+  const palette = document.getElementById('cmdPalette');
+  const input = document.getElementById('cmdInput');
+  const results = document.getElementById('cmdResults');
+  let selectedIdx = -1;
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      openPalette();
+    }
+    if (e.key === 'Escape') closePalette();
+  });
+
+  function openPalette() {
+    if (!palette || !input) return;
+    palette.style.display = 'flex';
+    input.value = '';
+    input.focus();
+    renderResults([]);
+  }
+
+  function closePalette() {
+    if (palette) palette.style.display = 'none';
+  }
+
+  input.addEventListener('input', () => {
+    const query = input.value.toLowerCase().trim();
+    if (!query) return renderResults([]);
+
+    const items = [
+      { id: 'dashboard', title: 'Dashboard', sub: 'Ringkasan Utama', action: () => showModule('dashboard') },
+      { id: 'kehadiran-guru', title: 'Kehadiran Guru', sub: 'Daftar Masuk/Keluar GPS', action: () => showModule('kehadiran-guru') },
+      { id: 'kehadiran-murid', title: 'Kehadiran Murid', sub: 'Daftar Kehadiran Kelas', action: () => showModule('kehadiran-murid') },
+      { id: 'amaran-kehadiran', title: 'Amaran Kehadiran', sub: 'Jana Surat Amaran', action: () => showModule('amaran-kehadiran') },
+      { id: 'laporan-mingguan', title: 'Laporan Mingguan', sub: 'Laporan Guru Bertugas', action: () => showModule('laporan-kelas') },
+      { id: 'lembaran-kerja', title: 'Lembaran Kerja AI', sub: 'Jana Latihan Murid', action: () => showModule('lembaran-kerja') },
+      { id: 'notifikasi', title: 'Notifikasi', sub: 'Log WhatsApp/Telegram', action: () => showModule('notifikasi') },
+      { id: 'konfigurasi', title: 'Konfigurasi', sub: 'Tetapan Sistem', action: () => showModule('konfigurasi') }
+    ];
+
+    const filtered = items.filter(i => i.title.toLowerCase().includes(query) || i.sub.toLowerCase().includes(query));
+    renderResults(filtered);
+  });
+
+  function renderResults(filtered) {
+    if (!results) return;
+    if (!filtered.length && input.value) {
+      results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted);">Tiada hasil dijumpai...</div>';
+      return;
+    }
+    if (!filtered.length) {
+      results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 0.9rem;">Taip untuk cari modul...</div>';
+      return;
+    }
+
+    results.innerHTML = filtered.map((item, i) => `
+      <div class="cmd-item" data-idx="${i}" style="padding: 12px 16px; cursor: pointer; border-radius: 8px; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; transition: background 0.2s;">
+        <div style="background: #f1f5f9; width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; color: var(--navy);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+          <div style="font-weight: 600; font-size: 0.95rem;">${item.title}</div>
+          <div style="font-size: 0.75rem; color: var(--muted);">${item.sub}</div>
+        </div>
+      </div>
+    `).join('');
+
+    const itemEls = results.querySelectorAll('.cmd-item');
+    itemEls.forEach((el, i) => {
+      el.addEventListener('click', () => {
+        filtered[i].action();
+        closePalette();
+      });
+      el.addEventListener('mouseenter', () => setSelection(i));
+    });
+
+    setSelection(0);
+  }
+
+  function setSelection(idx) {
+    const itemEls = results.querySelectorAll('.cmd-item');
+    itemEls.forEach(el => {
+      el.style.background = 'transparent';
+    });
+    if (itemEls[idx]) {
+      itemEls[idx].style.background = '#f1f5f9';
+      selectedIdx = idx;
+    }
+  }
+
+  input.addEventListener('keydown', e => {
+    const itemEls = results.querySelectorAll('.cmd-item');
+    if (!itemEls.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelection((selectedIdx + 1) % itemEls.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelection((selectedIdx - 1 + itemEls.length) % itemEls.length);
+    } else if (e.key === 'Enter') {
+      if (itemEls[selectedIdx]) itemEls[selectedIdx].click();
+    }
+  });
+
+  palette.addEventListener('click', e => {
+    if (e.target === palette) closePalette();
+  });
+})();
+
+// ── SKELETON LOADERS ──────────────────────────────────────────
+function showSkeleton(targetId, type) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  
+  if (type === 'table') {
+    const table = el.closest('table');
+    const cols = table ? table.querySelectorAll('thead th').length : 6;
+    let rowsHtml = '';
+    for (let i = 0; i < 6; i++) {
+      rowsHtml += '<tr>';
+      for (let j = 0; j < cols; j++) {
+        rowsHtml += `<td><div class="shimmer-pulse" style="height:14px; background:rgba(15,23,42,0.05); border-radius:4px; width:${40 + Math.random() * 50}%"></div></td>`;
+      }
+      rowsHtml += '</tr>';
+    }
+    el.innerHTML = rowsHtml;
+  } else if (type === 'list') {
+    el.innerHTML = Array(5).fill(0).map(() => `
+      <div style="padding:16px; border-bottom:1px solid rgba(15,23,42,0.05)">
+        <div class="shimmer-pulse" style="height:16px; background:rgba(15,23,42,0.06); border-radius:4px; width:40%; margin-bottom:8px"></div>
+        <div class="shimmer-pulse" style="height:12px; background:rgba(15,23,42,0.03); border-radius:4px; width:85%"></div>
+      </div>
+    `).join('');
+  } else if (type === 'chart') {
+    el.innerHTML = '<div style="display:flex; align-items:flex-end; gap:12px; height:140px; padding:20px">' + 
+      Array(8).fill(0).map(() => `<div class="shimmer-pulse" style="flex:1; background:rgba(15,23,42,0.05); border-radius:6px; height:${15 + Math.random() * 80}%"></div>`).join('') + 
+      '</div>';
+  }
+}

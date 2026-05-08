@@ -700,6 +700,20 @@ function splashDoConfetti() {
       <path d="M12 21v1"></path>
       <path d="M12 16v1"></path>
     </symbol>
+    <symbol id="lucide-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+    </symbol>
+    <symbol id="lucide-bell-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8.7 3A6 6 0 0 0 18 9v6.8"></path>
+      <path d="M4.4 4.4 20 20"></path>
+      <path d="M10 20a2 2 0 0 0 4 0"></path>
+      <path d="M6.26 6.26A5.86 5.86 0 0 0 6 9v7l-2 2h14"></path>
+    </symbol>
+    <symbol id="lucide-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </symbol>
     <symbol id="lucide-cloud-fog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
       <path d="M16 17H7"></path>
@@ -948,7 +962,7 @@ function splashDoConfetti() {
 <!-- ─── LOGIN PAGE ─── -->
 <main id="loginPage" role="region" aria-label="Halaman Log Masuk">
   <div class="login-card">
-    <div class="login-logo" role="img" aria-label="Logo Rasmi SK Kiandongo">SK</div>
+    <div class="login-logo" role="img" aria-label="Logo Rasmi SK Kiandongo"></div>
     <h1>SmartSchoolHub</h1>
     <p>Selamat datang warga SK Kiandongo.<br>Log masuk menggunakan akaun Google sekolah.</p>
     <div class="login-welcome-note">Akses rasmi sekolah</div>
@@ -1124,12 +1138,12 @@ function splashDoConfetti() {
         </div>
 
         <!-- Stat Cards -->
-        <div class="card-grid card-grid-4" style="margin-bottom:18px">
+        <div class="card-grid card-grid-4 animate-fade-up" style="margin-bottom:18px">
           <div class="stat-card">
             <div class="stat-icon blue"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-graduation-cap"></use></svg></div>
             <div class="stat-info">
               <small>Murid Hadir</small>
-              <strong id="dash-murid-hadir">—</strong>
+              <strong id="dash-murid-hadir" class="stat-value">—</strong>
               <span id="dash-murid-pct" style="color:var(--green);font-size:0.75rem;font-weight:600"></span>
             </div>
           </div>
@@ -1137,7 +1151,7 @@ function splashDoConfetti() {
             <div class="stat-icon red"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-user-x"></use></svg></div>
             <div class="stat-info">
               <small>Tidak Hadir</small>
-              <strong id="dash-tidak-hadir">—</strong>
+              <strong id="dash-tidak-hadir" class="stat-value">—</strong>
               <span>murid hari ini</span>
             </div>
           </div>
@@ -1145,7 +1159,7 @@ function splashDoConfetti() {
             <div class="stat-icon gold"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-users"></use></svg></div>
             <div class="stat-info">
               <small>Guru Hadir</small>
-              <strong id="dash-guru-hadir">—</strong>
+              <strong id="dash-guru-hadir" class="stat-value">—</strong>
               <span id="dash-guru-sub">hari ini</span>
             </div>
           </div>
@@ -1153,14 +1167,14 @@ function splashDoConfetti() {
             <div class="stat-icon green"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-mail-check"></use></svg></div>
             <div class="stat-info">
               <small>Notif Dihantar</small>
-              <strong id="dash-notif">—</strong>
+              <strong id="dash-notif" class="stat-value">—</strong>
               <span>hari ini</span>
             </div>
           </div>
         </div>
 
         <!-- Cuaca + Waktu Solat + Guru Bertugas -->
-        <div class="card-grid card-grid-3" style="margin-bottom:18px">
+        <div class="card-grid card-grid-3 animate-fade-up" style="margin-bottom:18px;animation-delay:0.1s">
 
           <!-- Cuaca -->
           <div class="card" style="background:linear-gradient(135deg,#1A4FA0 0%,#1e6fc1 100%);color:#fff;border:none">
@@ -1211,7 +1225,7 @@ function splashDoConfetti() {
         </div>
 
         <!-- Chart + Aktiviti -->
-        <div class="card-grid card-grid-2" style="margin-bottom:18px">
+        <div class="card-grid card-grid-2 animate-fade-up" style="margin-bottom:18px;animation-delay:0.2s">
           <div class="card">
             <div class="section-header">
               <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-bar-chart-3"></use></svg> Kehadiran Minggu Ini (%)</h2>
@@ -4064,6 +4078,24 @@ _{SEKOLAH}_</textarea>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modalPadam')">Batal</button>
       <button class="btn btn-danger" id="modalPadamConfirm"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-trash-2"></use></svg> Padam</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK SEARCH / COMMAND PALETTE (Ctrl+K) -->
+<div id="cmdPalette" class="cmd-palette-backdrop">
+  <div class="cmd-palette-card card">
+    <div class="cmd-palette-header">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cmd-palette-search-icon"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="cmdInput" placeholder="Cari modul, murid, atau guru... (Esc untuk tutup)" class="cmd-palette-input" autocomplete="off">
+    </div>
+    <div id="cmdResults" class="cmd-palette-results">
+      <div class="cmd-palette-empty">Taip sesuatu untuk memulakan carian...</div>
+    </div>
+    <div class="cmd-palette-footer">
+      <span><kbd>↑↓</kbd> Navigasi</span>
+      <span><kbd>Enter</kbd> Pilih</span>
+      <span><kbd>Esc</kbd> Tutup</span>
     </div>
   </div>
 </div>
