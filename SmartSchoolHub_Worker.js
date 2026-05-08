@@ -212,6 +212,13 @@ export default {
       const url = new URL(request.url);
       const path = url.pathname;
 
+      if (path === "/_headers") {
+        return new Response("Not found", {
+          status: 404,
+          headers: withSecurityHeaders({ "Content-Type": "text/plain; charset=utf-8" })
+        });
+      }
+
       if (path === "/api" || path.startsWith("/api/")) {
         return await handleAPI(request, env, corsHeaders);
       }

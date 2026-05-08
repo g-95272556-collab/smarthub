@@ -1,8 +1,9 @@
-const CACHE_NAME = "ssh-pwa-v7-gemini-fix";
+const CACHE_NAME = "ssh-pwa-v8-runtime-config";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./app.js",
+  "./runtime-config.js",
   "./manifest.webmanifest",
   "./offline.html",
   "./assets/logo.png",
