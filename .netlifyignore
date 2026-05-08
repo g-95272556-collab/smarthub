@@ -17,11 +17,24 @@ package.json
 README.md
 LICENSE
 SECURITY.md
+DEVNOTES.md
+AUDIT_SMARTHUB_2026-05-08.md
+DEPLOYMENT_SECURITY.md
 DATA_MIGRATION_PLAN.md
 APPS_SCRIPT_SETUP.md
 BACKEND_RESET_GUIDE.md
+
+*.patch
+*.py
+*.ps1
+capacitor.config.json
+dskp_database.json
+lighthouse_report.json
+xbasmarthub_nilai_render.html
+xbasmarthub_nilai_webapp.png
 
 SmartSchoolHub_AppsScript.js
 SmartSchoolHub_AppsScript_Clean.gs
 import_data.js
 wrangler.toml
+wrangler.google-oauth.toml

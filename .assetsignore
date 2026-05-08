@@ -2,6 +2,7 @@
 !_headers
 !index.html
 !app.js
+!dskp_embedded.js
 !runtime-config.js
 !manifest.webmanifest
 !offline.html
