@@ -1522,7 +1522,7 @@ function renderAktivitiTerkini() {
   var logs = getNotificationLogs().filter(function(l){ return l.date === today; });
   if (!logs.length) {
     el.innerHTML = '<div class="empty-state animate-fade-up" style="padding:24px 12px">' +
-      '<svg class="lucide-icon empty-state-icon" style="width:48px;height:48px"><use href="#lucide-bell-off"></use></svg>' +
+      '<svg class="lucide-icon empty-state-icon" style="width:48px;height:48px"><use href="#lucide-bell"></use></svg>' +
       '<div class="empty-state-title" style="font-size:0.9rem">Tiada aktiviti</div>' +
       '<div class="empty-state-desc" style="font-size:0.75rem">Belum ada notifikasi dihantar hari ini.</div>' +
     '</div>';
@@ -2461,8 +2461,19 @@ async function callWorker(payload) {
 function showSkeleton(id, type) {
   const el = $id(id);
   if (!el) return;
-  if (type === 'table-guru') {
-    el.innerHTML = '<tr><td><div class="skeleton skeleton-text" style="width:120px"></div></td><td><div class="skeleton skeleton-text" style="width:60px"></div></td><td><div class="skeleton skeleton-text" style="width:100px"></div></td><td><div class="skeleton skeleton-text" style="width:50px"></div></td><td><div class="skeleton skeleton-text"></div></td></tr>'.repeat(5);
+  if (type === 'table' || type === 'table-guru') {
+    const table = el.closest('table');
+    const colCount = table ? Math.max(1, table.querySelectorAll('thead th').length || 6) : 6;
+    let rowsHtml = '';
+    for (let i = 0; i < 6; i++) {
+      rowsHtml += '<tr>';
+      for (let j = 0; j < colCount; j++) {
+        const width = j === 0 ? 120 : j === colCount - 1 ? 80 : 60 + ((i + j) % 4) * 15;
+        rowsHtml += '<td><div class="skeleton skeleton-text" style="width:' + width + 'px;max-width:100%"></div></td>';
+      }
+      rowsHtml += '</tr>';
+    }
+    el.innerHTML = rowsHtml;
   } else if (type === 'list') {
     el.innerHTML = '<div style="padding:10px"><div class="skeleton skeleton-text" style="height:16px;margin-bottom:12px"></div><div class="skeleton skeleton-text" style="height:16px;margin-bottom:12px;width:80%"></div><div class="skeleton skeleton-text" style="height:16px;width:90%"></div></div>';
   } else if (type === 'chart') {
@@ -2475,6 +2486,8 @@ function showSkeleton(id, type) {
       '</div>';
   } else if (type === 'grid-birthday') {
     el.innerHTML = '<div class="skeleton" style="height:60px;width:100%;margin-bottom:10px"></div>'.repeat(2);
+  } else {
+    el.innerHTML = '<div style="padding:10px"><div class="skeleton skeleton-text" style="height:16px;margin-bottom:12px"></div><div class="skeleton skeleton-text" style="height:16px;width:80%"></div></div>';
   }
 }
 
@@ -5555,8 +5568,8 @@ async function loadHariLahir(forceHydrate) {
   const tbody = document.getElementById('hlBody');
   if (!tbody) return;
   if (!filtered.length) {
-    showSkeleton('hlBody', 'list');
     if (APP.workerUrl && (forceHydrate || !_birthdayHydratedOnce)) {
+      showSkeleton('hlBody', 'table');
       try {
         await hydrateHariLahirFromBackend(!!forceHydrate);
         return loadHariLahir(false);
@@ -5564,6 +5577,7 @@ async function loadHariLahir(forceHydrate) {
         console.warn('Hydrasi Hari Lahir gagal:', e);
       }
     }
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:18px">Tiada rekod hari lahir ditemui.</td></tr>';
     return;
   }
   tbody.innerHTML = filtered.map(function(p, i) {
@@ -10771,7 +10785,7 @@ function updateDashboardMurid(allMurid, today) {
   
   animateCounter('dash-murid-hadir', hadir);
   animateCounter('dash-tidak-hadir', tidakHadir.length);
-  animateCounter('dash-murid-pct', total ? pct + '%' : '0%');
+  setText('dash-murid-pct', total ? pct + '% hadir' : '');
   
   renderWeeklyChart(allMurid);
   renderMuridTidakHadirDash(tidakHadir);
@@ -13207,34 +13221,3 @@ async function lkJanaImej() {
     if (e.target === palette) closePalette();
   });
 })();
-
-// ── SKELETON LOADERS ──────────────────────────────────────────
-function showSkeleton(targetId, type) {
-  const el = document.getElementById(targetId);
-  if (!el) return;
-  
-  if (type === 'table') {
-    const table = el.closest('table');
-    const cols = table ? table.querySelectorAll('thead th').length : 6;
-    let rowsHtml = '';
-    for (let i = 0; i < 6; i++) {
-      rowsHtml += '<tr>';
-      for (let j = 0; j < cols; j++) {
-        rowsHtml += `<td><div class="shimmer-pulse" style="height:14px; background:rgba(15,23,42,0.05); border-radius:4px; width:${40 + Math.random() * 50}%"></div></td>`;
-      }
-      rowsHtml += '</tr>';
-    }
-    el.innerHTML = rowsHtml;
-  } else if (type === 'list') {
-    el.innerHTML = Array(5).fill(0).map(() => `
-      <div style="padding:16px; border-bottom:1px solid rgba(15,23,42,0.05)">
-        <div class="shimmer-pulse" style="height:16px; background:rgba(15,23,42,0.06); border-radius:4px; width:40%; margin-bottom:8px"></div>
-        <div class="shimmer-pulse" style="height:12px; background:rgba(15,23,42,0.03); border-radius:4px; width:85%"></div>
-      </div>
-    `).join('');
-  } else if (type === 'chart') {
-    el.innerHTML = '<div style="display:flex; align-items:flex-end; gap:12px; height:140px; padding:20px">' + 
-      Array(8).fill(0).map(() => `<div class="shimmer-pulse" style="flex:1; background:rgba(15,23,42,0.05); border-radius:6px; height:${15 + Math.random() * 80}%"></div>`).join('') + 
-      '</div>';
-  }
-}
