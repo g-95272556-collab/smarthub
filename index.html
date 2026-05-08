@@ -2140,6 +2140,13 @@ _SK Kiandongo_</textarea>
             <h2>Menu Konfigurasi</h2>
             <span class="badge badge-blue">Pusat Tetapan</span>
           </div>
+
+          <div class="config-section-tabs" role="tablist" aria-label="Kumpulan konfigurasi">
+            <button type="button" class="config-section-tab" data-config-tab="utama" onclick="setConfigGroup('utama')">Utama</button>
+            <button type="button" class="config-section-tab" data-config-tab="notifikasi" onclick="setConfigGroup('notifikasi')">Notifikasi</button>
+            <button type="button" class="config-section-tab" data-config-tab="data" onclick="setConfigGroup('data')">Data & Akses</button>
+            <button type="button" class="config-section-tab" data-config-tab="lanjutan" onclick="setConfigGroup('lanjutan')">Lanjutan</button>
+          </div>
           <div class="config-menu-grid">
             <button class="btn btn-secondary" onclick="scrollToConfigSection('config-ai-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (AI)</button>
             <button class="btn btn-secondary" onclick="scrollToConfigSection('config-worker-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pangkalan Data (D1)</button>
@@ -2152,7 +2159,7 @@ _SK Kiandongo_</textarea>
         </div>
 
         <div class="config-grid">
-          <div class="card" id="config-worker-card">
+          <div class="card config-section-card" id="config-worker-card" data-config-group="utama">
             <div class="section-header">
               <h2>Worker & Cloudflare D1</h2>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Kembali ke Menu Konfigurasi</button>
@@ -2188,7 +2195,7 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
-          <div class="card" id="config-comm-card" style="border:1px solid rgba(26,79,160,0.14);background:linear-gradient(180deg,#ffffff 0%,#f0f4ff 100%)">
+          <div class="card config-section-card" id="config-comm-card" data-config-group="utama" style="border:1px solid rgba(26,79,160,0.14);background:linear-gradient(180deg,#ffffff 0%,#f0f4ff 100%)">
             <div class="section-header">
               <h2>Komunikasi (WhatsApp & Telegram)</h2>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
@@ -2234,7 +2241,7 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
-          <div class="card" id="config-ai-card" style="border: 2px solid var(--primary-light);">
+          <div class="card config-section-card" id="config-ai-card" data-config-group="utama" style="border: 2px solid var(--primary-light);">
             <div class="section-header">
               <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (Auto-Rotate)</h2>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
@@ -2296,7 +2303,7 @@ _SK Kiandongo_</textarea>
             </p>
           </div>
 
-          <div class="card">
+          <div class="card config-section-card" id="config-advanced-card" data-config-group="lanjutan">
             <div class="section-header">
               <h2>Konfigurasi Kunci (Lanjutan)</h2>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
@@ -2317,7 +2324,7 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
-          <div class="card" id="config-group-card">
+          <div class="card config-section-card" id="config-group-card" data-config-group="utama">
             <div class="section-header">
               <h2>Setup Group WhatsApp Kelas</h2>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
@@ -2390,7 +2397,7 @@ _SK Kiandongo_</textarea>
 
         </div>
 
-        <div class="card" id="config-birthday-card" style="margin-top:20px;border:1px solid rgba(16,185,129,.18);background:linear-gradient(180deg,#ffffff 0%,#f8fffb 100%)">
+        <div class="card config-section-card" id="config-birthday-card" data-config-group="notifikasi" style="margin-top:20px;border:1px solid rgba(16,185,129,.18);background:linear-gradient(180deg,#ffffff 0%,#f8fffb 100%)">
           <div class="section-header" style="align-items:flex-start;gap:14px">
             <div style="flex:1;min-width:0">
               <h2>Konfigurasi Notifikasi Hari Lahir</h2>
@@ -2465,7 +2472,7 @@ _SK Kiandongo_</textarea>
           </div>
         </div>
 
-        <div class="card" id="config-attendance-notif-card" style="margin-top:20px;border:1px solid rgba(245,158,11,.2);background:linear-gradient(180deg,#ffffff 0%,#fffaf0 100%)">
+        <div class="card config-section-card" id="config-attendance-notif-card" data-config-group="notifikasi" style="margin-top:20px;border:1px solid rgba(245,158,11,.2);background:linear-gradient(180deg,#ffffff 0%,#fffaf0 100%)">
           <div class="section-header" style="align-items:flex-start;gap:14px">
             <div style="flex:1;min-width:0">
               <h2>Konfigurasi Notifikasi Kehadiran Guru & Murid</h2>
@@ -2637,7 +2644,7 @@ _{SEKOLAH}_</textarea>
           <div id="attendanceNotifConfigResult" class="result-box" style="display:none;margin-top:14px"></div>
         </div>
 
-          <div class="card" id="config-admin-card" style="margin-top:20px">
+          <div class="card config-section-card" id="config-admin-card" data-config-group="data" style="margin-top:20px">
             <div class="section-header">
               <h2>Pentadbiran & Akses</h2>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
@@ -2674,7 +2681,7 @@ _{SEKOLAH}_</textarea>
             </div>
           </div>
 
-          <div class="card" id="config-monitor-card" style="margin-top:20px;border:1px solid rgba(148,163,184,0.2)">
+          <div class="card config-section-card" id="config-monitor-card" data-config-group="lanjutan" style="margin-top:20px;border:1px solid rgba(148,163,184,0.2)">
             <div class="section-header">
               <h2>Pemantauan & Log</h2>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
@@ -2718,7 +2725,7 @@ _{SEKOLAH}_</textarea>
             </div>
           </div>
 
-        <div class="card" id="config-kokum-card" style="margin-top:20px;border:1px solid rgba(16,185,129,.16);background:linear-gradient(180deg,#ffffff 0%,#f7fffb 100%)">
+        <div class="card config-section-card" id="config-kokum-card" data-config-group="data" style="margin-top:20px;border:1px solid rgba(16,185,129,.16);background:linear-gradient(180deg,#ffffff 0%,#f7fffb 100%)">
           <div class="section-header" style="align-items:flex-start;gap:12px">
             <div style="flex:1;min-width:0">
               <h2>Konfigurasi Pelaporan Kokum</h2>
@@ -2787,7 +2794,7 @@ _{SEKOLAH}_</textarea>
         </div>
 
 
-        <div class="card" id="config-d1-card" style="margin-top:20px;border:1px solid rgba(37,99,235,.14);background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);box-shadow:0 18px 40px rgba(15,23,42,.08)">
+        <div class="card config-section-card" id="config-d1-card" data-config-group="data" style="margin-top:20px;border:1px solid rgba(37,99,235,.14);background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);box-shadow:0 18px 40px rgba(15,23,42,.08)">
           <div class="section-header" style="align-items:flex-start;gap:14px;margin-bottom:8px">
             <div style="flex:1;min-width:0">
               <h2>Pengurusan D1</h2>

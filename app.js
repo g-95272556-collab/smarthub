@@ -175,9 +175,42 @@ let _kehadiranMuridLoading = false;
 
 const ATTENDANCE_LIVE_REFRESH_MS = 30000;
 const MOBILE_NAV_BREAKPOINT = 900;
+const CONFIG_GROUP_STORAGE_KEY = 'ssh_config_active_group';
+const CONFIG_GROUP_DEFAULT = 'utama';
 
 function isMobileViewport() {
   return typeof window !== 'undefined' && window.innerWidth <= MOBILE_NAV_BREAKPOINT;
+}
+
+function getValidConfigGroup(group) {
+  var value = String(group || '').trim();
+  return ['utama', 'notifikasi', 'data', 'lanjutan'].includes(value) ? value : CONFIG_GROUP_DEFAULT;
+}
+
+function setConfigGroup(group) {
+  var activeGroup = getValidConfigGroup(group);
+  try {
+    localStorage.setItem(CONFIG_GROUP_STORAGE_KEY, activeGroup);
+  } catch (e) {}
+
+  document.querySelectorAll('.config-section-card').forEach(function(card) {
+    var isActive = getValidConfigGroup(card.getAttribute('data-config-group')) === activeGroup;
+    card.style.display = isActive ? '' : 'none';
+  });
+
+  document.querySelectorAll('.config-section-tab').forEach(function(btn) {
+    var isActive = getValidConfigGroup(btn.getAttribute('data-config-tab')) === activeGroup;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+}
+
+function initConfigGroups() {
+  var stored = '';
+  try {
+    stored = localStorage.getItem(CONFIG_GROUP_STORAGE_KEY) || '';
+  } catch (e) {}
+  setConfigGroup(stored || CONFIG_GROUP_DEFAULT);
 }
 
 function updateMobileNavTitle(moduleId) {
@@ -2343,7 +2376,7 @@ function showModule(id) {
   if (isMobileViewport()) closeMobileNav();
   if (id === 'kehadiran-guru') setTimeout(function(){ initKehadiranGuruModule(); }, 300);
   if (id === 'amaran-kehadiran') { muatAmaranSekolahConfigUI(); loadAmaranKehadiran(); }
-  if (id === 'konfigurasi') { loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); updateAttendanceNotificationStatusUI(); loadConfig(); }
+  if (id === 'konfigurasi') { initConfigGroups(); loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); updateAttendanceNotificationStatusUI(); loadConfig(); }
   if (id === 'notifikasi') {
     updateNotifAutoStatusUI();
     var notifTarikhEl = document.getElementById('notifTarikh');
@@ -2410,10 +2443,14 @@ function showModule(id) {
 function scrollToConfigSection(id) {
   const target = document.getElementById(id);
   if (!target) return;
-  target.scrollIntoView({
-    behavior: prefersReducedMotion() ? 'auto' : 'smooth',
-    block: 'start'
-  });
+  const group = target.getAttribute('data-config-group');
+  if (group) setConfigGroup(group);
+  setTimeout(function() {
+    target.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'start'
+    });
+  }, group ? 30 : 0);
 }
 
 function initWorkerUrl() {
