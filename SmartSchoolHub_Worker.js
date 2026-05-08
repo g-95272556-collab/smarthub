@@ -1401,6 +1401,25 @@ function columnToLetters(columnNumber) {
   return letters || "A";
 }
 
+async function authorizeAIRequest(body, env) {
+  if (!env.WORKER_SECRET) {
+    throw makeHttpError(500, "WORKER_SECRET tidak dikonfigurasi", "WORKER_SECRET_MISSING");
+  }
+  const actor = await verifyGoogleIdentity(body && body.auth, env);
+  const workerToken = await generateDailyToken(env.WORKER_SECRET);
+  await authorizeTeacherRead(body || {}, actor, env, workerToken);
+  return actor;
+}
+
+function validateAIPrompt(prompt, maxLength) {
+  const text = String(prompt || "").trim();
+  if (!text) return { success: false, error: "Prompt diperlukan", code: "MISSING_PROMPT" };
+  if (text.length > maxLength) {
+    return { success: false, error: `Prompt terlalu panjang (maksimum ${maxLength} aksara).`, code: "PROMPT_TOO_LONG" };
+  }
+  return null;
+}
+
 function getDirectKeyByValue(obj, value) {
   return Object.keys(obj).find((key) => obj[key] === value);
 }
@@ -1409,17 +1428,22 @@ async function handleAI(request, env, corsHeaders) {
   if (request.method !== "POST") {
     return jsonResp({ success: false, error: "POST sahaja" }, 405, corsHeaders);
   }
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
+  try {
+    await authorizeAIRequest(body, env);
+  } catch (err) {
+    return jsonResp({ success: false, error: err.message || "Akses AI tidak dibenarkan", code: err.code || "AUTH_REQUIRED" }, err.status || 401, corsHeaders);
+  }
+
   if (!env.DEEPSEEK_API_KEY) {
     return jsonResp({ success: false, error: "deepseek_key_missing", message: "DEEPSEEK_API_KEY belum dikonfigurasi dalam Worker secrets." }, 503, corsHeaders);
   }
 
-  let body;
-  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
-
   const { prompt, type } = body;
-  if (!prompt) {
-    return jsonResp({ success: false, error: "Prompt diperlukan" }, 400, corsHeaders);
-  }
+  const promptValidation = validateAIPrompt(prompt, 12000);
+  if (promptValidation) return jsonResp(promptValidation, 400, corsHeaders);
 
   const systemPrompts = {
     opr: `Anda adalah pembantu penulisan laporan program sekolah dalam Bahasa Malaysia. Tulis laporan OPR yang formal. Format: Tajuk, Objektif, Aktiviti, Hasil, Cabaran, Cadangan.`,
@@ -1469,7 +1493,7 @@ PERATURAN ARAS & KPM:
         model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompts[type] || systemPrompts.default },
-          { role: "user", content: prompt },
+          { role: "user", content: String(prompt) },
         ],
         max_tokens: maxTokens,
         temperature: 0.7,
@@ -1497,15 +1521,22 @@ async function handleAIImage(request, env, corsHeaders) {
   if (request.method !== "POST") {
     return jsonResp({ success: false, error: "POST sahaja" }, 405, corsHeaders);
   }
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
+  try {
+    await authorizeAIRequest(body, env);
+  } catch (err) {
+    return jsonResp({ success: false, error: err.message || "Akses AI tidak dibenarkan", code: err.code || "AUTH_REQUIRED" }, err.status || 401, corsHeaders);
+  }
+
   if (!env.GEMINI_API_KEY) {
     return jsonResp({ success: false, error: "gemini_key_missing", message: "GEMINI_API_KEY belum dikonfigurasi dalam Worker secrets." }, 503, corsHeaders);
   }
 
-  let body;
-  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
-
   const { prompt } = body;
-  if (!prompt) return jsonResp({ success: false, error: "Prompt diperlukan" }, 400, corsHeaders);
+  const promptValidation = validateAIPrompt(prompt, 1200);
+  if (promptValidation) return jsonResp(promptValidation, 400, corsHeaders);
 
   // Build safe educational prompt for Gemini Image Generation
   const safePrompt = `Educational illustration for Malaysian primary school worksheet. ` +
@@ -1550,15 +1581,22 @@ async function handleAIGemini(request, env, corsHeaders) {
   if (request.method !== "POST") {
     return jsonResp({ success: false, error: "POST sahaja" }, 405, corsHeaders);
   }
+
+  let body;
+  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
+  try {
+    await authorizeAIRequest(body, env);
+  } catch (err) {
+    return jsonResp({ success: false, error: err.message || "Akses AI tidak dibenarkan", code: err.code || "AUTH_REQUIRED" }, err.status || 401, corsHeaders);
+  }
+
   if (!env.GEMINI_API_KEY) {
     return jsonResp({ success: false, error: "gemini_key_missing", message: "GEMINI_API_KEY belum dikonfigurasi dalam Worker secrets." }, 503, corsHeaders);
   }
 
-  let body;
-  try { body = await request.json(); } catch { return jsonResp({ success: false, error: "JSON tidak sah" }, 400, corsHeaders); }
-
   const { prompt, type, withImage } = body;
-  if (!prompt) return jsonResp({ success: false, error: "Prompt diperlukan" }, 400, corsHeaders);
+  const promptValidation = validateAIPrompt(prompt, 16000);
+  if (promptValidation) return jsonResp(promptValidation, 400, corsHeaders);
 
   const systemPromptLK = `Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.
 

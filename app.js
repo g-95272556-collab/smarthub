@@ -2353,6 +2353,16 @@ function needsAuthenticatedWorkerAction(payload) {
   return false;
 }
 
+function getWorkerAuthPayload() {
+  if (!APP.user) return null;
+  return {
+    idToken: APP.user.idToken || '',
+    email: APP.user.email || '',
+    name: APP.user.name || '',
+    sub: APP.user.sub || ''
+  };
+}
+
 async function callWorker(payload) {
   if (!APP.workerUrl) throw new Error('Worker URL belum disimpan. Pergi ke Konfigurasi dahulu.');
   if (needsAuthenticatedWorkerAction(payload) && (!APP.user || !APP.user.idToken)) {
@@ -2363,12 +2373,7 @@ async function callWorker(payload) {
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
   const requestPayload = Object.assign({}, payload);
   if (APP.user) {
-    requestPayload.auth = {
-      idToken: APP.user.idToken || '',
-      email: APP.user.email || '',
-      name: APP.user.name || '',
-      sub: APP.user.sub || ''
-    };
+    requestPayload.auth = getWorkerAuthPayload();
   }
   try {
     const res = await fetch(url, {
@@ -2434,10 +2439,11 @@ async function pushFullSheet(sheetKey, headers, dataRows) {
 */
 async function callWorkerAI(prompt, type) {
   if (!APP.workerUrl) throw new Error('Worker URL diperlukan');
+  if (!APP.user || !APP.user.idToken) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   const url = APP.workerUrl.replace(/\/+$/, '') + '/ai';
   const res = await fetch(url, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, type })
+    body: JSON.stringify({ prompt, type, auth: getWorkerAuthPayload() })
   });
   if (!res.ok) {
     const txt = await res.text().catch(() => '');
@@ -11882,11 +11888,12 @@ async function callWorkerAIGemini(prompt, withImage) {
 
   // Fallback: Worker
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
+  if (!APP.user || !APP.user.idToken) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   var wUrl = APP.workerUrl.replace(/\/+$/, '') + '/ai/gemini';
   var wRes = await fetch(wUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt: prompt, type: 'lembaran_kerja', withImage: withImage })
+    body: JSON.stringify({ prompt: prompt, type: 'lembaran_kerja', withImage: withImage, auth: getWorkerAuthPayload() })
   });
   var text = await wRes.text();
   try {
@@ -12814,11 +12821,12 @@ function lkExtractImejPlaceholders(text) {
 
 async function callWorkerAIImage(prompt) {
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
+  if (!APP.user || !APP.user.idToken) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   var url = APP.workerUrl.replace(/\/+$/, '') + '/ai/image';
   var res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt: prompt })
+    body: JSON.stringify({ prompt: prompt, auth: getWorkerAuthPayload() })
   });
   return await res.json();
 }
