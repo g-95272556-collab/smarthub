@@ -2342,6 +2342,7 @@ function initWorkerUrl() {
 function needsAuthenticatedWorkerAction(payload) {
   if (!payload || !payload.action) return false;
   if (payload.action === 'ping') return false;
+  if (payload.action === 'getDiagnostics') return true;
   if (payload.action === 'readSheet') return true;
   if (payload.action === 'getMurid') return true;
   if (payload.action === 'storeLetterFile') return true;
@@ -9608,7 +9609,15 @@ async function updateWorkerStatus() {
       el.style.background = 'rgba(16,185,129,0.05)';
       el.style.borderColor = 'rgba(16,185,129,0.2)';
       el.style.color = 'var(--green)';
-      renderWorkerD1CapacityStatus(data);
+      if (APP.user && APP.user.idToken) {
+        try {
+          renderWorkerD1CapacityStatus(await callWorker({ action: 'getDiagnostics' }));
+        } catch (diagErr) {
+          renderWorkerD1CapacityStatus(null, 'Diagnostik D1 memerlukan akses pentadbir.');
+        }
+      } else {
+        renderWorkerD1CapacityStatus(null, 'Log masuk sebagai pentadbir untuk melihat kapasiti D1.');
+      }
     } else {
       el.textContent = 'Respons tidak dijangka';
       el.style.background = 'rgba(245,197,24,0.05)';
@@ -9679,12 +9688,13 @@ async function checkWorkerStatus() {
   setConfigStatus('Memeriksa status Worker...');
   try {
     const ping = await callWorker({ action: 'ping' });
+    const diagnostics = await callWorker({ action: 'getDiagnostics' });
     const data = await callWorker({ action: 'getConfig' });
-    if (ping.success && data.success) {
+    if (ping.success && diagnostics.success && data.success) {
       const configKeys = Object.keys(data.config || {});
-      const backendLabel = ping.backendMode === 'cloudflare-d1'
+      const backendLabel = diagnostics.backendMode === 'cloudflare-d1'
         ? 'Cloudflare D1'
-        : ping.backendMode === 'google-sheets'
+        : diagnostics.backendMode === 'google-sheets'
           ? 'Google Sheets'
           : 'Tidak diketahui';
       const lines = [
@@ -9692,13 +9702,14 @@ async function checkWorkerStatus() {
         '',
         'Worker URL: ' + (APP.workerUrl || '—'),
         'Backend aktif: ' + backendLabel,
-        'Cloudflare D1 diset: ' + (ping.cloudflareD1Configured ? 'Ya' : 'Tidak'),
-        'Cloudflare D1 sedia: ' + (ping.cloudflareD1Ready ? 'Ya' : 'Tidak'),
-        'Google Sheets dikonfigurasi: ' + (ping.googleSheetsConfigured ? 'Ya' : 'Tidak'),
+        'Cloudflare D1 diset: ' + (diagnostics.cloudflareD1Configured ? 'Ya' : 'Tidak'),
+        'Cloudflare D1 sedia: ' + (diagnostics.cloudflareD1Ready ? 'Ya' : 'Tidak'),
+        'Google Sheets dikonfigurasi: ' + (diagnostics.googleSheetsConfigured ? 'Ya' : 'Tidak'),
         'Bilangan kunci config: ' + configKeys.length,
-        'Semakan: ' + (ping.timestamp || '—')
+        'Semakan: ' + (diagnostics.timestamp || ping.timestamp || '—')
       ];
       setConfigStatus(lines.join('\n'));
+      renderWorkerD1CapacityStatus(diagnostics);
       renderConfigTable(data.config);
       showToast('Worker OK!', 'success');
       updateWorkerStatus();

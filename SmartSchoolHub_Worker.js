@@ -84,6 +84,11 @@ const SECURITY_HEADERS = {
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "geolocation=(self), microphone=(), camera=()"
 };
+const DEFAULT_ALLOWED_CORS_ORIGINS = [
+  "https://xbasmarthub.netlify.app",
+  "https://smartschoolhub-skkiandongo.g-95272556.workers.dev"
+];
+const LOCAL_DEV_ORIGIN_RE = /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i;
 const DUTY_SCHEDULE_2026 = [
   { isnin: "2026-01-12", guru: "BETTY BINTI JIM", telefon: "01124135966", pembantu: "FAZILAH BINTI ALI", telefonPembantu: "0134461416" },
   { isnin: "2026-01-19", guru: "FAZILAH BINTI ALI", telefon: "0134461416", pembantu: "OKTOVYANTI KOH", telefonPembantu: "0138665663" },
@@ -193,15 +198,7 @@ function getBackendConfigDefaults() {
 
 export default {
   async fetch(request, env) {
-    const origin = request.headers.get("Origin") || "";
-
-    // Benarkan semua origin (atau hadkan kepada GitHub Pages sahaja)
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age": "86400",
-    };
+    const corsHeaders = buildCorsHeaders(request, env);
 
     // Handle OPTIONS preflight — mesti return 204
     if (request.method === "OPTIONS") {
@@ -266,6 +263,25 @@ async function generateTokenEndpoint(request, env, corsHeaders) {
   return jsonResp({ success: true, token }, 200, corsHeaders);
 }
 
+function buildCorsHeaders(request, env) {
+  const origin = String(request.headers.get("Origin") || "").trim();
+  const configuredOrigins = String(env.ALLOWED_CORS_ORIGINS || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const allowedOrigins = new Set([...DEFAULT_ALLOWED_CORS_ORIGINS, ...configuredOrigins]);
+  const allowOrigin = origin && (allowedOrigins.has(origin) || LOCAL_DEV_ORIGIN_RE.test(origin))
+    ? origin
+    : DEFAULT_ALLOWED_CORS_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin"
+  };
+}
+
 async function generateDailyToken(secret) {
   if (!secret) throw new Error("WORKER_SECRET not configured");
   const mytDate = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
@@ -303,21 +319,10 @@ async function handleAPI(request, env, corsHeaders) {
   }
 
   if (body.action === "ping") {
-    const diagnostics = await getBackendDiagnostics(env);
     return jsonResp({
       success: true,
       worker: "ok",
-      backendMode: diagnostics.backendMode,
-      cloudflareD1Configured: diagnostics.cloudflareD1Configured,
-      cloudflareD1Ready: diagnostics.cloudflareD1Ready,
-      cloudflareD1Error: diagnostics.cloudflareD1Error,
-      cloudflareD1Summary: diagnostics.cloudflareD1Summary,
-      googleSheetsConfigured: diagnostics.googleSheetsConfigured,
-      googleSheetsReady: diagnostics.googleSheetsReady,
-      googleSheetsError: diagnostics.googleSheetsError,
-      googleSheetsBindings: diagnostics.googleSheetsBindings,
-      hasWorkerSecret: Boolean(env.WORKER_SECRET),
-      buildId: WORKER_BUILD_ID,
+      backendMode: getBackendMode(env),
       timestamp: new Date().toISOString()
     }, 200, corsHeaders);
   }
@@ -379,6 +384,17 @@ async function handleAPI(request, env, corsHeaders) {
         corsHeaders
       );
     }
+  }
+
+  if (body.action === "getDiagnostics") {
+    const diagnostics = await getBackendDiagnostics(env);
+    return jsonResp({
+      success: true,
+      ...diagnostics,
+      hasWorkerSecret: Boolean(env.WORKER_SECRET),
+      buildId: WORKER_BUILD_ID,
+      timestamp: new Date().toISOString()
+    }, 200, corsHeaders);
   }
 
   if (body.action === "getKokumAttendanceSummary") {
@@ -1735,6 +1751,7 @@ function maskClientIdentifier(value) {
 function needsAuthenticatedRequest(body) {
   if (!body) return false;
   if (body.action === "verifySession") return true;
+  if (body.action === "getDiagnostics") return true;
   if (body.action === "readSheet") return true;
   if (body.action === "getMurid") return true;
   if (body.action === "storeLetterFile") return true;
@@ -1818,6 +1835,9 @@ async function authorizeRequest(body, actor, env, workerToken) {
   }
   if (body.action === "getKokumAttendanceSummary") {
     return authorizeTeacherRead(body, actor, env, workerToken);
+  }
+  if (body.action === "getDiagnostics") {
+    return authorizeAdminRequest(body, actor, env, workerToken);
   }
   if (body.action === "getMurid") {
     return authorizeClassScopedRead(body, actor, env, workerToken);
@@ -2690,7 +2710,7 @@ async function handleLetterFile(request, env, corsHeaders, path) {
         "Content-Type": row.mime_type,
         "Content-Disposition": 'inline; filename="' + row.filename + '"',
         "Cache-Control": "public, max-age=3600",
-        "Access-Control-Allow-Origin": "*"
+        ...corsHeaders
       }
     });
   } catch (err) {
