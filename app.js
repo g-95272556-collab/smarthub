@@ -198,11 +198,18 @@ function setConfigGroup(group) {
     card.style.display = isActive ? '' : 'none';
   });
 
+  document.querySelectorAll('.config-menu-item').forEach(function(item) {
+    var isActive = getValidConfigGroup(item.getAttribute('data-config-group')) === activeGroup;
+    item.style.display = isActive ? '' : 'none';
+  });
+
   document.querySelectorAll('.config-section-tab').forEach(function(btn) {
     var isActive = getValidConfigGroup(btn.getAttribute('data-config-tab')) === activeGroup;
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
+
+  if (activeGroup === 'data') renderJadualBertugasOverview();
 }
 
 function initConfigGroups() {
@@ -775,6 +782,7 @@ function applyBackendOperationalConfig(config) {
 
   const dutySchedule = parseJsonConfigValue(cfg.JADUAL_BERTUGAS_JSON, []);
   _jadualBertugas = normalizeDutyScheduleRows(dutySchedule);
+  renderJadualBertugasOverview();
 
   if (cfg.KOKUM_PROGRAM_OPTIONS_JSON) {
     try {
@@ -1315,6 +1323,70 @@ function clearNotifGuards() {
   for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.startsWith('ssh_notif_')) keys.push(k); }
   keys.forEach(function(k){ localStorage.removeItem(k); });
   showToast(keys.length + ' guard direset.', 'success');
+}
+
+// ── Tinjauan Jadual Bertugas ──────────────
+function formatTarikhPapar(ymd) {
+  var d = parseLocalDateYMD(ymd);
+  if (!d) return ymd;
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function renderJadualBertugasOverview() {
+  var cari = String((document.getElementById('jadualBertugasCari') || {}).value || '').toLowerCase().trim();
+  var isninIni = getIsninMingguIni();
+  var isninDep = getIsninMingguDepan();
+  var guruIni = getGuruBertugasMinggu(isninIni);
+  var guruDep = getGuruBertugasMinggu(isninDep);
+
+  var summEl = document.getElementById('jadualBertugasSummary');
+  if (summEl) {
+    var aktif = _jadualBertugas.filter(function(j){ return j.isnin >= isninIni; }).length;
+    summEl.innerHTML =
+      '<div class="jadual-summ-item"><div class="jadual-summ-label">Minggu ini</div><div class="jadual-summ-val">' + (guruIni ? guruIni.guru : '—') + '</div></div>' +
+      '<div class="jadual-summ-item"><div class="jadual-summ-label">Minggu depan</div><div class="jadual-summ-val">' + (guruDep ? guruDep.guru : '—') + '</div></div>' +
+      '<div class="jadual-summ-item"><div class="jadual-summ-label">Jadual aktif</div><div class="jadual-summ-val">' + aktif + ' minggu</div></div>';
+  }
+
+  var rows = _jadualBertugas;
+  if (cari) {
+    rows = rows.filter(function(j){
+      return j.guru.toLowerCase().indexOf(cari) !== -1 ||
+             (j.pembantu && j.pembantu.toLowerCase().indexOf(cari) !== -1);
+    });
+  }
+
+  var tbody = document.getElementById('jadualBertugasBody');
+  if (!tbody) return;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Tiada rekod dijumpai.</td></tr>';
+    return;
+  }
+
+  var esc = function(v){ return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  tbody.innerHTML = rows.map(function(j) {
+    var jumaat = addDaysYMD(j.isnin, 4);
+    var tarikhPapar = formatTarikhPapar(j.isnin) + ' – ' + formatTarikhPapar(jumaat);
+    var status, badgeClass, rowClass;
+    if (j.isnin === isninIni) {
+      status = 'Minggu ini'; badgeClass = 'badge-blue'; rowClass = 'jadual-row-ini';
+    } else if (j.isnin === isninDep) {
+      status = 'Minggu depan'; badgeClass = 'badge-amber'; rowClass = 'jadual-row-depan';
+    } else if (j.isnin < isninIni) {
+      status = 'Lepas'; badgeClass = 'badge-gray'; rowClass = 'jadual-row-lepas';
+    } else {
+      status = 'Akan datang'; badgeClass = 'badge-green'; rowClass = '';
+    }
+    return '<tr class="' + rowClass + '">' +
+      '<td style="color:var(--muted);font-size:0.82rem">' + esc(String(j.minggu)) + '</td>' +
+      '<td style="font-size:0.82rem;white-space:nowrap">' + esc(tarikhPapar) + '</td>' +
+      '<td style="font-weight:600">' + esc(j.guru) + '</td>' +
+      '<td style="font-size:0.85rem">' + esc(j.pembantu) + '</td>' +
+      '<td style="font-size:0.82rem;color:var(--muted)">' + esc(j.telefon) + '</td>' +
+      '<td><span class="badge ' + badgeClass + '">' + status + '</span></td>' +
+    '</tr>';
+  }).join('');
 }
 
 // ── Group WA UI ───────────────────────────

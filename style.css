@@ -3172,3 +3172,38 @@ table tbody tr:last-child td { border-bottom: none; }
     transform: none !important;
   }
 }
+
+/* ─────────────────────────────────────────── */
+/* TINJAUAN JADUAL BERTUGAS                    */
+/* ─────────────────────────────────────────── */
+.jadual-summ {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 4px;
+}
+.jadual-summ-item {
+  background: rgba(26,79,160,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.jadual-summ-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.jadual-summ-val {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+tr.jadual-row-ini {
+  background: rgba(59,130,246,0.07);
+}
+tr.jadual-row-depan {
+  background: rgba(245,158,11,0.07);
+}
+tr.jadual-row-lepas td {
+  opacity: 0.5;
+}
