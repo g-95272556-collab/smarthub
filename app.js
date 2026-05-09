@@ -11878,6 +11878,55 @@ function lkGetBahasa() {
   return r ? r.value : 'Bahasa Malaysia';
 }
 
+function lkGetRequestedImageCount() {
+  var nota = ((document.getElementById('lkNota') || {}).value || '').trim();
+  if (!nota) return 0;
+  var patterns = [
+    /(?:jana|buat|sediakan|hasilkan)?\s*(\d+)\s*(?:soalan\s*)?(?:bergambar|gambar|imej|rajah)/i,
+    /(?:bergambar|gambar|imej|rajah)\s*(?:sebanyak|sejumlah)?\s*(\d+)/i
+  ];
+  for (var i = 0; i < patterns.length; i++) {
+    var match = nota.match(patterns[i]);
+    if (match) {
+      var count = parseInt(match[1], 10);
+      return Number.isFinite(count) && count > 0 ? count : 0;
+    }
+  }
+  return 0;
+}
+
+function lkGetQuestionCountForPrompt(jenis, subjekVal) {
+  var bilSoalanInput = document.getElementById('lkBilSoalan');
+  if (_lkSoalanMode === 'auto') return lkGetKpmSoalanCount(jenis, subjekVal);
+  return parseInt((bilSoalanInput || { value: '10' }).value, 10) || 10;
+}
+
+function lkCapRequestedImageCount(count, totalQuestions) {
+  var requested = Number(count || 0);
+  var total = Number(totalQuestions || 0);
+  if (!Number.isFinite(requested) || requested <= 0) return 0;
+  if (!Number.isFinite(total) || total <= 0) return Math.floor(requested);
+  return Math.min(Math.floor(requested), Math.floor(total));
+}
+
+function lkStripImageCountInstruction(nota) {
+  return String(nota || '')
+    .replace(/[^.!?\n]*(?:jana|buat|sediakan|hasilkan)?\s*\d+\s*(?:soalan\s*)?(?:bergambar|gambar|imej|rajah)[^.!?\n]*/gi, '')
+    .replace(/[^.!?\n]*(?:bergambar|gambar|imej|rajah)\s*(?:sebanyak|sejumlah)?\s*\d+[^.!?\n]*/gi, '')
+    .replace(/^\s*[\r\n]/gm, '')
+    .trim();
+}
+
+function lkEnforceImagePlaceholderLimit(text, maxImages) {
+  var limit = Number(maxImages || 0);
+  if (!Number.isFinite(limit) || limit <= 0) return String(text || '');
+  var count = 0;
+  return String(text || '').replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full) {
+    count++;
+    return count <= limit ? full : '';
+  });
+}
+
 function lkSetStatus(type, msg) {
   var bar = document.getElementById('lkStatusBar');
   var txt = document.getElementById('lkStatusText');
@@ -11900,13 +11949,7 @@ function lkBinaSumber(phase) {
   if (topikManual) topikArr.push(topikManual);
   var sk = ((document.getElementById('lkSK') || {}).value || '').trim();
   
-  var bilSoalanInput = document.getElementById('lkBilSoalan');
-  var bilSoalan = 10;
-  if (_lkSoalanMode === 'auto') {
-    bilSoalan = lkGetKpmSoalanCount(jenis, subjekVal);
-  } else {
-    bilSoalan = parseInt((bilSoalanInput || {value:'10'}).value) || 10;
-  }
+  var bilSoalan = lkGetQuestionCountForPrompt(jenis, subjekVal);
   
   var aras = (document.getElementById('lkAras') || {value:''}).value;
   var bahasa = lkGetBahasa();
@@ -11915,16 +11958,17 @@ function lkBinaSumber(phase) {
 
   var tahap = lkGetTahap();
   // ── Ekstrak bilangan soalan bergambar dari nota (jika ada) ──
-  var bilImej = 0;
-  if (nota) {
-    var imejMatch = nota.match(/(\d+)\s*soalan\s*bergambar/i);
-    if (imejMatch) bilImej = parseInt(imejMatch[1]);
-  }
+  var bilImej = lkCapRequestedImageCount(lkGetRequestedImageCount(), bilSoalan);
 
   // ── Bina prompt — had imej di baris PERTAMA supaya AI baca dahulu ──
   var p = '';
-  if (!phase && bilImej > 0 && bilImej < bilSoalan) {
-    p += '⚠️ HAD MUTLAK: Jana TEPAT ' + bilImej + ' soalan bergambar [GAMBAR:] dan TEPAT ' + (bilSoalan - bilImej) + ' soalan tanpa gambar. JANGAN melebihi ' + bilImej + ' placeholder [GAMBAR:].\n\n';
+  if (bilImej > 0) {
+    p += 'ARAHAN PALING PENTING - WAJIB PATUH:\n';
+    p += '1. Jumlah soalan keseluruhan mesti TEPAT ' + bilSoalan + '.\n';
+    p += '2. Jumlah soalan bergambar mesti TEPAT ' + bilImej + '.\n';
+    p += '3. Letakkan SATU sahaja placeholder [GAMBAR: deskripsi ringkas] pada setiap soalan bergambar.\n';
+    p += '4. Jumlah placeholder [GAMBAR:] dalam keseluruhan output mesti TEPAT ' + bilImej + ' dan DILARANG melebihi ' + bilImej + '.\n';
+    p += '5. Baki ' + Math.max(0, bilSoalan - bilImej) + ' soalan mesti tanpa gambar dan tanpa placeholder [GAMBAR:].\n\n';
   }
   p += 'Jana lembaran kerja untuk murid Tahun ' + tahun + ' (Tahap ' + tahap + '), Sekolah Kebangsaan Malaysia.\n\n';
   p += 'MAKLUMAT:\n';
@@ -11951,9 +11995,9 @@ function lkBinaSumber(phase) {
     p += '• Ini adalah LEMBARAN KERJA PDPC: latihan pengukuhan harian mengikut topik DSKP.\n';
     p += '• Buat TEPAT ' + bilSoalan + ' soalan bernombor (1, 2, 3...) sahaja.\n';
     p += '• Sertakan arahan ringkas sebelum setiap kumpulan soalan (jika berbeza jenis).\n';
-    if (bilImej > 0 && bilImej < bilSoalan) {
+    if (bilImej > 0) {
       p += '• Buat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [GAMBAR: deskripsi ringkas] pada soalan-soalan tersebut.\n';
-      p += '• Baki ' + (bilSoalan - bilImej) + ' soalan lain: isi tempat kosong, padankan, atau jawab pendek (TANPA gambar).\n';
+      p += '• Baki ' + Math.max(0, bilSoalan - bilImej) + ' soalan lain: isi tempat kosong, padankan, atau jawab pendek (TANPA gambar).\n';
     } else {
       p += '• Soalan boleh campuran: isi tempat kosong, padankan, jawab pendek, soalan bergambar.\n';
       p += '• Jika perlu gambar/rajah, gunakan placeholder [GAMBAR: deskripsi ringkas].\n';
@@ -11964,8 +12008,8 @@ function lkBinaSumber(phase) {
     // ── FORMAT PBD Berterusan / UASA: Format peperiksaan formal dengan bahagian ──
     p += '\n\nJana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, kemudian SKEMA JAWAPAN.';
     p += '\nAgihkan ' + bilSoalan + ' soalan mengikut format KPM. Sertakan arahan ringkas tiap bahagian. Jangan guna markdown.';
-    if (bilImej > 0 && bilImej < bilSoalan) {
-      p += '\nBuat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [GAMBAR: deskripsi ringkas]. Baki ' + (bilSoalan - bilImej) + ' soalan tanpa gambar.';
+    if (bilImej > 0) {
+      p += '\nBuat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [GAMBAR: deskripsi ringkas]. Baki ' + Math.max(0, bilSoalan - bilImej) + ' soalan tanpa gambar.';
     } else {
       p += '\nJika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].';
     }
@@ -11976,13 +12020,17 @@ function lkBinaSumber(phase) {
     if (phase === 'B') p += 'SILA JANA BAHAGIAN B SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'CD') p += 'SILA JANA BAHAGIAN C (dan D jika ada) SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'JAWAPAN') p += 'SILA JANA SKEMA JAWAPAN LENGKAP untuk semua bahagian dalam format UASA/PBD Berterusan untuk ' + subjekLabel + '.';
-    p += '\nPastikan output adalah TEKS BIASA tanpa markdown. Jika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].';
+    p += '\nPastikan output adalah TEKS BIASA tanpa markdown.';
+    if (bilImej > 0) {
+      p += '\nJumlah [GAMBAR:] keseluruhan untuk semua fasa mesti TEPAT ' + bilImej + '. Jangan tambah gambar sekadar hiasan.';
+    } else {
+      p += '\nJika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].';
+    }
   }
 
   // ══ ARAHAN KHAS GURU (WAJIB IKUT — keutamaan tertinggi) ══
   if (nota) {
-    // Buang keseluruhan ayat/baris yang mengandungi arahan bilangan soalan bergambar
-    var notaBersih = nota.replace(/[^.!?\n]*\d+\s*soalan\s*bergambar[^.!?\n]*/gi, '').replace(/^\s*[\r\n]/gm, '').trim();
+    var notaBersih = lkStripImageCountInstruction(nota);
     if (notaBersih) {
       p += '\n\n⚠️ ARAHAN KHAS DARIPADA GURU (WAJIB DIPATUHI SEPENUHNYA):\n';
       p += notaBersih + '\n';
@@ -12127,6 +12175,7 @@ async function callWorkerAIGemini(prompt, withImage) {
         ? textData.candidates[0].content.parts : [];
       textParts.forEach(function(p) { if (p.text) rawText += p.text; });
       if (!rawText.trim()) throw new Error('Tiada teks dihasilkan oleh Gemini');
+      rawText = lkEnforceImagePlaceholderLimit(rawText, lkGetRequestedImageCount());
 
       // ══ STEP 2: Parse placeholder [GAMBAR:] atau [IMEJ:] dan jana setiap imej ══
       var imgPlaceholders = [];
@@ -12234,6 +12283,7 @@ async function callHybridDeepSeekGemini(prompt) {
   if (!dsResult.success) throw new Error(dsResult.message || 'DeepSeek gagal menjana teks.');
   var rawText = dsResult.content || '';
   if (!rawText.trim()) throw new Error('DeepSeek tidak menghasilkan teks.');
+  rawText = lkEnforceImagePlaceholderLimit(rawText, lkGetRequestedImageCount());
 
   // ── STEP 2: Parse semua placeholder [GAMBAR:] atau [IMEJ:] ──
   var placeholderRegex = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
@@ -12357,11 +12407,12 @@ async function janaLembaranKerja() {
   try {
     var jenisEl = document.querySelector('input[name="lkJenis"]:checked');
     var jenis = jenisEl ? jenisEl.value : 'pbd-pt';
+    var requestedImageCount = lkGetRequestedImageCount();
     // pbd-pt (Lembaran Kerja PDPC) bukan format peperiksaan — tidak perlu fasa A/B/C/D
     var isLongExam = (jenis === 'uasa' || jenis === 'pbd-at');
     var finalContent = '';
     
-    if ((engine === 'gemini' || engine === 'hybrid') && isLongExam) {
+    if ((engine === 'gemini' || engine === 'hybrid') && isLongExam && requestedImageCount <= 0) {
       var phases = ['A', 'B', 'CD', 'JAWAPAN'];
       var phaseNames = { 'A': 'Bahagian A', 'B': 'Bahagian B', 'CD': 'Bahagian C/D', 'JAWAPAN': 'Skema Jawapan' };
 
@@ -12455,6 +12506,9 @@ async function janaLembaranKerja() {
       }
 
       if (result.success) {
+        if (requestedImageCount > 0 && !result.isHtml && result.content) {
+          result.content = lkEnforceImagePlaceholderLimit(result.content, requestedImageCount);
+        }
         // Simpan content sementara — header akan ditambah di bawah
       } else {
         throw new Error(result.message || 'Gagal menjana lembaran kerja.');
@@ -13154,11 +13208,11 @@ function lkBersihOutput() {
 
 function lkExtractImejPlaceholders(text) {
   var matches = [];
-  var re = /\[GAMBAR:\s*([^\]]+)\]/gi;
+  var re = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
   var m;
   while ((m = re.exec(text)) !== null) {
     var desc = m[1].trim();
-    if (matches.indexOf(desc) === -1) matches.push(desc);
+    if (desc) matches.push(desc);
   }
   return matches;
 }

@@ -91,7 +91,7 @@ html, body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* ─────────────────────────────────────────── */
@@ -3244,6 +3244,7 @@ table tbody tr:last-child td { border-bottom: none; }
 }
 .lk-output-box {
   flex:1 1 auto;
+  min-height:0;
   min-height:360px;
   background:#fbfdff;
   border:1px solid rgba(15,23,42,.10);
@@ -3254,7 +3255,12 @@ table tbody tr:last-child td { border-bottom: none; }
   line-height:1.75;
   white-space:pre-wrap;
   color:var(--text);
-  overflow:auto;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overflow-wrap:anywhere;
+  overscroll-behavior-y:auto;
+  scrollbar-gutter:stable;
+  -webkit-overflow-scrolling:touch;
 }
 .lk-status-bar {
   display:flex;
@@ -3288,10 +3294,11 @@ table tbody tr:last-child td { border-bottom: none; }
 }
 .lk-sticky-panel {
   position: sticky;
-  top: 20px;
+  top: calc(var(--safe-top) + 18px);
   z-index: 10;
   align-self: start;
-  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - var(--safe-top) - 36px);
+  min-height:0;
   display:flex;
   flex-direction:column;
   padding:20px !important;
@@ -3317,6 +3324,10 @@ table tbody tr:last-child td { border-bottom: none; }
 .lk-imej-card img { width:100%; display:block; }
 .lk-imej-caption { font-size:0.75rem; color:var(--muted); padding:6px 8px; line-height:1.4; }
 .lk-imej-loading { padding:40px 10px; text-align:center; color:#6366f1; font-size:0.85rem; border:1px dashed #c7d2fe; border-radius:8px; }
+#lkImejSection {
+  overflow:visible !important;
+  max-height:none !important;
+}
 .btn-indigo {
   background: linear-gradient(135deg,#4f46e5 0%,#2563eb 100%);
   color:#fff;

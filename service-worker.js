@@ -1,8 +1,9 @@
-const CACHE_NAME = "ssh-pwa-v10-css-refresh";
+const CACHE_NAME = "ssh-pwa-v11-worksheet-prompt";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./app.js",
+  "./app.min.js",
   "./style.css",
   "./dskp_embedded.js",
   "./runtime-config.js",
@@ -55,7 +56,7 @@ self.addEventListener("fetch", function(event) {
   const isGoogleFontAsset = /fonts\.(googleapis|gstatic)\.com$/i.test(url.hostname);
   const isFreshAsset = isSameOrigin && (
     request.mode === "navigate" ||
-    /\/(?:index\.html|app\.js|style\.css|dskp_embedded\.js|runtime-config\.js|service-worker\.js)$/.test(url.pathname)
+    /\/(?:index\.html|app\.js|app\.min\.js|style\.css|dskp_embedded\.js|runtime-config\.js|service-worker\.js)$/.test(url.pathname)
   );
 
   if (isFreshAsset) {
