@@ -12252,33 +12252,19 @@ async function geminiSimpanKunci(n) {
   var inp = document.getElementById('geminiKey' + n);
   if (!inp || !inp.value.trim()) { showToast('Sila masukkan kunci API.', 'error'); return; }
   var keyVal = inp.value.trim();
-  try {
-    if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
-    var data = await callWorker({ action: 'setConfig', config: { ['GEMINI_API_KEY_' + n]: keyVal } });
-    if (!data.success) throw new Error(data.error || 'Gagal simpan ke Apps Script.');
-    localStorage.setItem('ssh_gemini_key_' + n, keyVal);
-    localStorage.removeItem('ssh_gemini_exhausted_' + n);
-    geminiKemaskiniStatusUI();
-    showToast('Kunci ' + n + ' disimpan ke Apps Script.', 'success');
-  } catch (e) {
-    showToast('Gagal simpan: ' + e.message, 'error');
-  }
+  localStorage.setItem('ssh_gemini_key_' + n, keyVal);
+  localStorage.removeItem('ssh_gemini_exhausted_' + n);
+  geminiKemaskiniStatusUI();
+  showToast('Kunci Gemini ' + n + ' disimpan pada peranti ini.', 'success');
 }
 
 async function geminiPadamKunci(n) {
-  try {
-    if (!APP.workerUrl) throw new Error('Worker URL belum disimpan.');
-    var data = await callWorker({ action: 'setConfig', config: { ['GEMINI_API_KEY_' + n]: '' } });
-    if (!data.success) throw new Error(data.error || 'Gagal padam dari Apps Script.');
-    localStorage.removeItem('ssh_gemini_key_' + n);
-    localStorage.removeItem('ssh_gemini_exhausted_' + n);
-    var inp = document.getElementById('geminiKey' + n);
-    if (inp) inp.value = '';
-    geminiKemaskiniStatusUI();
-    showToast('Kunci ' + n + ' dipadam.', 'info');
-  } catch (e) {
-    showToast('Gagal padam: ' + e.message, 'error');
-  }
+  localStorage.removeItem('ssh_gemini_key_' + n);
+  localStorage.removeItem('ssh_gemini_exhausted_' + n);
+  var inp = document.getElementById('geminiKey' + n);
+  if (inp) inp.value = '';
+  geminiKemaskiniStatusUI();
+  showToast('Kunci Gemini ' + n + ' dipadam daripada peranti ini.', 'info');
 }
 
 function geminiResetKuota() {

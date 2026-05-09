@@ -3358,6 +3358,118 @@ table tbody tr:last-child td { border-bottom: none; }
   margin-top:7px;
   font-size:0.66rem;
 }
+.config-gemini-card {
+  border:1px solid rgba(37,99,235,.16);
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%);
+  box-shadow:0 18px 40px rgba(15,23,42,.08);
+}
+.config-gemini-intro {
+  max-width:900px;
+  margin:0 0 16px;
+  color:var(--muted);
+  font-size:0.88rem;
+  line-height:1.65;
+}
+.config-gemini-status {
+  margin-bottom:14px;
+  border-radius:12px;
+  background:linear-gradient(135deg,#1d4ed8 0%,#7c3aed 52%,#be185d 100%);
+}
+.config-gemini-key-list {
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:12px;
+}
+.gemini-key-pill {
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:rgba(255,255,255,.16);
+  color:#fff;
+  font-size:0.7rem;
+  font-weight:900;
+}
+.gemini-key-pill.is-active { background:rgba(16,185,129,.28); }
+.gemini-key-pill.is-limited { background:rgba(239,68,68,.26); }
+.gemini-key-pill.is-empty { background:rgba(148,163,184,.24); }
+.config-gemini-grid {
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0,1fr));
+  gap:12px;
+}
+.config-gemini-slot {
+  min-width:0;
+  padding:14px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:10px;
+  background:#fff;
+}
+.config-gemini-slot-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+  font-size:0.9rem;
+  font-weight:900;
+}
+.config-gemini-input {
+  margin-bottom:10px;
+}
+.config-gemini-input input {
+  font-family:"Courier New", monospace;
+  font-size:0.85rem;
+}
+.config-gemini-actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.config-gemini-actions .btn,
+.config-gemini-tools .btn {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.config-gemini-tools {
+  display:flex;
+  align-items:end;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.config-gemini-limit {
+  min-width:240px;
+  margin:0;
+}
+.config-gemini-limit input {
+  max-width:160px;
+}
+.config-gemini-note {
+  margin:12px 0 0;
+  color:var(--muted);
+  font-size:0.76rem;
+  font-style:italic;
+}
+@media (max-width: 900px) {
+  .config-gemini-grid {
+    grid-template-columns:1fr;
+  }
+  .config-gemini-status .gemini-quota-main {
+    grid-template-columns:1fr;
+  }
+  .config-gemini-status .gemini-quota-metrics {
+    justify-content:stretch;
+  }
+  .config-gemini-status .gemini-quota-metric {
+    flex:1 1 86px;
+  }
+}
 .ai-engine-lines {
   position:relative;
   z-index:1;

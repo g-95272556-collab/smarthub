@@ -2247,65 +2247,89 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
-          <div class="card config-section-card" id="config-ai-card" data-config-group="utama" style="border: 2px solid var(--primary-light);">
+          <div class="card config-section-card config-gemini-card" id="config-ai-card" data-config-group="utama">
             <div class="section-header">
               <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (Auto-Rotate)</h2>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
             </div>
-            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
-              Masukkan sehingga <strong>3 Kunci API Gemini</strong>. Sistem akan cuba Kunci 1 dahulu — jika kehabisan kuota (ralat 429), Kunci 2 digunakan secara automatik, kemudian Kunci 3. Ini mengelakkan ralat <strong>524 Cloudflare</strong> dan had kuota harian.
+            <p class="config-gemini-intro">
+              Masukkan sehingga <strong>3 kunci API Gemini</strong> pada peranti ini. Sistem menjana imej melalui queue kecil: semua kunci aktif digunakan serentak, kunci yang kena had kuota ditanda, dan baki imej diteruskan dengan kunci lain.
             </p>
-            <div style="display:grid;gap:12px">
+            <div class="gemini-quota-card config-gemini-status">
+              <div class="gemini-quota-main">
+                <div>
+                  <div class="gemini-quota-title">Status Gemini Setempat</div>
+                  <div class="gemini-quota-subtitle">Kunci disimpan dalam Local Storage pelayar ini sahaja. Anggaran kuota digunakan untuk paparan dan tidak dihantar ke server.</div>
+                </div>
+                <div class="gemini-quota-metrics">
+                  <div class="gemini-quota-metric"><strong data-gemini-quota="active">0/0</strong><span>Aktif</span></div>
+                  <div class="gemini-quota-metric"><strong data-gemini-quota="remaining">0</strong><span>Baki</span></div>
+                  <div class="gemini-quota-metric"><strong data-gemini-quota="limited">0</strong><span>Limit</span></div>
+                </div>
+              </div>
+              <div class="gemini-quota-progress"><span data-gemini-quota-bar></span></div>
+              <div class="gemini-quota-foot">
+                <span><strong data-gemini-quota="used">0</strong>/<strong data-gemini-quota="limit">0</strong> imej hari ini</span>
+                <span>Teks Gemini: <strong data-gemini-quota="texts">0</strong></span>
+                <span>Limit terakhir: <strong data-gemini-quota="last-limit">-</strong></span>
+              </div>
+              <div class="config-gemini-key-list" data-gemini-key-list></div>
+            </div>
+            <div class="config-gemini-grid">
 
-              <div style="border:1px solid var(--border);border-radius:8px;padding:14px">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                  <span style="font-weight:600;font-size:0.9rem">🔑 Kunci 1</span>
+              <div class="config-gemini-slot">
+                <div class="config-gemini-slot-head">
+                  <span>Kunci 1</span>
                   <span id="gemini-key-1-status" class="badge badge-gray">Tiada Kunci</span>
                 </div>
-                <div class="form-group" style="margin-bottom:10px">
-                  <input id="geminiKey1" type="password" placeholder="AIzaSy..." style="font-family:monospace;font-size:0.85rem">
+                <div class="form-group config-gemini-input">
+                  <input id="geminiKey1" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
                 </div>
-                <div style="display:flex;gap:8px">
-                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(1)">💾 Simpan</button>
-                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(1)">🗑 Padam</button>
+                <div class="config-gemini-actions">
+                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(1)"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-save"></use></svg> Simpan</button>
+                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(1)"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-trash-2"></use></svg> Padam</button>
                 </div>
               </div>
 
-              <div style="border:1px solid var(--border);border-radius:8px;padding:14px">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                  <span style="font-weight:600;font-size:0.9rem">🔑 Kunci 2</span>
+              <div class="config-gemini-slot">
+                <div class="config-gemini-slot-head">
+                  <span>Kunci 2</span>
                   <span id="gemini-key-2-status" class="badge badge-gray">Tiada Kunci</span>
                 </div>
-                <div class="form-group" style="margin-bottom:10px">
-                  <input id="geminiKey2" type="password" placeholder="AIzaSy..." style="font-family:monospace;font-size:0.85rem">
+                <div class="form-group config-gemini-input">
+                  <input id="geminiKey2" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
                 </div>
-                <div style="display:flex;gap:8px">
-                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(2)">💾 Simpan</button>
-                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(2)">🗑 Padam</button>
+                <div class="config-gemini-actions">
+                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(2)"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-save"></use></svg> Simpan</button>
+                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(2)"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-trash-2"></use></svg> Padam</button>
                 </div>
               </div>
 
-              <div style="border:1px solid var(--border);border-radius:8px;padding:14px">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                  <span style="font-weight:600;font-size:0.9rem">🔑 Kunci 3</span>
+              <div class="config-gemini-slot">
+                <div class="config-gemini-slot-head">
+                  <span>Kunci 3</span>
                   <span id="gemini-key-3-status" class="badge badge-gray">Tiada Kunci</span>
                 </div>
-                <div class="form-group" style="margin-bottom:10px">
-                  <input id="geminiKey3" type="password" placeholder="AIzaSy..." style="font-family:monospace;font-size:0.85rem">
+                <div class="form-group config-gemini-input">
+                  <input id="geminiKey3" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false">
                 </div>
-                <div style="display:flex;gap:8px">
-                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(3)">💾 Simpan</button>
-                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(3)">🗑 Padam</button>
+                <div class="config-gemini-actions">
+                  <button class="btn btn-sm btn-primary" onclick="geminiSimpanKunci(3)"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-save"></use></svg> Simpan</button>
+                  <button class="btn btn-sm btn-secondary" onclick="geminiPadamKunci(3)"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-trash-2"></use></svg> Padam</button>
                 </div>
               </div>
 
             </div>
-            <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <button class="btn btn-secondary" onclick="geminiResetKuota()">🔄 Reset Status Kuota</button>
-              <span style="font-size:0.78rem;color:var(--muted)">Guna ini selepas kuota diperbaharui (Google reset setiap hari)</span>
+            <div class="config-gemini-tools">
+              <div class="form-group config-gemini-limit">
+                <label>Had anggaran imej harian per kunci</label>
+                <input id="geminiDailyImageLimit" type="number" min="1" step="1" value="20">
+              </div>
+              <button class="btn btn-primary" onclick="geminiSimpanHadImejHarian()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-save"></use></svg> Simpan Had</button>
+              <button class="btn btn-secondary" onclick="geminiResetKuota()"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-refresh-cw"></use></svg> Reset Status Kuota</button>
             </div>
-            <p style="font-size:0.75rem;color:var(--muted);font-style:italic;margin-top:12px">
-              * Kunci disimpan dalam pelayar sahaja (Local Storage) — tidak dihantar ke mana-mana server lain.
+            <p class="config-gemini-note">
+              Reset hanya membuang tanda "Kuota Habis" pada peranti ini. Google biasanya reset kuota harian mengikut akaun/API key.
             </p>
           </div>
 
