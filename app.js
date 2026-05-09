@@ -13018,6 +13018,7 @@ function lkSalinFallback(text) {
 
 // ── SIMPAN KE GOOGLE DRIVE ──────────────────────────────────────
 var _lkDriveTokenClient = null;
+var _LK_DRIVE_BTN_HTML = '<svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg> Simpan ke Drive';
 
 function lkSimpanDrive() {
   var box = document.getElementById('lkOutputBox');
@@ -13038,7 +13039,7 @@ function lkSimpanDrive() {
       client_id: clientId,
       scope: 'https://www.googleapis.com/auth/drive.file',
       callback: function(tokenResponse) {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg> Simpan ke Drive'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = _LK_DRIVE_BTN_HTML; }
         if (tokenResponse.error) {
           showToast('Kebenaran Drive ditolak: ' + tokenResponse.error, 'error'); return;
         }
@@ -13047,58 +13048,239 @@ function lkSimpanDrive() {
     });
     _lkDriveTokenClient._clientId = clientId;
   } else {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg> Simpan ke Drive'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = _LK_DRIVE_BTN_HTML; }
   }
   _lkDriveTokenClient.requestAccessToken({ prompt: '' });
 }
 
-async function _lkDoSaveToDrive(accessToken) {
-  var box = document.getElementById('lkOutputBox');
-  var content = box ? box.textContent : '';
-  var subjekSel = document.getElementById('lkSubjek');
-  var subjekLabel = subjekSel && subjekSel.selectedIndex >= 0 ? subjekSel.options[subjekSel.selectedIndex].text : 'Subjek';
-  var tahun = document.getElementById('lkTahun') ? document.getElementById('lkTahun').value : '';
-  var now = new Date();
-  var dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
-  var filename = 'LembaranKerja_' + subjekLabel.replace(/[\/\\:*?"<>|]/g,'_') + '_T' + tahun + '_' + dateStr + '.txt';
+// ── DIALOG PILIH FOLDER DRIVE ───────────────────────────────────
+function lkPilihFolderDrive() {
+  return new Promise(function(resolve) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
 
-  var btn = document.getElementById('lkSimpanDriveBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Menyimpan...'; }
-  showToast('Menyimpan ke Google Drive...', 'info');
+    overlay.innerHTML =
+      '<div style="background:#fff;border-radius:14px;padding:28px 24px 20px;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.35)">' +
+        '<div style="font-size:1.05rem;font-weight:700;margin-bottom:6px">📁 Simpan PDF ke Google Drive</div>' +
+        '<div style="font-size:.82rem;color:#666;margin-bottom:18px">Pilih folder destinasi fail PDF:</div>' +
 
-  try {
-    var metadata = { name: filename, mimeType: 'text/plain' };
-    var form = new FormData();
-    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    form.append('file', new Blob([content], { type: 'text/plain' }));
+        // Option A — Cetakan AI
+        '<label id="lkFolderOptA" style="display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:2px solid #1a4fa0;border-radius:10px;cursor:pointer;margin-bottom:10px;background:#f0f4ff">' +
+          '<input type="radio" name="lk_folder" value="cetakan" checked style="margin-top:2px;accent-color:#1a4fa0">' +
+          '<span>' +
+            '<strong style="font-size:.9rem">📂 Cetakan AI</strong>' +
+            '<div style="font-size:.78rem;color:#555;margin-top:2px">Folder automatik — semua cetakan AI disimpan di sini</div>' +
+          '</span>' +
+        '</label>' +
 
-    var resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + accessToken },
-      body: form
+        // Option B — Folder lain
+        '<label id="lkFolderOptB" style="display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:2px solid #ddd;border-radius:10px;cursor:pointer;margin-bottom:18px">' +
+          '<input type="radio" name="lk_folder" value="custom" style="margin-top:2px">' +
+          '<span style="flex:1">' +
+            '<strong style="font-size:.9rem">✏️ Folder lain</strong>' +
+            '<div style="font-size:.78rem;color:#555;margin-top:2px">Taip nama folder yang dikehendaki</div>' +
+            '<input id="lkFolderCustomInput" type="text" placeholder="Contoh: Lembaran Kerja 2026" disabled ' +
+              'style="margin-top:8px;width:100%;padding:7px 10px;border:1.5px solid #ccc;border-radius:6px;font-size:.85rem;box-sizing:border-box;outline:none">' +
+          '</span>' +
+        '</label>' +
+
+        '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+          '<button id="lkFolderBatal" style="padding:8px 18px;border:1.5px solid #ddd;border-radius:7px;background:#f5f5f5;cursor:pointer;font-size:.875rem">Batal</button>' +
+          '<button id="lkFolderOk" style="padding:8px 22px;border:none;border-radius:7px;background:#1a4fa0;color:#fff;cursor:pointer;font-size:.875rem;font-weight:600">💾 Simpan PDF</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    var optA = overlay.querySelector('#lkFolderOptA');
+    var optB = overlay.querySelector('#lkFolderOptB');
+    var customInput = overlay.querySelector('#lkFolderCustomInput');
+    var radios = overlay.querySelectorAll('input[type=radio]');
+
+    radios.forEach(function(r) {
+      r.addEventListener('change', function() {
+        var isCetakan = overlay.querySelector('input[value=cetakan]').checked;
+        optA.style.borderColor = isCetakan ? '#1a4fa0' : '#ddd';
+        optA.style.background  = isCetakan ? '#f0f4ff' : '';
+        optB.style.borderColor = isCetakan ? '#ddd' : '#1a4fa0';
+        optB.style.background  = isCetakan ? '' : '#f0f4ff';
+        customInput.disabled   = isCetakan;
+        if (!isCetakan) customInput.focus();
+      });
     });
 
-    if (!resp.ok) {
-      var errData = await resp.json().catch(function(){ return {}; });
-      throw new Error((errData.error && errData.error.message) || 'HTTP ' + resp.status);
+    overlay.querySelector('#lkFolderBatal').addEventListener('click', function() {
+      document.body.removeChild(overlay); resolve(null);
+    });
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) { document.body.removeChild(overlay); resolve(null); }
+    });
+    overlay.querySelector('#lkFolderOk').addEventListener('click', function() {
+      var isCetakan = overlay.querySelector('input[value=cetakan]').checked;
+      var folderName = isCetakan ? 'Cetakan AI' : (customInput.value || '').trim();
+      if (!folderName) { showToast('Sila taip nama folder.', 'error'); customInput.focus(); return; }
+      document.body.removeChild(overlay);
+      resolve(folderName);
+    });
+  });
+}
+
+// ── CARI ATAU BINA FOLDER DI GOOGLE DRIVE ──────────────────────
+async function lkDriveCariFolderAtauBina(accessToken, folderName) {
+  var safeName = folderName.replace(/'/g, "\\'");
+  var q = encodeURIComponent("name='" + safeName + "' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  var searchResp = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)&pageSize=5', {
+    headers: { 'Authorization': 'Bearer ' + accessToken }
+  });
+  if (!searchResp.ok) throw new Error('Gagal cari folder Drive (HTTP ' + searchResp.status + ')');
+  var searchData = await searchResp.json();
+  if (searchData.files && searchData.files.length > 0) return searchData.files[0].id;
+
+  // Folder tidak wujud — bina baru
+  var createResp = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: folderName, mimeType: 'application/vnd.google-apps.folder' })
+  });
+  if (!createResp.ok) throw new Error('Gagal bina folder "' + folderName + '" di Drive.');
+  var createData = await createResp.json();
+  return createData.id;
+}
+
+// ── MUAT PERPUSTAKAAN PDF (LAZY) ────────────────────────────────
+var _lkPdfLibsLoaded = false;
+async function lkMuatLibrariPDF() {
+  if (_lkPdfLibsLoaded) return;
+  var toLoad = [];
+  if (!window.html2canvas) {
+    toLoad.push(new Promise(function(res, rej) {
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = res; s.onerror = function() { rej(new Error('Gagal muat html2canvas')); };
+      document.head.appendChild(s);
+    }));
+  }
+  if (!window.jspdf) {
+    toLoad.push(new Promise(function(res, rej) {
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = res; s.onerror = function() { rej(new Error('Gagal muat jsPDF')); };
+      document.head.appendChild(s);
+    }));
+  }
+  if (toLoad.length) await Promise.all(toLoad);
+  _lkPdfLibsLoaded = true;
+}
+
+// ── JANA PDF BLOB DARI OUTPUT BOX ──────────────────────────────
+async function lkJanaPDFBlob(box) {
+  await lkMuatLibrariPDF();
+
+  // Clone ke off-screen container dengan lebar A4
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'width:780px;padding:32px 40px;font-family:Arial,Helvetica,sans-serif;font-size:11pt;' +
+    'line-height:1.6;color:#000;background:#fff;position:fixed;left:-9999px;top:0;z-index:-1';
+  wrap.innerHTML = box.innerHTML;
+  document.body.appendChild(wrap);
+
+  try {
+    var canvas = await html2canvas(wrap, {
+      scale: 2, useCORS: true, allowTaint: true,
+      backgroundColor: '#ffffff', logging: false, imageTimeout: 20000
+    });
+
+    var jsPDF = window.jspdf.jsPDF;
+    var pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var pageW = 210; var pageH = 297; var margin = 12;
+    var contentW = pageW - margin * 2;
+
+    // Scale factor: canvas pixel → mm (scale:2, so divide by 2, then px to mm at 96dpi)
+    var pxPerMm = (canvas.width / 2) / contentW;
+    var totalHeightMm = (canvas.height / 2) / pxPerMm;
+    var contentHeightPerPage = pageH - margin * 2;
+    var totalPages = Math.ceil(totalHeightMm / contentHeightPerPage);
+
+    for (var pg = 0; pg < totalPages; pg++) {
+      if (pg > 0) pdf.addPage();
+      var srcYpx  = Math.round(pg * contentHeightPerPage * pxPerMm * 2);
+      var srcHpx  = Math.min(Math.round(contentHeightPerPage * pxPerMm * 2), canvas.height - srcYpx);
+      var destHmm = srcHpx / pxPerMm / 2;
+      if (srcHpx <= 0) break;
+
+      var pc = document.createElement('canvas');
+      pc.width = canvas.width; pc.height = srcHpx;
+      var ctx = pc.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, pc.width, pc.height);
+      ctx.drawImage(canvas, 0, srcYpx, canvas.width, srcHpx, 0, 0, canvas.width, srcHpx);
+      pdf.addImage(pc.toDataURL('image/jpeg', 0.95), 'JPEG', margin, margin, contentW, destHmm);
     }
 
-    var data = await resp.json();
-    showToast('✅ Disimpan: ' + data.name, 'success');
+    return pdf.output('blob');
+  } finally {
+    document.body.removeChild(wrap);
+  }
+}
 
-    var lkStatus = document.getElementById('lkStatusBar');
-    if (lkStatus && data.webViewLink) {
-      lkStatus.className = 'lk-status-bar lk-status-done';
-      lkStatus.innerHTML = '<span>✅</span><span>Disimpan ke Google Drive sebagai <strong>' + escapeHtml(data.name) + '</strong>. ' +
-        '<a href="' + escapeHtml(data.webViewLink) + '" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Buka fail ↗</a></span>';
+// ── MAIN: SIMPAN PDF KE GOOGLE DRIVE ───────────────────────────
+async function _lkDoSaveToDrive(accessToken) {
+  var box = document.getElementById('lkOutputBox');
+  if (!box || !box.innerHTML.trim()) { showToast('Tiada output untuk disimpan.', 'error'); return; }
+
+  // Tunjuk dialog pilihan folder
+  var folderName = await lkPilihFolderDrive();
+  if (!folderName) return; // guru tekan Batal
+
+  var subjekSel = document.getElementById('lkSubjek');
+  var subjekLabel = subjekSel && subjekSel.selectedIndex >= 0 ? subjekSel.options[subjekSel.selectedIndex].text : 'Subjek';
+  var tahun = (document.getElementById('lkTahun') || {}).value || '';
+  var now = new Date();
+  var dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  var filename = 'LembaranKerja_' + subjekLabel.replace(/[\/\\:*?"<>|]/g,'_') + '_T' + tahun + '_' + dateStr + '.pdf';
+
+  var btn = document.getElementById('lkSimpanDriveBtn');
+  try {
+    // Langkah 1: Jana PDF
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Jana PDF...'; }
+    lkSetStatus('loading', '⏳ Jana PDF dari output lembaran kerja...');
+    var pdfBlob = await lkJanaPDFBlob(box);
+
+    // Langkah 2: Cari / bina folder
+    if (btn) btn.textContent = '⏳ Semak folder...';
+    lkSetStatus('loading', '⏳ Semak folder "' + folderName + '" dalam Drive...');
+    var folderId = await lkDriveCariFolderAtauBina(accessToken, folderName);
+
+    // Langkah 3: Muat naik PDF
+    if (btn) btn.textContent = '⏳ Muat naik PDF...';
+    lkSetStatus('loading', '⏳ Muat naik PDF ke folder "' + folderName + '"...');
+    var metadata = { name: filename, mimeType: 'application/pdf', parents: [folderId] };
+    var form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', pdfBlob);
+
+    var resp = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+      { method: 'POST', headers: { 'Authorization': 'Bearer ' + accessToken }, body: form }
+    );
+    if (!resp.ok) {
+      var errData = await resp.json().catch(function() { return {}; });
+      throw new Error((errData.error && errData.error.message) || 'HTTP ' + resp.status);
+    }
+    var data = await resp.json();
+    var folderLink = 'https://drive.google.com/drive/folders/' + folderId;
+
+    showToast('✅ PDF disimpan ke folder "' + folderName + '"!', 'success');
+    var lkStatusBar = document.getElementById('lkStatusBar');
+    if (lkStatusBar) {
+      lkStatusBar.className = 'lk-status-bar lk-status-done';
+      lkStatusBar.innerHTML = '<span>✅</span><span>PDF disimpan ke folder <strong>"' + escapeHtml(folderName) + '"</strong> dalam Google Drive anda. ' +
+        '<a href="' + escapeHtml(data.webViewLink) + '" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Buka PDF ↗</a> &nbsp;·&nbsp; ' +
+        '<a href="' + escapeHtml(folderLink) + '" target="_blank" rel="noopener" style="color:inherit;font-weight:700;text-decoration:underline">Buka folder ↗</a></span>';
     }
   } catch(e) {
     showToast('Gagal simpan ke Drive: ' + e.message, 'error');
+    lkSetStatus('error', 'Gagal simpan PDF: ' + e.message);
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-right:4px" fill="currentColor"><path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28 55H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="M43.65 25L29.4 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 50.5A9 9 0 000 55h28z" fill="#00ac47"/><path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75L86.1 55c0-1.55-.4-3.1-1.2-4.5L59.3 3.3c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 73.55 76.8z" fill="#ea4335"/><path d="M43.65 25L57.9 0H29.4z" fill="#00832d"/><path d="M87.3 55H59.3L43.65 78h29.9z" fill="#2684fc"/><path d="M28 55L13.75 76.8c1.35.8 2.85 1.2 4.4 1.2h50.9c1.55 0 3.05-.4 4.4-1.2L59.3 55z" fill="#ffba00"/></svg> Simpan ke Drive';
-    }
+    if (btn) { btn.disabled = false; btn.innerHTML = _LK_DRIVE_BTN_HTML; }
   }
 }
 
