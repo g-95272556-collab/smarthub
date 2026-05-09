@@ -2682,6 +2682,62 @@ async function callWorkerAI(prompt, type) {
   return await res.json();
 }
 
+// ── STREAMING: DeepSeek → SSE → update output progressively ──────
+// Worker perlu sokong endpoint /ai/stream yang returns text/event-stream
+// Format SSE: data: {"choices":[{"delta":{"content":"..."}}]}  atau  data: [DONE]
+// Fallback automatik ke callWorkerAI jika endpoint tidak disokong (404/error)
+async function callWorkerAIStream(prompt, type, onChunk) {
+  if (!APP.workerUrl) throw new Error('Worker URL diperlukan');
+  if (!APP.user || !APP.user.idToken) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
+  const url = APP.workerUrl.replace(/\/+$/, '') + '/ai/stream';
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, type, auth: getWorkerAuthPayload() })
+    });
+    if (!res.ok || !res.body) throw new Error('stream_not_supported');
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('text/event-stream') && !ct.includes('text/plain')) throw new Error('stream_not_supported');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === '[DONE]') break;
+        try {
+          const parsed = JSON.parse(data);
+          const delta = (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content)
+            || parsed.content || parsed.text || '';
+          if (delta) {
+            fullText += delta;
+            if (typeof onChunk === 'function') onChunk(fullText);
+          }
+        } catch (parseErr) { /* abaikan baris JSON tidak sah */ }
+      }
+    }
+    if (!fullText.trim()) throw new Error('Tiada kandungan dihasilkan melalui stream');
+    return { success: true, content: fullText, isHtml: false };
+  } catch (streamErr) {
+    if (streamErr.message === 'stream_not_supported' || streamErr.message.includes('404') || streamErr.message.includes('Failed to fetch')) {
+      console.info('[LK] /ai/stream tidak disokong — guna callWorkerAI biasa');
+      return callWorkerAI(prompt, type);
+    }
+    throw streamErr;
+  }
+}
+
 // ── DASHBOARD ──────────────────────────────────────────────────
 function setTodayDates() {
   const now = new Date();
@@ -11980,6 +12036,7 @@ function lkPostProcessOutput(raw) {
     if (/^BAHAGIAN\s+[A-D](\s*[:–\-]|\s*$)/i.test(t)) {
       out.push('<div class="lk-bahagian">' + t + '</div>');
     } else if (/^(SKEMA JAWAPAN|SKEMA PEMARKAHAN|Skema Jawapan|Skema Pemarkahan)/i.test(t)) {
+      out.push('<div class="lk-skema-separator"><div class="lk-skema-banner">⚠ SKEMA JAWAPAN — UNTUK GURU SAHAJA &nbsp;•&nbsp; JANGAN EDAR KEPADA MURID</div></div>');
       out.push('<div class="lk-skema-head">' + t + '</div>');
     } else if (/^\d+[.)]\s/.test(t)) {
       var qm = t.match(/^(\d+)[.)]\s*([\s\S]+)/);
@@ -12054,6 +12111,51 @@ function lkBinaSumber(phase) {
   p += '- Jumlah Soalan Keseluruhan: ' + bilSoalan + '\n';
   p += '- Aras: ' + (arasLabel[aras] || aras) + '\n';
   p += '- Bahasa: ' + bahasa + '\n';
+
+  // ── FEW-SHOT: Contoh soalan mengikut subjek untuk panduan AI ──
+  var fewShot = '';
+  var sv = subjekVal ? String(subjekVal).toUpperCase() : '';
+  if (sv.indexOf('BM') !== -1 || sv.indexOf('BAHASA MELAYU') !== -1) {
+    fewShot = '\n\nCONTOH SOALAN (PANDUAN FORMAT — IKUT GAYA INI):\n' +
+      '--- Contoh TP2 (Memahami) ---\n' +
+      '3. Apakah maksud perkataan "cergas" dalam ayat "Murid itu cergas berlari di padang"?\n' +
+      'A. Malas\nB. Aktif dan sihat\nC. Lemah\nD. Mengantuk\n\n' +
+      '--- Contoh TP4 (Menganalisis) ---\n' +
+      '7. Baca petikan berikut dan jawab soalan.\n"Ali suka membaca buku setiap malam. Dia sering mendapat markah tinggi dalam peperiksaan."\n' +
+      'Apakah hubungan antara tabiat membaca Ali dengan pencapaiannya?\n' +
+      'A. Membaca buku membuang masa Ali.\nB. Membaca buku membantu Ali berjaya dalam peperiksaan.\nC. Ali mendapat markah tinggi kerana tidur awal.\nD. Ali suka membaca buku bergambar sahaja.\n\n' +
+      '--- Contoh TP6 (Mencipta) ---\n' +
+      '10. Tulis sebuah ayat lengkap menggunakan perkataan "bertanggungjawab".\nJawapan: ___________________________________________\n';
+  } else if (sv.indexOf('MAT') !== -1 || sv.indexOf('MATEMATIK') !== -1) {
+    fewShot = '\n\nCONTOH SOALAN (PANDUAN FORMAT — IKUT GAYA INI):\n' +
+      '--- Contoh TP1 (Mengingat) ---\n' +
+      '1. 345 + 278 = ______\n\n' +
+      '--- Contoh TP3 (Mengaplikasi) ---\n' +
+      '5. Dalam sebuah bakul terdapat 48 biji epal. Epal itu dimasukkan sama rata ke dalam 6 beg. Berapa biji epal dalam setiap beg?\nJawapan: ______\n\n' +
+      '--- Contoh TP5 (Menilai) ---\n' +
+      '8. Rajah di bawah menunjukkan harga 3 jenis buah. Zara ada RM10.00. Buah manakah yang TIDAK boleh dibeli Zara sebanyak 3 biji?\n' +
+      'A. Tembikai (RM2.50 sebiji)\nB. Epal (RM1.80 sebiji)\nC. Betik (RM3.50 sebiji)\nD. Limau (RM1.20 sebiji)\n';
+  } else if (sv.indexOf('SAINS') !== -1 || sv.indexOf('SCI') !== -1) {
+    fewShot = '\n\nCONTOH SOALAN (PANDUAN FORMAT — IKUT GAYA INI):\n' +
+      '--- Contoh TP2 (Memahami) ---\n' +
+      '2. Apakah fungsi akar pada tumbuhan?\n' +
+      'A. Menghasilkan buah\nB. Menyerap air dan mineral dari tanah\nC. Membuat makanan dari cahaya matahari\nD. Menghasilkan oksigen\n\n' +
+      '--- Contoh TP4 (Menganalisis) ---\n' +
+      '6. Seorang murid meletakkan dua batang lilin yang sedang menyala di dalam bekas kaca yang ditutup. Lilin A berada dalam bekas kecil, Lilin B dalam bekas besar. Lilin manakah yang lebih cepat padam? Berikan alasan.\n' +
+      'Jawapan: _______ sebab _______________________________________\n';
+  }
+  if (fewShot) p += fewShot;
+
+  // ── Arahan TP level supaya soalan tersebar mengikut tahap ──
+  if (aras && aras !== 'campuran') {
+    var tpRange = { mudah: 'TP1 dan TP2', sederhana: 'TP3 dan TP4', susah: 'TP5 dan TP6' };
+    if (tpRange[aras]) {
+      p += '\n• Labelkan setiap soalan dengan aras Tahap Penguasaan dalam kurungan. Contoh: "1. (TP2)" atau "[TP4]" sebelum teks soalan.\n';
+      p += '• Fokus kepada ' + tpRange[aras] + ' sahaja untuk kumpulan pelajar ini.\n';
+    }
+  } else {
+    p += '\n• Agihkan soalan merentasi TP1 hingga TP6 (sekurang-kurangnya 2 soalan setiap TP). Labelkan aras TP pada setiap soalan.\n';
+  }
 
   if (jenis === 'pbd-pt') {
     // ── FORMAT PDPC: Lembaran kerja latihan harian — BUKAN format peperiksaan ──
@@ -12760,7 +12862,7 @@ async function janaLembaranKerja() {
       var masaFasaSafe = escapeHtml(masaFasa);
       var kodFasaSafe = escapeHtml(kodFasa);
       var jenisTxtFasaSafe = escapeHtml(jenisTxtFasa);
-      var headerFasa = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
+      var headerFasa = '<div class="lk-print-header" style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;margin-bottom:20px">' +
         lineFasa +
         '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:6px">SK KIANDONGO</div>' +
         '<div style="text-align:center;font-weight:bold;margin-bottom:8px">' + jenisTxtFasaSafe + '</div>' +
@@ -12783,7 +12885,18 @@ async function janaLembaranKerja() {
       } else if (engine === 'hybrid') {
         result = await callHybridDeepSeekGemini(prompt);
       } else {
-        result = await callWorkerAI(prompt, 'lembaran_kerja');
+        // DeepSeek: cuba streaming dahulu supaya teks muncul sedikit demi sedikit
+        // Fallback automatik ke callWorkerAI jika Worker belum sokong /ai/stream
+        result = await callWorkerAIStream(prompt, 'lembaran_kerja', function(partialText) {
+          if (_lkCancelled) return;
+          var processedPartial = lkPostProcessOutput(partialText);
+          var lkBox = document.getElementById('lkOutputBox');
+          if (lkBox) {
+            lkBox.innerHTML = '<div class="lk-stream-indicator" style="font-size:.78rem;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed rgba(0,0,0,.1)">⚡ Streaming... teks muncul semasa AI menjana</div>' +
+              '<div class="lk-pp-content">' + processedPartial + '</div>';
+            lkBox.scrollTop = lkBox.scrollHeight;
+          }
+        });
       }
 
       if (result.success) {
