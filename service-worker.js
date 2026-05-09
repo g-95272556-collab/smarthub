@@ -1,8 +1,9 @@
-const CACHE_NAME = "ssh-pwa-v9-dskp-shell";
+const CACHE_NAME = "ssh-pwa-v10-css-refresh";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./app.js",
+  "./style.css",
   "./dskp_embedded.js",
   "./runtime-config.js",
   "./manifest.webmanifest",
@@ -54,7 +55,7 @@ self.addEventListener("fetch", function(event) {
   const isGoogleFontAsset = /fonts\.(googleapis|gstatic)\.com$/i.test(url.hostname);
   const isFreshAsset = isSameOrigin && (
     request.mode === "navigate" ||
-    /\/(?:index\.html|app\.js|dskp_embedded\.js|runtime-config\.js|service-worker\.js)$/.test(url.pathname)
+    /\/(?:index\.html|app\.js|style\.css|dskp_embedded\.js|runtime-config\.js|service-worker\.js)$/.test(url.pathname)
   );
 
   if (isFreshAsset) {

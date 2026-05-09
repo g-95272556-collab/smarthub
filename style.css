@@ -7,6 +7,7 @@
   --navy-light: #0d1e3d;
   --slate:   #1e293b;
   --blue:    #3b82f6;
+  --primary: #3b82f6;
   --blue-glow: rgba(59, 130, 246, 0.5);
   --gold:    #facc15;
   --gold-dark: #eab308;
@@ -15,7 +16,9 @@
 
 
   --bg:      #f1f5f9;
+  --bg-alt:  #f8fafc;
   --surface: #ffffff;
+  --surface-alt: #f8fafc;
   --border:  rgba(15, 23, 42, 0.06);
   --surface-glass: rgba(255, 255, 255, 0.8);
   --text:    #0f172a;
@@ -397,6 +400,7 @@ body.is-loading {
 .nav-item.c-cyan .nav-icon { color: #22d3ee; background: rgba(34,211,238,0.15); }
 .nav-item.c-orange .nav-icon { color: #fb923c; background: rgba(251,146,60,0.15); }
 .nav-item.c-purple .nav-icon { color: #c084fc; background: rgba(192,132,252,0.15); }
+.nav-item.c-indigo .nav-icon { color: #818cf8; background: rgba(99,102,241,0.15); }
 .nav-item.c-rose .nav-icon { color: #fb7185; background: rgba(251,113,133,0.15); }
 .nav-item.c-teal .nav-icon { color: #2dd4bf; background: rgba(45,212,191,0.15); }
 .nav-item.c-amber .nav-icon { color: #fcd34d; background: rgba(252,211,77,0.15); }
@@ -599,6 +603,9 @@ body.is-loading {
 .stat-icon.gold  { background: rgba(250,204,21,0.15); color: var(--gold-dark); }
 .stat-icon.green { background: rgba(16,185,129,0.1); color: var(--green); }
 .stat-icon.red   { background: rgba(239,68,68,0.1); color: var(--red); }
+.stat-icon.amber { background: rgba(245,158,11,0.12); color: var(--amber); }
+.stat-icon.purple,
+.stat-icon.indigo { background: rgba(99,102,241,0.12); color: #6366f1; }
 .stat-info small { display: block; color: var(--muted); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
 .stat-info strong { font-size: 1.85rem; font-weight: 800; color: var(--navy); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .stat-info span { font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
@@ -675,6 +682,14 @@ body.is-loading {
   background: rgba(16, 185, 129, 0.08);
   color: var(--green);
   border: 1px solid rgba(16, 185, 129, 0.15);
+}
+.btn-gray {
+  background: #e2e8f0;
+  color: var(--slate);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+.btn-gray:hover {
+  background: #cbd5e1;
 }
 .btn-sm { padding: 7px 12px; font-size: 0.8rem; }
 .btn-lg { padding: 14px 24px; font-size: 1rem; }
