@@ -12048,6 +12048,173 @@ function lkGetEngine() {
 
 // === GEMINI 3-KEY AUTO-ROTATE SYSTEM ===
 
+function geminiGetUsageDate() {
+  try {
+    if (typeof getTodayYMD === 'function') return getTodayYMD();
+  } catch (e) {}
+  return new Date().toISOString().slice(0, 10);
+}
+
+function aiBacaPenggunaan() {
+  var today = geminiGetUsageDate();
+  var data = {};
+  try { data = JSON.parse(localStorage.getItem('ssh_ai_usage_today') || '{}') || {}; } catch (e) { data = {}; }
+  if (data.date !== today) {
+    data = {
+      date: today,
+      geminiImages: 0,
+      geminiTexts: 0,
+      geminiLimitHits: 0,
+      geminiLastLimitAt: '',
+      deepseekTexts: 0,
+      deepseekErrors: 0,
+      deepseekLastStatus: 'Belum diuji',
+      deepseekLastAt: ''
+    };
+    localStorage.setItem('ssh_ai_usage_today', JSON.stringify(data));
+  }
+  data.geminiImages = parseInt(data.geminiImages || data.images || 0, 10) || 0;
+  data.geminiTexts = parseInt(data.geminiTexts || data.texts || 0, 10) || 0;
+  data.geminiLimitHits = parseInt(data.geminiLimitHits || data.limitHits || 0, 10) || 0;
+  data.deepseekTexts = parseInt(data.deepseekTexts || 0, 10) || 0;
+  data.deepseekErrors = parseInt(data.deepseekErrors || 0, 10) || 0;
+  data.deepseekLastStatus = data.deepseekLastStatus || 'Belum diuji';
+  data.deepseekLastAt = data.deepseekLastAt || '';
+  data.geminiLastLimitAt = data.geminiLastLimitAt || data.lastLimitAt || '';
+  return data;
+}
+
+function aiSimpanPenggunaan(data) {
+  localStorage.setItem('ssh_ai_usage_today', JSON.stringify(data));
+  try {
+    localStorage.setItem('ssh_gemini_usage_today', JSON.stringify({
+      date: data.date,
+      images: data.geminiImages,
+      texts: data.geminiTexts,
+      limitHits: data.geminiLimitHits,
+      lastLimitAt: data.geminiLastLimitAt
+    }));
+  } catch (e) {}
+  geminiRenderQuotaCards();
+}
+
+function aiCatatPenggunaan(type, amount) {
+  var data = aiBacaPenggunaan();
+  var inc = parseInt(amount || 1, 10) || 1;
+  var now = new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' });
+  if (type === 'gemini-image') data.geminiImages += inc;
+  else if (type === 'gemini-text') data.geminiTexts += inc;
+  else if (type === 'gemini-limit') {
+    data.geminiLimitHits += inc;
+    data.geminiLastLimitAt = now;
+  } else if (type === 'deepseek-text') {
+    data.deepseekTexts += inc;
+    data.deepseekLastStatus = 'Aktif';
+    data.deepseekLastAt = now;
+  } else if (type === 'deepseek-error') {
+    data.deepseekErrors += inc;
+    data.deepseekLastStatus = 'Ralat';
+    data.deepseekLastAt = now;
+  }
+  aiSimpanPenggunaan(data);
+}
+
+function geminiGetDailyImageLimitPerKey() {
+  var raw = localStorage.getItem('ssh_gemini_daily_image_limit_per_key');
+  var limit = parseInt(raw || '20', 10);
+  return Number.isFinite(limit) && limit > 0 ? limit : 20;
+}
+
+function geminiBacaPenggunaan() {
+  var data = aiBacaPenggunaan();
+  return {
+    date: data.date,
+    images: data.geminiImages,
+    texts: data.geminiTexts,
+    limitHits: data.geminiLimitHits,
+    lastLimitAt: data.geminiLastLimitAt
+  };
+}
+
+function geminiSimpanPenggunaan(data) {
+  var usage = aiBacaPenggunaan();
+  usage.geminiImages = parseInt(data.images || 0, 10) || 0;
+  usage.geminiTexts = parseInt(data.texts || 0, 10) || 0;
+  usage.geminiLimitHits = parseInt(data.limitHits || 0, 10) || 0;
+  usage.geminiLastLimitAt = data.lastLimitAt || '';
+  aiSimpanPenggunaan(usage);
+}
+
+function geminiCatatPenggunaan(type, amount) {
+  if (type === 'image') aiCatatPenggunaan('gemini-image', amount);
+  else if (type === 'text') aiCatatPenggunaan('gemini-text', amount);
+  else if (type === 'limit') aiCatatPenggunaan('gemini-limit', amount);
+}
+
+function geminiSimpanHadImejHarian() {
+  var input = document.getElementById('geminiDailyImageLimit');
+  var limit = parseInt((input || {}).value || '20', 10);
+  if (!Number.isFinite(limit) || limit < 1) limit = 20;
+  localStorage.setItem('ssh_gemini_daily_image_limit_per_key', String(limit));
+  geminiRenderQuotaCards();
+  showToast('Had anggaran imej harian dikemas kini.', 'success');
+}
+
+function geminiSetQuotaText(key, value) {
+  document.querySelectorAll('[data-gemini-quota="' + key + '"]').forEach(function(el) {
+    el.textContent = value;
+  });
+}
+
+function geminiRenderQuotaCards() {
+  var configured = 0;
+  var limited = 0;
+  var rows = [];
+  for (var n = 1; n <= 3; n++) {
+    var key = localStorage.getItem('ssh_gemini_key_' + n);
+    var exhausted = localStorage.getItem('ssh_gemini_exhausted_' + n);
+    if (key && key.trim()) configured++;
+    if (key && key.trim() && exhausted) limited++;
+    rows.push({ slot: n, hasKey: !!(key && key.trim()), limited: !!exhausted });
+  }
+
+  var active = Math.max(0, configured - limited);
+  var perKey = geminiGetDailyImageLimitPerKey();
+  var usage = geminiBacaPenggunaan();
+  var totalLimit = configured * perKey;
+  var remaining = Math.max(0, totalLimit - usage.images);
+  var pct = totalLimit > 0 ? Math.min(100, Math.round((usage.images / totalLimit) * 100)) : 0;
+  var resetText = 'Reset harian anggaran';
+  var limitInput = document.getElementById('geminiDailyImageLimit');
+  if (limitInput) limitInput.value = String(perKey);
+
+  geminiSetQuotaText('remaining', String(remaining));
+  geminiSetQuotaText('used', String(usage.images));
+  geminiSetQuotaText('limit', String(totalLimit));
+  geminiSetQuotaText('active', active + '/' + configured);
+  geminiSetQuotaText('limited', String(limited));
+  geminiSetQuotaText('texts', String(usage.texts));
+  geminiSetQuotaText('hits', String(usage.limitHits));
+  geminiSetQuotaText('reset', resetText);
+  geminiSetQuotaText('last-limit', usage.lastLimitAt || '-');
+  var aiUsage = aiBacaPenggunaan();
+  geminiSetQuotaText('deepseek-texts', String(aiUsage.deepseekTexts));
+  geminiSetQuotaText('deepseek-errors', String(aiUsage.deepseekErrors));
+  geminiSetQuotaText('deepseek-status', aiUsage.deepseekLastStatus || 'Belum diuji');
+  geminiSetQuotaText('deepseek-at', aiUsage.deepseekLastAt || '-');
+
+  document.querySelectorAll('[data-gemini-quota-bar]').forEach(function(el) {
+    el.style.width = pct + '%';
+  });
+  document.querySelectorAll('[data-gemini-key-list]').forEach(function(el) {
+    el.innerHTML = rows.map(function(row) {
+      var cls = !row.hasKey ? 'is-empty' : row.limited ? 'is-limited' : 'is-active';
+      var text = !row.hasKey ? 'Tiada Kunci' : row.limited ? 'Kuota Habis' : 'Aktif';
+      return '<span class="gemini-key-pill ' + cls + '">Key ' + row.slot + ': ' + text + '</span>';
+    }).join('');
+  });
+}
+
 function geminiKemaskiniStatusUI() {
   for (var n = 1; n <= 3; n++) {
     var key = localStorage.getItem('ssh_gemini_key_' + n);
@@ -12064,6 +12231,7 @@ function geminiKemaskiniStatusUI() {
       badge.className = 'badge badge-green'; badge.textContent = 'Aktif';
     }
   }
+  geminiRenderQuotaCards();
 }
 
 async function geminiSimpanKunci(n) {
@@ -12116,7 +12284,19 @@ function geminiDapatkanKunci() {
 
 function geminiTandaHabisKuota(slot) {
   localStorage.setItem('ssh_gemini_exhausted_' + slot, '1');
+  geminiCatatPenggunaan('limit', 1);
   geminiKemaskiniStatusUI();
+}
+
+function geminiDapatkanSemuaKunciAktif() {
+  var keys = [];
+  for (var n = 1; n <= 3; n++) {
+    var key = localStorage.getItem('ssh_gemini_key_' + n);
+    if (key && key.trim() && !localStorage.getItem('ssh_gemini_exhausted_' + n)) {
+      keys.push({ key: key.trim(), slot: n });
+    }
+  }
+  return keys;
 }
 
 // Legacy compat wrappers (keep old function names working)
@@ -12153,6 +12333,75 @@ async function _geminiApiCall(apiKey, prompt, modality, systemPrompt) {
   return await res.json();
 }
 
+function lkBinaPromptImejLembaran(desc) {
+  return 'Lukis ilustrasi untuk soalan murid sekolah rendah Malaysia: ' + desc +
+    '. WAJIB: clean black and white line art sahaja untuk dicetak. ' +
+    'DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, atau perkataan dalam gambar. Hanya lukisan/rajah sahaja.';
+}
+
+function lkAmbilDataUriImejGemini(imgData) {
+  var dataUri = '';
+  var parts = (imgData.candidates && imgData.candidates[0] && imgData.candidates[0].content)
+    ? imgData.candidates[0].content.parts : [];
+  parts.forEach(function(part) {
+    if (part.inlineData && !dataUri) {
+      dataUri = 'data:' + part.inlineData.mimeType + ';base64,' + part.inlineData.data;
+    }
+  });
+  return dataUri;
+}
+
+async function lkJanaImejGeminiParallel(imgPlaceholders, label) {
+  var imgByIndex = {};
+  if (!imgPlaceholders || !imgPlaceholders.length) return imgByIndex;
+
+  var activeKeys = geminiDapatkanSemuaKunciAktif().slice(0, 3);
+  if (!activeKeys.length) {
+    showToast('Tiada kunci Gemini aktif — teks sahaja dipaparkan.', 'info');
+    return imgByIndex;
+  }
+
+  var total = imgPlaceholders.length;
+  var pending = imgPlaceholders.slice();
+  var done = 0;
+  var failed = 0;
+  var prefix = label || 'Gemini jana imej';
+  lkSetStatus('loading', '🎨 ' + prefix + ' — ' + total + ' imej, ' + activeKeys.length + ' key aktif...');
+
+  async function runWorker(attempt) {
+    while (pending.length) {
+      if (_lkCancelled) throw new Error('__cancelled__');
+      var ph = pending.shift();
+      lkSetStatus('loading', '🎨 ' + prefix + ' ' + (done + failed + 1) + '/' + total + ' (Key ' + attempt.slot + ')...');
+      try {
+        var imgData = await _geminiApiCall(attempt.key, lkBinaPromptImejLembaran(ph.desc), 'IMAGE', null);
+        var dataUri = lkAmbilDataUriImejGemini(imgData);
+        if (dataUri) {
+          imgByIndex[ph.index] = dataUri;
+          geminiCatatPenggunaan('image', 1);
+          done++;
+        } else {
+          failed++;
+          console.warn('Gemini tidak pulangkan inlineData untuk imej [' + ph.index + ']');
+        }
+      } catch (imgErr) {
+        if (imgErr.isQuota) {
+          pending.unshift(ph);
+          geminiTandaHabisKuota(attempt.slot);
+          showToast('Kuota Gemini Key ' + attempt.slot + ' habis — janaan diteruskan dengan key lain.', 'info');
+          break;
+        }
+        failed++;
+        console.warn('Gagal jana imej [' + ph.index + '] dengan Key ' + attempt.slot + ':', imgErr.message);
+      }
+    }
+  }
+
+  await Promise.all(activeKeys.map(runWorker));
+  if (failed) showToast(done + ' imej berjaya, ' + failed + ' gagal dijana.', 'info');
+  return imgByIndex;
+}
+
 // ── STEP 1: Jana teks soalan sahaja (TEXT-only, pantas & stabil) ─
 // ── STEP 2: Untuk setiap soalan bergambar, jana imej berasingan ─
 async function callWorkerAIGemini(prompt, withImage) {
@@ -12175,6 +12424,7 @@ async function callWorkerAIGemini(prompt, withImage) {
         ? textData.candidates[0].content.parts : [];
       textParts.forEach(function(p) { if (p.text) rawText += p.text; });
       if (!rawText.trim()) throw new Error('Tiada teks dihasilkan oleh Gemini');
+      geminiCatatPenggunaan('text', 1);
       rawText = lkEnforceImagePlaceholderLimit(rawText, lkGetRequestedImageCount());
 
       // ══ STEP 2: Parse placeholder [GAMBAR:] atau [IMEJ:] dan jana setiap imej ══
@@ -12188,29 +12438,7 @@ async function callWorkerAIGemini(prompt, withImage) {
 
       var imgByIndex = {}; // { 0: dataUri, 1: dataUri, ... }
       if (imgPlaceholders.length > 0) {
-        lkSetStatus('loading', '🎨 Langkah 2/2: Jana ' + imgPlaceholders.length + ' imej soalan bergambar...');
-        for (let gi = 0; gi < imgPlaceholders.length; gi++) {
-          let ph = imgPlaceholders[gi];
-          lkSetStatus('loading', '🎨 Jana imej ' + (gi + 1) + '/' + imgPlaceholders.length + '...');
-          var imgPrompt = 'Lukis gambar untuk soalan murid Tahun 1-6 Malaysia: ' + ph.desc +
-            '. WAJIB: clean black and white line art sahaja untuk dicetak. DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, perkataan atau aksara dalam gambar. Hanya lukisan/rajah sahaja.';
-          try {
-            var imgData = await _geminiApiCall(attempt.key, imgPrompt, 'IMAGE', null);
-            var imgParts = (imgData.candidates && imgData.candidates[0] && imgData.candidates[0].content)
-              ? imgData.candidates[0].content.parts : [];
-            imgParts.forEach(function(p) {
-              if (p.inlineData) {
-                imgByIndex[ph.index] = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
-              }
-            });
-          } catch(imgErr) {
-            if (imgErr.isQuota) {
-              showToast('Kuota Gemini habis pada imej ' + (gi + 1) + ' — baki dipapar sebagai placeholder.', 'info');
-              break; // henti jana imej seterusnya
-            }
-            console.warn('Gagal jana imej [' + ph.index + ']:', imgErr.message);
-          }
-        }
+        imgByIndex = await lkJanaImejGeminiParallel(imgPlaceholders, 'Langkah 2/2: Jana imej soalan bergambar');
       }
 
       // ══ STEP 3: Bina HTML — selitkan imej inline mengikut urutan index ══
@@ -12280,7 +12508,11 @@ async function callHybridDeepSeekGemini(prompt) {
   // ── STEP 1: DeepSeek jana teks ──
   if (_lkCancelled) throw new Error('__cancelled__');
   var dsResult = await callWorkerAI(prompt, 'lembaran_kerja');
-  if (!dsResult.success) throw new Error(dsResult.message || 'DeepSeek gagal menjana teks.');
+  if (!dsResult.success) {
+    aiCatatPenggunaan('deepseek-error', 1);
+    throw new Error(dsResult.message || 'DeepSeek gagal menjana teks.');
+  }
+  aiCatatPenggunaan('deepseek-text', 1);
   var rawText = dsResult.content || '';
   if (!rawText.trim()) throw new Error('DeepSeek tidak menghasilkan teks.');
   rawText = lkEnforceImagePlaceholderLimit(rawText, lkGetRequestedImageCount());
@@ -12297,36 +12529,7 @@ async function callHybridDeepSeekGemini(prompt) {
   // ── STEP 3: Jana imej Gemini — simpan mengikut index ──
   var imgByIndex = {}; // { 0: dataUri, 1: dataUri, ... }
   if (imgPlaceholders.length > 0) {
-    var geminiAttempt = geminiDapatkanKunci();
-    if (!geminiAttempt) {
-      showToast('Tiada kunci Gemini aktif — teks sahaja dipaparkan.', 'info');
-    } else {
-      lkSetStatus('loading', '🎨 Langkah 2/2: Gemini jana ' + imgPlaceholders.length + ' imej...');
-      for (let hi = 0; hi < imgPlaceholders.length; hi++) {
-        let ph = imgPlaceholders[hi];
-        lkSetStatus('loading', '🎨 Jana imej ' + (hi + 1) + '/' + imgPlaceholders.length + '...');
-        var imgPrompt = 'Lukis ilustrasi untuk soalan murid sekolah rendah Malaysia: ' + ph.desc +
-          '. WAJIB: clean black and white line art sahaja untuk dicetak. ' +
-          'DILARANG KERAS: jangan tulis apa-apa teks, huruf, nombor, label, atau perkataan dalam gambar. Hanya lukisan/rajah sahaja.';
-        try {
-          var imgData = await _geminiApiCall(geminiAttempt.key, imgPrompt, 'IMAGE', null);
-          var iParts = (imgData.candidates && imgData.candidates[0] && imgData.candidates[0].content)
-            ? imgData.candidates[0].content.parts : [];
-          iParts.forEach(function(part) {
-            if (part.inlineData) {
-              imgByIndex[ph.index] = 'data:' + part.inlineData.mimeType + ';base64,' + part.inlineData.data;
-            }
-          });
-        } catch(imgErr) {
-          if (imgErr.isQuota) {
-            geminiTandaHabisKuota(geminiAttempt.slot);
-            showToast('Kuota Gemini habis pada imej ' + (hi + 1) + ' — baki dipapar sebagai placeholder.', 'info');
-            break;
-          }
-          console.warn('Gagal jana imej [' + ph.index + ']:', imgErr.message);
-        }
-      }
-    }
+    imgByIndex = await lkJanaImejGeminiParallel(imgPlaceholders, 'Langkah 2/2: Gemini jana imej');
   }
 
   // ── STEP 4: Replace placeholder dengan imej atau kotak fallback ──
@@ -12506,11 +12709,13 @@ async function janaLembaranKerja() {
       }
 
       if (result.success) {
+        if (engine === 'deepseek') aiCatatPenggunaan('deepseek-text', 1);
         if (requestedImageCount > 0 && !result.isHtml && result.content) {
           result.content = lkEnforceImagePlaceholderLimit(result.content, requestedImageCount);
         }
         // Simpan content sementara — header akan ditambah di bawah
       } else {
+        if (engine === 'deepseek') aiCatatPenggunaan('deepseek-error', 1);
         throw new Error(result.message || 'Gagal menjana lembaran kerja.');
       }
     }

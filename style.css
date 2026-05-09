@@ -3222,6 +3222,183 @@ table tbody tr:last-child td { border-bottom: none; }
   color: var(--navy);
 }
 .lk-radio-group input[type=radio] { accent-color:var(--primary); }
+.gemini-quota-card {
+  position:relative;
+  overflow:hidden;
+  border-radius:14px;
+  padding:18px;
+  color:#fff;
+  background:linear-gradient(135deg,#6d28d9 0%,#9333ea 45%,#db2777 100%);
+  box-shadow:0 16px 34px rgba(109,40,217,.22);
+}
+.gemini-quota-card::after {
+  content:"";
+  position:absolute;
+  right:-28px;
+  bottom:-42px;
+  width:150px;
+  height:150px;
+  border:14px solid rgba(255,255,255,.10);
+  border-radius:28px;
+  transform:rotate(28deg);
+}
+.gemini-quota-main {
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:16px;
+  align-items:center;
+}
+.gemini-quota-title {
+  font-size:1rem;
+  font-weight:900;
+  letter-spacing:0;
+}
+.gemini-quota-subtitle {
+  margin-top:6px;
+  font-size:0.82rem;
+  line-height:1.5;
+  color:rgba(255,255,255,.86);
+}
+.gemini-quota-metrics {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.gemini-quota-metric {
+  min-width:86px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,.20);
+  border-radius:12px;
+  background:rgba(15,23,42,.16);
+  backdrop-filter:blur(8px);
+  text-align:center;
+}
+.gemini-quota-metric strong {
+  display:block;
+  font-size:1.75rem;
+  line-height:1;
+  font-weight:900;
+  color:#fff;
+}
+.gemini-quota-metric span {
+  display:block;
+  margin-top:6px;
+  font-size:0.64rem;
+  font-weight:900;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.80);
+}
+.gemini-quota-progress {
+  position:relative;
+  z-index:1;
+  height:7px;
+  margin-top:14px;
+  border-radius:999px;
+  background:rgba(255,255,255,.22);
+  overflow:hidden;
+}
+.gemini-quota-progress span {
+  display:block;
+  width:0;
+  height:100%;
+  border-radius:inherit;
+  background:#facc15;
+  transition:width .25s ease;
+}
+.gemini-quota-foot {
+  position:relative;
+  z-index:1;
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.gemini-quota-foot {
+  margin-top:10px;
+  font-size:0.73rem;
+  color:rgba(255,255,255,.84);
+}
+.gemini-quota-card-output {
+  flex-shrink:0;
+  margin-bottom:12px;
+  padding:13px;
+  border-radius:10px;
+  background:linear-gradient(135deg,#4338ca 0%,#7c3aed 48%,#c026d3 100%);
+  box-shadow:0 10px 24px rgba(79,70,229,.18);
+}
+.gemini-quota-card-output .gemini-quota-main {
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+}
+.gemini-quota-card-output .gemini-quota-title { font-size:0.92rem; }
+.gemini-quota-card-output .gemini-quota-subtitle { font-size:0.72rem; margin-top:4px; }
+.gemini-quota-card-output .gemini-quota-metrics {
+  display:grid;
+  grid-template-columns:repeat(3, minmax(58px, 1fr));
+  gap:7px;
+}
+.gemini-quota-card-output .gemini-quota-metric {
+  min-width:58px;
+  padding:8px 7px;
+  border-radius:9px;
+}
+.gemini-quota-card-output .gemini-quota-metric strong { font-size:1.05rem; }
+.gemini-quota-card-output .gemini-quota-metric span {
+  margin-top:4px;
+  font-size:0.58rem;
+}
+.gemini-quota-card-output .gemini-quota-progress {
+  height:5px;
+  margin-top:10px;
+}
+.gemini-quota-card-output .gemini-quota-foot {
+  margin-top:7px;
+  font-size:0.66rem;
+}
+.ai-engine-lines {
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:7px;
+  margin-top:9px;
+}
+.ai-engine-line {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:6px;
+  align-items:center;
+  min-height:30px;
+  padding:7px 8px;
+  border-radius:9px;
+  background:rgba(255,255,255,.13);
+  color:rgba(255,255,255,.88);
+  font-size:0.68rem;
+  font-weight:800;
+}
+.ai-engine-line strong {
+  color:#fff;
+  font-size:0.68rem;
+  white-space:nowrap;
+}
+.ai-engine-line em {
+  grid-column:2 / 4;
+  font-style:normal;
+  color:rgba(255,255,255,.70);
+  font-size:0.62rem;
+  font-weight:800;
+}
+.ai-engine-dot {
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  box-shadow:0 0 0 3px rgba(255,255,255,.13);
+}
+.ai-engine-dot-deepseek { background:#22d3ee; }
+.ai-engine-dot-gemini { background:#facc15; }
 .lk-tag {
   display:inline-flex;
   align-items:center;
