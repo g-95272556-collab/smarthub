@@ -2393,6 +2393,7 @@ function enterApp(user) {
     refreshDashboard();
     semakNotifGuruBertugasMingguDepan();
     applyKawalanAkses();
+    aiSyncDariD1(); // sync kiraan AI dari D1 — tidak perlu tunggu (fire-and-forget)
   });
   initWorkerUrl();
   applyKawalanAkses();
@@ -12236,6 +12237,41 @@ function geminiGetUsageDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// ── Sync kiraan penggunaan AI dari D1 ke localStorage ──────────────────────
+// Dipanggil sekali selepas login. Ambil nilai MAX antara D1 dan localStorage
+// supaya penggunaan dari mana-mana peranti/browser dikira bersama.
+async function aiSyncDariD1() {
+  try {
+    if (!APP.workerUrl || !APP.user || !APP.user.idToken) return;
+    var today = geminiGetUsageDate ? geminiGetUsageDate() : new Date().toISOString().slice(0, 10);
+    var resp = await callWorker({ action: 'getAiUsage', date: today });
+    if (!resp || !resp.success || !resp.rows || !resp.rows.length) return;
+    var row = resp.rows[0]; // bukan admin — satu rekod sahaja (rekod sendiri)
+    var local = aiBacaPenggunaan();
+    // Guna nilai MAX antara D1 dan localStorage — elak overwrite data terkini
+    var merged = {
+      date: today,
+      geminiImages:    Math.max(local.geminiImages    || 0, parseInt(row.gemini_images     || 0, 10)),
+      geminiTexts:     Math.max(local.geminiTexts     || 0, parseInt(row.gemini_texts      || 0, 10)),
+      geminiLimitHits: Math.max(local.geminiLimitHits || 0, parseInt(row.gemini_limit_hits || 0, 10)),
+      geminiLastLimitAt: local.geminiLastLimitAt || '',
+      deepseekTexts:   Math.max(local.deepseekTexts   || 0, parseInt(row.deepseek_texts    || 0, 10)),
+      deepseekErrors:  Math.max(local.deepseekErrors  || 0, parseInt(row.deepseek_errors   || 0, 10)),
+      deepseekLastStatus: row.deepseek_last_status || local.deepseekLastStatus || 'Belum diuji',
+      deepseekLastAt:     row.deepseek_last_at     || local.deepseekLastAt     || ''
+    };
+    localStorage.setItem('ssh_ai_usage_today', JSON.stringify(merged));
+    // Sync juga ke key lama supaya geminiRenderQuotaCards baca betul
+    try {
+      localStorage.setItem('ssh_gemini_usage_today', JSON.stringify({
+        date: merged.date, images: merged.geminiImages, texts: merged.geminiTexts,
+        limitHits: merged.geminiLimitHits, lastLimitAt: merged.geminiLastLimitAt
+      }));
+    } catch (e) {}
+    if (typeof geminiRenderQuotaCards === 'function') geminiRenderQuotaCards();
+  } catch (e) { /* silent — localStorage tetap ada sebagai fallback */ }
+}
+
 function aiBacaPenggunaan() {
   var today = geminiGetUsageDate();
   var data = {};
@@ -12613,7 +12649,7 @@ async function lkJanaImejGeminiParallel(imgPlaceholders, label) {
 async function callWorkerAIGemini(prompt, withImage) {
   geminiMigrasiKunciLegacy();
 
-  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar/rajah, tulis placeholder tepat ini: [GAMBAR: deskripsi ringkas gambar dalam Bahasa Melayu]\n- JANGAN hasilkan imej terus — sistem akan jana imej secara berperingkat selepas teks siap.\n- Satu soalan hanya satu placeholder [GAMBAR:].\n- PENTING: Jika arahan menyatakan bilangan TEPAT soalan bergambar, WAJIB patuhi — jangan lebih, jangan kurang.';
+  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Soalan subjektif/struktur/esei: WAJIB sediakan ruang jawapan kosong (garis putus-putus atau beberapa baris kosong) di bawah soalan untuk murid menulis jawapan.\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar/rajah, tulis placeholder tepat ini: [GAMBAR: deskripsi ringkas gambar dalam Bahasa Melayu]\n- JANGAN hasilkan imej terus — sistem akan jana imej secara berperingkat selepas teks siap.\n- Satu soalan hanya satu placeholder [GAMBAR:].\n- PENTING: Jika arahan menyatakan bilangan TEPAT soalan bergambar, WAJIB patuhi — jangan lebih, jangan kurang.';
 
   var attempt = geminiDapatkanKunci();
   while (attempt) {
@@ -13734,59 +13770,61 @@ async function lkJanaImej() {
   var box = document.getElementById('lkOutputBox');
   if (!box || !box.textContent) { showToast('Jana lembaran kerja dahulu.', 'error'); return; }
 
-  var placeholders = lkExtractImejPlaceholders(box.textContent);
-  if (!placeholders.length) { showToast('Tiada penanda [GAMBAR:] ditemui.', 'info'); return; }
+  var rawText = box.innerHTML || box.textContent;
+  var placeholdersRegex = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
+  var imgPlaceholders = [];
+  var m;
+  var idx = 0;
+  while ((m = placeholdersRegex.exec(rawText)) !== null) {
+    imgPlaceholders.push({ index: idx++, full: m[0], desc: m[1].trim() });
+  }
 
-  if (!confirm('Jana ' + placeholders.length + ' imej menggunakan Gemini 2.0 Flash?\n\nTeruskan?')) return;
+  if (!imgPlaceholders.length) { showToast('Tiada penanda [GAMBAR:] ditemui.', 'info'); return; }
+
+  if (!confirm('Jana ' + imgPlaceholders.length + ' imej menggunakan Gemini 2.0 Flash?\n\nTeruskan?')) return;
 
   _lkImejGenerating = true;
   var imejBtn = document.getElementById('lkJanaImejBtn');
   if (imejBtn) { imejBtn.textContent = '⏳ Menjana...'; imejBtn.disabled = true; }
 
-  var imejSection = document.getElementById('lkImejSection');
-  var imejGrid = document.getElementById('lkImejGrid');
-  if (imejSection) imejSection.style.display = 'block';
-  if (imejGrid) imejGrid.innerHTML = '';
-
+  var newImgByIndex = {};
   var berjayas = 0;
   var gagals = 0;
 
-  for (var i = 0; i < placeholders.length; i++) {
-    var desc = placeholders[i];
-    // Show loading card
-    var loadingId = 'lkImejCard_' + i;
-    if (imejGrid) {
-      imejGrid.innerHTML += '<div class="lk-imej-loading" id="' + loadingId + '">⏳ Jana imej ' + (i+1) + '/' + placeholders.length + '...<br><small style="opacity:.7">' + escapeHtml(desc.substring(0,60)) + (desc.length>60?'...':'') + '</small></div>';
-    }
-
-    try {
-      lkSetStatus('loading', 'Jana imej ' + (i+1) + '/' + placeholders.length + ': ' + desc.substring(0,50) + '...');
-      var result = await callWorkerAIImage(desc);
-
-      var cardEl = document.getElementById(loadingId);
-      if (result.success && result.image) {
-        berjayas++;
-        if (cardEl) {
-          cardEl.className = 'lk-imej-card';
-          cardEl.innerHTML = '<img src="' + result.image + '" alt="' + escapeHtml(desc) + '" loading="lazy">' +
-            '<div class="lk-imej-caption">📍 ' + escapeHtml(desc) + '</div>';
-        }
-      } else {
-        gagals++;
-        var errMsg = result.message || result.error || 'Gagal';
-        if (result.error === 'openai_key_missing') errMsg = 'OPENAI_API_KEY belum dikonfigurasi dalam Worker.';
-        else if (result.error === 'openai_kredit_habis') errMsg = 'Kredit OpenAI habis. Tambah kredit di platform.openai.com.';
-        if (cardEl) {
-          cardEl.className = 'lk-imej-loading';
-          cardEl.innerHTML = '❌ Gagal jana imej<br><small>' + escapeHtml(errMsg) + '</small><br><small style="opacity:.7">' + escapeHtml(desc.substring(0,60)) + '</small>';
-        }
-      }
-    } catch(e) {
-      gagals++;
-      var c = document.getElementById(loadingId);
-      if (c) c.innerHTML = '❌ Ralat: ' + escapeHtml(e.message);
-    }
+  try {
+    newImgByIndex = await lkJanaImejGeminiParallel(imgPlaceholders, 'Jana imej soalan bergambar');
+  } catch(e) {
+    if (e.message !== '__cancelled__') showToast('Ralat semasa jana imej: ' + e.message, 'error');
+    _lkImejGenerating = false;
+    if (imejBtn) { imejBtn.textContent = '🖼️ Jana Imej'; imejBtn.disabled = false; }
+    return;
   }
+
+  var currentHtml = box.innerHTML;
+  
+  imgPlaceholders.forEach(function(ph) {
+    var dataUri = newImgByIndex[ph.index];
+    var safeDesc = ph.desc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // escape regex
+    var regex = new RegExp('\\[(?:GAMBAR|IMEJ):\\s*' + safeDesc + '\\s*\\]', 'i');
+    var rajahNum = ph.index + 1;
+    
+    if (dataUri) {
+      berjayas++;
+      var inlineHtml = '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
+        '<img src="' + dataUri + '" style="max-width:55%;height:auto;max-height:220px;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
+        '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
+        '</div>';
+      currentHtml = currentHtml.replace(regex, inlineHtml);
+    } else {
+      gagals++;
+      var placeholderHtml = '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
+        '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + escapeHtml(ph.desc) + ']</span>' +
+        '</div>';
+      currentHtml = currentHtml.replace(regex, placeholderHtml);
+    }
+  });
+
+  box.innerHTML = currentHtml;
 
   _lkImejGenerating = false;
   if (imejBtn) { imejBtn.textContent = '🖼️ Jana Imej'; imejBtn.disabled = false; }
@@ -13795,6 +13833,7 @@ async function lkJanaImej() {
   if (gagals) finalMsg += ', ' + gagals + ' gagal';
   lkSetStatus(gagals ? 'error' : 'done', finalMsg + '. Klik kanan → Simpan imej untuk muat turun.');
   showToast(finalMsg + '.', gagals ? 'error' : 'success');
+  lkSemakImejGagal();
 }
 
 // ══ END JANA LEMBARAN KERJA AI ══════════════════════════════════
