@@ -12789,6 +12789,9 @@ async function janaLembaranKerja() {
 
   _lkGenerating = true;
   _lkCancelled = false;
+  _lkImejRetryCount = 0; // reset retry counter setiap jana baru
+  var retryBtn = document.getElementById('lkRetryImejBtn');
+  if (retryBtn) retryBtn.style.display = 'none'; // sembunyi dari janaan sebelumnya
   var batalBtn = document.getElementById('lkBatalBtn');
   if (batalBtn) batalBtn.style.display = 'inline-flex';
   var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : engine === 'hybrid' ? 'DeepSeek + Gemini (Hybrid)' : 'DeepSeek';
@@ -12891,6 +12894,7 @@ async function janaLembaranKerja() {
       lkSetStatus('done', 'Lembaran kerja berjaya dijana oleh ' + engineLabel + ' secara berperingkat!');
       showToast('Lembaran kerja berjaya dijana.', 'success');
       if (imejBtn) imejBtn.style.display = 'inline-flex';
+      lkSemakImejGagal();
       return;
     } else {
       // Mod biasa (DeepSeek, Gemini, atau Hybrid)
@@ -12997,6 +13001,7 @@ async function janaLembaranKerja() {
 
     lkSetStatus('done', statusMsg);
     showToast('Lembaran kerja berjaya dijana.', 'success');
+    lkSemakImejGagal();
   } catch(e) {
     if (e.message === '__cancelled__') {
       lkSetStatus('idle', '🛑 Janaan dibatalkan. Anda boleh edit soalan di atas atau jana semula.');
@@ -13670,6 +13675,118 @@ async function callWorkerAIImage(prompt) {
 }
 
 var _lkImejGenerating = false;
+var _lkImejRetryCount = 0;
+var _lkImejRetrying = false;
+var LK_IMEJ_MAX_RETRY = 3;
+
+// ── Kesan div imej gagal (lk-inline-image tanpa <img>) ──
+function lkDapatImejGagalDivs(box) {
+  var divs = (box || document.getElementById('lkOutputBox') || {}).querySelectorAll
+    ? (box || document.getElementById('lkOutputBox')).querySelectorAll('.lk-inline-image')
+    : [];
+  var failed = [];
+  for (var i = 0; i < divs.length; i++) {
+    if (!divs[i].querySelector('img')) failed.push(divs[i]);
+  }
+  return failed;
+}
+
+// ── Semak berapa imej gagal — tunjuk/sembunyi butang retry ──
+function lkSemakImejGagal() {
+  var box = document.getElementById('lkOutputBox');
+  var retryBtn = document.getElementById('lkRetryImejBtn');
+  if (!retryBtn) return;
+  var failedDivs = lkDapatImejGagalDivs(box);
+  if (failedDivs.length > 0 && _lkImejRetryCount < LK_IMEJ_MAX_RETRY) {
+    var cubaLagi = LK_IMEJ_MAX_RETRY - _lkImejRetryCount;
+    retryBtn.style.display = 'inline-flex';
+    retryBtn.disabled = false;
+    retryBtn.textContent = '🔄 Jana Semula Imej Gagal (' + failedDivs.length + ') — ' + cubaLagi + 'x lagi';
+  } else if (failedDivs.length > 0 && _lkImejRetryCount >= LK_IMEJ_MAX_RETRY) {
+    retryBtn.style.display = 'inline-flex';
+    retryBtn.disabled = true;
+    retryBtn.textContent = '⛔ Had Cubaan Dicapai (' + failedDivs.length + ' imej gagal)';
+  } else {
+    retryBtn.style.display = 'none';
+  }
+}
+
+// ── Jana semula imej gagal sahaja (tanpa jana semula teks) ──
+async function lkRetryImejGagal() {
+  if (_lkImejRetrying) { showToast('Sila tunggu — sedang menjana semula...', 'info'); return; }
+  if (_lkImejRetryCount >= LK_IMEJ_MAX_RETRY) {
+    showToast('Had cubaan jana semula (3x) sudah dicapai. Jana lembaran kerja baru untuk cuba semula.', 'error');
+    return;
+  }
+  var box = document.getElementById('lkOutputBox');
+  if (!box) return;
+  var failedDivs = lkDapatImejGagalDivs(box);
+  if (!failedDivs.length) { showToast('Tiada imej gagal — semua imej sudah berjaya.', 'info'); lkSemakImejGagal(); return; }
+  if (!geminiAdaKunciAktif()) { showToast('Tiada Kunci API Gemini aktif. Pergi ke Konfigurasi → Kunci API Gemini.', 'error'); return; }
+
+  _lkImejRetrying = true;
+  _lkImejRetryCount++;
+  var cubaKe = _lkImejRetryCount;
+
+  var retryBtn = document.getElementById('lkRetryImejBtn');
+  if (retryBtn) { retryBtn.disabled = true; retryBtn.textContent = '⏳ Menjana semula ' + failedDivs.length + ' imej...'; }
+
+  // Bina senarai placeholder dari div gagal — ekstrak deskripsi dari teks [Rajah N: desc]
+  var imgPlaceholders = [];
+  failedDivs.forEach(function(div, i) {
+    var span = div.querySelector('span');
+    var raw = span ? span.textContent : '';
+    var match = raw.match(/\[Rajah \d+:\s*(.*?)\]\s*$/);
+    var desc = match ? match[1].trim() : raw.replace(/^\[Rajah \d+:\s*/, '').replace(/\]$/, '').trim() || ('Rajah ' + (i + 1));
+    imgPlaceholders.push({ index: i, full: raw, desc: desc, _div: div });
+  });
+
+  lkSetStatus('loading', '🔄 Cuba ' + cubaKe + '/' + LK_IMEJ_MAX_RETRY + ': Jana semula ' + failedDivs.length + ' imej gagal...');
+
+  var newImgByIndex = {};
+  try {
+    newImgByIndex = await lkJanaImejGeminiParallel(imgPlaceholders, 'Jana semula imej gagal (Cuba ' + cubaKe + '/' + LK_IMEJ_MAX_RETRY + ')');
+  } catch(e) {
+    if (e.message !== '__cancelled__') showToast('Ralat semasa jana semula: ' + e.message, 'error');
+    _lkImejRetrying = false;
+    lkSemakImejGagal();
+    return;
+  }
+
+  // Kemaskini DOM — gantikan div gagal dengan imej baru (atau kekal placeholder jika masih gagal)
+  var berjayas = 0;
+  var masihGagal = 0;
+  imgPlaceholders.forEach(function(ph) {
+    var dataUri = newImgByIndex[ph.index];
+    var div = ph._div;
+    if (dataUri) {
+      berjayas++;
+      // Gantikan kandungan div kepada imej berjaya
+      div.style.cssText = 'margin:15px 0;text-align:center';
+      div.innerHTML =
+        '<img src="' + dataUri + '" style="max-width:55%;height:auto;max-height:220px;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="' + escapeHtml(ph.desc) + '">' +
+        '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah (dijana semula)</small>';
+    } else {
+      masihGagal++;
+      // Kekal sebagai placeholder — tandakan dengan bilangan cubaan
+      var span = div.querySelector('span');
+      if (span) span.setAttribute('data-retry', cubaKe);
+    }
+  });
+
+  _lkImejRetrying = false;
+  geminiCatatPenggunaan('image', berjayas);
+  aiCatatPenggunaan('gemini-image', berjayas);
+
+  var cubaLagi = LK_IMEJ_MAX_RETRY - _lkImejRetryCount;
+  var msg = berjayas + ' imej berjaya dijana semula';
+  if (masihGagal && cubaLagi > 0) msg += ', ' + masihGagal + ' masih gagal — klik semula untuk cuba lagi (' + cubaLagi + 'x)';
+  else if (masihGagal && cubaLagi <= 0) msg += ', ' + masihGagal + ' imej gagal kekal — had cubaan dicapai';
+
+  lkSetStatus(masihGagal ? (cubaLagi > 0 ? 'error' : 'done') : 'done', msg + '.');
+  showToast(msg + '.', masihGagal ? 'error' : 'success');
+  lkSemakImejGagal(); // kemaskini butang
+}
 
 async function lkJanaImej() {
   if (_lkImejGenerating) { showToast('Sila tunggu — imej sedang dijana...', 'info'); return; }
