@@ -12166,7 +12166,20 @@ function geminiSetQuotaText(key, value) {
   });
 }
 
+function geminiMigrasiKunciLegacy() {
+  var legacyKey = localStorage.getItem('ssh_local_gemini_key');
+  if (legacyKey && legacyKey.trim() && !localStorage.getItem('ssh_gemini_key_1')) {
+    localStorage.setItem('ssh_gemini_key_1', legacyKey.trim());
+  }
+}
+
+function geminiAdaKunciAktif() {
+  geminiMigrasiKunciLegacy();
+  return !!geminiDapatkanKunci();
+}
+
 function geminiRenderQuotaCards() {
+  geminiMigrasiKunciLegacy();
   var configured = 0;
   var limited = 0;
   var rows = [];
@@ -12216,6 +12229,7 @@ function geminiRenderQuotaCards() {
 }
 
 function geminiKemaskiniStatusUI() {
+  geminiMigrasiKunciLegacy();
   for (var n = 1; n <= 3; n++) {
     var key = localStorage.getItem('ssh_gemini_key_' + n);
     var exhausted = localStorage.getItem('ssh_gemini_exhausted_' + n);
@@ -12274,6 +12288,7 @@ function geminiResetKuota() {
 }
 
 function geminiDapatkanKunci() {
+  geminiMigrasiKunciLegacy();
   for (var n = 1; n <= 3; n++) {
     var key = localStorage.getItem('ssh_gemini_key_' + n);
     if (key && key.trim() && !localStorage.getItem('ssh_gemini_exhausted_' + n))
@@ -12289,6 +12304,7 @@ function geminiTandaHabisKuota(slot) {
 }
 
 function geminiDapatkanSemuaKunciAktif() {
+  geminiMigrasiKunciLegacy();
   var keys = [];
   for (var n = 1; n <= 3; n++) {
     var key = localStorage.getItem('ssh_gemini_key_' + n);
@@ -12365,6 +12381,7 @@ async function lkJanaImejGeminiParallel(imgPlaceholders, label) {
   var pending = imgPlaceholders.slice();
   var done = 0;
   var failed = 0;
+  var skipped = 0;
   var prefix = label || 'Gemini jana imej';
   lkSetStatus('loading', '🎨 ' + prefix + ' — ' + total + ' imej, ' + activeKeys.length + ' key aktif...');
 
@@ -12372,7 +12389,9 @@ async function lkJanaImejGeminiParallel(imgPlaceholders, label) {
     while (pending.length) {
       if (_lkCancelled) throw new Error('__cancelled__');
       var ph = pending.shift();
-      lkSetStatus('loading', '🎨 ' + prefix + ' ' + (done + failed + 1) + '/' + total + ' (Key ' + attempt.slot + ')...');
+      if (!ph) continue;
+      var currentNo = Math.min(total, done + failed + skipped + 1);
+      lkSetStatus('loading', '🎨 ' + prefix + ' ' + currentNo + '/' + total + ' (Key ' + attempt.slot + ')...');
       try {
         var imgData = await _geminiApiCall(attempt.key, lkBinaPromptImejLembaran(ph.desc), 'IMAGE', null);
         var dataUri = lkAmbilDataUriImejGemini(imgData);
@@ -12398,18 +12417,18 @@ async function lkJanaImejGeminiParallel(imgPlaceholders, label) {
   }
 
   await Promise.all(activeKeys.map(runWorker));
-  if (failed) showToast(done + ' imej berjaya, ' + failed + ' gagal dijana.', 'info');
+  skipped = pending.length;
+  if (skipped) console.warn(skipped + ' imej tidak dijana kerana semua key aktif telah berhenti atau habis kuota.');
+  if (failed || skipped) {
+    showToast(done + ' imej berjaya, ' + (failed + skipped) + ' belum dijana dan ditukar kepada placeholder.', 'info');
+  }
   return imgByIndex;
 }
 
 // ── STEP 1: Jana teks soalan sahaja (TEXT-only, pantas & stabil) ─
 // ── STEP 2: Untuk setiap soalan bergambar, jana imej berasingan ─
 async function callWorkerAIGemini(prompt, withImage) {
-  // Migrate legacy single key to slot 1 if slot 1 is empty
-  var legacyKey = localStorage.getItem('ssh_local_gemini_key');
-  if (legacyKey && !localStorage.getItem('ssh_gemini_key_1')) {
-    localStorage.setItem('ssh_gemini_key_1', legacyKey);
-  }
+  geminiMigrasiKunciLegacy();
 
   var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar/rajah, tulis placeholder tepat ini: [GAMBAR: deskripsi ringkas gambar dalam Bahasa Melayu]\n- JANGAN hasilkan imej terus — sistem akan jana imej secara berperingkat selepas teks siap.\n- Satu soalan hanya satu placeholder [GAMBAR:].\n- PENTING: Jika arahan menyatakan bilangan TEPAT soalan bergambar, WAJIB patuhi — jangan lebih, jangan kurang.';
 
@@ -12589,7 +12608,7 @@ async function janaLembaranKerja() {
   if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
   var engine = lkGetEngine();
   if ((engine === 'deepseek' || engine === 'hybrid') && !APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
-  if ((engine === 'gemini' || engine === 'hybrid') && !geminiDapatkanKunci()) { showToast('Tiada Kunci API Gemini aktif. Pergi ke Konfigurasi → Kunci API Gemini.', 'error'); return; }
+  if ((engine === 'gemini' || engine === 'hybrid') && !geminiAdaKunciAktif()) { showToast('Tiada Kunci API Gemini aktif. Pergi ke Konfigurasi → Kunci API Gemini.', 'error'); return; }
 
   _lkGenerating = true;
   _lkCancelled = false;
