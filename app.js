@@ -11490,6 +11490,21 @@ function lkInitModule() {
   }
   lkOnTahunChange();
   lkMuatDskp(); // fetch DSKP data in background
+
+  // FIX: Scroll pass-through — bila output box dah habis scroll, hantar scroll ke page
+  // Ini betulkan masalah "kena letak kursor di scrollbar baru boleh scroll page"
+  var outputBox = document.getElementById('lkOutputBox');
+  if (outputBox) {
+    outputBox.addEventListener('wheel', function(e) {
+      var atTop    = this.scrollTop === 0 && e.deltaY < 0;
+      var atBottom = Math.abs(this.scrollTop + this.clientHeight - this.scrollHeight) < 2 && e.deltaY > 0;
+      if (atTop || atBottom) {
+        // Output box dah habis scroll — pass event ke page
+        e.preventDefault();
+        window.scrollBy({ top: e.deltaY * 3, behavior: 'auto' });
+      }
+    }, { passive: false });
+  }
 }
 
 function lkOnTahunChange() {

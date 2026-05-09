@@ -3533,8 +3533,7 @@ table tbody tr:last-child td { border-bottom: none; }
 }
 .lk-output-box {
   flex:1 1 auto;
-  min-height:0;
-  min-height:360px;
+  min-height:0; /* FIX: allow flex shrink; no duplicate min-height */
   background:#fbfdff;
   border:1px solid rgba(15,23,42,.10);
   border-radius:8px;
@@ -3547,7 +3546,7 @@ table tbody tr:last-child td { border-bottom: none; }
   overflow-y:auto;
   overflow-x:hidden;
   overflow-wrap:anywhere;
-  overscroll-behavior-y:auto;
+  overscroll-behavior:contain; /* FIX: jangan bagi scroll output box curi scroll event dari page */
   scrollbar-gutter:stable;
   -webkit-overflow-scrolling:touch;
 }
@@ -3592,6 +3591,13 @@ table tbody tr:last-child td { border-bottom: none; }
   flex-direction:column;
   padding:20px !important;
   overflow:hidden;
+  overscroll-behavior:contain; /* FIX: semat panel, jangan curi scroll page */
+}
+/* FIX: disable card hover transform — transform pecahkan position:sticky dalam sesetengah browser
+   dan menyebabkan panel melompat keluar dari kedudukan sticky semasa hover */
+.lk-sticky-panel:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 .lk-sticky-panel > div:first-child {
   flex-shrink:0;
@@ -3631,7 +3637,8 @@ table tbody tr:last-child td { border-bottom: none; }
 }
 @media(max-width:1100px){
   .lk-split { grid-template-columns:1fr; }
-  .lk-sticky-panel { position: static; max-height:none; overflow:visible; }
+  .lk-sticky-panel { position: static; max-height:none; overflow:visible; overscroll-behavior:auto; }
+  .lk-sticky-panel:hover { transform: none !important; box-shadow: none !important; }
 }
 @media(max-width:700px){
   #mod-lembaran-kerja .lk-split > .card { padding:16px !important; }
