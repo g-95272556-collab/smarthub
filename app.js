@@ -11952,6 +11952,58 @@ function lkSetStatus(type, msg) {
   txt.textContent = msg;
 }
 
+function lkPostProcessOutput(raw) {
+  if (!raw || typeof raw !== 'string') return raw || '';
+  if (/<(?:div|p|img|table|ul|ol|br|strong|em|span)[^>]*>/i.test(raw)) {
+    return raw
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^#{1,3}\s+(.+)/gm, '<strong>$1</strong>');
+  }
+  var lines = raw.split('\n');
+  var out = [];
+  var lastWasGap = false;
+  for (var i = 0; i < lines.length; i++) {
+    var raw_line = lines[i];
+    var t = raw_line.trim();
+    if (!t) {
+      if (!lastWasGap) out.push('<div class="lk-gap"></div>');
+      lastWasGap = true;
+      continue;
+    }
+    lastWasGap = false;
+    t = t.replace(/^#{1,3}\s+/, '');
+    t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    t = t.replace(/^---+$/, '');
+    if (!t) continue;
+    if (/^BAHAGIAN\s+[A-D](\s*[:–\-]|\s*$)/i.test(t)) {
+      out.push('<div class="lk-bahagian">' + t + '</div>');
+    } else if (/^(SKEMA JAWAPAN|SKEMA PEMARKAHAN|Skema Jawapan|Skema Pemarkahan)/i.test(t)) {
+      out.push('<div class="lk-skema-head">' + t + '</div>');
+    } else if (/^\d+[.)]\s/.test(t)) {
+      var qm = t.match(/^(\d+)[.)]\s*([\s\S]+)/);
+      if (qm) {
+        out.push('<div class="lk-soalan"><span class="lk-soalan-no">' + qm[1] + '.</span><span class="lk-soalan-teks">' + qm[2] + '</span></div>');
+      } else { out.push('<div class="lk-soalan">' + t + '</div>'); }
+    } else if (/^[A-D][.)]\s/.test(t)) {
+      var om = t.match(/^([A-D])[.)]\s*([\s\S]+)/);
+      if (om) {
+        out.push('<div class="lk-pilihan"><span class="lk-pilihan-hrf">' + om[1] + '.</span><span class="lk-pilihan-teks">' + om[2] + '</span></div>');
+      } else { out.push('<div class="lk-pilihan">' + t + '</div>'); }
+    } else if (/^Jawapan\s*:/i.test(t)) {
+      out.push('<div class="lk-jawapan">' + t + '</div>');
+    } else if (/^Arahan\s*:/i.test(t) || /^[ivx]+\.\s/i.test(t)) {
+      out.push('<div class="lk-arahan">' + t + '</div>');
+    } else if (/^[_=]{5,}$/.test(t)) {
+      out.push('<hr class="lk-divider-line">');
+    } else {
+      out.push('<div class="lk-baris">' + t + '</div>');
+    }
+  }
+  return out.join('\n');
+}
+
 function lkBinaSumber(phase) {
   var tahun = (document.getElementById('lkTahun') || {}).value || '1';
   var jenis = document.querySelector('input[name="lkJenis"]:checked') ? document.querySelector('input[name="lkJenis"]:checked').value : 'pbd-pt';
@@ -12005,11 +12057,12 @@ function lkBinaSumber(phase) {
 
   if (jenis === 'pbd-pt') {
     // ── FORMAT PDPC: Lembaran kerja latihan harian — BUKAN format peperiksaan ──
-    p += '\n\nARAHAN FORMAT (WAJIB IKUT):\n';
-    p += '• INI BUKAN PEPERIKSAAN — jangan guna format Bahagian A / Bahagian B / Bahagian C / D.\n';
+    p += '\n\nARAHAN FORMAT (WAJIB IKUT TEPAT-TEPAT):\n';
+    p += '• INI BUKAN PEPERIKSAAN — jangan guna format Bahagian A / Bahagian B / C / D.\n';
     p += '• Ini adalah LEMBARAN KERJA PDPC: latihan pengukuhan harian mengikut topik DSKP.\n';
     p += '• Buat TEPAT ' + bilSoalan + ' soalan bernombor (1, 2, 3...) sahaja.\n';
-    p += '• Sertakan arahan ringkas sebelum setiap kumpulan soalan (jika berbeza jenis).\n';
+    p += '• Sertakan arahan ringkas sebelum kumpulan soalan yang berbeza jenis.\n';
+    p += '• Setiap soalan objektif: pilihan mestilah A. B. C. D. (satu baris setiap pilihan).\n';
     if (bilImej > 0) {
       p += '• Buat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [GAMBAR: deskripsi ringkas] pada soalan-soalan tersebut.\n';
       p += '• Baki ' + Math.max(0, bilSoalan - bilImej) + ' soalan lain: isi tempat kosong, padankan, atau jawab pendek (TANPA gambar).\n';
@@ -12017,25 +12070,30 @@ function lkBinaSumber(phase) {
       p += '• Soalan boleh campuran: isi tempat kosong, padankan, jawab pendek, soalan bergambar.\n';
       p += '• Jika perlu gambar/rajah, gunakan placeholder [GAMBAR: deskripsi ringkas].\n';
     }
-    p += '• AKHIR sekali: SKEMA JAWAPAN ringkas (bukan skema peperiksaan formal).\n';
+    p += '• AKHIR sekali: tulis tepat-tepat "SKEMA JAWAPAN" (HURUF BESAR) sebagai tajuk, kemudian senaraikan jawapan bernombor.\n';
     p += '• JANGAN guna markdown (###, **, ```, ---). Gunakan TEKS BIASA sahaja.\n';
   } else if (!phase) {
     // ── FORMAT PBD Berterusan / UASA: Format peperiksaan formal dengan bahagian ──
-    p += '\n\nJana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, kemudian SKEMA JAWAPAN.';
-    p += '\nAgihkan ' + bilSoalan + ' soalan mengikut format KPM. Sertakan arahan ringkas tiap bahagian. Jangan guna markdown.';
+    p += '\n\nARAHAN FORMAT (WAJIB):\n';
+    p += '• Jana: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C (dan D jika UASA), kemudian SKEMA JAWAPAN.\n';
+    p += '• Tajuk bahagian mesti bermula dengan "BAHAGIAN A" / "BAHAGIAN B" dst. (HURUF BESAR).\n';
+    p += '• Setiap soalan objektif: pilihan A. B. C. D. (satu baris setiap pilihan).\n';
+    p += '• Agihkan ' + bilSoalan + ' soalan mengikut format KPM untuk ' + subjekLabel + '.\n';
+    p += '• Akhir sekali: tulis tepat-tepat "SKEMA JAWAPAN" (HURUF BESAR) sebagai tajuk.\n';
     if (bilImej > 0) {
-      p += '\nBuat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [GAMBAR: deskripsi ringkas]. Baki ' + Math.max(0, bilSoalan - bilImej) + ' soalan tanpa gambar.';
+      p += '• Buat TEPAT ' + bilImej + ' soalan bergambar — gunakan placeholder [GAMBAR: deskripsi ringkas]. Baki ' + Math.max(0, bilSoalan - bilImej) + ' soalan tanpa gambar.\n';
     } else {
-      p += '\nJika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].';
+      p += '• Jika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].\n';
     }
+    p += '• JANGAN guna markdown. Teks biasa sahaja.\n';
   } else {
     // ── Fasa untuk PBD Berterusan / UASA ──
     p += '\n\nFASA PENJANAAN: ' + phase + '\n';
-    if (phase === 'A') p += 'SILA JANA BAHAGIAN A SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
-    if (phase === 'B') p += 'SILA JANA BAHAGIAN B SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
-    if (phase === 'CD') p += 'SILA JANA BAHAGIAN C (dan D jika ada) SAHAJA. Gunakan format KPM yang betul untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
-    if (phase === 'JAWAPAN') p += 'SILA JANA SKEMA JAWAPAN LENGKAP untuk semua bahagian dalam format UASA/PBD Berterusan untuk ' + subjekLabel + '.';
-    p += '\nPastikan output adalah TEKS BIASA tanpa markdown.';
+    if (phase === 'A') p += 'Jana BAHAGIAN A sahaja. Tajuk: "BAHAGIAN A". Pilihan MCQ mesti A. B. C. D. (satu baris). Format KPM untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'B') p += 'Jana BAHAGIAN B sahaja. Tajuk: "BAHAGIAN B". Format KPM untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'CD') p += 'Jana BAHAGIAN C (dan D jika ada) sahaja. Tajuk: "BAHAGIAN C". Format KPM untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
+    if (phase === 'JAWAPAN') p += 'Jana SKEMA JAWAPAN lengkap. Mulakan tepat dengan tajuk "SKEMA JAWAPAN" (HURUF BESAR). Senaraikan jawapan bernombor untuk semua bahagian bagi ' + subjekLabel + '.';
+    p += '\nOutput: TEKS BIASA tanpa markdown.';
     if (bilImej > 0) {
       p += '\nJumlah [GAMBAR:] keseluruhan untuk semua fasa mesti TEPAT ' + bilImej + '. Jangan tambah gambar sekadar hiasan.';
     } else {
@@ -12753,7 +12811,7 @@ async function janaLembaranKerja() {
     var tahunOutSafe = escapeHtml(tahunOut);
     var jenisTxtSafe = escapeHtml(jenisTxt);
     
-    var header = '<div class="lk-print-header" style="font-family:\'Courier New\',monospace;line-height:1.6;margin-bottom:20px">' +
+    var header = '<div class="lk-print-header" style="font-family:Arial,sans-serif;line-height:1.6;margin-bottom:20px">' +
       line +
       '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:6px">SK KIANDONGO, TONGOD, SABAH</div>' +
       '<div style="text-align:center;font-weight:bold;font-size:1rem;margin-bottom:8px">LEMBARAN KERJA — ' + jenisTxtSafe + '</div>' +
@@ -12772,7 +12830,7 @@ async function janaLembaranKerja() {
 
     var contentWrap = result.isHtml ?
       '<div class="lk-html-content">' + result.content + '</div>' :
-      '<pre style="white-space:pre-wrap;font-family:inherit">' + escapeHtml(result.content) + '</pre>';
+      '<div class="lk-pp-content">' + lkPostProcessOutput(result.content) + '</div>';
 
     // Tambah header untuk SEMUA jenis (pbd-pt, pbd-at, uasa) — bukan hanya 'pdpc' (nilai tidak wujud)
     var fullContentHtml = header + contentWrap;
@@ -12997,9 +13055,23 @@ function lkCetakOutput() {
     '.sig-meta{font-size:10pt; line-height:1.8; text-align:left;}' +
     '.footer-text{position:absolute; bottom:10mm; left:0; width:100%; text-align:center; font-size:9pt; color:#666; border-top:0.5pt solid #ccc; padding-top:5px;}' +
     '.page-break{page-break-before:always;}' +
-    '.content-area{font-family:"Courier New", monospace; white-space:pre-wrap; line-height:1.7;}' +
-    '.lk-inline-image{margin:20px 0; text-align:center;}' +
-    '.lk-inline-image img{max-width:55%; height:auto; max-height:220px; border:1pt solid #000; padding:5px;}' +
+    '.content-area{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.65;}' +
+    '.lk-inline-image{margin:16px 0;text-align:center;}' +
+    '.lk-inline-image img{max-width:55%;height:auto;max-height:220px;border:1pt solid #000;padding:5px;}' +
+    '.lk-bahagian{font-weight:700;font-size:11.5pt;text-align:center;background:#eef2ff;padding:7px 12px;margin:16px 0 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;border-left:4px solid #6366f1;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+    '.lk-skema-head{font-weight:700;font-size:11.5pt;color:#b91c1c;border-top:2pt solid #b91c1c;padding-top:10px;margin-top:22px;text-transform:uppercase;}' +
+    '.lk-soalan{display:flex;gap:8px;margin:10px 0 4px;align-items:flex-start;font-weight:500;}' +
+    '.lk-soalan-no{font-weight:700;min-width:26px;flex-shrink:0;}' +
+    '.lk-soalan-teks{flex:1;}' +
+    '.lk-pilihan{display:flex;gap:8px;margin:2px 0 2px 34px;align-items:flex-start;}' +
+    '.lk-pilihan-hrf{min-width:18px;flex-shrink:0;font-weight:600;}' +
+    '.lk-pilihan-teks{flex:1;}' +
+    '.lk-jawapan{color:#166534;font-weight:700;margin:3px 0 3px 34px;font-size:10.5pt;}' +
+    '.lk-arahan{font-style:italic;color:#475569;margin:5px 0;}' +
+    '.lk-baris{margin:3px 0;}' +
+    '.lk-gap{margin:8px 0;}' +
+    '.lk-divider-line{border:none;border-top:1pt solid #ccc;margin:10px 0;}' +
+    '.lk-html-content,.lk-pp-content{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.65;}' +
     '.pdpc-header{font-family:Arial,sans-serif; margin-bottom:16px;}' +
     '.pdpc-school{font-size:10pt; text-align:center; text-transform:uppercase; letter-spacing:.04em; color:#444; margin-bottom:2px;}' +
     '.pdpc-title{font-size:15pt; font-weight:bold; text-align:center; text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px;}' +
@@ -13288,7 +13360,21 @@ async function lkCetakSemuaMurid() {
       '.sig-meta{font-size:10pt;line-height:1.8;text-align:left;}' +
       '.footer-text{position:absolute;bottom:10mm;left:0;width:100%;text-align:center;font-size:9pt;color:#666;border-top:0.5pt solid #ccc;padding-top:5px;}' +
       '.page-break{page-break-before:always;}' +
-      '.content-area{font-family:"Courier New",monospace;white-space:pre-wrap;line-height:1.7;}' +
+      '.content-area{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.65;}' +
+      '.lk-bahagian{font-weight:700;font-size:11.5pt;text-align:center;background:#eef2ff;padding:7px 12px;margin:16px 0 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;border-left:4px solid #6366f1;-webkit-print-color-adjust:exact;print-color-adjust:exact;}' +
+      '.lk-skema-head{font-weight:700;font-size:11.5pt;color:#b91c1c;border-top:2pt solid #b91c1c;padding-top:10px;margin-top:22px;text-transform:uppercase;}' +
+      '.lk-soalan{display:flex;gap:8px;margin:10px 0 4px;align-items:flex-start;font-weight:500;}' +
+      '.lk-soalan-no{font-weight:700;min-width:26px;flex-shrink:0;}' +
+      '.lk-soalan-teks{flex:1;}' +
+      '.lk-pilihan{display:flex;gap:8px;margin:2px 0 2px 34px;align-items:flex-start;}' +
+      '.lk-pilihan-hrf{min-width:18px;flex-shrink:0;font-weight:600;}' +
+      '.lk-pilihan-teks{flex:1;}' +
+      '.lk-jawapan{color:#166534;font-weight:700;margin:3px 0 3px 34px;font-size:10.5pt;}' +
+      '.lk-arahan{font-style:italic;color:#475569;margin:5px 0;}' +
+      '.lk-baris{margin:3px 0;}' +
+      '.lk-gap{margin:8px 0;}' +
+      '.lk-divider-line{border:none;border-top:1pt solid #ccc;margin:10px 0;}' +
+      '.lk-html-content,.lk-pp-content{font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.65;}' +
       '.lk-inline-image{margin:10px 0;text-align:center;page-break-inside:avoid;break-inside:avoid;}' +
       '.lk-inline-image img{max-width:60%;max-height:65mm;width:auto;height:auto;border:1pt solid #333;padding:3px;filter:grayscale(100%) contrast(1.2);}' +
       '.pdpc-header{font-family:Arial,sans-serif;margin-bottom:16px;}' +

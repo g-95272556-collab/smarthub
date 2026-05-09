@@ -3533,23 +3533,46 @@ table tbody tr:last-child td { border-bottom: none; }
 }
 .lk-output-box {
   flex:1 1 auto;
-  min-height:0; /* FIX: allow flex shrink; no duplicate min-height */
+  min-height:0;
   background:#fbfdff;
   border:1px solid rgba(15,23,42,.10);
   border-radius:8px;
   padding:18px;
-  font-family:'Courier New',monospace;
-  font-size:0.88rem;
-  line-height:1.75;
-  white-space:pre-wrap;
+  font-family:'Plus Jakarta Sans',Arial,Helvetica,sans-serif; /* FIX: buang Courier New monospace */
+  font-size:0.9rem;
+  line-height:1.7;
   color:var(--text);
   overflow-y:auto;
   overflow-x:hidden;
   overflow-wrap:anywhere;
-  overscroll-behavior:contain; /* FIX: jangan bagi scroll output box curi scroll event dari page */
+  overscroll-behavior:contain;
   scrollbar-gutter:stable;
   -webkit-overflow-scrolling:touch;
 }
+/* Kelas post-processor — layout soalan & pilihan dalam output box */
+.lk-bahagian {
+  font-weight:700; font-size:.95rem; text-align:center;
+  background:#eef2ff; padding:7px 12px; margin:14px 0 8px;
+  border-radius:5px; text-transform:uppercase; letter-spacing:.05em;
+  border-left:4px solid #6366f1;
+}
+.lk-skema-head {
+  font-weight:700; font-size:.95rem; color:#b91c1c;
+  border-top:2px solid #b91c1c; padding-top:10px; margin-top:20px;
+  text-transform:uppercase;
+}
+.lk-soalan { display:flex; gap:6px; margin:10px 0 4px; align-items:flex-start; font-weight:500; }
+.lk-soalan-no { font-weight:700; min-width:26px; flex-shrink:0; }
+.lk-soalan-teks { flex:1; }
+.lk-pilihan { display:flex; gap:6px; margin:2px 0 2px 32px; align-items:flex-start; font-size:.88rem; }
+.lk-pilihan-hrf { min-width:18px; flex-shrink:0; font-weight:600; }
+.lk-pilihan-teks { flex:1; }
+.lk-jawapan { color:#15803d; font-weight:700; margin:3px 0 3px 32px; font-size:.85rem; }
+.lk-arahan { font-style:italic; color:var(--muted); margin:5px 0; }
+.lk-baris { margin:3px 0; }
+.lk-gap { margin:7px 0; }
+.lk-divider-line { border:none; border-top:1px solid var(--border); margin:10px 0; }
+.lk-pp-content, .lk-html-content { font-family:'Plus Jakarta Sans',Arial,sans-serif; font-size:.9rem; line-height:1.7; }
 .lk-status-bar {
   display:flex;
   align-items:flex-start;
