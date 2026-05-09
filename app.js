@@ -12015,6 +12015,9 @@ function lkSetStatus(type, msg) {
   txt.textContent = msg;
 }
 
+// Regex untuk baris maklumat murid yang sering dijana oleh AI secara berlebihan
+var _LK_MURID_INFO_REGEX = /^(nama\s*murid|nama\s*pelajar|nama\s*[:：]|kelas\s*[:：]|tarikh\s*[:：]|no\.\s*kad|ic\s*[:：]|angka\s*giliran)/i;
+
 function lkPostProcessOutput(raw) {
   if (!raw || typeof raw !== 'string') return raw || '';
   if (/<(?:div|p|img|table|ul|ol|br|strong|em|span)[^>]*>/i.test(raw)) {
@@ -12040,6 +12043,8 @@ function lkPostProcessOutput(raw) {
     t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
     t = t.replace(/^---+$/, '');
     if (!t) continue;
+    // Buang baris maklumat murid yang dijana secara berlebihan oleh AI
+    if (_LK_MURID_INFO_REGEX.test(t)) continue;
     if (/^BAHAGIAN\s+[A-D](\s*[:–\-]|\s*$)/i.test(t)) {
       out.push('<div class="lk-bahagian">' + t + '</div>');
     } else if (/^(SKEMA JAWAPAN|SKEMA PEMARKAHAN|Skema Jawapan|Skema Pemarkahan)/i.test(t)) {
@@ -12181,6 +12186,7 @@ function lkBinaSumber(phase) {
     }
     p += '• AKHIR sekali: tulis tepat-tepat "SKEMA JAWAPAN" (HURUF BESAR) sebagai tajuk, kemudian senaraikan jawapan bernombor.\n';
     p += '• JANGAN guna markdown (###, **, ```, ---). Gunakan TEKS BIASA sahaja.\n';
+    p += '• JANGAN sertakan baris maklumat murid (Nama Murid, Nama:, Kelas:, Tarikh:) — header sudah disediakan oleh sistem.\n';
   } else if (!phase) {
     // ── FORMAT PBD Berterusan / UASA: Format peperiksaan formal dengan bahagian ──
     p += '\n\nARAHAN FORMAT (WAJIB):\n';
@@ -12195,6 +12201,7 @@ function lkBinaSumber(phase) {
       p += '• Jika perlu gambar, gunakan placeholder [GAMBAR: deskripsi ringkas].\n';
     }
     p += '• JANGAN guna markdown. Teks biasa sahaja.\n';
+    p += '• JANGAN sertakan baris maklumat murid (Nama Murid, Nama:, Kelas:, Tarikh:) — header sudah disediakan oleh sistem.\n';
   } else {
     // ── Fasa untuk PBD Berterusan / UASA ──
     p += '\n\nFASA PENJANAAN: ' + phase + '\n';
@@ -12203,6 +12210,7 @@ function lkBinaSumber(phase) {
     if (phase === 'CD') p += 'Jana BAHAGIAN C (dan D jika ada) sahaja. Tajuk: "BAHAGIAN C". Format KPM untuk ' + subjekLabel + '. Jangan sertakan bahagian lain.';
     if (phase === 'JAWAPAN') p += 'Jana SKEMA JAWAPAN lengkap. Mulakan tepat dengan tajuk "SKEMA JAWAPAN" (HURUF BESAR). Senaraikan jawapan bernombor untuk semua bahagian bagi ' + subjekLabel + '.';
     p += '\nOutput: TEKS BIASA tanpa markdown.';
+    p += '\nJANGAN sertakan baris maklumat murid (Nama Murid, Nama:, Kelas:, Tarikh:) — header sudah disediakan oleh sistem.';
     if (bilImej > 0) {
       p += '\nJumlah [GAMBAR:] keseluruhan untuk semua fasa mesti TEPAT ' + bilImej + '. Jangan tambah gambar sekadar hiasan.';
     } else {
@@ -12754,6 +12762,10 @@ async function callHybridDeepSeekGemini(prompt) {
   aiCatatPenggunaan('deepseek-text', 1);
   var rawText = dsResult.content || '';
   if (!rawText.trim()) throw new Error('DeepSeek tidak menghasilkan teks.');
+  // Strip baris maklumat murid yang dijana secara berlebihan oleh AI
+  rawText = rawText.split('\n').filter(function(ln) {
+    return !_LK_MURID_INFO_REGEX.test(ln.trim());
+  }).join('\n');
   rawText = lkEnforceImagePlaceholderLimit(rawText, lkGetRequestedImageCount());
 
   // ── STEP 2: Parse semua placeholder [GAMBAR:] atau [IMEJ:] ──
