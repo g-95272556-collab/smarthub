@@ -12271,6 +12271,22 @@ function aiSimpanPenggunaan(data) {
     }));
   } catch (e) {}
   geminiRenderQuotaCards();
+
+  // ── Sync ke Worker D1 (fire-and-forget — tidak sekat UI) ──
+  if (APP.workerUrl && APP.user && APP.user.idToken) {
+    callWorker({
+      action: 'saveAiUsage',
+      email: APP.user.email || '',
+      date: data.date,
+      geminiImages: data.geminiImages || 0,
+      geminiTexts: data.geminiTexts || 0,
+      geminiLimitHits: data.geminiLimitHits || 0,
+      deepseekTexts: data.deepseekTexts || 0,
+      deepseekErrors: data.deepseekErrors || 0,
+      deepseekLastStatus: data.deepseekLastStatus || '',
+      deepseekLastAt: data.deepseekLastAt || ''
+    }).catch(function() { /* silent fail — localStorage tetap ada */ });
+  }
 }
 
 function aiCatatPenggunaan(type, amount) {

@@ -445,6 +445,75 @@ async function handleAPI(request, env, corsHeaders) {
     }
   }
 
+  // ── saveAiUsage: simpan penggunaan AI harian ke D1 (satu baris per email per hari) ──
+  if (body.action === "saveAiUsage") {
+    try {
+      if (!env.DB) return jsonResp({ success: false, error: "D1 tidak dikonfigurasi" }, 500, corsHeaders);
+      await ensureD1Schema(env);
+      const email = String(body.email || (body.requestUser && body.requestUser.email) || "").trim().toLowerCase();
+      const date = String(body.date || "").trim();
+      if (!email || !date) return jsonResp({ success: false, error: "email dan date diperlukan" }, 400, corsHeaders);
+      await env.DB.prepare(`
+        INSERT INTO ai_usage_log
+          (email, date, gemini_images, gemini_texts, gemini_limit_hits,
+           deepseek_texts, deepseek_errors, deepseek_last_status, deepseek_last_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(email, date) DO UPDATE SET
+          gemini_images      = excluded.gemini_images,
+          gemini_texts       = excluded.gemini_texts,
+          gemini_limit_hits  = excluded.gemini_limit_hits,
+          deepseek_texts     = excluded.deepseek_texts,
+          deepseek_errors    = excluded.deepseek_errors,
+          deepseek_last_status = excluded.deepseek_last_status,
+          deepseek_last_at   = excluded.deepseek_last_at,
+          updated_at         = CURRENT_TIMESTAMP
+      `).bind(
+        email, date,
+        parseInt(body.geminiImages || 0, 10),
+        parseInt(body.geminiTexts || 0, 10),
+        parseInt(body.geminiLimitHits || 0, 10),
+        parseInt(body.deepseekTexts || 0, 10),
+        parseInt(body.deepseekErrors || 0, 10),
+        String(body.deepseekLastStatus || ""),
+        String(body.deepseekLastAt || "")
+      ).run();
+      return jsonResp({ success: true }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message || "Gagal simpan AI usage." }, 500, corsHeaders);
+    }
+  }
+
+  // ── getAiUsage: baca penggunaan AI ──
+  // Guru biasa: dapat rekod sendiri sahaja
+  // Admin: dapat semua guru untuk tarikh yang diminta
+  if (body.action === "getAiUsage") {
+    try {
+      if (!env.DB) return jsonResp({ success: false, error: "D1 tidak dikonfigurasi" }, 500, corsHeaders);
+      await ensureD1Schema(env);
+      const date = String(body.date || "").trim();
+      if (!date) return jsonResp({ success: false, error: "date diperlukan" }, 400, corsHeaders);
+      const reqEmail = String((body.requestUser && body.requestUser.email) || "").trim().toLowerCase();
+      const isAdmin = DEFAULT_ADMIN_EMAILS.map(e => e.toLowerCase()).includes(reqEmail);
+      let rows;
+      if (isAdmin && body.allUsers) {
+        // Admin: semua guru untuk tarikh ini
+        const result = await env.DB.prepare(
+          "SELECT email, date, gemini_images, gemini_texts, gemini_limit_hits, deepseek_texts, deepseek_errors, deepseek_last_status, deepseek_last_at, updated_at FROM ai_usage_log WHERE date = ? ORDER BY email ASC"
+        ).bind(date).all();
+        rows = result.results || [];
+      } else {
+        // Guru biasa: rekod sendiri sahaja
+        const result = await env.DB.prepare(
+          "SELECT email, date, gemini_images, gemini_texts, gemini_limit_hits, deepseek_texts, deepseek_errors, deepseek_last_status, deepseek_last_at, updated_at FROM ai_usage_log WHERE email = ? AND date = ?"
+        ).bind(reqEmail, date).all();
+        rows = result.results || [];
+      }
+      return jsonResp({ success: true, rows, date, isAdmin }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message || "Gagal baca AI usage." }, 500, corsHeaders);
+    }
+  }
+
   if (shouldUseCloudflareD1(env)) {
     try {
       const data = await handleD1Action(body, env, workerToken);
@@ -787,6 +856,21 @@ async function ensureD1Schema(env) {
       filename TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       expires_at INTEGER NOT NULL
+    )
+  `).run();
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS ai_usage_log (
+      email TEXT NOT NULL,
+      date TEXT NOT NULL,
+      gemini_images INTEGER DEFAULT 0,
+      gemini_texts INTEGER DEFAULT 0,
+      gemini_limit_hits INTEGER DEFAULT 0,
+      deepseek_texts INTEGER DEFAULT 0,
+      deepseek_errors INTEGER DEFAULT 0,
+      deepseek_last_status TEXT DEFAULT '',
+      deepseek_last_at TEXT DEFAULT '',
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (email, date)
     )
   `).run();
   D1_SCHEMA_READY = true;
@@ -1800,6 +1884,7 @@ function needsAuthenticatedRequest(body) {
   if (body.action === "replaceSheet") return true;
   if (body.action === "getConfig" || body.action === "setConfig" || body.action === "setupAllSheets") return true;
   if ((body.action === "appendRow" || body.action === "appendRows") && body.sheetKey !== "KEHADIRAN_MURID" && body.sheetKey !== "KEHADIRAN_GURU") return true;
+  if (body.action === "saveAiUsage" || body.action === "getAiUsage") return true;
   return false;
 }
 
