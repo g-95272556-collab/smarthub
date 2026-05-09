@@ -11960,7 +11960,9 @@ function lkGetRequestedImageCount() {
     var match = nota.match(patterns[i]);
     if (match) {
       var count = parseInt(match[1], 10);
-      return Number.isFinite(count) && count > 0 ? count : 0;
+      if (!Number.isFinite(count) || count <= 0) return 0;
+      // Had mutlak — elak overuse kuota Gemini
+      return Math.min(count, LK_IMEJ_MAX_PER_JANA);
     }
   }
   return 0;
@@ -11972,12 +11974,16 @@ function lkGetQuestionCountForPrompt(jenis, subjekVal) {
   return parseInt((bilSoalanInput || { value: '10' }).value, 10) || 10;
 }
 
+var LK_IMEJ_MAX_PER_JANA = 8; // Had mutlak imej inline per janaan — jimat kuota Gemini
+
 function lkCapRequestedImageCount(count, totalQuestions) {
   var requested = Number(count || 0);
   var total = Number(totalQuestions || 0);
   if (!Number.isFinite(requested) || requested <= 0) return 0;
-  if (!Number.isFinite(total) || total <= 0) return Math.floor(requested);
-  return Math.min(Math.floor(requested), Math.floor(total));
+  var cap = !Number.isFinite(total) || total <= 0
+    ? Math.floor(requested)
+    : Math.min(Math.floor(requested), Math.floor(total));
+  return Math.min(cap, LK_IMEJ_MAX_PER_JANA);
 }
 
 function lkStripImageCountInstruction(nota) {
@@ -12703,6 +12709,7 @@ async function callHybridDeepSeekGemini(prompt) {
 
   // ── STEP 1: DeepSeek jana teks ──
   if (_lkCancelled) throw new Error('__cancelled__');
+  lkSetStatus('loading', '⏳ Langkah 1/2: DeepSeek menjana teks soalan... (~15-25 saat)');
   var dsResult = await callWorkerAI(prompt, 'lembaran_kerja');
   if (!dsResult.success) {
     aiCatatPenggunaan('deepseek-error', 1);
@@ -12760,7 +12767,7 @@ async function callHybridDeepSeekGemini(prompt) {
       var note = document.getElementById('lkEngineNote');
       if (!note) return;
       if (e.target.value === 'gemini') {
-        note.innerHTML = '✅ <strong>Gemini 2.0 Flash:</strong> AI menjana teks dan imej secara terus (Nano Banana 2 Pro). Paling canggih untuk janaan lembaran kerja.';
+        note.innerHTML = '⚡ <strong>Gemini (DeepSeek + Gemini):</strong> DeepSeek jana teks soalan, Gemini jana imej sahaja. Jimat kuota Gemini, kualiti imej terjamin.';
       } else if (e.target.value === 'hybrid') {
         note.innerHTML = '⚡ <strong>Hybrid (DeepSeek + Gemini):</strong> DeepSeek jana teks soalan, Gemini jana imej sahaja. Jimat kuota Gemini, kualiti imej terjamin.';
       } else {
@@ -12784,8 +12791,9 @@ async function janaLembaranKerja() {
   if (_lkGenerating) { showToast('Sila tunggu - AI sedang memproses...', 'info'); return; }
   if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
   var engine = lkGetEngine();
-  if ((engine === 'deepseek' || engine === 'hybrid') && !APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
-  if ((engine === 'gemini' || engine === 'hybrid') && !geminiAdaKunciAktif()) { showToast('Tiada Kunci API Gemini aktif. Pergi ke Konfigurasi → Kunci API Gemini.', 'error'); return; }
+  // Semua enjin guna DeepSeek (Worker) untuk teks — Gemini hanya untuk imej
+  if (!APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
+  if (engine !== 'deepseek' && !geminiAdaKunciAktif()) { showToast('Tiada Kunci API Gemini aktif. Pergi ke Konfigurasi → Kunci API Gemini.', 'error'); return; }
 
   _lkGenerating = true;
   _lkCancelled = false;
@@ -12809,100 +12817,33 @@ async function janaLembaranKerja() {
   try {
     var jenisEl = document.querySelector('input[name="lkJenis"]:checked');
     var jenis = jenisEl ? jenisEl.value : 'pbd-pt';
-    var requestedImageCount = lkGetRequestedImageCount();
+    // Semak jika pengguna minta lebih dari had mutlak imej
+    var _rawImejNota = (function() {
+      var nota = ((document.getElementById('lkNota') || {}).value || '').trim();
+      var patterns = [
+        /(?:jana|buat|sediakan|hasilkan)?\s*(\d+)\s*(?:soalan\s*)?(?:bergambar|gambar|imej|rajah)/i,
+        /(?:bergambar|gambar|imej|rajah)\s*(?:sebanyak|sejumlah)?\s*(\d+)/i
+      ];
+      for (var _pi = 0; _pi < patterns.length; _pi++) {
+        var _m = nota.match(patterns[_pi]);
+        if (_m) { var _c = parseInt(_m[1], 10); return Number.isFinite(_c) ? _c : 0; }
+      }
+      return 0;
+    })();
+    var requestedImageCount = lkGetRequestedImageCount(); // sudah terhad kepada LK_IMEJ_MAX_PER_JANA
+    if (_rawImejNota > LK_IMEJ_MAX_PER_JANA) {
+      showToast('Had imej: ' + LK_IMEJ_MAX_PER_JANA + ' imej sahaja (anda minta ' + _rawImejNota + '). Kuota Gemini dijaga.', 'info');
+    }
     // pbd-pt (Lembaran Kerja PDPC) bukan format peperiksaan — tidak perlu fasa A/B/C/D
     var isLongExam = (jenis === 'uasa' || jenis === 'pbd-at');
     var finalContent = '';
     
-    if ((engine === 'gemini' || engine === 'hybrid') && isLongExam && requestedImageCount <= 0) {
-      var phases = ['A', 'B', 'CD', 'JAWAPAN'];
-      var phaseNames = { 'A': 'Bahagian A', 'B': 'Bahagian B', 'CD': 'Bahagian C/D', 'JAWAPAN': 'Skema Jawapan' };
-
-      document.getElementById('lkOutputBox').innerHTML =
-        '<div style="text-align:center;padding:30px;color:var(--muted)">' +
-        '<div style="font-size:1.5rem;margin-bottom:8px">⏳</div>' +
-        '<div>Menjana <strong>4 bahagian</strong> satu persatu...</div>' +
-        '<div style="margin-top:8px;font-size:0.85rem;display:flex;justify-content:center;gap:16px">' +
-        phases.map(function(p) { return '<span id="lkPhaseStatus_' + p + '">⏳ ' + phaseNames[p] + '</span>'; }).join('') +
-        '</div></div>';
-
-      if (_lkCancelled) throw new Error('__cancelled__');
-
-      // Sequential untuk hybrid (elak beban berat Worker) — parallel untuk Gemini sahaja
-      var phaseResults = [];
-      if (engine === 'hybrid') {
-        for (var pi = 0; pi < phases.length; pi++) {
-          if (_lkCancelled) throw new Error('__cancelled__');
-          var pKey = phases[pi];
-          lkSetStatus('loading', '⏳ Menjana ' + phaseNames[pKey] + ' (' + (pi+1) + '/4)...');
-          var statusEl = document.getElementById('lkPhaseStatus_' + pKey);
-          var pRes = await callHybridDeepSeekGemini(lkBinaSumber(pKey));
-          if (statusEl) statusEl.innerHTML = '<span style="color:var(--green)">✅ ' + phaseNames[pKey] + '</span>';
-          phaseResults.push({ key: pKey, res: pRes });
-        }
-      } else {
-        // Gemini: parallel OK
-        lkSetStatus('loading', '⚡ Menjana semua bahagian serentak (A + B + C/D + Skema)...');
-        phaseResults = await Promise.all(phases.map(function(pKey) {
-          return callWorkerAIGemini(lkBinaSumber(pKey), true).then(function(res) {
-            var statusEl = document.getElementById('lkPhaseStatus_' + pKey);
-            if (statusEl) statusEl.innerHTML = '<span style="color:var(--green)">✅ ' + phaseNames[pKey] + '</span>';
-            return { key: pKey, res: res };
-          });
-        }));
-      }
-
-      if (_lkCancelled) throw new Error('__cancelled__');
-
-      // Susun semula mengikut urutan asal dan bina output
-      phases.forEach(function(pKey) {
-        var found = phaseResults.find(function(r) { return r.key === pKey; });
-        if (!found) return;
-        var pRes = found.res;
-        if (pRes.success) {
-          finalContent += '<div class="lk-phase-result" style="margin-bottom:30px; border-bottom:1px dashed #ccc; padding-bottom:10px;">' + pRes.content + '</div>';
-        } else {
-          if (pRes.error === 'gemini_limit') throw new Error('Had Gemini API dicapai. Cuba sebentar lagi.');
-          throw new Error(pRes.message || 'Gagal menjana ' + phaseNames[pKey]);
-        }
-      });
-      
-      // Tambah header di atas output fasa (PBD Berterusan / UASA)
-      var selOutFasa = document.getElementById('lkSubjek');
-      var subjekLabelFasa = selOutFasa && selOutFasa.selectedIndex >= 0 ? selOutFasa.options[selOutFasa.selectedIndex].text : '';
-      var tahunFasa = (document.getElementById('lkTahun') || {value:''}).value;
-      var masaFasa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
-      var kodFasa = (document.getElementById('lkKodKertas') || {}).value || '';
-      var jenisMapFasa = { 'pbd-at': 'PBD BERTERUSAN', 'uasa': 'UASA' };
-      var jenisTxtFasa = jenisMapFasa[jenis] || jenis.toUpperCase();
-      var lineFasa = '<hr style="border:none;border-top:2px solid #333;margin:10px 0">';
-      var subjekLabelFasaSafe = escapeHtml(subjekLabelFasa);
-      var tahunFasaSafe = escapeHtml(tahunFasa);
-      var masaFasaSafe = escapeHtml(masaFasa);
-      var kodFasaSafe = escapeHtml(kodFasa);
-      var jenisTxtFasaSafe = escapeHtml(jenisTxtFasa);
-      var headerFasa = '<div class="lk-print-header" style="font-family:Arial,Helvetica,sans-serif;line-height:1.6;margin-bottom:20px">' +
-        lineFasa +
-        '<div style="text-align:center;font-weight:bold;font-size:1.1rem;margin-bottom:6px">SK KIANDONGO</div>' +
-        '<div style="text-align:center;font-weight:bold;margin-bottom:8px">' + jenisTxtFasaSafe + '</div>' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Mata Pelajaran: ' + subjekLabelFasaSafe + '</span><span>Tahun: ' + tahunFasaSafe + '</span></div>' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Masa: ' + masaFasaSafe + '</span>' + (kodFasa ? '<span>Kod: ' + kodFasaSafe + '</span>' : '<span>Tarikh: ______________</span>') + '</div>' +
-        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Nama: _______________________________</span><span>Kelas: ________</span></div>' +
-        '<div style="text-align:right;margin-bottom:6px"><span>Markah: _______ / _______</span></div>' +
-        lineFasa + '</div>';
-      document.getElementById('lkOutputBox').innerHTML = headerFasa + finalContent;
-      lkSetStatus('done', 'Lembaran kerja berjaya dijana oleh ' + engineLabel + ' secara berperingkat!');
-      showToast('Lembaran kerja berjaya dijana.', 'success');
-      if (imejBtn) imejBtn.style.display = 'inline-flex';
-      lkSemakImejGagal();
-      return;
-    } else {
-      // Mod biasa (DeepSeek, Gemini, atau Hybrid)
+    // Semua enjin: DeepSeek jana teks, Gemini jana imej sahaja
+    {
       var prompt = lkBinaSumber();
       var result;
-      if (engine === 'gemini') {
-        result = await callWorkerAIGemini(prompt, true);
-      } else if (engine === 'hybrid') {
+      if (engine === 'gemini' || engine === 'hybrid') {
+        // DeepSeek teks + Gemini imej (untuk semua jenis penilaian)
         result = await callHybridDeepSeekGemini(prompt);
       } else {
         // DeepSeek: cuba streaming dahulu supaya teks muncul sedikit demi sedikit
