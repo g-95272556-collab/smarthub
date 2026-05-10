@@ -180,6 +180,7 @@ function getBackendConfigDefaults() {
     TELEGRAM_CHAT: "",
     TELEGRAM_TOPIC: "",
     DEEPSEEK_API_KEY: "",
+    OPENAI_API_KEY: "",
     ATTENDANCE_GURU_NOTIF_ENABLED: "true",
     ATTENDANCE_GURU_REMINDER_TIME: "07:45",
     ATTENDANCE_MURID_NOTIF_ENABLED: "true",
@@ -751,6 +752,7 @@ async function handleGoogleSheetsAction(body, env) {
     case "getConfig":
       var gCfg = await googleGetConfig(env);
       if (env.GEMINI_API_KEY) gCfg.GEMINI_API_KEY = env.GEMINI_API_KEY;
+      if (env.OPENAI_API_KEY) gCfg.OPENAI_API_KEY = env.OPENAI_API_KEY;
       return { success: true, config: gCfg };
     case "setConfig":
       await googleSetConfig(env, body.config || {});
@@ -786,6 +788,7 @@ async function handleD1Action(body, env) {
     case "getConfig":
       var d1Cfg = await d1GetConfig(env, body.token);
       if (env.GEMINI_API_KEY) d1Cfg.GEMINI_API_KEY = env.GEMINI_API_KEY;
+      if (env.OPENAI_API_KEY) d1Cfg.OPENAI_API_KEY = env.OPENAI_API_KEY;
       return { success: true, config: d1Cfg };
     case "getSummary":
       return { success: true, summary: await d1GetSummary(env) };
@@ -1693,6 +1696,7 @@ PERATURAN FORMAT (WAJIB IKUT):
 - Nombor soalan berturutan dalam setiap bahagian: 1. 2. 3. ...
 - Aneka pilihan: gunakan A. B. C. D. (4 pilihan)
 - Isi tempat kosong: gunakan garis bawah panjang ________________
+- Soalan subjektif/struktur/esei: WAJIB sediakan ruang jawapan kosong (garis putus-putus atau beberapa baris kosong) di bawah soalan untuk murid menulis jawapan.
 - Baris kosong antara setiap soalan
 - Akhiri dengan SKEMA PEMARKAHAN (semua jawapan untuk semua bahagian)
 
