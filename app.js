@@ -809,6 +809,29 @@ function applyBackendOperationalConfig(config) {
   } else if (cfg.OPENAI_API_KEY === '') {
     localStorage.removeItem('ssh_openai_key');
   }
+  // Sync suis global notifikasi dari backend (supaya admin dapat setting yang sama di semua peranti)
+  if (cfg.NOTIF_AUTO_ENABLED !== undefined && cfg.NOTIF_AUTO_ENABLED !== null && cfg.NOTIF_AUTO_ENABLED !== '') {
+    localStorage.setItem('ssh_notif_auto_enabled', String(cfg.NOTIF_AUTO_ENABLED).trim() === 'false' ? 'false' : 'true');
+  }
+  if (cfg.HL_NOTIF_ENABLED !== undefined && cfg.HL_NOTIF_ENABLED !== null && cfg.HL_NOTIF_ENABLED !== '') {
+    localStorage.setItem('ssh_hl_notif_enabled', String(cfg.HL_NOTIF_ENABLED).trim() === 'false' ? 'false' : 'true');
+  }
+  // Sync tetapan kehadiran dari backend
+  if (cfg.ATTENDANCE_GURU_NOTIF_ENABLED !== undefined && cfg.ATTENDANCE_GURU_NOTIF_ENABLED !== '') {
+    localStorage.setItem('ssh_attendance_guru_notif_enabled', String(cfg.ATTENDANCE_GURU_NOTIF_ENABLED).trim() === 'false' ? 'false' : 'true');
+  }
+  if (cfg.ATTENDANCE_MURID_NOTIF_ENABLED !== undefined && cfg.ATTENDANCE_MURID_NOTIF_ENABLED !== '') {
+    localStorage.setItem('ssh_attendance_murid_notif_enabled', String(cfg.ATTENDANCE_MURID_NOTIF_ENABLED).trim() === 'false' ? 'false' : 'true');
+  }
+  if (cfg.ATTENDANCE_MURID_NOTIFY_GUARDIAN !== undefined && cfg.ATTENDANCE_MURID_NOTIFY_GUARDIAN !== '') {
+    localStorage.setItem('ssh_attendance_murid_notify_guardian', String(cfg.ATTENDANCE_MURID_NOTIFY_GUARDIAN).trim() === 'false' ? 'false' : 'true');
+  }
+  if (cfg.ATTENDANCE_MURID_NOTIFY_CLASS_GROUP !== undefined && cfg.ATTENDANCE_MURID_NOTIFY_CLASS_GROUP !== '') {
+    localStorage.setItem('ssh_attendance_murid_notify_class_group', String(cfg.ATTENDANCE_MURID_NOTIFY_CLASS_GROUP).trim() === 'false' ? 'false' : 'true');
+  }
+  if (cfg.ATTENDANCE_MURID_NOTIFY_TELEGRAM !== undefined && cfg.ATTENDANCE_MURID_NOTIFY_TELEGRAM !== '') {
+    localStorage.setItem('ssh_attendance_murid_notify_telegram', String(cfg.ATTENDANCE_MURID_NOTIFY_TELEGRAM).trim() === 'false' ? 'false' : 'true');
+  }
   if (typeof openaiKemaskiniStatusUI === 'function') openaiKemaskiniStatusUI();
 }
 function applyNotificationRuntimeConfig(config) {
@@ -1016,11 +1039,12 @@ function populateAttendanceNotificationConfig(config) {
   localStorage.setItem('ssh_attendance_tpl_murid_summary', muridSummaryTemplate);
   localStorage.setItem('ssh_attendance_tpl_murid_class_group', muridClassGroupTemplate);
 
-  setSelectValue('attendanceGuruNotifEnabled', guruEnabled ? 'true' : 'false');
-  setSelectValue('attendanceMuridNotifEnabled', muridEnabled ? 'true' : 'false');
-  setSelectValue('attendanceMuridNotifyGuardian', notifyGuardian ? 'true' : 'false');
-  setSelectValue('attendanceMuridNotifyClassGroup', notifyClassGroup ? 'true' : 'false');
-  setSelectValue('attendanceMuridNotifyTelegram', notifyTelegram ? 'true' : 'false');
+  // Simpan terus ke localStorage (select lama sudah diganti dengan toggle butang)
+  localStorage.setItem('ssh_attendance_guru_notif_enabled', guruEnabled ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_murid_notif_enabled', muridEnabled ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_murid_notify_guardian', notifyGuardian ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_murid_notify_class_group', notifyClassGroup ? 'true' : 'false');
+  localStorage.setItem('ssh_attendance_murid_notify_telegram', notifyTelegram ? 'true' : 'false');
   setInputValue('attendanceGuruReminderTime', guruTime || '07:45');
   setInputValue('attendanceMuridCutoffTime', muridTime || '09:00');
   setInputValue('attendanceNotifNote', note);
@@ -1035,13 +1059,13 @@ function populateAttendanceNotificationConfig(config) {
 
 async function saveAttendanceNotificationConfig() {
   const payload = {};
-  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruEnabled] = getSelectBoolean('attendanceGuruNotifEnabled', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruEnabled] = isGuruAttendanceNotifEnabled() ? 'true' : 'false';
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruReminderTime] = getInputTrimmed('attendanceGuruReminderTime', '07:45');
-  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridEnabled] = getSelectBoolean('attendanceMuridNotifEnabled', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridEnabled] = isMuridAttendanceNotifEnabled() ? 'true' : 'false';
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridCutoffTime] = getInputTrimmed('attendanceMuridCutoffTime', '09:00');
-  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyGuardian] = getSelectBoolean('attendanceMuridNotifyGuardian', true) ? 'true' : 'false';
-  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyClassGroup] = getSelectBoolean('attendanceMuridNotifyClassGroup', true) ? 'true' : 'false';
-  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyTelegram] = getSelectBoolean('attendanceMuridNotifyTelegram', true) ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyGuardian] = shouldNotifyMuridGuardian() ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyClassGroup] = shouldNotifyMuridClassGroup() ? 'true' : 'false';
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyTelegram] = shouldNotifyMuridTelegram() ? 'true' : 'false';
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruAdminTemplate] = getInputTrimmed('attendanceTplGuruAdmin', DEFAULT_ATTENDANCE_TEMPLATES.guruAdmin);
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.guruPersonalTemplate] = getInputTrimmed('attendanceTplGuruPersonal', DEFAULT_ATTENDANCE_TEMPLATES.guruPersonal);
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridGuardianTemplate] = getInputTrimmed('attendanceTplMuridGuardian', DEFAULT_ATTENDANCE_TEMPLATES.muridGuardian);
@@ -1721,38 +1745,121 @@ function isHLNotifEnabled() {
 }
 function setNotifAutoEnabled(enabled) {
   localStorage.setItem('ssh_notif_auto_enabled', enabled ? 'true' : 'false');
+  // Sync ke backend (fire-and-forget) supaya admin boleh akses dari mana-mana peranti
+  if (APP.workerUrl) {
+    callWorker({ action: 'setConfig', config: { NOTIF_AUTO_ENABLED: enabled ? 'true' : 'false' } }).catch(function() {});
+  }
   updateNotifAutoStatusUI();
 }
 function setHLNotifEnabled(enabled) {
   localStorage.setItem('ssh_hl_notif_enabled', enabled ? 'true' : 'false');
+  // Sync ke backend (fire-and-forget)
+  if (APP.workerUrl) {
+    callWorker({ action: 'setConfig', config: { HL_NOTIF_ENABLED: enabled ? 'true' : 'false' } }).catch(function() {});
+  }
   updateHLNotifStatusUI();
 }
 function toggleNotifAutoEnabled() {
   setNotifAutoEnabled(!isNotifAutoEnabled());
-  showToast(isNotifAutoEnabled() ? 'Notifikasi auto diaktifkan.' : 'Notifikasi auto dinyahaktifkan.', 'success');
+  showToast(isNotifAutoEnabled() ? 'Suis Utama diaktifkan.' : 'Suis Utama dimatikan — semua notifikasi dihenti.', 'success');
+}
+
+async function quickToggleGuruAttendanceNotif() {
+  var newVal = !isGuruAttendanceNotifEnabled();
+  localStorage.setItem('ssh_attendance_guru_notif_enabled', newVal ? 'true' : 'false');
+  if (APP.workerUrl) {
+    try { var p = {}; p[ATTENDANCE_NOTIF_CONFIG_KEYS.guruEnabled] = newVal ? 'true' : 'false'; await callWorker({ action: 'setConfig', config: p }); } catch(e) {}
+  }
+  updateAttendanceNotificationStatusUI();
+  showToast('Notifikasi guru ' + (newVal ? 'diaktifkan ✅' : 'dimatikan 🔴') + '.', 'success');
+}
+
+async function quickToggleMuridAttendanceNotif() {
+  var newVal = !isMuridAttendanceNotifEnabled();
+  localStorage.setItem('ssh_attendance_murid_notif_enabled', newVal ? 'true' : 'false');
+  if (APP.workerUrl) {
+    try { var p = {}; p[ATTENDANCE_NOTIF_CONFIG_KEYS.muridEnabled] = newVal ? 'true' : 'false'; await callWorker({ action: 'setConfig', config: p }); } catch(e) {}
+  }
+  updateAttendanceNotificationStatusUI();
+  showToast('Notifikasi murid ' + (newVal ? 'diaktifkan ✅' : 'dimatikan 🔴') + '.', 'success');
+}
+
+async function quickToggleMuridSubOption(type) {
+  var lsKey, configKey, label;
+  if (type === 'guardian')   { lsKey = 'ssh_attendance_murid_notify_guardian';    configKey = ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyGuardian;   label = 'Wali/Penjaga'; }
+  else if (type === 'classGroup') { lsKey = 'ssh_attendance_murid_notify_class_group'; configKey = ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyClassGroup; label = 'Kumpulan Kelas'; }
+  else if (type === 'telegram')   { lsKey = 'ssh_attendance_murid_notify_telegram';    configKey = ATTENDANCE_NOTIF_CONFIG_KEYS.muridNotifyTelegram;   label = 'Telegram'; }
+  else return;
+  var newVal = !getLocalBooleanConfig(lsKey, true);
+  localStorage.setItem(lsKey, newVal ? 'true' : 'false');
+  if (APP.workerUrl) {
+    try { var p = {}; p[configKey] = newVal ? 'true' : 'false'; await callWorker({ action: 'setConfig', config: p }); } catch(e) {}
+  }
+  updateAttendanceNotificationStatusUI();
+  showToast(label + ' ' + (newVal ? 'diaktifkan ✅' : 'dimatikan 🔴') + '.', 'success');
 }
 function toggleHLNotifEnabled() {
   setHLNotifEnabled(!isHLNotifEnabled());
   showToast(isHLNotifEnabled() ? 'Peringatan hari lahir diaktifkan.' : 'Peringatan hari lahir dinyahaktifkan.', 'success');
 }
 function updateNotifAutoStatusUI() {
-  var status = isNotifAutoEnabled() ? 'Aktif' : 'Dinonaktifkan';
-  setText('config-notif-auto-status', status);
-  setText('notif-module-status', status);
+  var active = isNotifAutoEnabled();
+  setText('config-notif-auto-status', active ? 'Semua notifikasi automatik aktif.' : '⚠️ Semua notifikasi automatik sedang dimatikan.');
+  setText('notif-module-status', active ? 'Aktif' : 'Dinonaktifkan');
   var btn = document.getElementById('config-notif-auto-toggle');
-  if (btn) btn.textContent = isNotifAutoEnabled() ? 'Matikan' : 'Aktifkan';
+  if (btn) {
+    btn.textContent = active ? 'Matikan' : 'Aktifkan';
+    btn.style.background  = active ? 'rgba(239,68,68,.1)'   : 'rgba(16,185,129,.15)';
+    btn.style.borderColor = active ? 'rgba(239,68,68,.4)'   : 'rgba(16,185,129,.4)';
+    btn.style.color       = active ? 'var(--red)'           : 'var(--green)';
+  }
+  var adminPanel = document.getElementById('adminNotifAutoPanel');
+  if (adminPanel) {
+    adminPanel.style.borderColor = active ? 'rgba(16,185,129,.35)' : 'rgba(239,68,68,.35)';
+    adminPanel.style.background  = active ? 'rgba(16,185,129,.04)' : 'rgba(239,68,68,.04)';
+  }
   var btn2 = document.getElementById('notifModuleToggle');
-  if (btn2) btn2.textContent = isNotifAutoEnabled() ? 'Matikan' : 'Aktifkan';
+  if (btn2) btn2.textContent = active ? 'Matikan' : 'Aktifkan';
+
+  // Suis Utama bar dalam kad kehadiran
+  var masterStatus = document.getElementById('notifMasterSwitchStatus');
+  if (masterStatus) {
+    masterStatus.textContent = active ? 'AKTIF' : 'DIMATIKAN';
+    masterStatus.style.color = active ? 'var(--green)' : 'var(--red)';
+  }
+  var masterBtn = document.getElementById('notifMasterToggleBtn');
+  if (masterBtn) masterBtn.textContent = active ? 'Matikan' : 'Aktifkan';
+  var masterBar = document.getElementById('notifMasterSwitchBar');
+  if (masterBar) {
+    masterBar.style.borderColor = active ? 'rgba(16,185,129,.35)' : 'rgba(239,68,68,.35)';
+    masterBar.style.background  = active ? 'rgba(16,185,129,.05)' : 'rgba(239,68,68,.05)';
+  }
+  var warning = document.getElementById('notifMasterOffWarning');
+  if (warning) warning.style.display = active ? 'none' : 'block';
+
   updateAttendanceNotificationStatusUI();
 }
 function updateHLNotifStatusUI() {
-  var status = isHLNotifEnabled() ? 'Aktif' : 'Dinonaktifkan';
-  setText('config-hl-status', status);
-  setText('hl-module-status', status);
+  var active = isHLNotifEnabled();
+  var status = active ? '✅ AKTIF' : '🔴 DIMATIKAN';
+  var statusColor = active ? 'var(--green)' : 'var(--red)';
+  setText('hl-module-status', active ? 'Aktif' : 'Dinonaktifkan');
+  var statusEl = document.getElementById('config-hl-status');
+  if (statusEl) { statusEl.textContent = status; statusEl.style.color = statusColor; }
   var btn = document.getElementById('config-hl-toggle');
-  if (btn) btn.textContent = isHLNotifEnabled() ? 'Matikan' : 'Aktifkan';
+  if (btn) {
+    btn.textContent = active ? 'Matikan' : 'Aktifkan';
+    btn.style.background   = active ? 'rgba(239,68,68,.1)'   : 'rgba(16,185,129,.15)';
+    btn.style.borderColor  = active ? 'rgba(239,68,68,.4)'   : 'rgba(16,185,129,.4)';
+    btn.style.color        = active ? 'var(--red)'           : 'var(--green)';
+  }
   var btn2 = document.getElementById('hlModuleToggle');
-  if (btn2) btn2.textContent = isHLNotifEnabled() ? 'Matikan' : 'Aktifkan';
+  if (btn2) btn2.textContent = active ? 'Matikan' : 'Aktifkan';
+  var panel = document.getElementById('hlNotifTogglePanel');
+  if (panel) {
+    panel.style.borderColor = active ? 'rgba(16,185,129,.35)' : 'rgba(239,68,68,.3)';
+    panel.style.background  = active ? 'rgba(16,185,129,.04)' : 'rgba(239,68,68,.04)';
+  }
 }
 
 function setSelectValue(id, value) {
@@ -1804,23 +1911,86 @@ function normalizeConfigBoolean(value, fallback) {
   return !!fallback;
 }
 function updateAttendanceNotificationStatusUI() {
-  const guruEnabled = isNotifAutoEnabled() && isGuruAttendanceNotifEnabled();
-  const muridEnabled = isNotifAutoEnabled() && isMuridAttendanceNotifEnabled();
-  const guruTime = localStorage.getItem('ssh_attendance_guru_reminder_time') || '07:45';
-  const muridTime = localStorage.getItem('ssh_attendance_murid_cutoff_time') || '09:00';
-  const telegramReady = !!(String(hlConfig.tgBot || '').trim() && String(hlConfig.tgChat || '').trim());
-  const fonnteReady = !!String(hlConfig.fonnteToken || '').trim();
-  const guruGroupReady = !!getGroupGuruFonnteId();
-  const classGroupCount = SENARAI_KELAS_MURID.filter(function(kelas) { return !!getGroupKelas(kelas); }).length;
+  var autoEnabled   = isNotifAutoEnabled();
+  var guruSpecific  = isGuruAttendanceNotifEnabled();
+  var muridSpecific = isMuridAttendanceNotifEnabled();
+  var guruEnabled   = autoEnabled && guruSpecific;
+  var muridEnabled  = autoEnabled && muridSpecific;
+  var guruTime  = localStorage.getItem('ssh_attendance_guru_reminder_time') || '07:45';
+  var muridTime = localStorage.getItem('ssh_attendance_murid_cutoff_time') || '09:00';
+  var telegramReady  = !!(String(hlConfig.tgBot || '').trim() && String(hlConfig.tgChat || '').trim());
+  var fonnteReady    = !!String(hlConfig.fonnteToken || '').trim();
+  var guruGroupReady = !!getGroupGuruFonnteId();
+  var classGroupCount = SENARAI_KELAS_MURID.filter(function(k) { return !!getGroupKelas(k); }).length;
 
-  setText('attendanceGuruNotifStatus', guruEnabled ? 'Aktif' : 'Dinonaktifkan');
-  setText('attendanceGuruNotifMeta', guruEnabled ? 'Peringatan guru dijadual sekitar ' + guruTime + '.' : 'Notifikasi guru tidak akan dihantar secara automatik.');
-  setText('attendanceMuridNotifStatus', muridEnabled ? 'Aktif' : 'Dinonaktifkan');
-  setText('attendanceMuridNotifMeta', muridEnabled ? 'Makluman murid tidak hadir disasarkan sekitar ' + muridTime + '.' : 'Notifikasi murid tidak akan dihantar secara automatik.');
-  setText('attendanceGuruChannelStatus', telegramReady || fonnteReady ? 'Sedia' : 'Belum lengkap');
-  setText('attendanceGuruChannelMeta', 'Telegram: ' + (telegramReady ? 'Aktif' : 'Belum lengkap') + ' | Fonnte: ' + (fonnteReady ? 'Aktif' : 'Belum lengkap') + ' | Kumpulan guru: ' + (guruGroupReady ? 'Ada' : 'Tiada'));
+  // ── Guru toggle card ──
+  var guruText  = guruEnabled ? '✅ AKTIF' : !guruSpecific ? '🔴 DIMATIKAN' : '⚠️ Suis Utama Dimatikan';
+  var guruColor = guruEnabled ? 'var(--green)' : 'var(--red)';
+  setText('attendanceGuruNotifStatus', guruText);
+  var guruStatusEl = document.getElementById('attendanceGuruNotifStatus');
+  if (guruStatusEl) guruStatusEl.style.color = guruColor;
+  setText('attendanceGuruNotifMeta', guruEnabled
+    ? 'Peringatan guru dijadual sekitar ' + guruTime + '. Klik "Matikan" untuk hentikan.'
+    : !guruSpecific
+      ? 'Notifikasi guru dimatikan. Klik "Aktifkan" untuk hidupkan semula.'
+      : 'Suis Utama sedang dimatikan — aktifkan Suis Utama dahulu.');
+
+  var guruBtn = document.getElementById('guruNotifToggleBtn');
+  if (guruBtn) {
+    guruBtn.textContent = guruSpecific ? 'Matikan' : 'Aktifkan';
+    guruBtn.style.background   = guruSpecific ? 'rgba(239,68,68,.1)'   : 'rgba(16,185,129,.15)';
+    guruBtn.style.borderColor  = guruSpecific ? 'rgba(239,68,68,.4)'   : 'rgba(16,185,129,.4)';
+    guruBtn.style.color        = guruSpecific ? 'var(--red)'           : 'var(--green)';
+  }
+  var guruCard = document.getElementById('guruNotifToggleCard');
+  if (guruCard) {
+    guruCard.style.borderColor = guruEnabled ? 'rgba(16,185,129,.3)' : guruSpecific ? 'rgba(245,158,11,.3)' : 'rgba(239,68,68,.25)';
+    guruCard.style.background  = guruEnabled ? 'rgba(16,185,129,.03)' : '#fff';
+  }
+
+  // ── Murid toggle card ──
+  var muridText  = muridEnabled ? '✅ AKTIF' : !muridSpecific ? '🔴 DIMATIKAN' : '⚠️ Suis Utama Dimatikan';
+  var muridColor = muridEnabled ? 'var(--green)' : 'var(--red)';
+  setText('attendanceMuridNotifStatus', muridText);
+  var muridStatusEl = document.getElementById('attendanceMuridNotifStatus');
+  if (muridStatusEl) muridStatusEl.style.color = muridColor;
+  setText('attendanceMuridNotifMeta', muridEnabled
+    ? 'Makluman murid tidak hadir disasarkan sekitar ' + muridTime + '. Klik "Matikan" untuk hentikan.'
+    : !muridSpecific
+      ? 'Notifikasi murid dimatikan. Klik "Aktifkan" untuk hidupkan semula.'
+      : 'Suis Utama sedang dimatikan — aktifkan Suis Utama dahulu.');
+
+  var muridBtn = document.getElementById('muridNotifToggleBtn');
+  if (muridBtn) {
+    muridBtn.textContent = muridSpecific ? 'Matikan' : 'Aktifkan';
+    muridBtn.style.background  = muridSpecific ? 'rgba(239,68,68,.1)'   : 'rgba(16,185,129,.15)';
+    muridBtn.style.borderColor = muridSpecific ? 'rgba(239,68,68,.4)'   : 'rgba(16,185,129,.4)';
+    muridBtn.style.color       = muridSpecific ? 'var(--red)'           : 'var(--green)';
+  }
+  var muridCard = document.getElementById('muridNotifToggleCard');
+  if (muridCard) {
+    muridCard.style.borderColor = muridEnabled ? 'rgba(16,185,129,.3)' : muridSpecific ? 'rgba(245,158,11,.3)' : 'rgba(239,68,68,.25)';
+    muridCard.style.background  = muridEnabled ? 'rgba(16,185,129,.03)' : '#fff';
+  }
+
+  // ── Saluran ──
+  setText('attendanceGuruChannelStatus', telegramReady || fonnteReady ? 'Sedia' : 'Belum Lengkap');
+  setText('attendanceGuruChannelMeta', 'Telegram: ' + (telegramReady ? '✅' : '❌') + ' | Fonnte: ' + (fonnteReady ? '✅' : '❌') + ' | Kumpulan guru: ' + (guruGroupReady ? 'Ada' : 'Tiada'));
   setText('attendanceMuridChannelStatus', classGroupCount + '/' + SENARAI_KELAS_MURID.length + ' kumpulan kelas');
-  setText('attendanceMuridChannelMeta', 'Wali: ' + (shouldNotifyMuridGuardian() ? 'Ya' : 'Tidak') + ' | Kumpulan kelas: ' + (shouldNotifyMuridClassGroup() ? 'Ya' : 'Tidak') + ' | Telegram: ' + (shouldNotifyMuridTelegram() ? 'Ya' : 'Tidak'));
+  setText('attendanceMuridChannelMeta', 'Wali: ' + (shouldNotifyMuridGuardian() ? '✅' : '❌') + ' | Kelas: ' + (shouldNotifyMuridClassGroup() ? '✅' : '❌') + ' | Telegram: ' + (shouldNotifyMuridTelegram() ? '✅' : '❌'));
+
+  // ── Chip toggle sub-pilihan murid ──
+  function updateChip(id, active, icon, label) {
+    var chip = document.getElementById(id);
+    if (!chip) return;
+    chip.textContent = icon + ' ' + label + ': ' + (active ? 'YA' : 'TIDAK');
+    chip.style.background  = active ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.08)';
+    chip.style.borderColor = active ? 'rgba(16,185,129,.4)'  : 'rgba(239,68,68,.3)';
+    chip.style.color       = active ? 'var(--green)'         : 'var(--red)';
+  }
+  updateChip('chipGuardian',  shouldNotifyMuridGuardian(),     '📱', 'Wali/Penjaga');
+  updateChip('chipClassGroup', shouldNotifyMuridClassGroup(),  '👥', 'Kumpulan Kelas');
+  updateChip('chipTelegram',  shouldNotifyMuridTelegram(),     '📊', 'Telegram');
 }
 
 function renderDashGuruTable(rows, isninStr, jumaatStr) {
@@ -9748,12 +9918,21 @@ async function simpanKonfigurasiProgramKokum() {
   }
 }
 
-function resetKonfigurasiProgramKokum() {
+async function resetKonfigurasiProgramKokum() {
   const defaults = cloneKokumProgramOptions(DEFAULT_KOKUM_PROGRAM_OPTIONS);
   saveLocalKokumProgramConfig(defaults);
   fillKokumProgramConfigForm(defaults);
   renderKokumProgramOptions(getKokumSelectedUnit());
-  showToast('Senarai program kokum dikembalikan kepada tetapan asal tempatan.', 'success');
+  if (APP.workerUrl) {
+    try {
+      await callWorker({ action: 'setConfig', config: { KOKUM_PROGRAM_OPTIONS_JSON: JSON.stringify(defaults) } });
+      showToast('Program kokum dikembalikan kepada tetapan asal dan disimpan ke backend.', 'success');
+    } catch (e) {
+      showToast('Reset tempatan berjaya. Gagal sync backend: ' + e.message, 'info');
+    }
+  } else {
+    showToast('Program kokum dikembalikan kepada tetapan asal (tempatan sahaja — Worker belum ditetapkan).', 'success');
+  }
 }
 
 async function importKokumGuruConfigCSV() {
@@ -10860,10 +11039,63 @@ function renderConfigTable(config) {
   if (!config) return;
   const card = document.getElementById('configPreviewCard');
   if (card) card.style.display = 'block';
-  const tbody = document.getElementById('configTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = Object.entries(config).map(function(entry) {
-    return '<tr><td><strong>' + escapeHtml(entry[0]) + '</strong></td><td style="font-family:monospace;font-size:0.85rem">' + escapeHtml(entry[1]) + '</td></tr>';
+  const container = document.getElementById('configTableBody');
+  if (!container) return;
+
+  const SENSITIVE_KEYS = ['KEY', 'TOKEN', 'SECRET', 'PASSWORD', 'API', 'FONNTE', 'GEMINI', 'OPENAI', 'DEEPSEEK', 'TELEGRAM', 'BOT'];
+  const entries = Object.entries(config);
+
+  // Kemas kini badge kiraan kunci
+  const countBadge = document.getElementById('configTableCount');
+  if (countBadge) countBadge.textContent = entries.length + ' kunci';
+
+  function isSensitive(key) {
+    var k = String(key).toUpperCase();
+    return SENSITIVE_KEYS.some(function(s) { return k.indexOf(s) !== -1; });
+  }
+  function maskValue(val) {
+    var v = String(val);
+    if (!v || v === '-' || v === '') return '<em style="color:var(--muted)">—</em>';
+    if (v.length <= 6) return '••••••';
+    return v.slice(0, 4) + '••••' + v.slice(-3);
+  }
+  function formatValue(key, val) {
+    var v = String(val || '');
+    if (!v || v === '') return '<em style="color:var(--muted)">Kosong</em>';
+    if (isSensitive(key)) return '<span style="font-family:monospace;letter-spacing:0.05em;color:var(--muted)">' + maskValue(v) + '</span>';
+    // Nilai boolean-like
+    if (v === 'true') return '<span class="badge badge-green" style="font-size:0.72rem">true</span>';
+    if (v === 'false') return '<span class="badge badge-gray" style="font-size:0.72rem">false</span>';
+    // Nilai panjang — potong
+    var display = v.length > 60 ? v.slice(0, 57) + '…' : v;
+    return '<span style="font-family:monospace;font-size:0.82rem;word-break:break-all">' + escapeHtml(display) + '</span>';
+  }
+
+  // Susun: kunci sensitif dahulu, kemudian susunan asal
+  var sensitive = entries.filter(function(e) { return isSensitive(e[0]); });
+  var normal    = entries.filter(function(e) { return !isSensitive(e[0]); });
+  var sorted = sensitive.concat(normal);
+
+  container.innerHTML = sorted.map(function(entry) {
+    var key = entry[0];
+    var val = entry[1];
+    var sens = isSensitive(key);
+    var borderColor = sens ? 'rgba(251,191,36,0.3)' : 'var(--border)';
+    var bgColor     = sens ? 'rgba(251,191,36,0.04)' : 'transparent';
+    var dot         = sens ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-right:6px;flex-shrink:0"></span>' : '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--border);margin-right:6px;flex-shrink:0"></span>';
+    return [
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;',
+      'padding:10px 14px;border:1px solid ' + borderColor + ';border-radius:10px;',
+      'background:' + bgColor + '">',
+        '<div style="display:flex;align-items:center;min-width:0;flex:0 0 auto;max-width:48%">',
+          dot,
+          '<strong style="font-size:0.82rem;color:var(--text);word-break:break-all">' + escapeHtml(key) + '</strong>',
+        '</div>',
+        '<div style="text-align:right;min-width:0;flex:1">',
+          formatValue(key, val),
+        '</div>',
+      '</div>'
+    ].join('');
   }).join('');
 }
 
@@ -12301,7 +12533,12 @@ function aiBacaPenggunaan() {
       deepseekTexts: 0,
       deepseekErrors: 0,
       deepseekLastStatus: 'Belum diuji',
-      deepseekLastAt: ''
+      deepseekLastAt: '',
+      openaiImages: 0,
+      openaiErrors: 0,
+      openaiLimitHits: 0,
+      openaiLastStatus: 'Belum diuji',
+      openaiLastAt: ''
     };
     localStorage.setItem('ssh_ai_usage_today', JSON.stringify(data));
   }
@@ -12313,6 +12550,11 @@ function aiBacaPenggunaan() {
   data.deepseekLastStatus = data.deepseekLastStatus || 'Belum diuji';
   data.deepseekLastAt = data.deepseekLastAt || '';
   data.geminiLastLimitAt = data.geminiLastLimitAt || data.lastLimitAt || '';
+  data.openaiImages = parseInt(data.openaiImages || 0, 10) || 0;
+  data.openaiErrors = parseInt(data.openaiErrors || 0, 10) || 0;
+  data.openaiLimitHits = parseInt(data.openaiLimitHits || 0, 10) || 0;
+  data.openaiLastStatus = data.openaiLastStatus || 'Belum diuji';
+  data.openaiLastAt = data.openaiLastAt || '';
   return data;
 }
 
@@ -12363,6 +12605,18 @@ function aiCatatPenggunaan(type, amount) {
     data.deepseekErrors += inc;
     data.deepseekLastStatus = 'Ralat';
     data.deepseekLastAt = now;
+  } else if (type === 'openai-image') {
+    data.openaiImages += inc;
+    data.openaiLastStatus = 'Aktif';
+    data.openaiLastAt = now;
+  } else if (type === 'openai-error') {
+    data.openaiErrors += inc;
+    data.openaiLastStatus = 'Ralat';
+    data.openaiLastAt = now;
+  } else if (type === 'openai-limit') {
+    data.openaiLimitHits += inc;
+    data.openaiLastStatus = 'Had Bil Dicapai';
+    data.openaiLastAt = now;
   }
   aiSimpanPenggunaan(data);
 }
@@ -12463,6 +12717,17 @@ function geminiRenderQuotaCards() {
   geminiSetQuotaText('deepseek-errors', String(aiUsage.deepseekErrors));
   geminiSetQuotaText('deepseek-status', aiUsage.deepseekLastStatus || 'Belum diuji');
   geminiSetQuotaText('deepseek-at', aiUsage.deepseekLastAt || '-');
+  // OpenAI status
+  document.querySelectorAll('[data-openai-quota="images"]').forEach(function(el) { el.textContent = String(aiUsage.openaiImages); });
+  document.querySelectorAll('[data-openai-quota="errors"]').forEach(function(el) { el.textContent = String(aiUsage.openaiErrors); });
+  document.querySelectorAll('[data-openai-quota="limit-hits"]').forEach(function(el) { el.textContent = String(aiUsage.openaiLimitHits); });
+  var oaiKey = openaiDapatkanKunci ? openaiDapatkanKunci() : null;
+  var oaiStatus = !oaiKey ? 'Tiada Kunci' : (aiUsage.openaiLimitHits > 0 ? 'Had Bil Dicapai' : aiUsage.openaiLastStatus);
+  var oaiBadge = document.getElementById('openai-engine-status-badge');
+  if (oaiBadge) {
+    oaiBadge.textContent = oaiStatus;
+    oaiBadge.style.color = !oaiKey ? 'var(--muted)' : aiUsage.openaiLimitHits > 0 ? 'var(--red)' : aiUsage.openaiImages > 0 ? 'var(--green)' : 'var(--muted)';
+  }
 
   document.querySelectorAll('[data-gemini-quota-bar]').forEach(function(el) {
     el.style.width = pct + '%';
@@ -12824,14 +13089,80 @@ function openaiDapatkanKunci() {
 
 function openaiKemaskiniStatusUI() {
   var key = openaiDapatkanKunci();
-  var badge = document.getElementById('openai-key-status');
   var inp = document.getElementById('openaiKey1');
   if (inp && key) inp.value = key;
-  if (!badge) return;
-  if (!key) {
-    badge.className = 'badge badge-gray'; badge.textContent = 'Tiada Kunci';
-  } else {
-    badge.className = 'badge badge-green'; badge.textContent = 'Aktif';
+  // Badge di konfigurasi
+  var badge = document.getElementById('openai-key-status');
+  if (badge) {
+    if (!key) {
+      badge.className = 'badge badge-gray'; badge.textContent = 'Tiada Kunci';
+    } else {
+      badge.className = 'badge badge-green'; badge.textContent = 'Aktif';
+    }
+  }
+  // Baris status dalam kad enjin AI
+  var engineLine = document.getElementById('lk-openai-engine-line');
+  if (engineLine) engineLine.style.display = key ? 'flex' : 'none';
+
+  // Render semula kad kuota (termasuk OpenAI — mengisi semua [data-openai-quota] elemen)
+  if (typeof geminiRenderQuotaCards === 'function') geminiRenderQuotaCards();
+
+  // Kemaskini elemen tambahan di #openai-config-quota-card
+  var aiUsage = (typeof aiBacaPenggunaan === 'function') ? aiBacaPenggunaan() : {};
+  var images   = aiUsage.openaiImages   || 0;
+  var errors   = aiUsage.openaiErrors   || 0;
+  var limitHits = aiUsage.openaiLimitHits || 0;
+  var lastStatus = aiUsage.openaiLastStatus || '-';
+  var lastAt   = aiUsage.openaiLastAt   || '-';
+
+  // Footer: imej hari ini
+  var footImages = document.getElementById('openai-config-images-foot');
+  if (footImages) footImages.textContent = String(images);
+
+  // Status terakhir
+  var elStatus = document.getElementById('openai-config-last-status');
+  if (elStatus) {
+    if (!key) {
+      elStatus.textContent = 'Tiada Kunci';
+      elStatus.style.color = 'var(--muted)';
+    } else if (limitHits > 0) {
+      elStatus.textContent = 'Had Bil Dicapai';
+      elStatus.style.color = 'var(--red)';
+    } else if (images > 0) {
+      elStatus.textContent = lastStatus || 'OK';
+      elStatus.style.color = 'var(--green)';
+    } else {
+      elStatus.textContent = lastStatus || 'Belum digunakan';
+      elStatus.style.color = 'var(--muted)';
+    }
+  }
+
+  // Aktiviti terakhir
+  var elAt = document.getElementById('openai-config-last-at');
+  if (elAt) elAt.textContent = lastAt || '-';
+
+  // Progress bar (simulasi — maks 50 imej/hari sebagai rujukan visual)
+  var maxRef = 50;
+  var pct = Math.min(100, Math.round((images / maxRef) * 100));
+  var bar = document.getElementById('openai-quota-progress-bar');
+  if (bar) {
+    bar.style.width = pct + '%';
+    bar.style.background = limitHits > 0 ? 'var(--red)' : errors > 0 ? 'var(--yellow)' : 'var(--green)';
+  }
+
+  // Key pill
+  var pill = document.getElementById('openai-config-key-pill');
+  if (pill) {
+    if (!key) {
+      pill.textContent = 'Tiada Kunci';
+      pill.className = 'gemini-key-pill is-empty';
+    } else if (limitHits > 0) {
+      pill.textContent = 'Kunci: Had Bil Dicapai';
+      pill.className = 'gemini-key-pill is-limited';
+    } else {
+      pill.textContent = 'Kunci: Aktif';
+      pill.className = 'gemini-key-pill is-active';
+    }
   }
 }
 
@@ -12931,10 +13262,21 @@ async function callHybridDeepSeekOpenAI(prompt) {
       try {
         var imgPrompt = lkBinaPromptImejLembaran(ph.desc);
         var dataUri = await _openaiImageCall(apiKey, imgPrompt);
-        if (dataUri) imgByIndex[ph.index] = dataUri;
+        if (dataUri) {
+          imgByIndex[ph.index] = dataUri;
+          aiCatatPenggunaan('openai-image', 1);
+        }
       } catch (imgErr) {
         console.warn('[OpenAI Hybrid] Gagal jana imej [' + ph.index + ']:', imgErr.message);
-        if (imgErr.isQuota) showToast('Kredit atau had kadar OpenAI dicapai. Imej seterusnya akan jadi placeholder.', 'info');
+        var isBilling = imgErr.message && (imgErr.message.toLowerCase().includes('billing') || imgErr.message.toLowerCase().includes('hard limit'));
+        if (isBilling) {
+          aiCatatPenggunaan('openai-limit', 1);
+          showToast('Had bil OpenAI dicapai. Tambah kredit di platform.openai.com.', 'error');
+          break; // henti jana imej seterusnya — semua akan jadi placeholder
+        } else {
+          aiCatatPenggunaan('openai-error', 1);
+          if (imgErr.isQuota) showToast('Had kadar OpenAI dicapai. Cuba sebentar lagi.', 'info');
+        }
       }
     }
   }
@@ -12975,6 +13317,8 @@ async function callHybridDeepSeekOpenAI(prompt) {
         note.innerHTML = '⚡ <strong>Hybrid (DeepSeek + Gemini):</strong> DeepSeek jana teks soalan, Gemini jana imej sahaja. Jimat kuota Gemini, kualiti imej terjamin.';
       } else if (e.target.value === 'openai') {
         note.innerHTML = '🔀 <strong>Hybrid (DeepSeek + DALL-E 3):</strong> DeepSeek jana teks soalan secara percuma, DALL-E 3 (OpenAI) jana imej inline berkualiti tinggi. Memerlukan Kunci API OpenAI (berbayar untuk imej sahaja).';
+        var sub = document.getElementById('lk-engine-status-subtitle');
+        if (sub) sub.textContent = 'DeepSeek untuk teks, DALL-E 3 (OpenAI) untuk imej. Anggaran pada peranti ini.';
       } else {
         note.innerHTML = '⚠️ <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }

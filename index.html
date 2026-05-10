@@ -2345,7 +2345,32 @@ _SK Kiandongo_</textarea>
             <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
               Digunakan untuk enjin <strong>Hybrid (DeepSeek + DALL-E 3)</strong> dalam modul Jana Lembaran Kerja AI. DeepSeek menjana teks soalan secara <strong>percuma</strong>, manakala <strong>DALL-E 3</strong> menjana imej inline berkualiti tinggi. Kunci ini hanya digunakan untuk penjanaan imej. Dapatkan kunci di <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--blue)">platform.openai.com</a>.
             </p>
-            <div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:rgba(16,163,127,0.04)">
+
+            <!-- Status Card OpenAI -->
+            <div class="gemini-quota-card config-gemini-status" id="openai-config-quota-card">
+              <div class="gemini-quota-main">
+                <div>
+                  <div class="gemini-quota-title">Status OpenAI Setempat</div>
+                  <div class="gemini-quota-subtitle">Kunci disimpan dalam Local Storage pelayar ini sahaja. DALL-E 3 berbayar — caj dikenakan per imej yang dijana.</div>
+                </div>
+                <div class="gemini-quota-metrics">
+                  <div class="gemini-quota-metric"><strong data-openai-quota="images">0</strong><span>Imej</span></div>
+                  <div class="gemini-quota-metric"><strong data-openai-quota="errors">0</strong><span>Ralat</span></div>
+                  <div class="gemini-quota-metric"><strong data-openai-quota="limit-hits">0</strong><span>Had Bil</span></div>
+                </div>
+              </div>
+              <div class="gemini-quota-progress"><span id="openai-quota-progress-bar" style="width:0%"></span></div>
+              <div class="gemini-quota-foot">
+                <span><strong id="openai-config-images-foot">0</strong> imej dijana hari ini</span>
+                <span>Status: <strong id="openai-config-last-status">-</strong></span>
+                <span>Aktiviti: <strong id="openai-config-last-at">-</strong></span>
+              </div>
+              <div class="config-gemini-key-list">
+                <span id="openai-config-key-pill" class="gemini-key-pill is-empty">Tiada Kunci</span>
+              </div>
+            </div>
+
+            <div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:rgba(16,163,127,0.04);margin-top:14px">
               <div class="config-gemini-slot-head" style="margin-bottom:10px">
                 <span style="font-weight:600">🔑 Kunci API OpenAI</span>
                 <span id="openai-key-status" class="badge badge-gray">Tiada Kunci</span>
@@ -2498,12 +2523,18 @@ _SK Kiandongo_</textarea>
             Gunakan tetapan Komunikasi di atas untuk menguruskan token dan ID kumpulan. Di sini anda boleh menyemak status dan menguji penghantaran notifikasi.
           </p>
 
-          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:#fff;margin-top:14px">
-            <div style="flex:1;min-width:220px">
-              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Peringatan Hari Lahir</div>
-              <div id="config-hl-status" style="font-weight:800;color:var(--blue)">Memuat...</div>
+          <div id="hlNotifTogglePanel" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border:2px solid rgba(16,185,129,.35);border-radius:14px;background:rgba(16,185,129,.04);margin-top:14px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.3rem">🎂</span>
+              <div>
+                <div style="font-weight:700;font-size:0.95rem">Notifikasi Peringatan Hari Lahir</div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Hantar ucapan hari lahir guru &amp; murid melalui Telegram dan WhatsApp.</div>
+              </div>
             </div>
-            <button class="btn btn-secondary" onclick="toggleHLNotifEnabled()" id="config-hl-toggle">Togol Hari Lahir</button>
+            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+              <div id="config-hl-status" style="font-weight:800;font-size:1rem;color:var(--green)">Memuat...</div>
+              <button class="btn btn-sm btn-secondary" onclick="toggleHLNotifEnabled()" id="config-hl-toggle">—</button>
+            </div>
           </div>
           
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
@@ -2546,22 +2577,69 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
+          <!-- ─── Suis Utama Notifikasi ─── -->
+          <div id="notifMasterSwitchBar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 16px;border-radius:12px;margin-top:16px;border:2px solid rgba(16,185,129,.35);background:rgba(16,185,129,.05)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.4rem">🔔</span>
+              <div>
+                <div style="font-weight:700;font-size:0.95rem">Suis Utama — Notifikasi Automatik</div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Mengawal SEMUA notifikasi kehadiran guru &amp; murid secara global. Matikan untuk hentikan semua notifikasi.</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+              <span id="notifMasterSwitchStatus" style="font-weight:800;font-size:1rem;color:var(--green)">AKTIF</span>
+              <button id="notifMasterToggleBtn" class="btn btn-sm btn-secondary" onclick="toggleNotifAutoEnabled()">Matikan</button>
+            </div>
+          </div>
+          <div id="notifMasterOffWarning" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px 14px;margin-top:10px;font-size:0.85rem;color:var(--red);line-height:1.6">
+            ⚠️ <strong>Notifikasi automatik dimatikan secara global.</strong> Semua tetapan guru &amp; murid di bawah tidak akan berfungsi sehingga Suis Utama diaktifkan semula.
+          </div>
+
+          <!-- ─── Kad Toggle Guru & Murid ─── -->
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px">
-            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
-              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Notifikasi Guru</div>
-              <div id="attendanceGuruNotifStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
-              <div id="attendanceGuruNotifMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Status peringatan guru akan dipaparkan di sini.</div>
+
+            <!-- Guru toggle card -->
+            <div style="padding:16px;border:1px solid var(--border);border-radius:14px;background:#fff;display:flex;flex-direction:column;gap:10px" id="guruNotifToggleCard">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                <div>
+                  <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">Notifikasi Kehadiran Guru</div>
+                  <div id="attendanceGuruNotifStatus" style="font-weight:800;font-size:1rem">Memuat...</div>
+                </div>
+                <button id="guruNotifToggleBtn" class="btn btn-sm btn-secondary" onclick="quickToggleGuruAttendanceNotif()" style="flex-shrink:0">—</button>
+              </div>
+              <div id="attendanceGuruNotifMeta" style="font-size:0.82rem;color:var(--muted);line-height:1.6">Status peringatan guru akan dipaparkan di sini.</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <label style="font-size:0.78rem;color:var(--muted);white-space:nowrap">⏰ Masa peringatan:</label>
+                <input id="attendanceGuruReminderTime" type="time" value="07:45" style="padding:4px 8px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;width:auto">
+                <span style="font-size:0.72rem;color:var(--muted)">(perlu Simpan)</span>
+              </div>
             </div>
-            <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
-              <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Notifikasi Murid</div>
-              <div id="attendanceMuridNotifStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
-              <div id="attendanceMuridNotifMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Status makluman murid tidak hadir akan dipaparkan di sini.</div>
+
+            <!-- Murid toggle card -->
+            <div style="padding:16px;border:1px solid var(--border);border-radius:14px;background:#fff;display:flex;flex-direction:column;gap:10px" id="muridNotifToggleCard">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+                <div>
+                  <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px">Notifikasi Kehadiran Murid</div>
+                  <div id="attendanceMuridNotifStatus" style="font-weight:800;font-size:1rem">Memuat...</div>
+                </div>
+                <button id="muridNotifToggleBtn" class="btn btn-sm btn-secondary" onclick="quickToggleMuridAttendanceNotif()" style="flex-shrink:0">—</button>
+              </div>
+              <div id="attendanceMuridNotifMeta" style="font-size:0.82rem;color:var(--muted);line-height:1.6">Status makluman murid tidak hadir akan dipaparkan di sini.</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <label style="font-size:0.78rem;color:var(--muted);white-space:nowrap">⏰ Masa cutoff:</label>
+                <input id="attendanceMuridCutoffTime" type="time" value="09:00" style="padding:4px 8px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;width:auto">
+                <span style="font-size:0.72rem;color:var(--muted)">(perlu Simpan)</span>
+              </div>
             </div>
+
+            <!-- Saluran Guru -->
             <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
               <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Saluran Guru</div>
               <div id="attendanceGuruChannelStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
               <div id="attendanceGuruChannelMeta" style="margin-top:6px;font-size:0.82rem;color:var(--muted);line-height:1.6">Telegram dan Fonnte guru akan disemak di sini.</div>
             </div>
+
+            <!-- Saluran Murid -->
             <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff">
               <div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px">Saluran Murid</div>
               <div id="attendanceMuridChannelStatus" style="font-weight:800;color:var(--blue)">Memuat...</div>
@@ -2569,56 +2647,19 @@ _SK Kiandongo_</textarea>
             </div>
           </div>
 
-          <div class="form-row" style="margin-top:16px">
-            <div class="form-group">
-              <label>Status Notifikasi Guru</label>
-              <select id="attendanceGuruNotifEnabled">
-                <option value="true">Aktif</option>
-                <option value="false">Dinonaktifkan</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Masa Peringatan Guru</label>
-              <input id="attendanceGuruReminderTime" type="time" value="07:45">
+          <!-- ─── Sasaran Notifikasi Murid (chip toggle) ─── -->
+          <div style="padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff;margin-top:14px">
+            <div style="font-size:0.88rem;font-weight:600;margin-bottom:4px">Sasaran Notifikasi Murid</div>
+            <div style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Tentukan siapa penerima apabila murid tidak hadir direkodkan. Klik chip untuk togol — berkesan serta-merta.</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button id="chipGuardian" class="btn btn-sm btn-secondary" onclick="quickToggleMuridSubOption('guardian')" style="border-radius:20px">📱 Wali/Penjaga</button>
+              <button id="chipClassGroup" class="btn btn-sm btn-secondary" onclick="quickToggleMuridSubOption('classGroup')" style="border-radius:20px">👥 Kumpulan Kelas</button>
+              <button id="chipTelegram" class="btn btn-sm btn-secondary" onclick="quickToggleMuridSubOption('telegram')" style="border-radius:20px">📊 Telegram</button>
             </div>
           </div>
-          <div class="form-row" style="margin-top:12px">
-            <div class="form-group">
-              <label>Status Notifikasi Murid</label>
-              <select id="attendanceMuridNotifEnabled">
-                <option value="true">Aktif</option>
-                <option value="false">Dinonaktifkan</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Masa Sasaran Murid Tidak Hadir</label>
-              <input id="attendanceMuridCutoffTime" type="time" value="09:00">
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:12px">
-            <div class="form-group">
-              <label>Hantar Kepada Wali Murid</label>
-              <select id="attendanceMuridNotifyGuardian">
-                <option value="true">Ya</option>
-                <option value="false">Tidak</option>
-              </select>
-            </div>
-            <div class="form-group">
-                  <label>Hantar Ke Kumpulan Kelas</label>
-              <select id="attendanceMuridNotifyClassGroup">
-                <option value="true">Ya</option>
-                <option value="false">Tidak</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row" style="margin-top:12px">
-            <div class="form-group">
-              <label>Hantar Ringkasan Telegram Murid</label>
-              <select id="attendanceMuridNotifyTelegram">
-                <option value="true">Ya</option>
-                <option value="false">Tidak</option>
-              </select>
-            </div>
+
+          <!-- ─── Nota Operasi ─── -->
+          <div class="form-row" style="margin-top:14px">
             <div class="form-group">
               <label>Nota Operasi</label>
               <input id="attendanceNotifNote" type="text" placeholder="Contoh: Semak selepas 8:00 pagi">
@@ -2696,7 +2737,7 @@ _{SEKOLAH}_</textarea>
           </div>
 
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-            <button class="btn btn-primary" onclick="saveAttendanceNotificationConfig()">Simpan Konfigurasi Kehadiran</button>
+            <button class="btn btn-primary" onclick="saveAttendanceNotificationConfig()">💾 Simpan Masa &amp; Templat</button>
             <button class="btn btn-secondary" onclick="loadConfig()">Muat Semula</button>
             <button class="btn btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar')">Uji Notifikasi Murid</button>
             <button class="btn btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar'); setTimeout(function(){ var el=document.getElementById('notifGuruTarikh'); if(el) el.focus(); }, 150)">Uji Notifikasi Guru</button>
@@ -2710,13 +2751,16 @@ _{SEKOLAH}_</textarea>
               <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
             </div>
             
-            <div style="background:rgba(26,79,160,0.03);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px">
-              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
-                <div>
-                  <div style="font-weight:700;font-size:1rem">Notifikasi Automatik</div>
-                  <div id="config-notif-auto-status" style="font-size:0.85rem;color:var(--muted);margin-top:4px">Memuat status...</div>
+            <div id="adminNotifAutoPanel" style="border:2px solid rgba(16,185,129,.35);border-radius:14px;padding:14px 16px;margin-bottom:20px;background:rgba(16,185,129,.04)">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="font-size:1.2rem">🔔</span>
+                  <div>
+                    <div style="font-weight:700;font-size:0.95rem">Suis Utama Notifikasi Automatik</div>
+                    <div id="config-notif-auto-status" style="font-size:0.82rem;color:var(--muted);margin-top:2px">Memuat status...</div>
+                  </div>
                 </div>
-                <button id="config-notif-auto-toggle" class="btn btn-secondary" onclick="toggleNotifAutoEnabled()">Togol Status</button>
+                <button id="config-notif-auto-toggle" class="btn btn-sm btn-secondary" onclick="toggleNotifAutoEnabled()">—</button>
               </div>
             </div>
 
@@ -2774,13 +2818,14 @@ _{SEKOLAH}_</textarea>
               </div>
 
               <div id="configPreviewCard" style="border-top:1px solid var(--border);padding-top:16px;display:none">
-              <h3 style="font-size:1rem;margin:0 0 10px">Konfigurasi Semasa (D1/Sheet)</h3>
-                <div class="table-wrap">
-                  <table id="configTable">
-                    <thead><tr><th>Kunci</th><th>Nilai</th></tr></thead>
-                    <tbody id="configTableBody"></tbody>
-                  </table>
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+                  <div>
+                    <h3 style="font-size:1rem;margin:0 0 2px">Konfigurasi Semasa (D1/Sheet)</h3>
+                    <div style="font-size:0.78rem;color:var(--muted)">Nilai API key ditopeng bagi keselamatan.</div>
+                  </div>
+                  <span id="configTableCount" class="badge badge-blue" style="font-size:0.75rem">0 kunci</span>
                 </div>
+                <div style="display:grid;gap:6px" id="configTableBody"></div>
               </div>
             </div>
           </div>
@@ -3619,7 +3664,7 @@ _{SEKOLAH}_</textarea>
               <div class="gemini-quota-main">
                 <div>
                   <div class="gemini-quota-title">Status Enjin AI</div>
-                  <div class="gemini-quota-subtitle">DeepSeek untuk teks, Gemini untuk imej. Anggaran pada peranti ini.</div>
+                  <div class="gemini-quota-subtitle" id="lk-engine-status-subtitle">DeepSeek untuk teks, Gemini untuk imej. Anggaran pada peranti ini.</div>
                 </div>
                 <div class="gemini-quota-metrics">
                   <div class="gemini-quota-metric"><strong data-gemini-quota="remaining">0</strong><span>Baki</span></div>
@@ -3645,6 +3690,12 @@ _{SEKOLAH}_</textarea>
                   <span>Gemini</span>
                   <strong><span data-gemini-quota="active">0/0</span> key</strong>
                   <em><span data-gemini-quota="used">0</span> imej</em>
+                </div>
+                <div class="ai-engine-line" id="lk-openai-engine-line" style="display:none">
+                  <span class="ai-engine-dot" style="background:#10a37f"></span>
+                  <span>DALL-E 3</span>
+                  <strong id="openai-engine-status-badge" style="color:var(--muted)">Tiada Kunci</strong>
+                  <em><span data-openai-quota="images">0</span> imej · <span data-openai-quota="errors">0</span> ralat</em>
                 </div>
               </div>
             </div>

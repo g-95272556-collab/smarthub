@@ -181,6 +181,8 @@ function getBackendConfigDefaults() {
     TELEGRAM_TOPIC: "",
     DEEPSEEK_API_KEY: "",
     OPENAI_API_KEY: "",
+    NOTIF_AUTO_ENABLED: "true",
+    HL_NOTIF_ENABLED: "true",
     ATTENDANCE_GURU_NOTIF_ENABLED: "true",
     ATTENDANCE_GURU_REMINDER_TIME: "07:45",
     ATTENDANCE_MURID_NOTIF_ENABLED: "true",
