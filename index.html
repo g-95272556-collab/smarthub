@@ -82,7 +82,7 @@
       <div class="splash-gb-sub">SK Kiandongo, Tongod, Sabah</div>
     </div>
 
-    <div class="splash-rv splash-msg">Sila klik butang di bawah untuk merasmikan<br>sistem ini secara rasmi.</div>
+    <div class="splash-rv splash-msg">Sila klik butang di bawah untuk melancarkan<br>sistem ini secara rasmi.</div>
 
     <div class="splash-rv">
       <button id="splashBtn" class="premium-btn" onclick="splashRasmikan()">
@@ -208,6 +208,7 @@
 .gold-text {
   background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
   -webkit-background-clip: text;
+  background-clip: text;
   color: transparent;
   display: inline-block;
   text-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
@@ -286,7 +287,8 @@
   font-family: 'Space Grotesk', sans-serif;
   font-size: 140pt; font-weight: 800; color: #fff; line-height: 1;
   background: linear-gradient(to bottom, #fff, #a8cfff);
-  -webkit-background-clip: text; color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text; color: transparent;
   text-shadow: 0 20px 60px rgba(168, 207, 255, 0.4);
 }
 .splash-count-label {
@@ -311,7 +313,8 @@
   font-family: 'Space Grotesk', sans-serif;
   font-size: 36pt; font-weight: 800; text-align: center;
   background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-  -webkit-background-clip: text; color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text; color: transparent;
   filter: drop-shadow(0 10px 40px rgba(255, 215, 0, 0.5));
 }
 .splash-celeb-sub {
@@ -2333,6 +2336,33 @@ _SK Kiandongo_</textarea>
             </p>
           </div>
 
+          <!-- ══ OPENAI API KEY ══ -->
+          <div class="card config-section-card" id="config-openai-card" data-config-group="utama">
+            <div class="section-header">
+              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-sparkles"></use></svg> Kunci API OpenAI (DALL-E 3)</h2>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
+            </div>
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
+              Digunakan untuk enjin <strong>Hybrid (DeepSeek + DALL-E 3)</strong> dalam modul Jana Lembaran Kerja AI. DeepSeek menjana teks soalan secara <strong>percuma</strong>, manakala <strong>DALL-E 3</strong> menjana imej inline berkualiti tinggi. Kunci ini hanya digunakan untuk penjanaan imej. Dapatkan kunci di <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="color:var(--blue)">platform.openai.com</a>.
+            </p>
+            <div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:rgba(16,163,127,0.04)">
+              <div class="config-gemini-slot-head" style="margin-bottom:10px">
+                <span style="font-weight:600">🔑 Kunci API OpenAI</span>
+                <span id="openai-key-status" class="badge badge-gray">Tiada Kunci</span>
+              </div>
+              <div class="form-group" style="margin-bottom:10px">
+                <input id="openaiKey1" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" style="font-family:monospace;font-size:0.85rem">
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-sm btn-primary" onclick="openaiSimpanKunci()" style="background:#10a37f;border-color:#0d8a6c"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-save"></use></svg> Simpan</button>
+                <button class="btn btn-sm btn-secondary" onclick="openaiPadamKunci()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-trash-2"></use></svg> Padam</button>
+              </div>
+            </div>
+            <p style="font-size:0.75rem;color:var(--muted);font-style:italic;margin-top:10px">
+              * Kunci disimpan dalam Local Storage pelayar ini sahaja. Berbayar — DALL-E 3 mengenakan caj per imej.
+            </p>
+          </div>
+
           <div class="card config-section-card" id="config-advanced-card" data-config-group="lanjutan">
             <div class="section-header">
               <h2>Konfigurasi Kunci (Lanjutan)</h2>
@@ -3542,6 +3572,13 @@ _{SEKOLAH}_</textarea>
                   <span>
                     <strong>⚡ Hybrid</strong> — DeepSeek + Gemini<br>
                     <small style="color:var(--muted,#64748b)">DeepSeek jana teks · Gemini jana imej · jimat kuota</small>
+                  </span>
+                </label>
+                <label style="display:flex;align-items:flex-start;gap:6px;cursor:pointer">
+                  <input type="radio" name="lkEngine" value="openai" style="margin-top:3px">
+                  <span>
+                    <strong>🔀 Hybrid</strong> — DeepSeek + DALL-E 3<br>
+                    <small style="color:var(--muted,#64748b)">DeepSeek jana teks · DALL-E 3 jana imej · kualiti tinggi</small>
                   </span>
                 </label>
 

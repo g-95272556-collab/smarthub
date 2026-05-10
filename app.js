@@ -803,6 +803,13 @@ function applyBackendOperationalConfig(config) {
     }
   }
   if (typeof geminiKemaskiniStatusUI === 'function') geminiKemaskiniStatusUI();
+  // Muat kunci OpenAI dari backend config ke localStorage
+  if (cfg.OPENAI_API_KEY) {
+    localStorage.setItem('ssh_openai_key', String(cfg.OPENAI_API_KEY).trim());
+  } else if (cfg.OPENAI_API_KEY === '') {
+    localStorage.removeItem('ssh_openai_key');
+  }
+  if (typeof openaiKemaskiniStatusUI === 'function') openaiKemaskiniStatusUI();
 }
 function applyNotificationRuntimeConfig(config) {
   const cfg = config || {};
@@ -12808,6 +12815,154 @@ async function callHybridDeepSeekGemini(prompt) {
 }
 
 
+// === OPENAI KEY MANAGEMENT ===
+
+function openaiDapatkanKunci() {
+  var key = localStorage.getItem('ssh_openai_key');
+  return (key && key.trim()) ? key.trim() : null;
+}
+
+function openaiKemaskiniStatusUI() {
+  var key = openaiDapatkanKunci();
+  var badge = document.getElementById('openai-key-status');
+  var inp = document.getElementById('openaiKey1');
+  if (inp && key) inp.value = key;
+  if (!badge) return;
+  if (!key) {
+    badge.className = 'badge badge-gray'; badge.textContent = 'Tiada Kunci';
+  } else {
+    badge.className = 'badge badge-green'; badge.textContent = 'Aktif';
+  }
+}
+
+async function openaiSimpanKunci() {
+  var inp = document.getElementById('openaiKey1');
+  if (!inp || !inp.value.trim()) { showToast('Sila masukkan kunci API OpenAI.', 'error'); return; }
+  var keyVal = inp.value.trim();
+  try {
+    if (APP.workerUrl) {
+      var data = await callWorker({ action: 'setConfig', config: { OPENAI_API_KEY: keyVal } });
+      if (!data.success) throw new Error(data.error || 'Gagal simpan ke backend.');
+    }
+    localStorage.setItem('ssh_openai_key', keyVal);
+    openaiKemaskiniStatusUI();
+    showToast('Kunci API OpenAI disimpan.', 'success');
+  } catch (e) {
+    showToast('Gagal simpan: ' + e.message, 'error');
+  }
+}
+
+async function openaiPadamKunci() {
+  try {
+    if (APP.workerUrl) {
+      var data = await callWorker({ action: 'setConfig', config: { OPENAI_API_KEY: '' } });
+      if (!data.success) throw new Error(data.error || 'Gagal padam dari backend.');
+    }
+    localStorage.removeItem('ssh_openai_key');
+    var inp = document.getElementById('openaiKey1');
+    if (inp) inp.value = '';
+    openaiKemaskiniStatusUI();
+    showToast('Kunci API OpenAI dipadam.', 'info');
+  } catch (e) {
+    showToast('Gagal padam: ' + e.message, 'error');
+  }
+}
+
+// ── HELPER: Jana imej dengan DALL-E 3 (pulang base64 data URI) ──
+async function _openaiImageCall(apiKey, prompt) {
+  var res = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ model: 'dall-e-3', prompt: prompt, n: 1, size: '1024x1024', response_format: 'b64_json' })
+  });
+  if (!res.ok) {
+    var errData = await res.json().catch(function() { return { error: { message: res.statusText } }; });
+    var errMsg = (errData.error && errData.error.message) ? errData.error.message : res.statusText;
+    var e = new Error('DALL-E 3 Error: ' + errMsg);
+    e.isQuota = (res.status === 429 || res.status === 403);
+    throw e;
+  }
+  var d = await res.json();
+  return (d.data && d.data[0] && d.data[0].b64_json) ? 'data:image/png;base64,' + d.data[0].b64_json : null;
+}
+
+// ── HYBRID: DeepSeek (teks) + DALL-E 3/OpenAI (imej) ──────────
+// Sama seperti callHybridDeepSeekGemini tetapi jana imej menggunakan DALL-E 3
+async function callHybridDeepSeekOpenAI(prompt) {
+  if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
+  var apiKey = openaiDapatkanKunci();
+  if (!apiKey) throw new Error('Tiada Kunci API OpenAI. Pergi ke Konfigurasi → Kunci API OpenAI.');
+
+  // ── STEP 1: DeepSeek jana teks ──
+  if (_lkCancelled) throw new Error('__cancelled__');
+  lkSetStatus('loading', '⏳ Langkah 1/2: DeepSeek menjana teks soalan... (~15-25 saat)');
+  var dsResult = await callWorkerAI(prompt, 'lembaran_kerja');
+  if (!dsResult.success) {
+    aiCatatPenggunaan('deepseek-error', 1);
+    throw new Error(dsResult.message || 'DeepSeek gagal menjana teks.');
+  }
+  aiCatatPenggunaan('deepseek-text', 1);
+  var rawText = dsResult.content || '';
+  if (!rawText.trim()) throw new Error('DeepSeek tidak menghasilkan teks.');
+  // Strip baris maklumat murid yang dijana secara berlebihan oleh AI
+  rawText = rawText.split('\n').filter(function(ln) {
+    return !_LK_MURID_INFO_REGEX.test(ln.trim());
+  }).join('\n');
+  rawText = lkEnforceImagePlaceholderLimit(rawText, lkGetRequestedImageCount());
+
+  // ── STEP 2: Parse semua placeholder [GAMBAR:] atau [IMEJ:] ──
+  var placeholderRegex = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
+  var imgPlaceholders = [];
+  var m;
+  var idx = 0;
+  while ((m = placeholderRegex.exec(rawText)) !== null) {
+    imgPlaceholders.push({ index: idx++, full: m[0], desc: m[1].trim() });
+  }
+
+  // ── STEP 3: Jana imej dengan DALL-E 3 — satu per satu (rate limit ketat) ──
+  var imgByIndex = {};
+  if (imgPlaceholders.length > 0) {
+    var total = imgPlaceholders.length;
+    lkSetStatus('loading', '🎨 Langkah 2/2: DALL-E 3 jana ' + total + ' imej soalan bergambar...');
+    for (var i = 0; i < imgPlaceholders.length; i++) {
+      if (_lkCancelled) throw new Error('__cancelled__');
+      var ph = imgPlaceholders[i];
+      lkSetStatus('loading', '🎨 DALL-E 3 jana imej ' + (i + 1) + '/' + total + ': ' + ph.desc.substring(0, 40) + '...');
+      try {
+        var imgPrompt = lkBinaPromptImejLembaran(ph.desc);
+        var dataUri = await _openaiImageCall(apiKey, imgPrompt);
+        if (dataUri) imgByIndex[ph.index] = dataUri;
+      } catch (imgErr) {
+        console.warn('[OpenAI Hybrid] Gagal jana imej [' + ph.index + ']:', imgErr.message);
+        if (imgErr.isQuota) showToast('Kredit atau had kadar OpenAI dicapai. Imej seterusnya akan jadi placeholder.', 'info');
+      }
+    }
+  }
+
+  // ── STEP 4: Replace placeholder dengan imej atau kotak fallback ──
+  var imgCounter = 0;
+  var htmlContent = rawText
+    .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
+      var currentIdx = imgCounter++;
+      var dataUri = imgByIndex[currentIdx];
+      var rajahNum = currentIdx + 1;
+      if (dataUri) {
+        return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
+          '<img src="' + dataUri + '" style="max-width:55%;height:auto;max-height:220px;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
+          '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
+          '</div>';
+      } else {
+        return '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
+          '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + desc.trim() + ']</span>' +
+          '</div>';
+      }
+    })
+    .replace(/\n/g, '<br>');
+
+  var totalJana = Object.keys(imgByIndex).length;
+  return { success: true, content: htmlContent, images: [], isHtml: true, _imgCount: totalJana };
+}
+
 // Update engine note when radio changes
 (function() {
   document.addEventListener('change', function(e) {
@@ -12818,8 +12973,10 @@ async function callHybridDeepSeekGemini(prompt) {
         note.innerHTML = '⚡ <strong>Gemini (DeepSeek + Gemini):</strong> DeepSeek jana teks soalan, Gemini jana imej sahaja. Jimat kuota Gemini, kualiti imej terjamin.';
       } else if (e.target.value === 'hybrid') {
         note.innerHTML = '⚡ <strong>Hybrid (DeepSeek + Gemini):</strong> DeepSeek jana teks soalan, Gemini jana imej sahaja. Jimat kuota Gemini, kualiti imej terjamin.';
+      } else if (e.target.value === 'openai') {
+        note.innerHTML = '🔀 <strong>Hybrid (DeepSeek + DALL-E 3):</strong> DeepSeek jana teks soalan secara percuma, DALL-E 3 (OpenAI) jana imej inline berkualiti tinggi. Memerlukan Kunci API OpenAI (berbayar untuk imej sahaja).';
       } else {
-        note.innerHTML = '[Info] <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
+        note.innerHTML = '⚠️ <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
       }
     }
   });
@@ -12839,9 +12996,10 @@ async function janaLembaranKerja() {
   if (_lkGenerating) { showToast('Sila tunggu - AI sedang memproses...', 'info'); return; }
   if (!document.querySelector('input[name="lkJenis"]:checked')) { showToast('Pilih jenis penilaian dahulu.', 'error'); return; }
   var engine = lkGetEngine();
-  // Semua enjin guna DeepSeek (Worker) untuk teks — Gemini hanya untuk imej
+  // Semua enjin guna DeepSeek (Worker) untuk teks
   if (!APP.workerUrl) { showToast('Worker URL belum dikonfigurasi. Pergi ke Konfigurasi.', 'error'); return; }
-  if (engine !== 'deepseek' && !geminiAdaKunciAktif()) { showToast('Tiada Kunci API Gemini aktif. Pergi ke Konfigurasi → Kunci API Gemini.', 'error'); return; }
+  if ((engine === 'gemini' || engine === 'hybrid') && !geminiAdaKunciAktif()) { showToast('Tiada Kunci API Gemini aktif. Pergi ke Konfigurasi → Kunci API Gemini.', 'error'); return; }
+  if (engine === 'openai' && !openaiDapatkanKunci()) { showToast('Tiada Kunci API OpenAI (untuk DALL-E 3). Pergi ke Konfigurasi → Kunci API OpenAI.', 'error'); return; }
 
   _lkGenerating = true;
   _lkCancelled = false;
@@ -12850,7 +13008,7 @@ async function janaLembaranKerja() {
   if (retryBtn) retryBtn.style.display = 'none'; // sembunyi dari janaan sebelumnya
   var batalBtn = document.getElementById('lkBatalBtn');
   if (batalBtn) batalBtn.style.display = 'inline-flex';
-  var engineLabel = engine === 'gemini' ? 'Gemini 2.0 Flash' : engine === 'hybrid' ? 'DeepSeek + Gemini (Hybrid)' : 'DeepSeek';
+  var engineLabel = engine === 'gemini' ? 'DeepSeek + Gemini' : engine === 'hybrid' ? 'DeepSeek + Gemini (Hybrid)' : engine === 'openai' ? 'DeepSeek + DALL-E 3' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
   document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>';
 
@@ -12891,8 +13049,11 @@ async function janaLembaranKerja() {
       var prompt = lkBinaSumber();
       var result;
       if (engine === 'gemini' || engine === 'hybrid') {
-        // DeepSeek teks + Gemini imej (untuk semua jenis penilaian)
+        // DeepSeek teks + Gemini imej
         result = await callHybridDeepSeekGemini(prompt);
+      } else if (engine === 'openai') {
+        // DeepSeek teks + DALL-E 3 imej
+        result = await callHybridDeepSeekOpenAI(prompt);
       } else {
         // DeepSeek: cuba streaming dahulu supaya teks muncul sedikit demi sedikit
         // Fallback automatik ke callWorkerAI jika Worker belum sokong /ai/stream
