@@ -437,22 +437,35 @@
     var cfgVer = (window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).appVersion;
     if (verEl && cfgVer) verEl.textContent = 'Versi ' + cfgVer + '  ·  ' + verEl.textContent.split('·').pop().trim();
 
-    /* Nama GB — utamakan config, fallback ke profil log masuk */
-    var gbStatik = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
-    var gbEl = document.getElementById('splashGBName');
-    if (gbEl && gbStatik) {
-      gbEl.textContent = gbStatik;
-    } else {
+    /* Nama GB — pull dari data guru (jawatan = Guru Besar) */
+    (function () {
+      var el = document.getElementById('splashGBName');
+      if (!el) return;
+      /* 1. Override manual dalam runtime-config.js */
+      var cfgGb = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
+      if (cfgGb) { el.textContent = cfgGb; return; }
+      /* 2. Tetapan surat amaran (localStorage) */
+      var lsGb = '';
+      try { lsGb = (localStorage.getItem('AMARAN_CFG_GB') || '').trim(); } catch(e) {}
+      if (lsGb) el.textContent = lsGb;
+      /* 3. Poll getGuruBesarNameFromData dari data guru (app.js defer) */
       var tries = 0;
-      var gbTimer = setInterval(function () {
+      var t = setInterval(function () {
         tries++;
-        var el = document.getElementById('splashGBName');
-        if (!el) { clearInterval(gbTimer); return; }
-        var n = (window.APP && window.APP.userProfile && window.APP.userProfile.name) ? window.APP.userProfile.name : '';
-        if (n) { el.textContent = n; clearInterval(gbTimer); }
-        if (tries > 24) clearInterval(gbTimer);
+        if (typeof window.getGuruBesarNameFromData === 'function') {
+          clearInterval(t);
+          window.getGuruBesarNameFromData().then(function (nama) {
+            var cur = document.getElementById('splashGBName');
+            if (cur && nama) cur.textContent = nama;
+          }).catch(function () {});
+          return;
+        }
+        /* 4. Fallback terakhir: profil log masuk */
+        var n = (window.APP && window.APP.userProfile && window.APP.userProfile.name) || '';
+        if (n && !lsGb) { el.textContent = n; }
+        if (tries > 40) clearInterval(t);
       }, 500);
-    }
+    })();
 
     /* Sequential reveal — stagger tiap elemen */
     var rvEls = document.querySelectorAll('#splashCard .splash-rv');
@@ -522,14 +535,21 @@ function splashRasmikan() {
     var prsGBName = document.getElementById('splashPrsGBName');
     var prsDatetime = document.getElementById('splashPrsDatetime');
 
-    /* Nama GB — config > kad splash sedia ada > profil log masuk */
+    /* Nama GB — ambil dari data guru, fallback bertingkat */
     if (prsGBName) {
-      var cfgGB = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
-      var gbEl  = document.getElementById('splashGBName');
-      var gbName = cfgGB
-        || (gbEl && gbEl.textContent.trim() !== '——————————————' ? gbEl.textContent.trim() : '')
-        || (window.APP && window.APP.userProfile && window.APP.userProfile.name ? window.APP.userProfile.name : '——————————');
-      prsGBName.textContent = gbName;
+      var gbEl = document.getElementById('splashGBName');
+      /* Guna nama yang sudah dimuatkan pada kad splash (hasil poll getGuruBesarNameFromData) */
+      var gbName = (gbEl && gbEl.textContent.trim() !== '——————————————') ? gbEl.textContent.trim() : '';
+      if (gbName) {
+        prsGBName.textContent = gbName;
+      } else if (typeof window.getGuruBesarNameFromData === 'function') {
+        /* Panggil sekali lagi jika belum ada */
+        window.getGuruBesarNameFromData().then(function (nama) {
+          if (prsGBName) prsGBName.textContent = nama || '——————————';
+        }).catch(function () {});
+      } else {
+        prsGBName.textContent = (window.APP && window.APP.userProfile && window.APP.userProfile.name) || '——————————';
+      }
     }
 
     /* Tarikh & masa perasmian */
