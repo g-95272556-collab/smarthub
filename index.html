@@ -418,58 +418,67 @@
 
 /* ─── Splash Mobile Responsive ──────────────────────────────────── */
 @media (max-width: 520px) {
+  #splashLaunch {
+    overflow-y: auto;
+    align-items: flex-start;
+    -webkit-overflow-scrolling: touch;
+  }
   .premium-glass {
-    padding: 32px 20px 28px;
-    width: 96%;
+    padding: 28px 18px 32px;
+    width: 94%;
     border-radius: 20px;
+    margin: 16px auto;
   }
   .splash-logo-container {
-    width: 80px; height: 80px; margin-bottom: 20px;
+    width: 72px; height: 72px; margin-bottom: 16px;
   }
   .splash-crest-img, .splash-crest-svg {
-    width: 70px; height: 70px;
+    width: 64px; height: 64px;
+  }
+  .splash-logo-glow {
+    inset: -20px;
   }
   .splash-kpm {
-    font-size: 7.5pt; letter-spacing: 1.5px;
+    font-size: 7pt; letter-spacing: 1px; margin-bottom: 4px;
   }
   .splash-sekolah {
-    font-size: 10pt; letter-spacing: 0.5px; margin-bottom: 16px;
-  }
-  .splash-subtitle {
-    font-size: 8pt; letter-spacing: 2px; margin-bottom: 8px;
-  }
-  .splash-title {
-    font-size: 26pt; margin-bottom: 8px;
-  }
-  .splash-desc {
-    font-size: 9.5pt; letter-spacing: 0px;
-  }
-  .splash-ver {
-    font-size: 8pt; margin-bottom: 20px;
-  }
-  .splash-gb-card {
-    padding: 14px 16px; margin-bottom: 20px;
-  }
-  .splash-gb-label {
-    font-size: 7.5pt; letter-spacing: 0.5px;
-  }
-  #splashGBName {
-    font-size: 13pt;
-  }
-  .splash-gb-sub {
-    font-size: 8pt;
-  }
-  .splash-msg {
-    font-size: 9pt; margin-bottom: 18px;
-  }
-  .premium-btn {
-    padding: 16px 40px; font-size: 12pt;
-  }
-  .splash-footnote {
-    font-size: 7.5pt;
+    font-size: 9.5pt; letter-spacing: 0.5px; margin-bottom: 12px;
   }
   .splash-divider {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
+  }
+  .splash-subtitle {
+    font-size: 7.5pt; letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .splash-title {
+    font-size: 24pt; margin-bottom: 6px; letter-spacing: -1px;
+  }
+  .splash-desc {
+    font-size: 9pt; letter-spacing: 0px; margin-bottom: 4px;
+  }
+  .splash-ver {
+    font-size: 7.5pt; margin-bottom: 16px;
+  }
+  .splash-gb-card {
+    padding: 12px 14px; margin-bottom: 16px; max-width: 100%;
+  }
+  .splash-gb-label {
+    font-size: 7pt; letter-spacing: 0.5px;
+  }
+  #splashGBName {
+    font-size: 12pt;
+  }
+  .splash-gb-sub {
+    font-size: 7.5pt;
+  }
+  .splash-msg {
+    font-size: 8.5pt; margin-bottom: 16px;
+  }
+  .premium-btn {
+    padding: 14px 36px; font-size: 11pt; letter-spacing: 1px;
+  }
+  .splash-footnote {
+    font-size: 7pt; margin-top: 12px;
   }
 }
 </style>
