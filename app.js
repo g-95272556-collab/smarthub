@@ -767,6 +767,7 @@ function normalizeDutyScheduleRows(rows) {
 function applyBackendOperationalConfig(config) {
   const cfg = config || {};
   _backendConfigCache = cfg;
+  APP.launchDate = cfg.LAUNCH_DATE !== undefined ? cfg.LAUNCH_DATE : (getRuntimeConfig().launchDate || '');
   applyNotificationRuntimeConfig(cfg);
 
   const adminEmails = parseJsonConfigValue(cfg.ADMIN_EMAILS_JSON, []);
@@ -1284,6 +1285,7 @@ async function loadAdminConfig() {
   renderAdminList();
   loadD1Summary();
   loadD1EditableSheet();
+  renderLaunchConfigUI();
 }
 
 // ── Hari Persekolahan ────────────────────
@@ -2567,6 +2569,7 @@ function enterApp(user) {
   setTodayDates();
   scheduleIdleWork(async function() {
     await loadBackendOperationalConfig(true);
+        showPremiumLaunchSplash(false);
     refreshDashboard();
     semakNotifGuruBertugasMingguDepan();
     applyKawalanAkses();
@@ -13404,14 +13407,22 @@ async function janaLembaranKerja() {
       } else {
         // DeepSeek: cuba streaming dahulu supaya teks muncul sedikit demi sedikit
         // Fallback automatik ke callWorkerAI jika Worker belum sokong /ai/stream
+        var _lastDOMUpdate = 0;
         result = await callWorkerAIStream(prompt, 'lembaran_kerja', function(partialText) {
           if (_lkCancelled) return;
-          var processedPartial = lkPostProcessOutput(partialText);
-          var lkBox = document.getElementById('lkOutputBox');
-          if (lkBox) {
-            lkBox.innerHTML = '<div class="lk-stream-indicator" style="font-size:.78rem;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed rgba(0,0,0,.1)">⚡ Streaming... teks muncul semasa AI menjana</div>' +
-              '<div class="lk-pp-content">' + processedPartial + '</div>';
-            lkBox.scrollTop = lkBox.scrollHeight;
+          
+          // PRESTASI: Melambat (Throttle) kemaskini DOM ke setiap 150ms
+          // Mengelakkan browser "freeze" dan penggunaan CPU/RAM melampau
+          var now = Date.now();
+          if (now - _lastDOMUpdate > 150) {
+            var processedPartial = lkPostProcessOutput(partialText);
+            var lkBox = document.getElementById('lkOutputBox');
+            if (lkBox) {
+              lkBox.innerHTML = '<div class="lk-stream-indicator" style="font-size:.78rem;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed rgba(0,0,0,.1)">⚡ Streaming... teks muncul semasa AI menjana</div>' +
+                '<div class="lk-pp-content">' + processedPartial + '</div>';
+              lkBox.scrollTop = lkBox.scrollHeight;
+            }
+            _lastDOMUpdate = now;
           }
         });
       }
@@ -14658,6 +14669,7 @@ async function lkJanaImej() {
   });
 })();
 
+<<<<<<< HEAD
 // ── Splash Perasmian Config ───────────────────────────────────────────────
 function muatSplashConfigUI() {
   var tarikh = localStorage.getItem('SPLASH_CFG_TARIKH') || '';
@@ -14736,5 +14748,141 @@ async function checkAndShowSplash(user) {
   /* 4. Tunjuk splash perasmian */
   if (typeof window.showSplashPerasmian === 'function') {
     window.showSplashPerasmian(false);
+=======
+// ── PELANCARAN SPLASH SCREEN (LAUNCH DATE) ─────────────────────
+function showPremiumLaunchSplash(isPreview) {
+  let targetDateStr = isPreview ? (document.getElementById('configLaunchDate').value || getRuntimeConfig().launchDate) : APP.launchDate;
+  if (!targetDateStr && !isPreview) return;
+  
+  let targetDate = new Date(targetDateStr).getTime();
+  let now = Date.now();
+  
+  // Jangan tunjuk jika sudah melepasi waktu (kecuali preview)
+  if (!isPreview && (isNaN(targetDate) || targetDate <= now)) return;
+  
+  let splash = document.getElementById('premiumLaunchSplash');
+  if (!splash) {
+    splash = document.createElement('div');
+    splash.id = 'premiumLaunchSplash';
+    document.body.appendChild(splash);
+  }
+  
+  splash.style.display = 'flex';
+  splash.innerHTML = `
+    <div class="pls-backdrop"></div>
+    <div class="pls-orbs">
+      <div class="pls-orb pls-orb-1"></div>
+      <div class="pls-orb pls-orb-2"></div>
+    </div>
+    <div class="pls-content">
+      <div class="pls-logo-wrapper">
+        <img src="assets/sk-kiandongo-logo.png" onerror="this.src='assets/logo.png'" alt="Logo" class="pls-logo">
+      </div>
+      <h1 class="pls-title">SMART SCHOOL HUB 2.0</h1>
+      <p class="pls-subtitle">Pelancaran Sistem Pengurusan Sekolah Pintar</p>
+      
+      <div class="pls-countdown" id="plsCountdown">
+        <div class="pls-time-box"><span id="plsDays">00</span><small>HARI</small></div>
+        <div class="pls-time-box"><span id="plsHours">00</span><small>JAM</small></div>
+        <div class="pls-time-box"><span id="plsMins">00</span><small>MINIT</small></div>
+        <div class="pls-time-box"><span id="plsSecs">00</span><small>SAAT</small></div>
+      </div>
+      
+      ${isPreview ? '<button class="btn btn-primary" style="margin-top:40px; z-index:10; position:relative; min-width:200px;" onclick="tutupPremiumSplash()">Tutup Preview</button>' : ''}
+      ${isPentadbir() && !isPreview ? '<button class="btn btn-secondary" style="margin-top:40px; z-index:10; position:relative; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2);" onclick="tutupPremiumSplash()">Bypass (Admin)</button>' : ''}
+    </div>
+  `;
+  
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      splash.classList.add('active');
+    });
+  });
+  
+  if (window._plsInterval) clearInterval(window._plsInterval);
+  
+  function update() {
+    let n = Date.now();
+    let diff = targetDate - n;
+    if (diff <= 0 && !isPreview) {
+      clearInterval(window._plsInterval);
+      tutupPremiumSplash();
+      return;
+    }
+    if (diff <= 0 && isPreview) diff = 0;
+    
+    let d = Math.floor(diff / (1000 * 60 * 60 * 24));
+    let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    let s = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    const setPls = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = String(val).padStart(2, '0'); };
+    setPls('plsDays', d); setPls('plsHours', h); setPls('plsMins', m); setPls('plsSecs', s);
+  }
+  
+  update();
+  window._plsInterval = setInterval(update, 1000);
+}
+
+function tutupPremiumSplash() {
+  const splash = document.getElementById('premiumLaunchSplash');
+  if (splash) {
+    splash.classList.remove('active');
+    setTimeout(() => { splash.style.display = 'none'; }, 800);
+  }
+  if (window._plsInterval) clearInterval(window._plsInterval);
+}
+
+function renderLaunchConfigUI() {
+  let container = document.getElementById('configLaunchContainer');
+  if (!container) {
+    const grid = document.querySelector('#mod-konfigurasi .config-grid');
+    if (!grid) return;
+    container = document.createElement('div');
+    container.id = 'configLaunchContainer';
+    container.className = 'card config-section-card animate-fade-up';
+    container.setAttribute('data-config-group', 'lanjutan'); 
+    grid.appendChild(container);
+  }
+  const currentLaunch = _backendConfigCache && _backendConfigCache.LAUNCH_DATE !== undefined ? _backendConfigCache.LAUNCH_DATE : (getRuntimeConfig().launchDate || '');
+  container.innerHTML = `
+    <div class="section-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="stat-icon gold" style="width:42px;height:42px;font-size:1.2rem;"><span style="transform:translateY(1px)">🚀</span></div>
+        <div>
+          <h2 style="font-size:1.1rem;margin:0;">Tetapan Pelancaran</h2>
+          <div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Kawal akses dengan Splash Screen premium</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom: 20px;">
+      <label>Tarikh & Masa Pelancaran</label>
+      <input type="datetime-local" id="configLaunchDate" value="${currentLaunch}">
+      <small style="display:block;margin-top:6px;color:var(--muted);font-size:0.8rem;line-height:1.5;">Biarkan kosong atau set pada tarikh lepas untuk terus buka sistem. Jika diset pada masa hadapan, sistem akan dikunci dengan Countdown Timer (Admin masih boleh bypass).</small>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="simpanTarikhPelancaran()" style="flex:1;justify-content:center;">💾 Simpan Tarikh</button>
+      <button class="btn btn-secondary" onclick="showPremiumLaunchSplash(true)" style="flex:1;justify-content:center;">👀 Preview Design</button>
+    </div>
+  `;
+}
+
+async function simpanTarikhPelancaran() {
+  const el = document.getElementById('configLaunchDate');
+  if (!el) return;
+  const val = el.value;
+  if (!APP.workerUrl) {
+    showToast('Worker URL diperlukan untuk simpan ke backend.', 'error');
+    return;
+  }
+  try {
+    const res = await callWorker({ action: 'setConfig', config: { LAUNCH_DATE: val } });
+    if (!res.success) throw new Error(res.error || 'Gagal menyimpan tarikh pelancaran.');
+    APP.launchDate = val;
+    if (_backendConfigCache) _backendConfigCache.LAUNCH_DATE = val;
+    showToast('Tarikh pelancaran berjaya disimpan!', 'success');
+  } catch (e) {
+    showToast(e.message, 'error');
+>>>>>>> 014c69919f167e779707ff3a243d887dad9ee439
   }
 }

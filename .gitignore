@@ -55,3 +55,7 @@ Thumbs.db
 
 # Claude Code worktrees
 .claude/worktrees/
+
+# Batch scripts
+/Jana-Minify.bat
+/minify.bat
