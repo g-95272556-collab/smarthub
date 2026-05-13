@@ -14669,7 +14669,6 @@ async function lkJanaImej() {
   });
 })();
 
-<<<<<<< HEAD
 // ── Splash Perasmian Config ───────────────────────────────────────────────
 function muatSplashConfigUI() {
   var tarikh = localStorage.getItem('SPLASH_CFG_TARIKH') || '';
@@ -14748,25 +14747,27 @@ async function checkAndShowSplash(user) {
   /* 4. Tunjuk splash perasmian */
   if (typeof window.showSplashPerasmian === 'function') {
     window.showSplashPerasmian(false);
-=======
+  }
+}
+
 // ── PELANCARAN SPLASH SCREEN (LAUNCH DATE) ─────────────────────
 function showPremiumLaunchSplash(isPreview) {
   let targetDateStr = isPreview ? (document.getElementById('configLaunchDate').value || getRuntimeConfig().launchDate) : APP.launchDate;
   if (!targetDateStr && !isPreview) return;
-  
+
   let targetDate = new Date(targetDateStr).getTime();
   let now = Date.now();
-  
+
   // Jangan tunjuk jika sudah melepasi waktu (kecuali preview)
   if (!isPreview && (isNaN(targetDate) || targetDate <= now)) return;
-  
+
   let splash = document.getElementById('premiumLaunchSplash');
   if (!splash) {
     splash = document.createElement('div');
     splash.id = 'premiumLaunchSplash';
     document.body.appendChild(splash);
   }
-  
+
   splash.style.display = 'flex';
   splash.innerHTML = `
     <div class="pls-backdrop"></div>
@@ -14780,27 +14781,27 @@ function showPremiumLaunchSplash(isPreview) {
       </div>
       <h1 class="pls-title">SMART SCHOOL HUB 2.0</h1>
       <p class="pls-subtitle">Pelancaran Sistem Pengurusan Sekolah Pintar</p>
-      
+
       <div class="pls-countdown" id="plsCountdown">
         <div class="pls-time-box"><span id="plsDays">00</span><small>HARI</small></div>
         <div class="pls-time-box"><span id="plsHours">00</span><small>JAM</small></div>
         <div class="pls-time-box"><span id="plsMins">00</span><small>MINIT</small></div>
         <div class="pls-time-box"><span id="plsSecs">00</span><small>SAAT</small></div>
       </div>
-      
+
       ${isPreview ? '<button class="btn btn-primary" style="margin-top:40px; z-index:10; position:relative; min-width:200px;" onclick="tutupPremiumSplash()">Tutup Preview</button>' : ''}
       ${isPentadbir() && !isPreview ? '<button class="btn btn-secondary" style="margin-top:40px; z-index:10; position:relative; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2);" onclick="tutupPremiumSplash()">Bypass (Admin)</button>' : ''}
     </div>
   `;
-  
+
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       splash.classList.add('active');
     });
   });
-  
+
   if (window._plsInterval) clearInterval(window._plsInterval);
-  
+
   function update() {
     let n = Date.now();
     let diff = targetDate - n;
@@ -14810,16 +14811,16 @@ function showPremiumLaunchSplash(isPreview) {
       return;
     }
     if (diff <= 0 && isPreview) diff = 0;
-    
+
     let d = Math.floor(diff / (1000 * 60 * 60 * 24));
     let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     let s = Math.floor((diff % (1000 * 60)) / 1000);
-    
+
     const setPls = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = String(val).padStart(2, '0'); };
     setPls('plsDays', d); setPls('plsHours', h); setPls('plsMins', m); setPls('plsSecs', s);
   }
-  
+
   update();
   window._plsInterval = setInterval(update, 1000);
 }
@@ -14841,7 +14842,7 @@ function renderLaunchConfigUI() {
     container = document.createElement('div');
     container.id = 'configLaunchContainer';
     container.className = 'card config-section-card animate-fade-up';
-    container.setAttribute('data-config-group', 'lanjutan'); 
+    container.setAttribute('data-config-group', 'lanjutan');
     grid.appendChild(container);
   }
   const currentLaunch = _backendConfigCache && _backendConfigCache.LAUNCH_DATE !== undefined ? _backendConfigCache.LAUNCH_DATE : (getRuntimeConfig().launchDate || '');
@@ -14883,6 +14884,5 @@ async function simpanTarikhPelancaran() {
     showToast('Tarikh pelancaran berjaya disimpan!', 'success');
   } catch (e) {
     showToast(e.message, 'error');
->>>>>>> 014c69919f167e779707ff3a243d887dad9ee439
   }
 }
