@@ -2576,6 +2576,9 @@ function enterApp(user) {
   applyKawalanAkses();
   updateNotifAutoStatusUI();
   updateHLNotifStatusUI();
+
+  /* Semak & papar splash perasmian jika GB dan belum dirasmi */
+  checkAndShowSplash(user).catch(function () {});
 }
 
 function applyKawalanAkses() {
@@ -2626,7 +2629,7 @@ function showModule(id) {
   if (isMobileViewport()) closeMobileNav();
   if (id === 'kehadiran-guru') setTimeout(function(){ initKehadiranGuruModule(); }, 300);
   if (id === 'amaran-kehadiran') { muatAmaranSekolahConfigUI(); loadAmaranKehadiran(); }
-  if (id === 'konfigurasi') { initConfigGroups(); loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); updateAttendanceNotificationStatusUI(); loadConfig(); }
+  if (id === 'konfigurasi') { initConfigGroups(); loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); updateAttendanceNotificationStatusUI(); loadConfig(); muatSplashConfigUI(); }
   if (id === 'notifikasi') {
     updateNotifAutoStatusUI();
     var notifTarikhEl = document.getElementById('notifTarikh');
@@ -14654,3 +14657,84 @@ async function lkJanaImej() {
     if (e.target === palette) closePalette();
   });
 })();
+
+// ── Splash Perasmian Config ───────────────────────────────────────────────
+function muatSplashConfigUI() {
+  var tarikh = localStorage.getItem('SPLASH_CFG_TARIKH') || '';
+  var versi  = localStorage.getItem('SPLASH_CFG_VERSI')  || (window.SMARTSCHOOLHUB_RUNTIME_CONFIG && window.SMARTSCHOOLHUB_RUNTIME_CONFIG.appVersion) || '2.0';
+  var gb     = localStorage.getItem('AMARAN_CFG_GB')     || '';
+  var elT = document.getElementById('cfg-splash-tarikh');
+  var elV = document.getElementById('cfg-splash-versi');
+  var elG = document.getElementById('cfg-splash-gb');
+  if (elT) elT.value = tarikh;
+  if (elV) elV.value = versi;
+  if (elG) elG.value = gb;
+  /* Status */
+  var statusEl = document.getElementById('splashStatusText');
+  if (statusEl) {
+    var launched = localStorage.getItem('smarthubLaunched') === '1';
+    statusEl.textContent = launched ? '✅ Sudah dirasmi pada peranti ini' : '⏳ Belum dirasmi';
+    statusEl.style.color = launched ? '#16a34a' : '#92400e';
+  }
+}
+
+function simpanSplashConfig() {
+  var elT = document.getElementById('cfg-splash-tarikh');
+  var elV = document.getElementById('cfg-splash-versi');
+  var elG = document.getElementById('cfg-splash-gb');
+  if (elT && elT.value) localStorage.setItem('SPLASH_CFG_TARIKH', elT.value.trim());
+  if (elV && elV.value) localStorage.setItem('SPLASH_CFG_VERSI',  elV.value.trim());
+  if (elG) {
+    if (elG.value.trim()) localStorage.setItem('AMARAN_CFG_GB', elG.value.trim());
+    else localStorage.removeItem('AMARAN_CFG_GB');
+  }
+  showToast('Tetapan splash perasmian disimpan.', 'success');
+}
+
+function resetSplashLaunch() {
+  localStorage.removeItem('smarthubLaunched');
+  var statusEl = document.getElementById('splashStatusText');
+  if (statusEl) { statusEl.textContent = '⏳ Belum dirasmi'; statusEl.style.color = '#92400e'; }
+  showToast('Status perasmian direset. Log keluar dan log masuk semula sebagai GB untuk lihat splash.', 'info');
+}
+
+function previewSplashPerasmian() {
+  if (typeof window.showSplashPerasmian === 'function') {
+    window.showSplashPerasmian(true); /* true = preview mode */
+  } else {
+    showToast('Splash tidak tersedia. Muat semula halaman.', 'error');
+  }
+}
+
+async function checkAndShowSplash(user) {
+  if (!user) return;
+  /* 1. Sudah dirasmi — skip */
+  if (localStorage.getItem('smarthubLaunched') === '1') return;
+
+  /* 2. Semak tarikh pelancaran */
+  var runtimeConfig = window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {};
+  var lsTarikh = ''; try { lsTarikh = (localStorage.getItem('SPLASH_CFG_TARIKH') || '').trim(); } catch(e) {}
+  var launchDate = lsTarikh || String(runtimeConfig.launchDate || '').trim();
+  if (launchDate) {
+    var today = new Date().toISOString().slice(0, 10);
+    if (today < launchDate) return;
+  }
+
+  /* 3. Sahkan pengguna adalah Guru Besar */
+  var isGB = false;
+  try {
+    var gurus = await getGuruList();
+    var userEmail = String(user.email || '').trim().toLowerCase();
+    var gbRekod = (gurus || []).find(function (g) {
+      return String(g.jawatan || '').toLowerCase().includes('guru besar') &&
+             String(g.emel || '').trim().toLowerCase() === userEmail;
+    });
+    isGB = !!gbRekod;
+  } catch (e) { isGB = false; }
+  if (!isGB) return;
+
+  /* 4. Tunjuk splash perasmian */
+  if (typeof window.showSplashPerasmian === 'function') {
+    window.showSplashPerasmian(false);
+  }
+}

@@ -77,7 +77,7 @@
 
     <!-- Elegant GB Card -->
     <div class="splash-rv splash-gb-card">
-      <div class="splash-gb-label">Yang Berhormat Guru Besar</div>
+      <div class="splash-gb-label">Yang Berusaha Tuan Guru Besar</div>
       <div id="splashGBName" class="splash-gb-name">——————————————</div>
       <div class="splash-gb-sub">SK Kiandongo, Tongod, Sabah</div>
     </div>
@@ -96,7 +96,7 @@
   <!-- Skrin Perasmian Rasmi -->
   <div id="splashPerasmian">
     <div class="splash-prs-inner">
-      <div class="splash-prs-proklamasi">PERASMIAN RASMI</div>
+      <div class="splash-prs-proklamasi">PELANCARAN RASMI</div>
       <div class="splash-prs-appname">SmartSchool<span class="prs-gold">Hub</span></div>
       <div class="splash-prs-appdesc">Sistem Pengurusan Sekolah Pintar Bersepadu</div>
       <div class="splash-prs-divider"></div>
@@ -114,9 +114,11 @@
 
   <!-- Celebration -->
   <div id="splashCelebration">
-    <div id="splashCelebTitle" class="splash-celeb-title"></div>
-    <div class="splash-celeb-sub">SmartSchoolHub SK Kiandongo<br>kini aktif secara rasmi.</div>
-    <div class="splash-celeb-note">Memulakan sistem...</div>
+    <div class="splash-celeb-card">
+      <div id="splashCelebTitle" class="splash-celeb-title"></div>
+      <div class="splash-celeb-sub">SmartSchoolHub SK Kiandongo<br>kini aktif secara rasmi.</div>
+      <div class="splash-celeb-note">Memulakan sistem...</div>
+    </div>
   </div>
 </div>
 
@@ -124,7 +126,7 @@
 /* ─── Splash Screen Grand Edition ───────────────────────────────── */
 #splashLaunch {
   position: fixed; inset: 0; z-index: 99999;
-  display: flex; align-items: center; justify-content: center;
+  display: none; align-items: center; justify-content: center;
   overflow: hidden;
   background-color: #050a15;
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -369,21 +371,36 @@
 #splashCelebration {
   display: none; position: absolute; inset: 0; z-index: 9;
   align-items: center; justify-content: center; flex-direction: column;
-  pointer-events: none; gap: 16px;
+  pointer-events: none;
+}
+.splash-celeb-card {
+  background: rgba(5, 10, 21, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 28px;
+  padding: 44px 52px 36px;
+  text-align: center;
+  max-width: 520px;
+  width: 88%;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.06);
+  display: flex; flex-direction: column; gap: 14px;
 }
 .splash-celeb-title {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 36pt; font-weight: 800; text-align: center;
+  font-size: 30pt; font-weight: 800; text-align: center;
   background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
   -webkit-background-clip: text;
   background-clip: text; color: transparent;
-  filter: drop-shadow(0 10px 40px rgba(255, 215, 0, 0.5));
+  filter: drop-shadow(0 4px 12px rgba(255, 215, 0, 0.6));
+  line-height: 1.2;
 }
 .splash-celeb-sub {
-  font-size: 14pt; color: #fff; text-align: center; line-height: 1.6; opacity: 0.95;
+  font-size: 13pt; color: #fff; text-align: center; line-height: 1.7;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
 }
 .splash-celeb-note {
-  font-size: 9.5pt; color: rgba(255, 255, 255, 0.4); margin-top: 8px;
+  font-size: 9pt; color: rgba(255, 255, 255, 0.5); letter-spacing: 1px;
 }
 
 /* Animations */
@@ -402,115 +419,140 @@
 
 <script>
 /* ── Splash: semak flag SEGERA sebelum page render ── */
-(function () {
-  /* ── 1. Sudah dilancarkan — buang terus ── */
-  if (localStorage.getItem('smarthubLaunched') === '1') {
-    document.addEventListener('DOMContentLoaded', function () {
-      var el = document.getElementById('splashLaunch');
-      if (el && el.parentNode) el.parentNode.removeChild(el);
-    });
-    return;
+/* ── Splash dipaparkan SELEPAS login — dipanggil oleh app.js (checkAndShowSplash) ── */
+window.showSplashPerasmian = function (previewMode) {
+  var splash = document.getElementById('splashLaunch');
+  if (!splash) return;
+
+  /* Reset state sekiranya dipanggil semula (preview) */
+  splash.style.opacity = '1';
+  splash.style.display = 'flex';
+  var card = document.getElementById('splashCard');
+  if (card) { card.style.opacity = '1'; card.style.transition = ''; }
+  var prs = document.getElementById('splashPerasmian');
+  if (prs) { prs.style.display = 'none'; prs.style.opacity = '1'; }
+  var celeb = document.getElementById('splashCelebration');
+  if (celeb) { celeb.style.display = 'none'; }
+  var flash = document.getElementById('splashFlash');
+  if (flash) { flash.style.opacity = '0'; flash.style.transition = ''; }
+  var btn = document.getElementById('splashBtn');
+  if (btn) { btn.disabled = false; var bt = btn.querySelector('.btn-text'); if (bt) bt.textContent = 'RASMIKAN SEKARANG'; }
+
+  /* Preview badge */
+  var prevBadge = document.getElementById('splashPreviewBadge');
+  if (previewMode) {
+    if (!prevBadge) {
+      prevBadge = document.createElement('div');
+      prevBadge.id = 'splashPreviewBadge';
+      prevBadge.style.cssText = 'position:absolute;top:18px;right:18px;z-index:10;background:rgba(255,100,0,0.85);color:#fff;font-size:8pt;font-weight:700;letter-spacing:2px;padding:5px 12px;border-radius:999px;text-transform:uppercase';
+      prevBadge.textContent = 'PREVIEW';
+      splash.appendChild(prevBadge);
+    }
+    /* Butang tutup preview */
+    var closeBtn = document.getElementById('splashClosePreview');
+    if (!closeBtn) {
+      closeBtn = document.createElement('button');
+      closeBtn.id = 'splashClosePreview';
+      closeBtn.style.cssText = 'position:absolute;top:18px;left:18px;z-index:10;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:8.5pt;padding:6px 14px;border-radius:999px;cursor:pointer';
+      closeBtn.textContent = '✕ Tutup Preview';
+      closeBtn.onclick = function() {
+        splash.style.transition = 'opacity 0.4s ease';
+        splash.style.opacity = '0';
+        setTimeout(function(){ splash.style.display = 'none'; splash.style.transition = ''; splash.style.opacity = '1'; }, 400);
+        if (window._splashRaf) { cancelAnimationFrame(window._splashRaf); window._splashRaf = null; }
+        try { splashAudioFadeOut(); } catch(e) {}
+      };
+      splash.appendChild(closeBtn);
+    }
+  } else {
+    if (prevBadge) prevBadge.remove();
+    var cb = document.getElementById('splashClosePreview');
+    if (cb) cb.remove();
   }
 
-  /* ── 2. Belum sampai tarikh pelancaran — buang terus, deploy bebas ── */
-  var runtimeConfig = window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {};
-  var LAUNCH_DATE = String(runtimeConfig.launchDate || '2026-06-08').trim(); /* fallback: 8 Jun 2026 */
-  var today = new Date().toISOString().slice(0, 10);
-  if (LAUNCH_DATE && today < LAUNCH_DATE) {
-    document.addEventListener('DOMContentLoaded', function () {
-      var el = document.getElementById('splashLaunch');
-      if (el && el.parentNode) el.parentNode.removeChild(el);
-    });
-    return;
+  /* Butang mute audio */
+  var muteBtn = document.getElementById('splashMuteBtn');
+  if (!muteBtn) {
+    muteBtn = document.createElement('button');
+    muteBtn.id = 'splashMuteBtn';
+    muteBtn.textContent = '🔊';
+    muteBtn.title = 'Senyap / Buka Bunyi';
+    muteBtn.style.cssText = 'position:absolute;bottom:22px;right:22px;z-index:10;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);color:#fff;font-size:16px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;padding:0;line-height:1';
+    muteBtn.onclick = function() { try { splashToggleMute(); } catch(e) {} };
+    splash.appendChild(muteBtn);
+  } else {
+    muteBtn.textContent = '🔊';
+    _splashAudio.muted = false;
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    /* Tarikh */
-    var t = new Date();
-    var HARI  = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
-    var BULAN = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
-    var tEl = document.getElementById('splashTarikh');
-    if (tEl) tEl.textContent = HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
+  /* Mulakan audio ambient */
+  try { splashAudioInit(); setTimeout(function(){ splashPlayAmbient(); }, 800); } catch(e) {}
 
-    /* Versi app dari config */
-    var verEl = document.getElementById('splashVer');
-    var cfgVer = (window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).appVersion;
-    if (verEl && cfgVer) verEl.textContent = 'Versi ' + cfgVer + '  ·  ' + verEl.textContent.split('·').pop().trim();
+  /* Tarikh */
+  var t = new Date();
+  var HARI  = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+  var BULAN = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+  var tEl = document.getElementById('splashTarikh');
+  if (tEl) tEl.textContent = HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
 
-    /* Nama GB — pull dari data guru (jawatan = Guru Besar) */
-    (function () {
-      var el = document.getElementById('splashGBName');
-      if (!el) return;
-      /* 1. Override manual dalam runtime-config.js */
-      var cfgGb = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
-      if (cfgGb) { el.textContent = cfgGb; return; }
-      /* 2. Tetapan surat amaran (localStorage) */
-      var lsGb = '';
-      try { lsGb = (localStorage.getItem('AMARAN_CFG_GB') || '').trim(); } catch(e) {}
-      if (lsGb) el.textContent = lsGb;
-      /* 3. Poll getGuruBesarNameFromData dari data guru (app.js defer) */
-      var tries = 0;
-      var t = setInterval(function () {
-        tries++;
-        if (typeof window.getGuruBesarNameFromData === 'function') {
-          clearInterval(t);
-          window.getGuruBesarNameFromData().then(function (nama) {
-            var cur = document.getElementById('splashGBName');
-            if (cur && nama) cur.textContent = nama;
-          }).catch(function () {});
-          return;
-        }
-        /* 4. Fallback terakhir: profil log masuk */
-        var n = (window.APP && window.APP.userProfile && window.APP.userProfile.name) || '';
-        if (n && !lsGb) { el.textContent = n; }
-        if (tries > 40) clearInterval(t);
-      }, 500);
-    })();
+  /* Versi */
+  var cfgVer = '';
+  try { cfgVer = (localStorage.getItem('SPLASH_CFG_VERSI') || '').trim() || ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).appVersion || ''); } catch(e) {}
+  var verEl = document.getElementById('splashVer');
+  if (verEl && cfgVer) verEl.textContent = 'Versi ' + cfgVer + '  ·  ' + HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
 
-    /* Sequential reveal — stagger tiap elemen */
-    var rvEls = document.querySelectorAll('#splashCard .splash-rv');
-    rvEls.forEach(function (el, i) {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(20px)';
-      el.style.transition = 'opacity 0.55s ease, transform 0.55s ease';
-      setTimeout(function () {
-        el.style.opacity = '1';
-        el.style.transform = 'translateY(0)';
-      }, 250 + i * 110);
-    });
-
-    /* Starfield twinkling */
-    var canvas = document.getElementById('splashCanvas');
-    if (!canvas) return;
-    function rsz() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    rsz();
-    window.addEventListener('resize', rsz);
-    var ctx = canvas.getContext('2d');
-    var stars = [];
-    for (var i = 0; i < 140; i++) {
-      stars.push({
-        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-        r: Math.random() * 1.6 + 0.3,
-        phase: Math.random() * Math.PI * 2,
-        spd: Math.random() * 0.013 + 0.004,
-        gold: Math.random() > 0.62
-      });
+  /* Nama GB */
+  (function () {
+    var el = document.getElementById('splashGBName');
+    if (!el) return;
+    var cfgGb = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
+    if (cfgGb) { el.textContent = cfgGb; return; }
+    var lsGb = ''; try { lsGb = (localStorage.getItem('AMARAN_CFG_GB') || '').trim(); } catch(e) {}
+    if (lsGb) el.textContent = lsGb;
+    if (typeof window.getGuruBesarNameFromData === 'function') {
+      window.getGuruBesarNameFromData().then(function (nama) {
+        var cur = document.getElementById('splashGBName');
+        if (cur && nama) cur.textContent = nama;
+      }).catch(function () {});
+    } else if (!lsGb && window.APP && window.APP.user) {
+      el.textContent = (window.APP.user.name || '');
     }
-    var raf;
-    function animStars(ts) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      stars.forEach(function (s) {
-        var a = 0.12 + 0.55 * Math.abs(Math.sin(s.phase + (ts || 0) * s.spd * 0.01));
-        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = s.gold ? 'rgba(255,215,0,' + a + ')' : 'rgba(155,210,255,' + a + ')';
-        ctx.fill();
-      });
-      raf = requestAnimationFrame(animStars);
-    }
-    animStars();
-    window._splashRaf = raf;
+  })();
+
+  /* Sequential reveal */
+  var rvEls = document.querySelectorAll('#splashCard .splash-rv');
+  rvEls.forEach(function (el, i) {
+    el.style.opacity = '0'; el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.55s ease, transform 0.55s ease';
+    setTimeout(function () { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; }, 250 + i * 110);
   });
-})();
+
+  /* Starfield */
+  if (window._splashRaf) { cancelAnimationFrame(window._splashRaf); window._splashRaf = null; }
+  var canvas = document.getElementById('splashCanvas');
+  if (!canvas) return;
+  function rsz() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  rsz();
+  window.addEventListener('resize', rsz);
+  var ctx = canvas.getContext('2d');
+  var stars = [];
+  for (var i = 0; i < 140; i++) {
+    stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+      r: Math.random()*1.6+0.3, phase: Math.random()*Math.PI*2,
+      spd: Math.random()*0.013+0.004, gold: Math.random()>0.62 });
+  }
+  function animStars(ts) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(function (s) {
+      var a = 0.12 + 0.55 * Math.abs(Math.sin(s.phase + (ts||0) * s.spd * 0.01));
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = s.gold ? 'rgba(255,215,0,'+a+')' : 'rgba(155,210,255,'+a+')';
+      ctx.fill();
+    });
+    window._splashRaf = requestAnimationFrame(animStars);
+  }
+  animStars();
+};
 
 /* ── Fungsi Rasmikan ─────────────────────────────────────────────── */
 function splashRasmikan() {
@@ -573,8 +615,9 @@ function splashRasmikan() {
         setTimeout(function () { flash.style.transition = 'opacity 0.55s ease'; flash.style.opacity = '0'; }, 80);
       }
 
-      /* Fireworks + Confetti mula selepas kad perasmian muncul */
+      /* Fanfare + Fireworks + Confetti mula selepas kad perasmian muncul */
       setTimeout(function () {
+        try { splashPlayFanfare(); } catch(e) {}
         splashDoFireworks();
         splashDoConfetti();
       }, 600);
@@ -594,17 +637,18 @@ function splashRasmikan() {
         }, 500);
       }, 4500);
 
-      /* Fade out keseluruhan splash & buang dari DOM */
+      /* Fade out keseluruhan splash & buang dari DOM — pause 8 saat selepas celebration */
       setTimeout(function () {
         var splash = document.getElementById('splashLaunch');
         if (!splash) return;
+        try { splashAudioFadeOut(); } catch(e) {}
         splash.style.transition = 'opacity 1.2s ease';
         splash.style.opacity = '0';
         setTimeout(function () {
           if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
           if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
         }, 1200);
-      }, 9000);
+      }, 14000); /* 4500ms (perasmian screen) + 1000ms (transition) + 8000ms (pause) = ~13500 */
     }, 600);
 
   }, 700);
@@ -641,69 +685,393 @@ function splashDoFireworks() {
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
   if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
-  var COLS = ['#ffd700','#ff4455','#44ee88','#4499ff','#ff88cc','#ffaa00','#00ffcc','#fff','#ff6600','#ee44ff'];
-  var fw = [];
-  function burst(x, y, n) {
-    n = n || 90;
+  var W = canvas.width, H = canvas.height;
+  var particles = [];
+
+  /* ── Palet warna premium ── */
+  var PAL = {
+    gold:    ['#ffd700','#ffe566','#fff4b0','#ffec80','#ffc200'],
+    silver:  ['#ffffff','#e8f4ff','#c8e6ff','#a0d0ff','#ddeeff'],
+    rose:    ['#ffb3cc','#ffccdd','#ff88aa','#ffaabb','#ee6699'],
+    mint:    ['#88ffee','#aaffdd','#55eedd','#ccfff4','#00ddbb'],
+    violet:  ['#cc99ff','#ddb8ff','#bb77ff','#eeddff','#9944ee'],
+    champagne:['#f7e7ce','#eedcba','#fff4e0','#ffeac0','#e8c87a'],
+  };
+  var PALS = [PAL.gold, PAL.silver, PAL.rose, PAL.mint, PAL.violet, PAL.champagne];
+
+  /* ── Jenis letupan ── */
+  function burstCircular(x, y, pal, n, spd) {
+    n = n || 80; spd = spd || 1;
     for (var i = 0; i < n; i++) {
-      var ang = (Math.PI*2/n)*i + (Math.random()-0.5)*0.5;
-      var spd = Math.random()*8+2.5;
-      fw.push({ x:x, y:y, dx:Math.cos(ang)*spd, dy:Math.sin(ang)*spd,
-        r:Math.random()*3.5+0.8, c:COLS[Math.floor(Math.random()*COLS.length)], a:1, g:0.11 });
+      var ang = (Math.PI*2/n)*i + (Math.random()-0.5)*0.25;
+      var s = (Math.random()*3+3)*spd;
+      particles.push({ x:x, y:y, dx:Math.cos(ang)*s, dy:Math.sin(ang)*s,
+        r:Math.random()*2+0.8, a:1, fade:0.007+Math.random()*0.005, g:0.055,
+        c:pal[i%pal.length], trail:[], mt:5 });
     }
   }
-  var cx = canvas.width/2, cy = canvas.height/2;
-  burst(cx, cy*0.38, 130);
-  setTimeout(function(){ burst(cx*0.25, cy*0.55); }, 300);
-  setTimeout(function(){ burst(cx*1.75, cy*0.55); }, 520);
-  setTimeout(function(){ burst(cx, cy*0.28, 115); }, 780);
-  setTimeout(function(){ burst(cx*0.4, cy*0.68); burst(cx*1.6, cy*0.48); }, 1050);
-  setTimeout(function(){ burst(cx, cy*0.42, 120); }, 1380);
-  setTimeout(function(){ burst(cx*0.28, cy*0.38); burst(cx*1.72, cy*0.65); }, 1700);
-  setTimeout(function(){ burst(cx, cy*0.32, 110); }, 2050);
-  function animFw() {
-    ctx.fillStyle = 'rgba(3,7,30,0.11)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    fw = fw.filter(function (p) {
-      p.x+=p.dx; p.y+=p.dy; p.dy+=p.g; p.a-=0.012;
-      if (p.a<=0) return false;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle=p.c; ctx.globalAlpha=p.a; ctx.fill(); ctx.globalAlpha=1;
+
+  function burstChrysanthemum(x, y, pal) {
+    [1.0, 0.62, 0.38].forEach(function(sp, wi) {
+      setTimeout(function() {
+        var n = 52 - wi*10;
+        for (var i = 0; i < n; i++) {
+          var ang = (Math.PI*2/n)*i;
+          var s = (Math.random()*1.5+4)*sp;
+          particles.push({ x:x, y:y, dx:Math.cos(ang)*s, dy:Math.sin(ang)*s-0.3,
+            r:Math.random()*1.8+0.6, a:1, fade:0.005+Math.random()*0.004, g:0.045,
+            c:pal[wi%pal.length], trail:[], mt:7 });
+        }
+      }, wi*90);
+    });
+  }
+
+  function burstRing(x, y, pal) {
+    var n = 55, s = 7.5;
+    for (var i = 0; i < n; i++) {
+      var ang = (Math.PI*2/n)*i;
+      particles.push({ x:x, y:y, dx:Math.cos(ang)*s, dy:Math.sin(ang)*s,
+        r:2.2, a:1, fade:0.008, g:0.04, c:pal[0], trail:[], mt:4 });
+    }
+    /* pusat berkilat */
+    for (var j = 0; j < 25; j++) {
+      var a2 = Math.random()*Math.PI*2, s2 = Math.random()*2.5+0.5;
+      particles.push({ x:x, y:y, dx:Math.cos(a2)*s2, dy:Math.sin(a2)*s2-0.5,
+        r:Math.random()*1.2+0.4, a:1, fade:0.018, g:0.07, c:'#ffffff', trail:[], mt:3 });
+    }
+  }
+
+  function burstStar(x, y, pal) {
+    for (var arm = 0; arm < 5; arm++) {
+      var base = (Math.PI*2/5)*arm - Math.PI/2;
+      for (var i = 0; i < 14; i++) {
+        var t = i/13;
+        var ang = base + (t-0.5)*0.22;
+        var s = 3 + (1-Math.abs(t-0.5)*2)*5.5;
+        particles.push({ x:x, y:y, dx:Math.cos(ang)*s, dy:Math.sin(ang)*s,
+          r:Math.random()*1.8+0.7, a:1, fade:0.006, g:0.06,
+          c:pal[arm%pal.length], trail:[], mt:6 });
+      }
+    }
+  }
+
+  /* ── Roket naik kemudian meletup ── */
+  function launchRocket(tx, ty, pal, type, delay) {
+    setTimeout(function() {
+      var sx = tx + (Math.random()-0.5)*80;
+      var dur = 700 + Math.random()*350;
+      var t0 = performance.now();
+      var trail = [];
+      function animR(now) {
+        var t = Math.min((now-t0)/dur, 1);
+        var e = 1 - Math.pow(1-t, 3);
+        var cx = sx+(tx-sx)*e, cy = (H+10)+(ty-H-10)*e;
+        trail.push({x:cx, y:cy});
+        if (trail.length > 10) trail.shift();
+        trail.forEach(function(tp, i) {
+          var ta = (i/trail.length)*0.55;
+          ctx.beginPath(); ctx.arc(tp.x, tp.y, 1.8*(i/trail.length), 0, Math.PI*2);
+          ctx.fillStyle = pal[0]; ctx.globalAlpha = ta; ctx.fill(); ctx.globalAlpha = 1;
+        });
+        /* kepala roket */
+        ctx.beginPath(); ctx.arc(cx, cy, 2.8, 0, Math.PI*2);
+        ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1;
+        if (t < 1) { requestAnimationFrame(animR); }
+        else {
+          switch(type) {
+            case 'chrysanthemum': burstChrysanthemum(tx, ty, pal); break;
+            case 'ring':  burstRing(tx, ty, pal); break;
+            case 'star':  burstStar(tx, ty, pal); break;
+            default:      burstCircular(tx, ty, pal, 85); break;
+          }
+          burstCircular(tx, ty, ['#fff', pal[0]], 18, 0.45); /* kilat pusat */
+        }
+      }
+      requestAnimationFrame(animR);
+    }, delay);
+  }
+
+  /* ── Jadual pelancaran ── */
+  var cx = W/2, cy = H/2;
+  [
+    { x:cx,       y:cy*0.28, p:PAL.gold,      t:'chrysanthemum', d:0    },
+    { x:cx*0.28,  y:cy*0.38, p:PAL.silver,    t:'ring',          d:320  },
+    { x:cx*1.72,  y:cy*0.38, p:PAL.violet,    t:'ring',          d:320  },
+    { x:cx*0.5,   y:cy*0.22, p:PAL.rose,      t:'star',          d:780  },
+    { x:cx*1.5,   y:cy*0.22, p:PAL.mint,      t:'star',          d:900  },
+    { x:cx,       y:cy*0.18, p:PAL.champagne, t:'chrysanthemum', d:1300 },
+    { x:cx*0.22,  y:cy*0.32, p:PAL.gold,      t:'circular',      d:1750 },
+    { x:cx*1.78,  y:cy*0.32, p:PAL.silver,    t:'circular',      d:1950 },
+    { x:cx,       y:cy*0.25, p:PAL.violet,    t:'ring',          d:2400 },
+    { x:cx*0.38,  y:cy*0.18, p:PAL.mint,      t:'star',          d:2850 },
+    { x:cx*1.62,  y:cy*0.18, p:PAL.rose,      t:'star',          d:3050 },
+    { x:cx,       y:cy*0.2,  p:PAL.gold,      t:'chrysanthemum', d:3500 },
+    { x:cx*0.3,   y:cy*0.28, p:PAL.champagne, t:'ring',          d:4000 },
+    { x:cx*1.7,   y:cy*0.28, p:PAL.silver,    t:'ring',          d:4200 },
+  ].forEach(function(l){ launchRocket(l.x, l.y, l.p, l.t, l.d); });
+
+  /* ── Loop utama zarah ── */
+  function animP() {
+    ctx.fillStyle = 'rgba(3,7,30,0.14)';
+    ctx.fillRect(0, 0, W, H);
+    particles = particles.filter(function(p) {
+      p.trail.push({x:p.x, y:p.y});
+      if (p.trail.length > p.mt) p.trail.shift();
+      p.trail.forEach(function(tp, i) {
+        var ta = p.a*(i/p.trail.length)*0.35;
+        if (ta < 0.01) return;
+        ctx.beginPath(); ctx.arc(tp.x, tp.y, p.r*(i/p.trail.length)*0.6, 0, Math.PI*2);
+        ctx.fillStyle = p.c; ctx.globalAlpha = ta; ctx.fill(); ctx.globalAlpha = 1;
+      });
+      p.x += p.dx; p.y += p.dy; p.dy += p.g; p.dx *= 0.992; p.a -= p.fade;
+      if (p.a <= 0) return false;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = p.c; ctx.globalAlpha = p.a; ctx.fill(); ctx.globalAlpha = 1;
       return true;
     });
-    if (fw.length>0) requestAnimationFrame(animFw);
+    requestAnimationFrame(animP);
   }
-  animFw();
+  animP();
 }
 
 function splashDoConfetti() {
   var canvas = document.getElementById('splashCanvas');
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
-  var COLS = ['#ffd700','#ff4455','#44ee88','#4499ff','#ff88cc','#ffaa00','#00ffcc','#ff6600','#ee44ff','#fff'];
+  var W = canvas.width, H = canvas.height;
+
+  /* Palet premium — tiada warna terlalu terang */
+  var COLS = ['#ffd700','#f7e7ce','#ffffff','#ffb3cc','#c8e6ff','#ddb8ff','#aaffdd','#ffe566','#eeccff','#fff4b0'];
+
+  /* Bentuk: 0=bulat, 1=diamond, 2=ribbon */
   var pieces = [];
-  for (var i = 0; i < 220; i++) {
+  for (var i = 0; i < 180; i++) {
+    var shape = Math.floor(Math.random()*3);
     pieces.push({
-      x: Math.random()*canvas.width, y: -20 - Math.random()*canvas.height*0.5,
-      w: Math.random()*11+4, h: Math.random()*6+2,
-      rot: Math.random()*360, rs: (Math.random()-0.5)*9,
-      dx: (Math.random()-0.5)*3.5, dy: Math.random()*4.5+1.5,
-      c: COLS[Math.floor(Math.random()*COLS.length)], a: 1
+      x: Math.random()*W, y: -30 - Math.random()*H*0.6,
+      vx: (Math.random()-0.5)*2.2,
+      vy: Math.random()*3+1.2,
+      swing: Math.random()*0.08+0.02,
+      swingOff: Math.random()*Math.PI*2,
+      rot: Math.random()*360, rs: (Math.random()-0.5)*4,
+      w: shape===2 ? Math.random()*14+6 : Math.random()*8+4,
+      h: shape===2 ? Math.random()*3+1.5 : Math.random()*8+4,
+      c: COLS[Math.floor(Math.random()*COLS.length)],
+      a: 0.88 + Math.random()*0.12,
+      shape: shape, age: 0
     });
   }
+
+  var frame = 0;
   function animC() {
-    pieces = pieces.filter(function (p) {
-      p.x+=p.dx; p.y+=p.dy; p.rot+=p.rs;
-      if (p.y > canvas.height+20) return false;
-      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
-      ctx.fillStyle=p.c; ctx.globalAlpha=p.a;
-      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
-      ctx.restore(); ctx.globalAlpha=1;
+    frame++;
+    pieces = pieces.filter(function(p) {
+      p.age++;
+      p.vx += Math.sin(frame*p.swing + p.swingOff) * 0.04;
+      p.x += p.vx; p.y += p.vy; p.rot += p.rs;
+      /* fade bila hampir ke bawah */
+      if (p.y > H*0.75) p.a -= 0.018;
+      if (p.a <= 0 || p.y > H+30) return false;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI/180);
+      ctx.globalAlpha = p.a;
+      ctx.fillStyle = p.c;
+      if (p.shape === 0) {
+        /* bulat */
+        ctx.beginPath(); ctx.arc(0, 0, p.w/2, 0, Math.PI*2); ctx.fill();
+      } else if (p.shape === 1) {
+        /* diamond */
+        ctx.beginPath();
+        ctx.moveTo(0, -p.h); ctx.lineTo(p.w/2, 0);
+        ctx.lineTo(0, p.h); ctx.lineTo(-p.w/2, 0);
+        ctx.closePath(); ctx.fill();
+      } else {
+        /* ribbon — pita nipis */
+        ctx.beginPath();
+        ctx.moveTo(-p.w/2, -p.h/2);
+        ctx.quadraticCurveTo(0, p.h, p.w/2, -p.h/2);
+        ctx.quadraticCurveTo(0, -p.h*2, -p.w/2, -p.h/2);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore(); ctx.globalAlpha = 1;
       return true;
     });
-    if (pieces.length>0) requestAnimationFrame(animC);
+    if (pieces.length > 0) requestAnimationFrame(animC);
   }
   animC();
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SPLASH AUDIO — Web Audio API
+   Muzik latar majlis pelancaran rasmi (fanfare + ambient)
+   ═══════════════════════════════════════════════════════════════════ */
+var _splashAudio = { ctx: null, masterGain: null, reverbNode: null, reverbGain: null, muted: false, ambientNodes: [] };
+
+function splashAudioInit() {
+  if (_splashAudio.ctx) return;
+  try {
+    _splashAudio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    _splashAudio.masterGain = _splashAudio.ctx.createGain();
+    _splashAudio.masterGain.gain.setValueAtTime(0.72, _splashAudio.ctx.currentTime);
+    _splashAudio.masterGain.connect(_splashAudio.ctx.destination);
+
+    /* Reverb sintetik (impulse response) */
+    var rate = _splashAudio.ctx.sampleRate;
+    var revLen = rate * 3.2;
+    var revBuf = _splashAudio.ctx.createBuffer(2, revLen, rate);
+    for (var ch = 0; ch < 2; ch++) {
+      var d = revBuf.getChannelData(ch);
+      for (var i = 0; i < revLen; i++) { d[i] = (Math.random()*2-1) * Math.pow(1 - i/revLen, 8); }
+    }
+    _splashAudio.reverbNode = _splashAudio.ctx.createConvolver();
+    _splashAudio.reverbNode.buffer = revBuf;
+    _splashAudio.reverbGain = _splashAudio.ctx.createGain();
+    _splashAudio.reverbGain.gain.setValueAtTime(0.3, _splashAudio.ctx.currentTime);
+    _splashAudio.reverbNode.connect(_splashAudio.reverbGain);
+    _splashAudio.reverbGain.connect(_splashAudio.masterGain);
+  } catch(e) { _splashAudio.ctx = null; }
+}
+
+function _splashNote(freq, t0, dur, type, vol, filt) {
+  var ctx = _splashAudio.ctx; if (!ctx) return;
+  var osc = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+  osc.type = type || 'sawtooth';
+  osc.frequency.setValueAtTime(freq, t0);
+  f.type = 'lowpass'; f.frequency.setValueAtTime(filt || 2000, t0); f.Q.setValueAtTime(1.8, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol || 0.4, t0 + 0.025);
+  g.gain.setValueAtTime(vol || 0.4, t0 + dur * 0.65);
+  g.gain.linearRampToValueAtTime(0, t0 + dur);
+  osc.connect(f); f.connect(g); g.connect(_splashAudio.masterGain);
+  if (_splashAudio.reverbNode) f.connect(_splashAudio.reverbNode);
+  osc.start(t0); osc.stop(t0 + dur + 0.05);
+}
+
+function _splashDrum(t0, pitch, vol) {
+  var ctx = _splashAudio.ctx; if (!ctx) return;
+  var osc = ctx.createOscillator(), g = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(pitch || 85, t0);
+  osc.frequency.exponentialRampToValueAtTime(28, t0 + 0.38);
+  g.gain.setValueAtTime(vol || 0.55, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.42);
+  osc.connect(g); g.connect(_splashAudio.masterGain);
+  osc.start(t0); osc.stop(t0 + 0.48);
+}
+
+function splashPlayFanfare() {
+  var ctx = _splashAudio.ctx; if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  splashStopAmbient();
+  var t = ctx.currentTime + 0.08;
+
+  /* Fanfare — C major, gaya terompet upacara */
+  /* Baris utama (terompet tinggi) */
+  var hi = [
+    [523.25,0.00,0.16,'sawtooth',0.52,1900], [523.25,0.18,0.16,'sawtooth',0.52,1900],
+    [523.25,0.36,0.16,'sawtooth',0.52,1900], [659.25,0.55,0.20,'sawtooth',0.56,2100],
+    [783.99,0.78,0.26,'sawtooth',0.56,2300], [1046.5,1.08,0.85,'sawtooth',0.60,2700],
+    /* frasa kedua — ascending */
+    [523.25,2.20,0.14,'sawtooth',0.48,1900], [587.33,2.38,0.14,'sawtooth',0.48,2000],
+    [659.25,2.56,0.14,'sawtooth',0.48,2100], [698.46,2.74,0.14,'sawtooth',0.50,2200],
+    [783.99,2.92,0.20,'sawtooth',0.54,2400], [880.00,3.16,0.26,'sawtooth',0.56,2600],
+    [1046.5,3.46,1.60,'sawtooth',0.62,3000],
+  ];
+  /* Harmonik rendah */
+  var lo = [
+    [392.00,0.00,0.16,'sawtooth',0.30,1400], [392.00,0.18,0.16,'sawtooth',0.30,1400],
+    [392.00,0.36,0.16,'sawtooth',0.30,1400], [493.88,0.55,0.20,'sawtooth',0.30,1600],
+    [587.33,0.78,0.26,'sawtooth',0.30,1800], [783.99,1.08,0.85,'sawtooth',0.34,2000],
+    [392.00,2.20,0.14,'sawtooth',0.28,1400], [440.00,2.38,0.14,'sawtooth',0.28,1500],
+    [493.88,2.56,0.14,'sawtooth',0.28,1600], [523.25,2.74,0.14,'sawtooth',0.30,1700],
+    [587.33,2.92,0.20,'sawtooth',0.32,1900], [659.25,3.16,0.26,'sawtooth',0.34,2100],
+    [783.99,3.46,1.60,'sawtooth',0.36,2300],
+  ];
+  /* Bass */
+  var bs = [
+    [130.81,0.00,0.40,'sawtooth',0.38,550], [130.81,0.55,0.35,'sawtooth',0.36,550],
+    [130.81,1.08,0.85,'sawtooth',0.42,550], [130.81,2.20,0.55,'sawtooth',0.36,550],
+    [130.81,2.92,0.45,'sawtooth',0.38,550], [130.81,3.46,1.60,'sawtooth',0.44,550],
+  ];
+  /* Akord akhir (C major triad) */
+  var ch = [
+    [523.25,3.46,1.60,'sawtooth',0.48,2200],
+    [659.25,3.46,1.60,'sawtooth',0.42,2400],
+  ];
+  [hi,lo,bs,ch].forEach(function(arr){ arr.forEach(function(n){ _splashNote(n[0],t+n[1],n[2],n[3],n[4],n[5]); }); });
+
+  /* Timpani */
+  [0.00,0.36,0.78,1.08,2.20,2.92,3.46,3.75,4.10].forEach(function(dt,i){
+    _splashDrum(t+dt, [90,80,90,70,85,90,70,70,68][i], [0.55,0.45,0.55,0.68,0.45,0.52,0.72,0.55,0.60][i]);
+  });
+}
+
+function splashPlayAmbient() {
+  var ctx = _splashAudio.ctx; if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  splashStopAmbient();
+
+  /* F major arpeggiated pad — lembut, ceremonial */
+  var arp = [349.23, 440.00, 523.25, 698.46]; /* F4 A4 C5 F5 */
+  var cycDur = 2.6, repeat = 14;
+  var t0 = ctx.currentTime + 0.8;
+  var noteDur = cycDur / arp.length;
+
+  for (var rep = 0; rep < repeat; rep++) {
+    for (var ni = 0; ni < arp.length; ni++) {
+      (function(freq, tStart) {
+        var osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, tStart);
+        g.gain.setValueAtTime(0, tStart);
+        g.gain.linearRampToValueAtTime(0.13, tStart + 0.12);
+        g.gain.setValueAtTime(0.13, tStart + 0.48);
+        g.gain.linearRampToValueAtTime(0, tStart + 0.68);
+        osc.connect(g); g.connect(_splashAudio.masterGain);
+        if (_splashAudio.reverbNode) g.connect(_splashAudio.reverbNode);
+        osc.start(tStart); osc.stop(tStart + 0.75);
+        _splashAudio.ambientNodes.push(osc);
+      })(arp[ni], t0 + rep * cycDur + ni * noteDur);
+    }
+    /* Bass F3 — sekali per kitar */
+    (function(tStart) {
+      var osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(174.61, tStart);
+      g.gain.setValueAtTime(0, tStart);
+      g.gain.linearRampToValueAtTime(0.10, tStart + 0.25);
+      g.gain.setValueAtTime(0.10, tStart + cycDur - 0.35);
+      g.gain.linearRampToValueAtTime(0, tStart + cycDur);
+      osc.connect(g); g.connect(_splashAudio.masterGain);
+      osc.start(tStart); osc.stop(tStart + cycDur + 0.1);
+      _splashAudio.ambientNodes.push(osc);
+    })(t0 + rep * cycDur);
+  }
+}
+
+function splashStopAmbient() {
+  (_splashAudio.ambientNodes || []).forEach(function(n){ try { n.stop(); } catch(e){} });
+  _splashAudio.ambientNodes = [];
+}
+
+function splashToggleMute() {
+  if (!_splashAudio.masterGain || !_splashAudio.ctx) return;
+  _splashAudio.muted = !_splashAudio.muted;
+  _splashAudio.masterGain.gain.linearRampToValueAtTime(
+    _splashAudio.muted ? 0 : 0.72, _splashAudio.ctx.currentTime + 0.25);
+  var btn = document.getElementById('splashMuteBtn');
+  if (btn) btn.textContent = _splashAudio.muted ? '🔇' : '🔊';
+}
+
+function splashAudioFadeOut() {
+  if (!_splashAudio.masterGain || !_splashAudio.ctx) return;
+  _splashAudio.masterGain.gain.linearRampToValueAtTime(0, _splashAudio.ctx.currentTime + 2.2);
+  setTimeout(function() {
+    splashStopAmbient();
+    try { if (_splashAudio.ctx) _splashAudio.ctx.close(); } catch(e) {}
+    _splashAudio.ctx = null; _splashAudio.masterGain = null;
+  }, 2800);
 }
 </script>
 <!-- SVG Sprite for Lucide Icons -->
@@ -2268,6 +2636,7 @@ _SK Kiandongo_</textarea>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-d1-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pengurusan D1</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-monitor-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-activity"></use></svg> Pemantauan & Log</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-advanced-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-settings"></use></svg> Kunci Lanjutan</button>
+            <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-splash-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-sparkles"></use></svg> Splash Perasmian</button>
           </div>
         </div>
 
@@ -3161,6 +3530,47 @@ _{SEKOLAH}_</textarea>
               </div>
             </div>
           </div>
+          <!-- ══ Splash Perasmian Config ══ -->
+          <div class="card config-section-card" id="config-splash-card" data-config-group="lanjutan" style="margin-top:20px;border:2px solid rgba(255,215,0,0.25);background:linear-gradient(180deg,#fffdf0 0%,#ffffff 100%)">
+            <div class="section-header">
+              <h2 style="display:flex;align-items:center;gap:8px">✦ Splash Perasmian</h2>
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Menu</button>
+            </div>
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px;line-height:1.7">
+              Tetapan skrin perasmian rasmi yang dipaparkan kepada Guru Besar semasa pelancaran sistem. Nama GB diambil secara automatik dari data guru (jawatan = <strong>Guru Besar</strong>).
+            </p>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:20px">
+              <div class="form-group">
+                <label>Tarikh Perasmian</label>
+                <input type="date" id="cfg-splash-tarikh" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem">
+                <small style="color:var(--muted)">Splash hanya muncul pada atau selepas tarikh ini.</small>
+              </div>
+              <div class="form-group">
+                <label>Versi Aplikasi</label>
+                <input type="text" id="cfg-splash-versi" placeholder="cth: 2.0" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem">
+              </div>
+              <div class="form-group">
+                <label>Override Nama GB <span style="font-weight:400;color:var(--muted)">(pilihan)</span></label>
+                <input type="text" id="cfg-splash-gb" placeholder="Kosong = ambil dari data guru" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem">
+                <small style="color:var(--muted)">Isi hanya jika nama dalam data guru tidak betul.</small>
+              </div>
+            </div>
+
+            <div style="background:#fff8e1;border:1px solid rgba(255,215,0,0.4);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:0.85rem;line-height:1.7">
+              <strong>Status Perasmian:</strong>
+              <span id="splashStatusText" style="margin-left:6px;font-weight:600"></span>
+              <br>
+              <span style="color:var(--muted)">Selepas GB klik "Rasmikan", flag disimpan dalam peranti ini. Reset untuk papar semula splash.</span>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="simpanSplashConfig()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-save"></use></svg> Simpan Tetapan</button>
+              <button class="btn btn-secondary" onclick="resetSplashLaunch()" style="border-color:#f59e0b;color:#92400e"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-rotate-ccw"></use></svg> Reset Status Perasmian</button>
+              <button class="btn btn-secondary" onclick="previewSplashPerasmian()" style="border-color:#6366f1;color:#4338ca"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-eye"></use></svg> Preview Splash</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
