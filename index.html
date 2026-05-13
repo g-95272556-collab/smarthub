@@ -93,10 +93,20 @@
     <div class="splash-rv splash-footnote">Tindakan ini akan direkod &nbsp;&middot;&nbsp; Splash screen akan dipadam secara automatik</div>
   </div>
 
-  <!-- Countdown 3-2-1 -->
-  <div id="splashCountdown">
-    <div id="splashCountNum"></div>
-    <div class="splash-count-label">Bersiap sedia...</div>
+  <!-- Skrin Perasmian Rasmi -->
+  <div id="splashPerasmian">
+    <div class="splash-prs-inner">
+      <div class="splash-prs-proklamasi">PERASMIAN RASMI</div>
+      <div class="splash-prs-appname">SmartSchool<span class="prs-gold">Hub</span></div>
+      <div class="splash-prs-appdesc">Sistem Pengurusan Sekolah Pintar Bersepadu</div>
+      <div class="splash-prs-divider"></div>
+      <div class="splash-prs-label">Telah Dirasmi Oleh</div>
+      <div id="splashPrsGBName" class="splash-prs-gbname">——————————</div>
+      <div class="splash-prs-gbtitle">Guru Besar</div>
+      <div class="splash-prs-sekolah">SK Kiandongo, Tongod, Sabah</div>
+      <div class="splash-prs-divider" style="animation-delay:1.4s"></div>
+      <div id="splashPrsDatetime" class="splash-prs-datetime"></div>
+    </div>
   </div>
 
   <!-- Flash putih masa launch -->
@@ -274,26 +284,78 @@
   font-size: 8pt; color: rgba(255, 255, 255, 0.2); margin-top: 18px;
 }
 
-/* Countdown */
-#splashCountdown {
+/* Skrin Perasmian */
+#splashPerasmian {
   display: none; position: absolute; inset: 0; z-index: 10;
   align-items: center; justify-content: center; flex-direction: column;
   pointer-events: none;
-  background: rgba(5, 10, 21, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(5, 10, 21, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
-#splashCountNum {
+.splash-prs-inner {
+  text-align: center;
+  padding: 44px 40px 36px;
+  background: linear-gradient(175deg, rgba(255,255,255,0.05) 0%, rgba(255,215,0,0.02) 100%);
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  border-radius: 24px;
+  max-width: 460px;
+  width: 90%;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.55), inset 0 1px 1px rgba(255,255,255,0.07);
+  position: relative; z-index: 2;
+}
+.splash-prs-proklamasi {
+  font-size: 8.5pt; color: rgba(255, 215, 0, 0.65);
+  letter-spacing: 5px; text-transform: uppercase; margin-bottom: 12px;
+  opacity: 0; animation: prsReveal 0.5s ease 0.35s forwards;
+}
+.splash-prs-appname {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 140pt; font-weight: 800; color: #fff; line-height: 1;
-  background: linear-gradient(to bottom, #fff, #a8cfff);
-  -webkit-background-clip: text;
-  background-clip: text; color: transparent;
-  text-shadow: 0 20px 60px rgba(168, 207, 255, 0.4);
+  font-size: 34pt; font-weight: 800; color: #fff;
+  line-height: 1.1; margin-bottom: 6px; letter-spacing: -0.5px;
+  opacity: 0; animation: prsReveal 0.55s ease 0.55s forwards;
 }
-.splash-count-label {
-  font-size: 12pt; color: rgba(255, 255, 255, 0.6); letter-spacing: 5px;
-  text-transform: uppercase; margin-top: 16px;
+.prs-gold {
+  background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.splash-prs-appdesc {
+  font-size: 9.5pt; color: rgba(255,255,255,0.55); margin-bottom: 26px;
+  opacity: 0; animation: prsReveal 0.5s ease 0.7s forwards;
+}
+.splash-prs-divider {
+  width: 60px; height: 1px; margin: 0 auto 22px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.65), transparent);
+  opacity: 0; animation: prsReveal 0.5s ease 0.85s forwards;
+}
+.splash-prs-label {
+  font-size: 7.5pt; color: rgba(255, 215, 0, 0.6);
+  letter-spacing: 3.5px; text-transform: uppercase; margin-bottom: 10px;
+  opacity: 0; animation: prsReveal 0.5s ease 1.0s forwards;
+}
+.splash-prs-gbname {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 19pt; font-weight: 700; color: #fff;
+  letter-spacing: 0.3px; margin-bottom: 5px; min-height: 1.4em;
+  opacity: 0; animation: prsReveal 0.6s cubic-bezier(0.175,0.885,0.32,1.275) 1.2s forwards;
+}
+.splash-prs-gbtitle {
+  font-size: 9pt; color: rgba(255,255,255,0.65);
+  letter-spacing: 3px; text-transform: uppercase; margin-bottom: 3px;
+  opacity: 0; animation: prsReveal 0.5s ease 1.35s forwards;
+}
+.splash-prs-sekolah {
+  font-size: 8pt; color: rgba(255,255,255,0.35); margin-bottom: 24px;
+  opacity: 0; animation: prsReveal 0.5s ease 1.45s forwards;
+}
+.splash-prs-datetime {
+  font-size: 8.5pt; color: rgba(255, 215, 0, 0.45);
+  letter-spacing: 1px;
+  opacity: 0; animation: prsReveal 0.5s ease 1.65s forwards;
+}
+@keyframes prsReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Flash */
@@ -370,16 +432,27 @@
     var tEl = document.getElementById('splashTarikh');
     if (tEl) tEl.textContent = HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
 
-    /* Nama GB dari profil app */
-    var tries = 0;
-    var gbTimer = setInterval(function () {
-      tries++;
-      var el = document.getElementById('splashGBName');
-      if (!el) { clearInterval(gbTimer); return; }
-      var n = (window.APP && window.APP.userProfile && window.APP.userProfile.name) ? window.APP.userProfile.name : '';
-      if (n) { el.textContent = n; clearInterval(gbTimer); }
-      if (tries > 24) clearInterval(gbTimer);
-    }, 500);
+    /* Versi app dari config */
+    var verEl = document.getElementById('splashVer');
+    var cfgVer = (window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).appVersion;
+    if (verEl && cfgVer) verEl.textContent = 'Versi ' + cfgVer + '  ·  ' + verEl.textContent.split('·').pop().trim();
+
+    /* Nama GB — utamakan config, fallback ke profil log masuk */
+    var gbStatik = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
+    var gbEl = document.getElementById('splashGBName');
+    if (gbEl && gbStatik) {
+      gbEl.textContent = gbStatik;
+    } else {
+      var tries = 0;
+      var gbTimer = setInterval(function () {
+        tries++;
+        var el = document.getElementById('splashGBName');
+        if (!el) { clearInterval(gbTimer); return; }
+        var n = (window.APP && window.APP.userProfile && window.APP.userProfile.name) ? window.APP.userProfile.name : '';
+        if (n) { el.textContent = n; clearInterval(gbTimer); }
+        if (tries > 24) clearInterval(gbTimer);
+      }, 500);
+    }
 
     /* Sequential reveal — stagger tiap elemen */
     var rvEls = document.querySelectorAll('#splashCard .splash-rv');
@@ -429,7 +502,11 @@
 /* ── Fungsi Rasmikan ─────────────────────────────────────────────── */
 function splashRasmikan() {
   var btn = document.getElementById('splashBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Merakamkan perasmian...'; }
+  if (btn) {
+    btn.disabled = true;
+    var btnTxt = btn.querySelector('.btn-text');
+    if (btnTxt) btnTxt.textContent = '✦ Merakamkan perasmian...';
+  }
   try { localStorage.setItem('smarthubLaunched', '1'); } catch (e) {}
 
   /* Shoot particles from button */
@@ -438,64 +515,79 @@ function splashRasmikan() {
   setTimeout(function () {
     /* Fade out card */
     var card = document.getElementById('splashCard');
-    if (card) { card.style.transition = 'opacity 0.4s ease'; card.style.opacity = '0'; }
+    if (card) { card.style.transition = 'opacity 0.5s ease'; card.style.opacity = '0'; }
 
-    /* Countdown 3 → 2 → 1 */
-    var cd = document.getElementById('splashCountdown');
-    if (cd) cd.style.display = 'flex';
-    splashShowCount('3', function () {
-      splashShowCount('2', function () {
-        splashShowCount('1', function () {
-          if (cd) cd.style.display = 'none';
-          /* Flash! */
-          var flash = document.getElementById('splashFlash');
-          if (flash) {
-            flash.style.opacity = '1';
-            setTimeout(function () { flash.style.transition = 'opacity 0.55s ease'; flash.style.opacity = '0'; }, 80);
-          }
-          /* Fireworks + Confetti */
-          splashDoFireworks();
-          splashDoConfetti();
-          /* Celebration text */
-          var celeb = document.getElementById('splashCelebration');
-          var ct    = document.getElementById('splashCelebTitle');
+    /* ── Isi data perasmian ── */
+    var prs = document.getElementById('splashPerasmian');
+    var prsGBName = document.getElementById('splashPrsGBName');
+    var prsDatetime = document.getElementById('splashPrsDatetime');
+
+    /* Nama GB — config > kad splash sedia ada > profil log masuk */
+    if (prsGBName) {
+      var cfgGB = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
+      var gbEl  = document.getElementById('splashGBName');
+      var gbName = cfgGB
+        || (gbEl && gbEl.textContent.trim() !== '——————————————' ? gbEl.textContent.trim() : '')
+        || (window.APP && window.APP.userProfile && window.APP.userProfile.name ? window.APP.userProfile.name : '——————————');
+      prsGBName.textContent = gbName;
+    }
+
+    /* Tarikh & masa perasmian */
+    if (prsDatetime) {
+      var t = new Date();
+      var HARI  = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+      var BULAN = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+      var hh = t.getHours().toString().padStart(2,'0');
+      var mm = t.getMinutes().toString().padStart(2,'0');
+      prsDatetime.textContent = HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear() + '  ·  ' + hh + ':' + mm;
+    }
+
+    /* ── Tunjuk screen perasmian ── */
+    setTimeout(function () {
+      if (prs) prs.style.display = 'flex';
+
+      /* Flash kilat pada saat perasmian */
+      var flash = document.getElementById('splashFlash');
+      if (flash) {
+        flash.style.opacity = '1';
+        setTimeout(function () { flash.style.transition = 'opacity 0.55s ease'; flash.style.opacity = '0'; }, 80);
+      }
+
+      /* Fireworks + Confetti mula selepas kad perasmian muncul */
+      setTimeout(function () {
+        splashDoFireworks();
+        splashDoConfetti();
+      }, 600);
+
+      /* Selepas ~4.5s — fade screen perasmian, tunjuk teks sambutan */
+      setTimeout(function () {
+        if (prs) { prs.style.transition = 'opacity 0.9s ease'; prs.style.opacity = '0'; }
+
+        var celeb = document.getElementById('splashCelebration');
+        var ct    = document.getElementById('splashCelebTitle');
+        setTimeout(function () {
           if (celeb) celeb.style.display = 'flex';
           if (ct) {
-            setTimeout(function () {
-              ct.style.animation = 'splashCelebPop 0.55s cubic-bezier(0.175,0.885,0.32,1.275) forwards';
-              ct.textContent = '🎊 RASMI DILANCARKAN! 🎊';
-            }, 100);
+            ct.style.animation = 'splashCelebPop 0.55s cubic-bezier(0.175,0.885,0.32,1.275) forwards';
+            ct.textContent = '🎊 RASMI DILANCARKAN! 🎊';
           }
-          /* Fade out & buang dari DOM selepas 5.5s */
-          setTimeout(function () {
-            var splash = document.getElementById('splashLaunch');
-            if (!splash) return;
-            splash.style.transition = 'opacity 1.2s ease';
-            splash.style.opacity = '0';
-            setTimeout(function () {
-              if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
-              if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
-            }, 1200);
-          }, 5500);
-        });
-      });
-    });
-  }, 700);
-}
+        }, 500);
+      }, 4500);
 
-function splashShowCount(n, cb) {
-  var el = document.getElementById('splashCountNum');
-  if (!el) { cb(); return; }
-  el.style.transition = 'none'; el.style.opacity = '0'; el.style.transform = 'scale(0.2)';
-  el.textContent = n;
-  el.getBoundingClientRect(); /* force reflow */
-  el.style.transition = 'opacity 0.3s ease, transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275)';
-  el.style.opacity = '1'; el.style.transform = 'scale(1)';
-  setTimeout(function () {
-    el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
-    el.style.opacity = '0'; el.style.transform = 'scale(1.9)';
-    setTimeout(cb, 260);
-  }, 750);
+      /* Fade out keseluruhan splash & buang dari DOM */
+      setTimeout(function () {
+        var splash = document.getElementById('splashLaunch');
+        if (!splash) return;
+        splash.style.transition = 'opacity 1.2s ease';
+        splash.style.opacity = '0';
+        setTimeout(function () {
+          if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+          if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
+        }, 1200);
+      }, 9000);
+    }, 600);
+
+  }, 700);
 }
 
 function splashShootParticles() {
@@ -4246,7 +4338,18 @@ _{SEKOLAH}_</textarea>
 window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
   workerUrl: 'https://smartschoolhub-skkiandongo.g-95272556.workers.dev',
   googleClientId: '553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com',
-  googleAuthUrl: 'https://smartschoolhub-google-oauth.g-95272556.workers.dev'
+  googleAuthUrl: 'https://smartschoolhub-google-oauth.g-95272556.workers.dev',
+
+  /* ── Splash Perasmian ───────────────────────────────────────────
+     launchDate  : Tarikh mula splash perasmian dipaparkan (YYYY-MM-DD).
+                   Sebelum tarikh ini, splash tidak akan muncul.
+     gbName      : Nama penuh Guru Besar untuk dipaparkan pada kad perasmian.
+                   Kosongkan ("") jika mahu diambil automatik dari profil log masuk.
+     appVersion  : Versi app yang dipaparkan pada splash.
+  ─────────────────────────────────────────────────────────────── */
+  launchDate : '2026-06-08',
+  gbName     : '',
+  appVersion : '2.0'
 }, window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {});
 </script>
 <script src="dskp_embedded.js"></script>
