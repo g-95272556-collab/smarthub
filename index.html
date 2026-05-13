@@ -526,7 +526,6 @@ window.showSplashPerasmian = function (previewMode) {
         splash.style.opacity = '0';
         setTimeout(function(){ splash.style.display = 'none'; splash.style.transition = ''; splash.style.opacity = '1'; }, 400);
         if (window._splashRaf) { cancelAnimationFrame(window._splashRaf); window._splashRaf = null; }
-        try { splashAudioFadeOut(); } catch(e) {}
       };
       splash.appendChild(closeBtn);
     }
@@ -536,23 +535,6 @@ window.showSplashPerasmian = function (previewMode) {
     if (cb) cb.remove();
   }
 
-  /* Butang mute audio */
-  var muteBtn = document.getElementById('splashMuteBtn');
-  if (!muteBtn) {
-    muteBtn = document.createElement('button');
-    muteBtn.id = 'splashMuteBtn';
-    muteBtn.textContent = '🔊';
-    muteBtn.title = 'Senyap / Buka Bunyi';
-    muteBtn.style.cssText = 'position:absolute;bottom:22px;right:22px;z-index:10;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);color:#fff;font-size:16px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;padding:0;line-height:1';
-    muteBtn.onclick = function() { try { splashToggleMute(); } catch(e) {} };
-    splash.appendChild(muteBtn);
-  } else {
-    muteBtn.textContent = '🔊';
-    _splashAudio.muted = false;
-  }
-
-  /* Mulakan audio ambient */
-  try { splashAudioInit(); setTimeout(function(){ splashPlayAmbient(); }, 800); } catch(e) {}
 
   /* Tarikh */
   var t = new Date();
@@ -681,9 +663,8 @@ function splashRasmikan() {
         setTimeout(function () { flash.style.transition = 'opacity 0.55s ease'; flash.style.opacity = '0'; }, 80);
       }
 
-      /* Fanfare + Fireworks + Confetti mula selepas kad perasmian muncul */
+      /* Fireworks + Confetti mula selepas kad perasmian muncul */
       setTimeout(function () {
-        try { splashPlayFanfare(); } catch(e) {}
         splashDoFireworks();
         splashDoConfetti();
       }, 600);
@@ -707,7 +688,6 @@ function splashRasmikan() {
       setTimeout(function () {
         var splash = document.getElementById('splashLaunch');
         if (!splash) return;
-        try { splashAudioFadeOut(); } catch(e) {}
         splash.style.transition = 'opacity 1.2s ease';
         splash.style.opacity = '0';
         setTimeout(function () {
@@ -968,177 +948,6 @@ function splashDoConfetti() {
   animC();
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   SPLASH AUDIO — Web Audio API
-   Muzik latar majlis pelancaran rasmi (fanfare + ambient)
-   ═══════════════════════════════════════════════════════════════════ */
-var _splashAudio = { ctx: null, masterGain: null, reverbNode: null, reverbGain: null, muted: false, ambientNodes: [] };
-
-function splashAudioInit() {
-  if (_splashAudio.ctx) return;
-  try {
-    _splashAudio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    _splashAudio.masterGain = _splashAudio.ctx.createGain();
-    _splashAudio.masterGain.gain.setValueAtTime(0.72, _splashAudio.ctx.currentTime);
-    _splashAudio.masterGain.connect(_splashAudio.ctx.destination);
-
-    /* Reverb sintetik (impulse response) */
-    var rate = _splashAudio.ctx.sampleRate;
-    var revLen = rate * 3.2;
-    var revBuf = _splashAudio.ctx.createBuffer(2, revLen, rate);
-    for (var ch = 0; ch < 2; ch++) {
-      var d = revBuf.getChannelData(ch);
-      for (var i = 0; i < revLen; i++) { d[i] = (Math.random()*2-1) * Math.pow(1 - i/revLen, 8); }
-    }
-    _splashAudio.reverbNode = _splashAudio.ctx.createConvolver();
-    _splashAudio.reverbNode.buffer = revBuf;
-    _splashAudio.reverbGain = _splashAudio.ctx.createGain();
-    _splashAudio.reverbGain.gain.setValueAtTime(0.3, _splashAudio.ctx.currentTime);
-    _splashAudio.reverbNode.connect(_splashAudio.reverbGain);
-    _splashAudio.reverbGain.connect(_splashAudio.masterGain);
-  } catch(e) { _splashAudio.ctx = null; }
-}
-
-function _splashNote(freq, t0, dur, type, vol, filt) {
-  var ctx = _splashAudio.ctx; if (!ctx) return;
-  var osc = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
-  osc.type = type || 'sawtooth';
-  osc.frequency.setValueAtTime(freq, t0);
-  f.type = 'lowpass'; f.frequency.setValueAtTime(filt || 2000, t0); f.Q.setValueAtTime(1.8, t0);
-  g.gain.setValueAtTime(0, t0);
-  g.gain.linearRampToValueAtTime(vol || 0.4, t0 + 0.025);
-  g.gain.setValueAtTime(vol || 0.4, t0 + dur * 0.65);
-  g.gain.linearRampToValueAtTime(0, t0 + dur);
-  osc.connect(f); f.connect(g); g.connect(_splashAudio.masterGain);
-  if (_splashAudio.reverbNode) f.connect(_splashAudio.reverbNode);
-  osc.start(t0); osc.stop(t0 + dur + 0.05);
-}
-
-function _splashDrum(t0, pitch, vol) {
-  var ctx = _splashAudio.ctx; if (!ctx) return;
-  var osc = ctx.createOscillator(), g = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(pitch || 85, t0);
-  osc.frequency.exponentialRampToValueAtTime(28, t0 + 0.38);
-  g.gain.setValueAtTime(vol || 0.55, t0);
-  g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.42);
-  osc.connect(g); g.connect(_splashAudio.masterGain);
-  osc.start(t0); osc.stop(t0 + 0.48);
-}
-
-function splashPlayFanfare() {
-  var ctx = _splashAudio.ctx; if (!ctx) return;
-  if (ctx.state === 'suspended') ctx.resume();
-  splashStopAmbient();
-  var t = ctx.currentTime + 0.08;
-
-  /* Fanfare — C major, gaya terompet upacara */
-  /* Baris utama (terompet tinggi) */
-  var hi = [
-    [523.25,0.00,0.16,'sawtooth',0.52,1900], [523.25,0.18,0.16,'sawtooth',0.52,1900],
-    [523.25,0.36,0.16,'sawtooth',0.52,1900], [659.25,0.55,0.20,'sawtooth',0.56,2100],
-    [783.99,0.78,0.26,'sawtooth',0.56,2300], [1046.5,1.08,0.85,'sawtooth',0.60,2700],
-    /* frasa kedua — ascending */
-    [523.25,2.20,0.14,'sawtooth',0.48,1900], [587.33,2.38,0.14,'sawtooth',0.48,2000],
-    [659.25,2.56,0.14,'sawtooth',0.48,2100], [698.46,2.74,0.14,'sawtooth',0.50,2200],
-    [783.99,2.92,0.20,'sawtooth',0.54,2400], [880.00,3.16,0.26,'sawtooth',0.56,2600],
-    [1046.5,3.46,1.60,'sawtooth',0.62,3000],
-  ];
-  /* Harmonik rendah */
-  var lo = [
-    [392.00,0.00,0.16,'sawtooth',0.30,1400], [392.00,0.18,0.16,'sawtooth',0.30,1400],
-    [392.00,0.36,0.16,'sawtooth',0.30,1400], [493.88,0.55,0.20,'sawtooth',0.30,1600],
-    [587.33,0.78,0.26,'sawtooth',0.30,1800], [783.99,1.08,0.85,'sawtooth',0.34,2000],
-    [392.00,2.20,0.14,'sawtooth',0.28,1400], [440.00,2.38,0.14,'sawtooth',0.28,1500],
-    [493.88,2.56,0.14,'sawtooth',0.28,1600], [523.25,2.74,0.14,'sawtooth',0.30,1700],
-    [587.33,2.92,0.20,'sawtooth',0.32,1900], [659.25,3.16,0.26,'sawtooth',0.34,2100],
-    [783.99,3.46,1.60,'sawtooth',0.36,2300],
-  ];
-  /* Bass */
-  var bs = [
-    [130.81,0.00,0.40,'sawtooth',0.38,550], [130.81,0.55,0.35,'sawtooth',0.36,550],
-    [130.81,1.08,0.85,'sawtooth',0.42,550], [130.81,2.20,0.55,'sawtooth',0.36,550],
-    [130.81,2.92,0.45,'sawtooth',0.38,550], [130.81,3.46,1.60,'sawtooth',0.44,550],
-  ];
-  /* Akord akhir (C major triad) */
-  var ch = [
-    [523.25,3.46,1.60,'sawtooth',0.48,2200],
-    [659.25,3.46,1.60,'sawtooth',0.42,2400],
-  ];
-  [hi,lo,bs,ch].forEach(function(arr){ arr.forEach(function(n){ _splashNote(n[0],t+n[1],n[2],n[3],n[4],n[5]); }); });
-
-  /* Timpani */
-  [0.00,0.36,0.78,1.08,2.20,2.92,3.46,3.75,4.10].forEach(function(dt,i){
-    _splashDrum(t+dt, [90,80,90,70,85,90,70,70,68][i], [0.55,0.45,0.55,0.68,0.45,0.52,0.72,0.55,0.60][i]);
-  });
-}
-
-function splashPlayAmbient() {
-  var ctx = _splashAudio.ctx; if (!ctx) return;
-  if (ctx.state === 'suspended') ctx.resume();
-  splashStopAmbient();
-
-  /* F major arpeggiated pad — lembut, ceremonial */
-  var arp = [349.23, 440.00, 523.25, 698.46]; /* F4 A4 C5 F5 */
-  var cycDur = 2.6, repeat = 14;
-  var t0 = ctx.currentTime + 0.8;
-  var noteDur = cycDur / arp.length;
-
-  for (var rep = 0; rep < repeat; rep++) {
-    for (var ni = 0; ni < arp.length; ni++) {
-      (function(freq, tStart) {
-        var osc = ctx.createOscillator(), g = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, tStart);
-        g.gain.setValueAtTime(0, tStart);
-        g.gain.linearRampToValueAtTime(0.13, tStart + 0.12);
-        g.gain.setValueAtTime(0.13, tStart + 0.48);
-        g.gain.linearRampToValueAtTime(0, tStart + 0.68);
-        osc.connect(g); g.connect(_splashAudio.masterGain);
-        if (_splashAudio.reverbNode) g.connect(_splashAudio.reverbNode);
-        osc.start(tStart); osc.stop(tStart + 0.75);
-        _splashAudio.ambientNodes.push(osc);
-      })(arp[ni], t0 + rep * cycDur + ni * noteDur);
-    }
-    /* Bass F3 — sekali per kitar */
-    (function(tStart) {
-      var osc = ctx.createOscillator(), g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(174.61, tStart);
-      g.gain.setValueAtTime(0, tStart);
-      g.gain.linearRampToValueAtTime(0.10, tStart + 0.25);
-      g.gain.setValueAtTime(0.10, tStart + cycDur - 0.35);
-      g.gain.linearRampToValueAtTime(0, tStart + cycDur);
-      osc.connect(g); g.connect(_splashAudio.masterGain);
-      osc.start(tStart); osc.stop(tStart + cycDur + 0.1);
-      _splashAudio.ambientNodes.push(osc);
-    })(t0 + rep * cycDur);
-  }
-}
-
-function splashStopAmbient() {
-  (_splashAudio.ambientNodes || []).forEach(function(n){ try { n.stop(); } catch(e){} });
-  _splashAudio.ambientNodes = [];
-}
-
-function splashToggleMute() {
-  if (!_splashAudio.masterGain || !_splashAudio.ctx) return;
-  _splashAudio.muted = !_splashAudio.muted;
-  _splashAudio.masterGain.gain.linearRampToValueAtTime(
-    _splashAudio.muted ? 0 : 0.72, _splashAudio.ctx.currentTime + 0.25);
-  var btn = document.getElementById('splashMuteBtn');
-  if (btn) btn.textContent = _splashAudio.muted ? '🔇' : '🔊';
-}
-
-function splashAudioFadeOut() {
-  if (!_splashAudio.masterGain || !_splashAudio.ctx) return;
-  _splashAudio.masterGain.gain.linearRampToValueAtTime(0, _splashAudio.ctx.currentTime + 2.2);
-  setTimeout(function() {
-    splashStopAmbient();
-    try { if (_splashAudio.ctx) _splashAudio.ctx.close(); } catch(e) {}
-    _splashAudio.ctx = null; _splashAudio.masterGain = null;
-  }, 2800);
-}
 </script>
 <!-- SVG Sprite for Lucide Icons -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
