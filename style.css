@@ -1419,7 +1419,7 @@ table tbody tr:last-child td { border-bottom: none; }
   color: var(--navy);
 }
 .weekly-report-detail-table tbody td:first-child {
-  width: 240px;
+  width: 180px;
 }
 .weekly-report-detail-table tbody td textarea,
 .weekly-report-detail-table tbody td input,
@@ -1435,7 +1435,7 @@ table tbody tr:last-child td { border-bottom: none; }
 .weekly-report-detail-table tbody td textarea,
 .weekly-report-class-table tbody td textarea,
 .weekly-report-ranking-table tbody td textarea {
-  min-height: 66px;
+  min-height: 96px;
 }
 .weekly-report-class-table tbody td:nth-child(4),
 .weekly-report-ranking-table tbody td:nth-child(4) {
@@ -1947,9 +1947,26 @@ table tbody tr:last-child td { border-bottom: none; }
   color: var(--muted);
   font-weight: 700;
 }
+.murid-attendance-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-top: 10px;
+}
 .murid-attendance-search label {
-  display: block;
-  margin-bottom: 8px;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 0;
+}
+.murid-attendance-search input {
+  flex: 1;
+  min-width: 0;
 }
 .murid-attendance-meta {
   display: flex;
