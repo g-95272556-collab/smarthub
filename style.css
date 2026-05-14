@@ -2925,6 +2925,7 @@ table tbody tr:last-child td { border-bottom: none; }
   gap: 12px;
   height: 110px;
   padding: 10px 4px;
+  width: 100%;
 }
 
 .chart-bar-group {
