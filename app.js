@@ -2690,6 +2690,14 @@ function showModule(id) {
   } else if (id === 'notifikasi') {
     loadNotifLog();
     currentAutoRefreshInterval = setInterval(loadNotifLog, 600000);
+  } else if (id === 'opr') {
+    currentAutoRefreshInterval = null;
+    var oprGbEl = document.getElementById('opr-gb');
+    if (oprGbEl && !oprGbEl.value) {
+      getGuruBesarNameFromData().then(function(nama) {
+        if (nama && oprGbEl && !oprGbEl.value) oprGbEl.value = nama;
+      });
+    }
   } else {
     currentAutoRefreshInterval = null;
   }
