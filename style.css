@@ -336,14 +336,17 @@ body.is-loading {
 .sidebar-logo .mark {
   width: 44px; height: 44px;
   min-width: 44px;
-  background: linear-gradient(135deg, var(--gold), var(--gold2));
-  border-radius: 14px;
+  background: transparent;
+  border-radius: 0;
   display: grid; place-items: center;
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 800; font-size: 1rem;
-  color: var(--navy);
   flex-shrink: 0;
-  box-shadow: 0 8px 20px rgba(251,191,36,0.2);
+  box-shadow: none;
+}
+.sidebar-logo .mark img {
+  width: 44px; height: 44px;
+  object-fit: cover;
+  border-radius: 50%;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
 }
 .sidebar-logo .brand-text h2 {
   font-size: 1rem; font-weight: 700;
@@ -3935,4 +3938,231 @@ details[open] > summary svg {
   background: currentColor;
   color: #fff;
   padding: 1px 3px;
-  border-radi
+  border-radius: 2px;
+  font-size: 0.6rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.9;
+}
+
+.takwim-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.takwim-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+.takwim-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .takwim-cell {
+    min-height: 40px;
+    padding: 4px 2px;
+    font-size: 0.65rem;
+  }
+
+  .takwim-cell-date {
+    font-size: 0.75rem;
+  }
+
+  .takwim-event-badge {
+    font-size: 0.55rem;
+  }
+
+  .takwim-legend {
+    font-size: 0.65rem;
+  }
+}
+.pls-countdown { display: flex; gap: 20px; justify-content: center; width: 100%; }
+.pls-time-box {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100px; height: 110px;
+  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px;
+  box-shadow: inset 0 2px 20px rgba(255,255,255,0.02); position: relative; overflow: hidden;
+}
+.pls-time-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); }
+.pls-time-box span { font-family: 'Space Grotesk', monospace; font-size: 3rem; font-weight: 800; color: #facc15; line-height: 1; text-shadow: 0 0 20px rgba(250, 204, 21, 0.3); font-variant-numeric: tabular-nums; }
+.pls-time-box small { margin-top: 12px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; color: #cbd5e1; }
+@media (max-width: 600px) {
+  .pls-title { font-size: 1.8rem; }
+  .pls-subtitle { font-size: 0.9rem; }
+  .pls-countdown { gap: 10px; }
+  .pls-time-box { width: 70px; height: 80px; border-radius: 14px; }
+  .pls-time-box span { font-size: 2rem; }
+  .pls-time-box small { font-size: 0.6rem; margin-top: 8px; }
+}
+
+/* ─────────────────────────────────────────── */
+/* TAKWIM / KALENDER SEKOLAH                   */
+/* ─────────────────────────────────────────── */
+.takwim-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 8px;
+}
+.takwim-grid .takwim-head {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  padding: 6px 0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.takwim-grid .takwim-head.tw-jumaat,
+.takwim-grid .takwim-head.tw-sabtu,
+.takwim-grid .takwim-head.tw-ahad { color: #ef4444; }
+.takwim-grid .takwim-cell {
+  position: relative;
+  min-height: 56px;
+  padding: 6px 4px 18px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.78rem;
+  color: var(--slate, #1e293b);
+  cursor: default;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  overflow: hidden;
+}
+.takwim-grid .takwim-cell.is-empty {
+  background: transparent;
+  border: 1px dashed rgba(148,163,184,.25);
+  color: transparent;
+}
+.takwim-grid .takwim-cell.is-today {
+  background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245,158,11,.15);
+}
+.takwim-grid .takwim-cell.is-weekend { background: #f8fafc; }
+.takwim-grid .takwim-cell.has-event { cursor: pointer; }
+.takwim-grid .takwim-cell.has-event:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,23,42,.08); }
+.takwim-grid .takwim-cell .tw-date {
+  font-weight: 700;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.takwim-grid .takwim-cell .tw-dots {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: flex-start;
+}
+.takwim-grid .takwim-cell .tw-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.takwim-grid .takwim-cell .tw-count {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-left: 2px;
+  line-height: 1;
+  align-self: center;
+}
+.takwim-legend .tw-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.takwim-legend .tw-leg::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.takwim-event-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  background: #fff;
+  align-items: flex-start;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.takwim-event-item:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,.06); }
+.takwim-event-item .tw-date-box {
+  width: 46px;
+  flex-shrink: 0;
+  text-align: center;
+  border-radius: 8px;
+  padding: 4px 0;
+  color: #fff;
+  background: var(--blue);
+  font-family: 'Space Grotesk', sans-serif;
+  line-height: 1.1;
+}
+.takwim-event-item .tw-date-box .tw-day {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.takwim-event-item .tw-date-box .tw-mon {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+.takwim-event-item .tw-body { flex: 1; min-width: 0; }
+.takwim-event-item .tw-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--slate, #1e293b);
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+.takwim-event-item .tw-meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.takwim-event-item .tw-kat {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(26,79,160,.1);
+  color: var(--blue);
+  font-weight: 700;
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+}
+.takwim-event-item.is-today { border-color: #f59e0b; background: linear-gradient(180deg,#fffbeb 0%,#fff 100%); }
+.takwim-event-item.is-past { opacity: 0.55; }
+@media (max-width: 900px) {
+  .takwim-dashboard-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 640px) {
+  .takwim-grid .takwim-cell { min-height: 44px; padding: 4px 2px 14px; font-size: 0.7rem; }
+  .takwim-grid .takwim-cell .tw-date { font-size: 0.78rem; }
+}

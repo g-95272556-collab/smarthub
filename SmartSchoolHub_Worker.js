@@ -409,6 +409,92 @@ async function handleAPI(request, env, corsHeaders) {
     }
   }
 
+  // ── TAKWIM EVENTS — CRUD untuk semua guru ──────────────────────
+  if (body.action === "getTakwimEvents") {
+    try {
+      if (!env.DB) return jsonResp({ success: false, error: "D1 tidak dikonfigurasi" }, 500, corsHeaders);
+      await ensureD1Schema(env);
+      const result = await env.DB.prepare(
+        "SELECT id, tarikh, tarikh_akhir, tajuk, kategori, warna, catatan, created_by, updated_at FROM takwim_events ORDER BY tarikh ASC"
+      ).all();
+      const events = (result.results || []).map(r => ({
+        id: r.id, tarikh: r.tarikh, tarikhAkhir: r.tarikh_akhir || null,
+        tajuk: r.tajuk, kategori: r.kategori, warna: r.warna,
+        catatan: r.catatan || '', createdBy: r.created_by || '', updatedAt: r.updated_at
+      }));
+      return jsonResp({ success: true, events }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message }, 500, corsHeaders);
+    }
+  }
+
+  if (body.action === "saveTakwimEvent") {
+    try {
+      if (!env.DB) return jsonResp({ success: false, error: "D1 tidak dikonfigurasi" }, 500, corsHeaders);
+      await ensureD1Schema(env);
+      const ev = body.event || {};
+      const id = String(ev.id || "").trim();
+      const tarikh = String(ev.tarikh || "").trim();
+      const tajuk  = String(ev.tajuk  || "").trim();
+      if (!id || !tarikh || !tajuk) return jsonResp({ success: false, error: "id, tarikh dan tajuk diperlukan" }, 400, corsHeaders);
+      const createdBy = String((body.requestUser && body.requestUser.email) || ev.createdBy || "").trim();
+      const now = getMalaysiaDateTimeString();
+      await env.DB.prepare(`
+        INSERT INTO takwim_events (id, tarikh, tarikh_akhir, tajuk, kategori, warna, catatan, created_by, updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET
+          tarikh=excluded.tarikh, tarikh_akhir=excluded.tarikh_akhir,
+          tajuk=excluded.tajuk, kategori=excluded.kategori, warna=excluded.warna,
+          catatan=excluded.catatan, updated_at=excluded.updated_at
+      `).bind(id, tarikh, ev.tarikhAkhir || null, tajuk,
+              String(ev.kategori || 'Lain-lain'), String(ev.warna || '#6b7280'),
+              String(ev.catatan || ''), createdBy, now).run();
+      return jsonResp({ success: true, id }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message }, 500, corsHeaders);
+    }
+  }
+
+  if (body.action === "deleteTakwimEvent") {
+    try {
+      if (!env.DB) return jsonResp({ success: false, error: "D1 tidak dikonfigurasi" }, 500, corsHeaders);
+      await ensureD1Schema(env);
+      const id = String(body.id || "").trim();
+      if (!id) return jsonResp({ success: false, error: "id diperlukan" }, 400, corsHeaders);
+      await env.DB.prepare("DELETE FROM takwim_events WHERE id = ?").bind(id).run();
+      return jsonResp({ success: true, id }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message }, 500, corsHeaders);
+    }
+  }
+
+  if (body.action === "replaceTakwimEvents") {
+    try {
+      if (!env.DB) return jsonResp({ success: false, error: "D1 tidak dikonfigurasi" }, 500, corsHeaders);
+      await ensureD1Schema(env);
+      const events = Array.isArray(body.events) ? body.events : [];
+      const createdBy = String((body.requestUser && body.requestUser.email) || "").trim();
+      const now = getMalaysiaDateTimeString();
+      await env.DB.prepare("DELETE FROM takwim_events").run();
+      if (events.length > 0) {
+        const stmts = events.map(ev =>
+          env.DB.prepare(`
+            INSERT INTO takwim_events (id, tarikh, tarikh_akhir, tajuk, kategori, warna, catatan, created_by, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?)
+          `).bind(
+            String(ev.id || crypto.randomUUID()), String(ev.tarikh || ''), ev.tarikhAkhir || null,
+            String(ev.tajuk || ''), String(ev.kategori || 'Lain-lain'), String(ev.warna || '#6b7280'),
+            String(ev.catatan || ''), createdBy, now
+          )
+        );
+        await env.DB.batch(stmts);
+      }
+      return jsonResp({ success: true, count: events.length }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message }, 500, corsHeaders);
+    }
+  }
+
   if (body.action === "storeLetterFile") {
     try {
       if (!env.DB) return jsonResp({ success: false, error: "D1 tidak dikonfigurasi" }, 500, corsHeaders);
@@ -879,6 +965,22 @@ async function ensureD1Schema(env) {
       PRIMARY KEY (email, date)
     )
   `).run();
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS takwim_events (
+      id TEXT PRIMARY KEY,
+      tarikh TEXT NOT NULL,
+      tarikh_akhir TEXT DEFAULT NULL,
+      tajuk TEXT NOT NULL,
+      kategori TEXT NOT NULL DEFAULT 'Lain-lain',
+      warna TEXT NOT NULL DEFAULT '#6b7280',
+      catatan TEXT DEFAULT '',
+      created_by TEXT DEFAULT '',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `).run();
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_takwim_tarikh ON takwim_events(tarikh)
+  `).run().catch(() => {});
   D1_SCHEMA_READY = true;
 }
 
@@ -1886,6 +1988,10 @@ function needsAuthenticatedRequest(body) {
   if (body.action === "storeLetterFile") return true;
   if (body.action === "getKokumAttendanceSummary") return true;
   if (body.action === "getSummary" || body.action === "clearSheet" || body.action === "clearAllData") return true;
+  if (body.action === "getTakwimEvents") return true;
+  if (body.action === "saveTakwimEvent") return true;
+  if (body.action === "deleteTakwimEvent") return true;
+  if (body.action === "replaceTakwimEvents") return true;
   if (body.action === "appendRow" && (body.sheetKey === "KEHADIRAN_MURID" || body.sheetKey === "KEHADIRAN_GURU")) return true;
   if (body.action === "appendRows" && (body.sheetKey === "KEHADIRAN_MURID" || body.sheetKey === "KEHADIRAN_GURU")) return true;
   if (body.action === "replaceSheet") return true;
@@ -1973,6 +2079,10 @@ async function authorizeRequest(body, actor, env, workerToken) {
     return authorizeClassScopedRead(body, actor, env, workerToken);
   }
   if (body.action === "storeLetterFile") {
+    return authorizeTeacherRead(body, actor, env, workerToken);
+  }
+  if (body.action === "getTakwimEvents" || body.action === "saveTakwimEvent" ||
+      body.action === "deleteTakwimEvent" || body.action === "replaceTakwimEvents") {
     return authorizeTeacherRead(body, actor, env, workerToken);
   }
   if (body.action === "getSummary" || body.action === "clearSheet" || body.action === "clearAllData") {

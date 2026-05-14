@@ -184,7 +184,7 @@ function isMobileViewport() {
 
 function getValidConfigGroup(group) {
   var value = String(group || '').trim();
-  return ['utama', 'notifikasi', 'data', 'lanjutan'].includes(value) ? value : CONFIG_GROUP_DEFAULT;
+  return ['utama', 'notifikasi', 'data', 'lanjutan', 'takwim'].includes(value) ? value : CONFIG_GROUP_DEFAULT;
 }
 
 function setConfigGroup(group) {
@@ -1286,7 +1286,6 @@ async function loadAdminConfig() {
   renderAdminList();
   loadD1Summary();
   loadD1EditableSheet();
-  renderLaunchConfigUI();
 }
 
 // ── Hari Persekolahan ────────────────────
@@ -1679,6 +1678,60 @@ function renderAktivitiTerkini() {
     return;
   }
   el.innerHTML = renderNotificationActivityItems(logs, 6);
+}
+
+function renderAcaraAkanDatang() {
+  var targets = ['dash-acara-akan-datang', 'notif-acara-akan-datang']
+    .map(function(id) { return document.getElementById(id); })
+    .filter(Boolean);
+  if (!targets.length) return;
+  try {
+    if (typeof getTakwimEvents !== 'function') {
+      var unavail = '<div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Modul takwim belum tersedia.</div>';
+      targets.forEach(function(el) { el.innerHTML = unavail; });
+      return;
+    }
+    var allEvents = getTakwimEvents();
+    var today = new Date();
+    var upcoming = allEvents.filter(function(evt) {
+      var eventDate = new Date(evt.tarikh);
+      return eventDate >= today;
+    }).sort(function(a, b) {
+      return new Date(a.tarikh) - new Date(b.tarikh);
+    }).slice(0, 5);
+
+    var html;
+    if (!upcoming.length) {
+      html = '<div style="color:var(--muted);font-size:0.82rem;padding:16px;text-align:center">' +
+        '<svg class="lucide-icon" style="width:32px;height:32px;margin-bottom:8px;opacity:0.5" width="32" height="32"><use href="#lucide-calendar-x"></use></svg>' +
+        '<div>Tiada acara akan datang</div></div>';
+    } else {
+      html = upcoming.map(function(evt, idx) {
+        var eventDate = new Date(evt.tarikh);
+        var daysAway = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+        var tarikh = eventDate.toLocaleDateString('ms-MY', { year: 'numeric', month: 'short', day: 'numeric' });
+        var WARNA_MAP = (typeof TAKWIM_KATEGORI_WARNA !== 'undefined') ? TAKWIM_KATEGORI_WARNA : {};
+        var categoryColor = WARNA_MAP[evt.kategori] || evt.warna || '#6b7280';
+        var animation = 'animation-delay:' + (idx * 0.05) + 's';
+        return '<div class="animate-fade-up" style="' + animation + ';padding:12px;border-radius:10px;background:rgba(' +
+          (evt.kategori === 'Cuti' ? '239,68,68' : '59,130,246') + ',0.08);border:1px solid ' + categoryColor + '33;margin-bottom:8px">' +
+          '<div style="display:flex;gap:8px;align-items:flex-start">' +
+          '<div style="color:' + categoryColor + ';font-weight:700;font-size:0.75rem;padding:4px 6px;background:' + categoryColor + '20;border-radius:4px;flex-shrink:0;min-width:50px;text-align:center">' +
+          escapeHtml(evt.kategori) + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:600;font-size:0.85rem;color:var(--text);margin-bottom:2px">' + escapeHtml(evt.tajuk) + '</div>' +
+          '<div style="font-size:0.78rem;color:var(--muted)">' + tarikh +
+          (daysAway === 0 ? ' • Hari ini' : daysAway === 1 ? ' • Esok' : ' • ' + daysAway + ' hari lagi') +
+          '<\/div>' + (evt.catatan ? '<div style="font-size:0.75rem;color:var(--muted);margin-top:4px;opacity:0.75">' + escapeHtml(evt.catatan) + '<\/div>' : '') +
+          '<\/div><\/div><\/div>';
+      }).join('');
+    }
+    targets.forEach(function(el) { el.innerHTML = html; });
+  } catch(e) {
+    console.warn('Error rendering acara akan datang:', e);
+    var errMsg = '<div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Ralat memuatkan acara.</div>';
+    targets.forEach(function(el) { el.innerHTML = errMsg; });
+  }
 }
 
 function renderBirthdayDashboard() {
@@ -2267,6 +2320,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 300);
   });
   initAuth();
+  if (typeof initTakwimModule === 'function') initTakwimModule();
 });
 
 function initAuth() {
@@ -2688,8 +2742,14 @@ function showModule(id) {
         if (_lkLayout) _lkLayout.classList.add('collapsed');
       }
     }
+  } else if (id === 'takwim') {
+    if (typeof loadTakwimConfigUI === 'function') loadTakwimConfigUI();
+    currentAutoRefreshInterval = null;
+  } else if (id === 'konfigurasi') {
+    currentAutoRefreshInterval = null;
   } else if (id === 'notifikasi') {
     loadNotifLog();
+    renderAcaraAkanDatang();
     currentAutoRefreshInterval = setInterval(loadNotifLog, 600000);
   } else if (id === 'opr') {
     currentAutoRefreshInterval = null;
@@ -2951,6 +3011,7 @@ function setTodayDates() {
 }
 
 async function refreshDashboard() {
+  if (typeof renderDashboardTakwim === 'function') renderDashboardTakwim();
   renderGuruBertugasDash();
   scheduleIdleWork(function() {
     muatCuaca();
@@ -2959,7 +3020,7 @@ async function refreshDashboard() {
   if (!APP.workerUrl) return;
 
   showSkeleton('dashChartWrap', 'chart');
-  showSkeleton('dash-aktiviti-list', 'list');
+  showSkeleton('dash-acara-akan-datang', 'list');
   showSkeleton('dashGuruBody', 'table-guru');
   showSkeleton('dash-murid-tidak-hadir-list', 'list');
   showSkeleton('dash-birthday-list', 'grid-birthday');
@@ -2980,7 +3041,7 @@ async function refreshDashboard() {
         updateDashboardMurid((muridRes.value.rows || []).map(parseKehadiranMuridRow), today);
       }
       setText('dash-notif', APP.notifLog.filter(function(l){return l.date===today;}).length);
-      renderAktivitiTerkini();
+      renderAcaraAkanDatang();
       renderBirthdayDashboard();
     } catch(e) { /* silent */ }
   });
@@ -14761,7 +14822,7 @@ async function checkAndShowSplash(user) {
 
 // ── PELANCARAN SPLASH SCREEN (LAUNCH DATE) ─────────────────────
 function showPremiumLaunchSplash(isPreview) {
-  let targetDateStr = isPreview ? (document.getElementById('configLaunchDate').value || getRuntimeConfig().launchDate) : APP.launchDate;
+  let targetDateStr = isPreview ? getRuntimeConfig().launchDate : APP.launchDate;
   if (!targetDateStr && !isPreview) return;
 
   let targetDate = new Date(targetDateStr).getTime();
@@ -14843,49 +14904,3 @@ function tutupPremiumSplash() {
   if (window._plsInterval) clearInterval(window._plsInterval);
 }
 
-function renderLaunchConfigUI() {
-  let container = document.getElementById('configLaunchContainer');
-  if (!container) {
-    const grid = document.querySelector('#mod-konfigurasi .config-grid');
-    if (!grid) return;
-    container = document.createElement('div');
-    container.id = 'configLaunchContainer';
-    container.className = 'card config-section-card animate-fade-up';
-    container.setAttribute('data-config-group', 'lanjutan');
-    grid.appendChild(container);
-  }
-  const currentLaunch = _backendConfigCache && _backendConfigCache.LAUNCH_DATE !== undefined ? _backendConfigCache.LAUNCH_DATE : (getRuntimeConfig().launchDate || '');
-  container.innerHTML = `
-    <div class="section-header">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div class="stat-icon gold" style="width:42px;height:42px;font-size:1.2rem;"><span style="transform:translateY(1px)">🚀</span></div>
-        <div>
-          <h2 style="font-size:1.1rem;margin:0;">Tetapan Pelancaran</h2>
-          <div style="font-size:0.8rem;color:var(--muted);margin-top:2px;">Kawal akses dengan Splash Screen premium</div>
-        </div>
-      </div>
-    </div>
-    <div class="form-group" style="margin-bottom: 20px;">
-      <label>Tarikh & Masa Pelancaran</label>
-      <input type="datetime-local" id="configLaunchDate" value="${currentLaunch}">
-      <small style="display:block;margin-top:6px;color:var(--muted);font-size:0.8rem;line-height:1.5;">Biarkan kosong atau set pada tarikh lepas untuk terus buka sistem. Jika diset pada masa hadapan, sistem akan dikunci dengan Countdown Timer (Admin masih boleh bypass).</small>
-    </div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="simpanTarikhPelancaran()" style="flex:1;justify-content:center;">💾 Simpan Tarikh</button>
-      <button class="btn btn-secondary" onclick="showPremiumLaunchSplash(true)" style="flex:1;justify-content:center;">👀 Preview Design</button>
-    </div>
-  `;
-}
-
-async function simpanTarikhPelancaran() {
-  const el = document.getElementById('configLaunchDate');
-  if (!el) return;
-  const val = el.value;
-  if (!APP.workerUrl) {
-    showToast('Worker URL diperlukan untuk simpan ke backend.', 'error');
-    return;
-  }
-  try {
-    const res = await callWorker({ action: 'setConfig', config: { LAUNCH_DATE: val } });
-    if (!res.success) throw new Error(res.error || 'Gagal menyimpan tarikh pelancaran.');
-    APP.launchDate =

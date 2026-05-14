@@ -526,7 +526,6 @@ window.showSplashPerasmian = function (previewMode) {
         splash.style.opacity = '0';
         setTimeout(function(){ splash.style.display = 'none'; splash.style.transition = ''; splash.style.opacity = '1'; }, 400);
         if (window._splashRaf) { cancelAnimationFrame(window._splashRaf); window._splashRaf = null; }
-        try { splashAudioFadeOut(); } catch(e) {}
       };
       splash.appendChild(closeBtn);
     }
@@ -535,24 +534,6 @@ window.showSplashPerasmian = function (previewMode) {
     var cb = document.getElementById('splashClosePreview');
     if (cb) cb.remove();
   }
-
-  /* Butang mute audio */
-  var muteBtn = document.getElementById('splashMuteBtn');
-  if (!muteBtn) {
-    muteBtn = document.createElement('button');
-    muteBtn.id = 'splashMuteBtn';
-    muteBtn.textContent = '🔊';
-    muteBtn.title = 'Senyap / Buka Bunyi';
-    muteBtn.style.cssText = 'position:absolute;bottom:22px;right:22px;z-index:10;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);color:#fff;font-size:16px;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;padding:0;line-height:1';
-    muteBtn.onclick = function() { try { splashToggleMute(); } catch(e) {} };
-    splash.appendChild(muteBtn);
-  } else {
-    muteBtn.textContent = '🔊';
-    _splashAudio.muted = false;
-  }
-
-  /* Mulakan audio ambient */
-  try { splashAudioInit(); setTimeout(function(){ splashPlayAmbient(); }, 800); } catch(e) {}
 
   /* Tarikh */
   var t = new Date();
@@ -683,7 +664,6 @@ function splashRasmikan() {
 
       /* Fanfare + Fireworks + Confetti mula selepas kad perasmian muncul */
       setTimeout(function () {
-        try { splashPlayFanfare(); } catch(e) {}
         splashDoFireworks();
         splashDoConfetti();
       }, 600);
@@ -707,7 +687,6 @@ function splashRasmikan() {
       setTimeout(function () {
         var splash = document.getElementById('splashLaunch');
         if (!splash) return;
-        try { splashAudioFadeOut(); } catch(e) {}
         splash.style.transition = 'opacity 1.2s ease';
         splash.style.opacity = '0';
         setTimeout(function () {
@@ -968,36 +947,6 @@ function splashDoConfetti() {
   animC();
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   SPLASH AUDIO — Web Audio API
-   Muzik latar majlis pelancaran rasmi (fanfare + ambient)
-   ═══════════════════════════════════════════════════════════════════ */
-var _splashAudio = { ctx: null, masterGain: null, reverbNode: null, reverbGain: null, muted: false, ambientNodes: [] };
-
-function splashAudioInit() {
-  if (_splashAudio.ctx) return;
-  try {
-    _splashAudio.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    _splashAudio.masterGain = _splashAudio.ctx.createGain();
-    _splashAudio.masterGain.gain.setValueAtTime(0.72, _splashAudio.ctx.currentTime);
-    _splashAudio.masterGain.connect(_splashAudio.ctx.destination);
-
-    /* Reverb sintetik (impulse response) */
-    var rate = _splashAudio.ctx.sampleRate;
-    var revLen = rate * 3.2;
-    var revBuf = _splashAudio.ctx.createBuffer(2, revLen, rate);
-    for (var ch = 0; ch < 2; ch++) {
-      var d = revBuf.getChannelData(ch);
-      for (var i = 0; i < revLen; i++) { d[i] = (Math.random()*2-1) * Math.pow(1 - i/revLen, 8); }
-    }
-    _splashAudio.reverbNode = _splashAudio.ctx.createConvolver();
-    _splashAudio.reverbNode.buffer = revBuf;
-    _splashAudio.reverbGain = _splashAudio.ctx.createGain();
-    _splashAudio.reverbGain.gain.setValueAtTime(0.3, _splashAudio.ctx.currentTime);
-    _splashAudio.reverbNode.connect(_splashAudio.reverbGain);
-    _splashAudio.reverbGain.connect(_splashAudio.masterGain);
-  } catch(e) { _splashAudio.ctx = null; }
-}
 
 function _splashNote(freq, t0, dur, type, vol, filt) {
   var ctx = _splashAudio.ctx; if (!ctx) return;
@@ -1479,6 +1428,40 @@ function splashAudioFadeOut() {
       <path d="m15 9-6 6"></path>
       <path d="m9 9 6 6"></path>
     </symbol>
+    <symbol id="lucide-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="7 10 12 15 17 10"></polyline>
+      <line x1="12" x2="12" y1="3" y2="15"></line>
+    </symbol>
+    <symbol id="lucide-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="17 8 12 3 7 8"></polyline>
+      <line x1="12" x2="12" y1="3" y2="15"></line>
+    </symbol>
+    <symbol id="lucide-rotate-ccw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+      <path d="M3 3v5h5"></path>
+    </symbol>
+    <symbol id="lucide-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </symbol>
+    <symbol id="lucide-calendar-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 2v4"></path>
+      <path d="M16 2v4"></path>
+      <path d="M3 10h18"></path>
+      <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+      <path d="m14 14-4 4"></path>
+      <path d="m10 14 4 4"></path>
+    </symbol>
+    <symbol id="lucide-calendar-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 2v4"></path>
+      <path d="M16 2v4"></path>
+      <path d="M3 10h18"></path>
+      <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+      <path d="M12 15v4"></path>
+      <path d="M10 17h4"></path>
+    </symbol>
   </defs>
 </svg>
 <!-- ─── LOADING SCREEN ─── -->
@@ -1553,7 +1536,7 @@ function splashAudioFadeOut() {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
       <div class="sidebar-logo">
-        <div class="mark">SK</div>
+        <div class="mark"><img src="assets/sk-kiandongo-logo.png" alt="Logo SK Kiandongo"></div>
         <div class="brand-text">
           <h2>SmartSchoolHub</h2>
           <p>SK Kiandongo</p>
@@ -1596,6 +1579,12 @@ function splashAudioFadeOut() {
       <button class="nav-item c-indigo" onclick="showModule('lembaran-kerja')">
         <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-brain"></use></svg></span>
         <span>Jana Lembaran Kerja AI</span>
+      </button>
+
+      <div class="nav-section-label">Takwim</div>
+      <button class="nav-item c-teal" onclick="showModule('takwim')">
+        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-calendar-days"></use></svg></span>
+        <span>Takwim Sekolah</span>
       </button>
 
       <div class="nav-section-label" data-admin-label="true">Pengurusan Data</div>
@@ -1769,13 +1758,29 @@ function splashAudioFadeOut() {
           </div>
           <div class="card">
             <div class="section-header">
-              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-bell"></use></svg> Aktiviti Terkini</h2>
-              <button class="btn btn-sm btn-secondary" onclick="showModule('notifikasi')">Lihat Semua</button>
+              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-calendar-days"></use></svg> Peristiwa Akan Datang</h2>
+              <button class="btn btn-sm btn-secondary" onclick="showModule('konfigurasi'); setTimeout(() => { const btn = document.querySelector('[onclick=\"openConfigGroup(\'takwim\')\"]'); if (btn) btn.click(); }, 200)">Kelola</button>
             </div>
-            <div id="dash-aktiviti-list" style="max-height:130px;overflow-y:auto">
-              <div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Tiada aktiviti hari ini.</div>
+            <div id="dash-acara-akan-datang" style="max-height:160px;overflow-y:auto">
+              <div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Memuat acara...</div>
             </div>
           </div>
+        </div>
+
+        <!-- Takwim Sekolah -->
+        <div class="card animate-fade-up" style="margin-bottom:18px;animation-delay:0.25s">
+          <div class="section-header">
+            <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-calendar-days"></use></svg> Takwim Sekolah</h2>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-sm btn-secondary" onclick="navigateTakwimBulan(-1)" aria-label="Bulan sebelum">&#8249;</button>
+              <span id="dash-takwim-label" style="font-weight:700;font-size:0.88rem;min-width:130px;text-align:center">—</span>
+              <button class="btn btn-sm btn-secondary" onclick="navigateTakwimBulan(1)" aria-label="Bulan seterusnya">&#8250;</button>
+              <button class="btn btn-sm btn-secondary" onclick="navigateTakwimBulan(0)">Hari Ini</button>
+              <button class="btn btn-sm btn-primary" onclick="showModule('takwim')">Kelola</button>
+            </div>
+          </div>
+          <div id="dash-takwim-grid" style="margin-top:4px"></div>
+          <div id="dash-takwim-legend" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"></div>
         </div>
 
         <!-- Status Kehadiran Guru Minggu Ini -->
@@ -2636,11 +2641,14 @@ _SK Kiandongo_</textarea>
 
           <div class="card" style="margin-bottom:20px">
             <div class="section-header">
-              <h2>Aktiviti Terkini Hari Ini</h2>
-              <button class="btn btn-sm btn-secondary" onclick="loadNotifLog()">Segar</button>
+              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-calendar-days"></use></svg> Peristiwa Akan Datang</h2>
+              <button class="btn btn-sm btn-secondary" onclick="showModule('takwim')">Kelola</button>
             </div>
-            <div id="notifLogActivityList" style="display:grid;gap:8px">
-              <div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Tiada aktiviti hari ini.</div>
+            <div id="notif-acara-akan-datang" style="max-height:200px;overflow-y:auto">
+              <div style="color:var(--muted);font-size:0.82rem;padding:12px;text-align:center">Memuat acara...</div>
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.78rem;color:var(--muted)">
+              Log aktiviti sistem boleh dilihat di <button class="btn btn-sm btn-secondary" style="font-size:0.78rem;padding:2px 8px" onclick="showModule('konfigurasi');setTimeout(function(){scrollToConfigSection('config-aktiviti-card');},200)">Konfigurasi › Aktiviti &amp; Log</button>
             </div>
           </div>
 
@@ -2689,6 +2697,7 @@ _SK Kiandongo_</textarea>
             <button type="button" class="config-section-tab" data-config-tab="notifikasi" onclick="setConfigGroup('notifikasi')">Notifikasi</button>
             <button type="button" class="config-section-tab" data-config-tab="data" onclick="setConfigGroup('data')">Data & Akses</button>
             <button type="button" class="config-section-tab" data-config-tab="lanjutan" onclick="setConfigGroup('lanjutan')">Lanjutan</button>
+            <button type="button" class="config-section-tab" data-config-tab="takwim" onclick="setConfigGroup('takwim')">Takwim</button>
           </div>
           <div class="config-menu-grid">
             <button class="btn btn-secondary config-menu-item" data-config-group="utama" onclick="scrollToConfigSection('config-ai-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-sparkles"></use></svg> Kunci API Gemini (AI)</button>
@@ -2704,6 +2713,7 @@ _SK Kiandongo_</textarea>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-monitor-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-activity"></use></svg> Pemantauan & Log</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-advanced-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-settings"></use></svg> Kunci Lanjutan</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-splash-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-sparkles"></use></svg> Splash Perasmian</button>
+            <button class="btn btn-secondary config-menu-item" data-config-group="takwim" onclick="scrollToConfigSection('config-takwim-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-calendar-days"></use></svg> Takwim Sekolah</button>
           </div>
         </div>
 
@@ -3383,6 +3393,21 @@ _{SEKOLAH}_</textarea>
           <div id="aktivitiResultBox" class="result-box" style="display:none;margin-top:14px"></div>
         </div>
 
+        <!-- ─── TAKWIM SEKOLAH ─── -->
+        <div class="card config-section-card" id="config-takwim-card" data-config-group="takwim" style="margin-top:20px">
+          <div class="section-header">
+            <div>
+              <h2 style="display:flex;align-items:center;gap:8px"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-calendar-days"></use></svg> Takwim Sekolah</h2>
+              <p style="font-size:0.85rem;color:var(--muted);margin:6px 0 0">Pengurusan takwim kini tersedia sebagai modul berasingan.</p>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn btn-primary" onclick="showModule('takwim')">
+              <svg class="lucide-icon" width="14" height="14"><use href="#lucide-calendar-days"></use></svg> Buka Modul Takwim Sekolah
+            </button>
+          </div>
+        </div>
+
           <div class="card config-section-card" id="config-admin-card" data-config-group="data" style="margin-top:20px">
             <div class="section-header">
               <h2>Pentadbiran & Akses</h2>
@@ -3731,6 +3756,148 @@ _{SEKOLAH}_</textarea>
         </div>
       </div>
 
+
+      <!-- ══ TAKWIM SEKOLAH (modul bebas — semua pengguna) ══ -->
+      <div id="mod-takwim" class="module" style="display:none">
+        <div class="module-header">
+          <h1><svg class="lucide-icon" width="22" height="22" style="vertical-align:middle;margin-right:8px"><use href="#lucide-calendar-days"></use></svg>Takwim Sekolah</h1>
+          <p>Urus acara, cuti, peperiksaan dan aktiviti sekolah. <span id="takwim-sync-status" style="font-size:0.75rem;font-weight:600;margin-left:8px;color:#6b7280">⚡ Mod Luar Talian</span></p>
+        </div>
+        <div style="padding:0 0 32px">
+
+          <!-- Form tambah/edit acara -->
+          <div class="card" style="margin-bottom:16px">
+            <div style="font-size:0.95rem;font-weight:700;color:var(--blue);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+              <svg class="lucide-icon" width="16" height="16"><use href="#lucide-calendar-plus"></use></svg>
+              Tambah / Edit Acara
+            </div>
+            <input type="hidden" id="takwim-edit-id">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.82rem;font-weight:600">Tarikh Mula <span style="color:var(--red)">*</span></label>
+                <input id="takwim-input-tarikh" type="date" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.82rem;font-weight:600">Tarikh Akhir <span style="color:var(--muted);font-weight:400">(pilihan)</span></label>
+                <input id="takwim-input-tarikh-akhir" type="date" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem">
+              </div>
+              <div class="form-group" style="margin:0;grid-column:1/-1">
+                <label style="font-size:0.82rem;font-weight:600">Tajuk Acara <span style="color:var(--red)">*</span></label>
+                <input id="takwim-input-tajuk" type="text" placeholder="Contoh: Hari Sukan Sekolah" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.82rem;font-weight:600">Kategori</label>
+                <select id="takwim-input-kategori" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem">
+                  <optgroup label="── Persekolahan ──">
+                    <option>Penggal Sekolah</option>
+                    <option>Cuti Sekolah</option>
+                    <option>Cuti Tambahan KPM</option>
+                    <option>Cuti Umum</option>
+                    <option>Cuti Negeri Sabah</option>
+                    <option>Cuti Peristiwa</option>
+                  </optgroup>
+                  <optgroup label="── Bidang ──">
+                    <option>Akademik</option>
+                    <option>HEM</option>
+                    <option>KoKum</option>
+                    <option>KoAkademik</option>
+                  </optgroup>
+                  <optgroup label="── Aktiviti ──">
+                    <option>Aktiviti</option>
+                    <option>Peperiksaan</option>
+                    <option>Mesyuarat</option>
+                    <option>Sukan</option>
+                    <option>Lain-lain</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.82rem;font-weight:600">Warna <span style="color:var(--muted);font-weight:400">(opsyen)</span></label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input id="takwim-input-warna" type="color" value="#1A4FA0" style="width:44px;height:36px;border:1px solid var(--border);border-radius:8px;padding:2px;cursor:pointer">
+                  <div style="display:flex;gap:4px;flex-wrap:wrap">
+                    <button type="button" onclick="document.getElementById('takwim-input-warna').value='#1A4FA0'" style="width:22px;height:22px;background:#1A4FA0;border-radius:4px;border:2px solid transparent;cursor:pointer" title="Biru"></button>
+                    <button type="button" onclick="document.getElementById('takwim-input-warna').value='#059669'" style="width:22px;height:22px;background:#059669;border-radius:4px;border:2px solid transparent;cursor:pointer" title="Hijau"></button>
+                    <button type="button" onclick="document.getElementById('takwim-input-warna').value='#dc2626'" style="width:22px;height:22px;background:#dc2626;border-radius:4px;border:2px solid transparent;cursor:pointer" title="Merah"></button>
+                    <button type="button" onclick="document.getElementById('takwim-input-warna').value='#d97706'" style="width:22px;height:22px;background:#d97706;border-radius:4px;border:2px solid transparent;cursor:pointer" title="Emas"></button>
+                    <button type="button" onclick="document.getElementById('takwim-input-warna').value='#7c3aed'" style="width:22px;height:22px;background:#7c3aed;border-radius:4px;border:2px solid transparent;cursor:pointer" title="Ungu"></button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group" style="margin:0;grid-column:1/-1">
+                <label style="font-size:0.82rem;font-weight:600">Catatan</label>
+                <input id="takwim-input-catatan" type="text" placeholder="Catatan tambahan (pilihan)" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="simpanTakwimEvent()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-save"></use></svg> <span id="takwim-save-label">Tambah Acara</span></button>
+              <button class="btn btn-secondary" onclick="resetTakwimForm()">Batal</button>
+            </div>
+          </div>
+
+          <!-- Carian & Filter -->
+          <div class="card" style="margin-bottom:16px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+              <input id="takwim-config-cari" type="text" placeholder="Cari acara..." style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;flex:1;min-width:160px" oninput="renderTakwimConfigList()">
+              <select id="takwim-config-filter" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem" onchange="renderTakwimConfigList()">
+                <option value="">— Semua Tahun —</option>
+              </select>
+              <span id="takwim-config-summary" class="badge badge-blue">0 acara</span>
+            </div>
+
+            <!-- Jadual senarai acara -->
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+                <thead style="background:rgba(26,79,160,0.06);border-bottom:2px solid rgba(26,79,160,0.2)">
+                  <tr>
+                    <th style="padding:10px;text-align:left;font-weight:600">Tarikh</th>
+                    <th style="padding:10px;text-align:left;font-weight:600">Tajuk</th>
+                    <th style="padding:10px;text-align:left;font-weight:600">Kategori</th>
+                    <th style="padding:10px;text-align:left;font-weight:600">Catatan</th>
+                    <th style="padding:10px;text-align:left;font-weight:600">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody id="takwim-config-body">
+                  <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Tiada acara. Tambah acara di atas.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Export/Import -->
+            <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+              <button class="btn btn-secondary" onclick="exportTakwimEvents()"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-download"></use></svg> Eksport JSON</button>
+              <label class="btn btn-secondary" style="cursor:pointer;margin:0">
+                <svg class="lucide-icon" width="14" height="14"><use href="#lucide-upload"></use></svg> Import JSON
+                <input type="file" accept=".json" style="display:none" onchange="importTakwimEvents(this)">
+              </label>
+            </div>
+          </div>
+
+          <!-- Muat Data Rasmi 2026 -->
+          <div class="card">
+            <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+              <div style="flex:1;min-width:200px">
+                <div style="font-size:0.88rem;font-weight:700;color:#065f46;margin-bottom:4px">
+                  <svg class="lucide-icon" width="14" height="14" style="display:inline-block;vertical-align:middle;margin-right:4px"><use href="#lucide-calendar-days"></use></svg>
+                  Takwim Persekolahan 2026 — Kumpulan B
+                </div>
+                <div style="font-size:0.78rem;color:var(--muted);line-height:1.6">
+                  Data rasmi KPM: cuti penggal, cuti pertengahan tahun, cuti akhir tahun, cuti tambahan KPM, cuti umum persekutuan &amp; cuti negeri Sabah. <strong>36 acara</strong>.
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+                <button class="btn btn-primary" style="background:#059669;border-color:#059669;font-size:0.82rem" onclick="loadTakwim2026('merge')">
+                  <svg class="lucide-icon" width="14" height="14"><use href="#lucide-download"></use></svg> Muat &amp; Tambah
+                </button>
+                <button class="btn btn-secondary" style="font-size:0.78rem;color:#dc2626;border-color:#fca5a5" onclick="if(confirm('Ini akan PADAM semua acara 2026 yang ada dan gantikan dengan data rasmi. Teruskan?')) loadTakwim2026('replace')">
+                  <svg class="lucide-icon" width="14" height="14"><use href="#lucide-refresh-cw"></use></svg> Muat Semula (Ganti)
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
 
       <!-- ══ HARI LAHIR (migrate dari BDReminder) ══ -->
       <div id="mod-hari-lahir" class="module" style="display:none">
