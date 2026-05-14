@@ -1872,6 +1872,7 @@ table tbody tr:last-child td { border-bottom: none; }
 .murid-attendance-modal .modal-body {
   flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
 }
 .murid-attendance-modal .modal-footer {
   flex: 0 0 auto;
@@ -2608,6 +2609,11 @@ table tbody tr:last-child td { border-bottom: none; }
     width: 100%;
     min-width: 0;
   }
+  /* Butang kecil (ikon sahaja) dalam section-header tidak perlu full-width */
+  .section-header > .btn-sm:last-child:not(:first-child) {
+    width: auto;
+    align-self: flex-end;
+  }
   .page-header > div:last-child,
   .section-header > div:last-child {
     display: flex !important;
@@ -2708,6 +2714,14 @@ table tbody tr:last-child td { border-bottom: none; }
   }
 }
 @media (max-width: 640px) {
+  /* Kad tanggungjawab kehadiran — wrap butang ke baris baru */
+  #muridTanggungjawabCard > div {
+    flex-wrap: wrap;
+  }
+  #muridTanggungjawabCard > div > .btn {
+    width: 100%;
+    justify-content: center;
+  }
   .card-grid-4 { grid-template-columns: 1fr; }
   .card-grid-3 { grid-template-columns: 1fr; }
   .opr-image-grid {
