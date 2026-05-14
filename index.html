@@ -2697,6 +2697,7 @@ _SK Kiandongo_</textarea>
             <button class="btn btn-secondary config-menu-item" data-config-group="utama" onclick="scrollToConfigSection('config-group-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-users"></use></svg> Group WhatsApp Kelas</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="notifikasi" onclick="scrollToConfigSection('config-birthday-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-gift"></use></svg> Notifikasi Hari Lahir</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="notifikasi" onclick="scrollToConfigSection('config-attendance-notif-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-bell"></use></svg> Notifikasi Kehadiran</button>
+            <button class="btn btn-secondary config-menu-item" data-config-group="notifikasi" onclick="scrollToConfigSection('config-aktiviti-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-activity"></use></svg> Aktiviti & Log Sistem</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="data" onclick="scrollToConfigSection('config-kokum-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-award"></use></svg> Konfigurasi Kokum</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="data" onclick="scrollToConfigSection('config-admin-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-shield-check"></use></svg> Pentadbiran & Akses</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="lanjutan" onclick="scrollToConfigSection('config-d1-card')"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-database"></use></svg> Pengurusan D1</button>
@@ -3290,6 +3291,96 @@ _{SEKOLAH}_</textarea>
             <button class="btn btn-secondary" onclick="showModule('notifikasi'); switchNotifTab('hantar'); setTimeout(function(){ var el=document.getElementById('notifGuruTarikh'); if(el) el.focus(); }, 150)">Uji Notifikasi Guru</button>
           </div>
           <div id="attendanceNotifConfigResult" class="result-box" style="display:none;margin-top:14px"></div>
+        </div>
+
+        <!-- ─── AKTIVITI & LOG SISTEM ─── -->
+        <div class="card config-section-card" id="config-aktiviti-card" data-config-group="notifikasi" style="margin-top:20px;border:1px solid rgba(59,130,246,.18);background:linear-gradient(180deg,#ffffff 0%,#f0f7ff 100%)">
+          <div class="section-header" style="align-items:flex-start;gap:14px">
+            <div style="flex:1;min-width:0">
+              <h2>Aktiviti Terkini & Log Sistem</h2>
+              <p style="font-size:0.9rem;color:var(--muted);margin:8px 0 0;line-height:1.7">
+                Paparan log aktiviti sistem semua operasi — takwim, kehadiran, konfigurasi dan lain-lain. Data disimpan di browser anda.
+              </p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+              <button class="btn btn-sm btn-secondary" onclick="scrollToConfigSection('mod-konfigurasi')">Kembali ke Menu Konfigurasi</button>
+              <span class="badge badge-blue">Log Sistem</span>
+            </div>
+          </div>
+
+          <!-- ─── Statistik Aktiviti ─── -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-top:16px">
+            <div style="padding:14px;border:1px solid var(--border);border-radius:12px;background:#fff;text-align:center">
+              <div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px">Hari Ini</div>
+              <div id="aktivitiCountToday" style="font-weight:800;font-size:1.8rem;color:var(--blue)">0</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">aktiviti</div>
+            </div>
+            <div style="padding:14px;border:1px solid var(--border);border-radius:12px;background:#fff;text-align:center">
+              <div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px">Minggu Ini</div>
+              <div id="aktivitiCountThisWeek" style="font-weight:800;font-size:1.8rem;color:var(--green)">0</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">aktiviti</div>
+            </div>
+            <div style="padding:14px;border:1px solid var(--border);border-radius:12px;background:#fff;text-align:center">
+              <div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px">Jumlah</div>
+              <div id="aktivitiCountTotal" style="font-weight:800;font-size:1.8rem;color:var(--amber)">0</div>
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">aktiviti</div>
+            </div>
+          </div>
+
+          <!-- ─── Penapis ─── -->
+          <div style="padding:14px;border:1px solid var(--border);border-radius:12px;background:#fff;margin-top:14px">
+            <div style="font-size:0.88rem;font-weight:600;margin-bottom:12px">Penapis & Carian</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.8rem">Dari Tarikh</label>
+                <input id="aktivitiFilterStartDate" type="date" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.8rem">Hingga Tarikh</label>
+                <input id="aktivitiFilterEndDate" type="date" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem">
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.8rem">Jenis Aktiviti</label>
+                <select id="aktivitiFilterType" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem">
+                  <option value="">— Semua Jenis —</option>
+                  <option>konfigurasi</option>
+                  <option>kehadiran</option>
+                  <option>laporan</option>
+                  <option>takwim</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button class="btn btn-sm btn-primary" onclick="filterAktiviti()">🔍 Tapis</button>
+              <button class="btn btn-sm btn-secondary" onclick="resetAktivitFilter()">↻ Reset</button>
+            </div>
+          </div>
+
+          <!-- ─── Jadual Aktiviti ─── -->
+          <div style="margin-top:14px;overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+              <thead style="background:rgba(59,130,246,0.06);border-bottom:2px solid rgba(59,130,246,0.2)">
+                <tr>
+                  <th style="padding:10px;text-align:left;color:var(--text);font-weight:600">Tarikh & Masa</th>
+                  <th style="padding:10px;text-align:left;color:var(--text);font-weight:600">Jenis</th>
+                  <th style="padding:10px;text-align:left;color:var(--text);font-weight:600">Perihal</th>
+                  <th style="padding:10px;text-align:left;color:var(--text);font-weight:600">Pengguna</th>
+                  <th style="padding:10px;text-align:left;color:var(--text);font-weight:600">Status</th>
+                </tr>
+              </thead>
+              <tbody id="aktivitiTableBody" style="border:1px solid var(--border)">
+                <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Memuat aktiviti...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ─── Tindakan ─── -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+            <button class="btn btn-primary" onclick="exportAktiviti()">📥 Eksport CSV</button>
+            <button class="btn btn-secondary" onclick="refreshAktiviti()">↻ Muat Semula</button>
+            <button class="btn btn-danger" onclick="clearAktiviti()">🗑️ Kosongkan Semua</button>
+          </div>
+          <div id="aktivitiResultBox" class="result-box" style="display:none;margin-top:14px"></div>
         </div>
 
           <div class="card config-section-card" id="config-admin-card" data-config-group="data" style="margin-top:20px">
@@ -4849,6 +4940,8 @@ window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
 }, window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {});
 </script>
 <script src="dskp_embedded.js"></script>
+<script src="takwim.js"></script>
+<script src="aktiviti.js"></script>
 <script src="app.js" defer></script>
 <script>
 if ('serviceWorker' in navigator) {

@@ -1099,6 +1099,7 @@ async function saveAttendanceNotificationConfig() {
       result.textContent = 'Konfigurasi notifikasi kehadiran guru dan murid berjaya disimpan.';
     }
     showToast('Konfigurasi notifikasi kehadiran berjaya disimpan.', 'success');
+    if (typeof trackActivity === 'function') trackActivity('konfigurasi', 'Konfigurasi notifikasi kehadiran disimpan', null, 'sukses');
     try { await loadConfig(); } catch (err) {}
   } catch (e) {
     if (result) {
@@ -2632,7 +2633,7 @@ function showModule(id) {
   if (isMobileViewport()) closeMobileNav();
   if (id === 'kehadiran-guru') setTimeout(function(){ initKehadiranGuruModule(); }, 300);
   if (id === 'amaran-kehadiran') { muatAmaranSekolahConfigUI(); loadAmaranKehadiran(); }
-  if (id === 'konfigurasi') { initConfigGroups(); loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); updateAttendanceNotificationStatusUI(); loadConfig(); muatSplashConfigUI(); }
+  if (id === 'konfigurasi') { initConfigGroups(); loadGroupKelasUI(); loadAdminConfig(); loadKokumProgramConfig(false); updateAttendanceNotificationStatusUI(); loadConfig(); muatSplashConfigUI(); if (typeof renderAktiviti === 'function') renderAktiviti(); }
   if (id === 'notifikasi') {
     updateNotifAutoStatusUI();
     var notifTarikhEl = document.getElementById('notifTarikh');
@@ -14887,10 +14888,4 @@ async function simpanTarikhPelancaran() {
   try {
     const res = await callWorker({ action: 'setConfig', config: { LAUNCH_DATE: val } });
     if (!res.success) throw new Error(res.error || 'Gagal menyimpan tarikh pelancaran.');
-    APP.launchDate = val;
-    if (_backendConfigCache) _backendConfigCache.LAUNCH_DATE = val;
-    showToast('Tarikh pelancaran berjaya disimpan!', 'success');
-  } catch (e) {
-    showToast(e.message, 'error');
-  }
-}
+    APP.launchDate =

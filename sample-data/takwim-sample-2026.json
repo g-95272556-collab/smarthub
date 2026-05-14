@@ -1,0 +1,110 @@
+[
+  {
+    "id": "1714003200000",
+    "tarikh": "2026-05-30",
+    "tarikhAkhir": "2026-06-01",
+    "tajuk": "Cuti Hari Gawai",
+    "kategori": "Cuti",
+    "warna": "#ef4444",
+    "catatan": "Cuti sekolah rasmi — Semua sekolah tutup"
+  },
+  {
+    "id": "1714003200001",
+    "tarikh": "2026-06-15",
+    "tarikhAkhir": "2026-06-19",
+    "tajuk": "PBD Kuartal 2",
+    "kategori": "PBD",
+    "warna": "#3b82f6",
+    "catatan": "Pentaksiran berkala untuk semua subjek Tingkatan 1-6"
+  },
+  {
+    "id": "1714003200002",
+    "tarikh": "2026-07-10",
+    "tarikhAkhir": null,
+    "tajuk": "Mesyuarat Guru Besar & GBK",
+    "kategori": "Mesyuarat",
+    "warna": "#10b981",
+    "catatan": "Dewan Guru, pukul 14:00 — Agenda: Laporan Pembangunan Akademik"
+  },
+  {
+    "id": "1714003200003",
+    "tarikh": "2026-08-01",
+    "tarikhAkhir": null,
+    "tajuk": "Sambutan Hari Kemerdekaan",
+    "kategori": "Sambutan / Majlis",
+    "warna": "#facc15",
+    "catatan": "Upacara bendera istimewa — Setiap kelas sediakan persembahan"
+  },
+  {
+    "id": "1714003200004",
+    "tarikh": "2026-08-31",
+    "tarikhAkhir": "2026-09-04",
+    "tajuk": "Cuti Hari Raya Aidilfitri",
+    "kategori": "Cuti",
+    "warna": "#ef4444",
+    "catatan": "Cuti sekolah untuk menyambut Hari Raya Aidilfitri"
+  },
+  {
+    "id": "1714003200005",
+    "tarikh": "2026-09-16",
+    "tarikhAkhir": null,
+    "tajuk": "Hari Malaysia",
+    "kategori": "Sambutan / Majlis",
+    "warna": "#facc15",
+    "catatan": "Upacara bendera khas — Patuhi tema yang ditetapkan"
+  },
+  {
+    "id": "1714003200006",
+    "tarikh": "2026-10-10",
+    "tarikhAkhir": null,
+    "tajuk": "UASA (Ujian Akhir Sekolah Ahir)",
+    "kategori": "UASA",
+    "warna": "#8b5cf6",
+    "catatan": "Exam UASA Tingkatan 6 — Ruangan disiapkan berkemudian"
+  },
+  {
+    "id": "1714003200007",
+    "tarikh": "2026-10-23",
+    "tarikhAkhir": "2026-10-25",
+    "tajuk": "Aktiviti Sukan Persekolahan",
+    "kategori": "Aktiviti Sekolah",
+    "warna": "#06b6d4",
+    "catatan": "Pertandingan olahraga antar-kelas — Semua pelajar menyertai"
+  },
+  {
+    "id": "1714003200008",
+    "tarikh": "2026-11-02",
+    "tarikhAkhir": null,
+    "tajuk": "PLC (Professional Learning Community)",
+    "kategori": "PLC",
+    "warna": "#f97316",
+    "catatan": "Sessi PLC guru bidang Sains dan Matematik — Pukul 14:30"
+  },
+  {
+    "id": "1714003200009",
+    "tarikh": "2026-11-15",
+    "tarikhAkhir": null,
+    "tajuk": "Panitia Kokurikulum Bulanan",
+    "kategori": "Kokurikulum",
+    "warna": "#ec4899",
+    "catatan": "Mesyuarat dengan pembimbing program Badan Beruniform dan Kelab"
+  },
+  {
+    "id": "1714003200010",
+    "tarikh": "2026-12-01",
+    "tarikhAkhir": null,
+    "tajuk": "Hari Keselamatan Pelajar",
+    "kategori": "Aktiviti Sekolah",
+    "warna": "#06b6d4",
+    "catatan": "Program kesedaran keselamatan — Bengkel & simulasi evakuasi"
+  },
+  {
+    "id": "1714003200011",
+    "tarikh": "2026-12-20",
+    "tarikhAkhir": "2027-01-02",
+    "tajuk": "Cuti Akhir Tahun",
+    "kategori": "Cuti",
+    "warna": "#ef4444",
+    "catatan": "Cuti Krismas dan Tahun Baru — Sekolah tutup sepenuhnya"
+  }
+]

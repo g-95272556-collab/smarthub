@@ -3877,21 +3877,62 @@ details[open] > summary svg {
 }
 @keyframes pls-shine { to { background-position: 200% center; } }
 .pls-subtitle { color: #94a3b8; font-size: 1.1rem; font-weight: 500; letter-spacing: 0.05em; margin: 0 0 40px; }
-.pls-countdown { display: flex; gap: 20px; justify-content: center; width: 100%; }
-.pls-time-box {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 100px; height: 110px;
-  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px;
-  box-shadow: inset 0 2px 20px rgba(255,255,255,0.02); position: relative; overflow: hidden;
+
+/* ─────────────────────────────────────────── */
+/* TAKWIM / KALENDER SEKOLAH                   */
+/* ─────────────────────────────────────────── */
+
+.takwim-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 12px;
 }
-.pls-time-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); }
-.pls-time-box span { font-family: 'Space Grotesk', monospace; font-size: 3rem; font-weight: 800; color: #facc15; line-height: 1; text-shadow: 0 0 20px rgba(250, 204, 21, 0.3); font-variant-numeric: tabular-nums; }
-.pls-time-box small { margin-top: 12px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; color: #cbd5e1; }
-@media (max-width: 600px) {
-  .pls-title { font-size: 1.8rem; }
-  .pls-subtitle { font-size: 0.9rem; }
-  .pls-countdown { gap: 10px; }
-  .pls-time-box { width: 70px; height: 80px; border-radius: 14px; }
-  .pls-time-box span { font-size: 2rem; }
-  .pls-time-box small { font-size: 0.6rem; margin-top: 8px; }
+
+.takwim-grid > div {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
 }
+
+.takwim-cell {
+  padding: 6px 4px;
+  min-height: 50px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.7rem;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.takwim-cell:hover {
+  background: var(--blue-light, rgba(59, 130, 246, 0.05));
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+}
+
+.takwim-cell-muted {
+  background: rgba(0, 0, 0, 0.02);
+  color: var(--muted);
+}
+
+.takwim-cell-date {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.takwim-cell-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.takwim-event-badge {
+  background: currentColor;
+  color: #fff;
+  padding: 1px 3px;
+  border-radi
