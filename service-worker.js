@@ -1,4 +1,4 @@
-const CACHE_NAME = "ssh-pwa-v11-worksheet-prompt";
+const CACHE_NAME = "ssh-pwa-v12-takwim-acara";
 const APP_SHELL = [
   "./",
   "./index.html",
