@@ -7609,12 +7609,12 @@ function notifTidakHadirBatch() { showModule('notifikasi'); switchNotifTab('hant
 
 function normalizeNotifResultText(text) {
   return String(text || '')
-    .replaceAll('âš ', '[!]')
-    .replaceAll('âœ…', '[OK]')
-    .replaceAll('âŒ', '[X]')
-    .replaceAll('â†’', '->')
-    .replaceAll('â€”', '-')
-    .replaceAll('â”€â”€â”€â”€â”€', '-----');
+    .replaceAll('⚠', '[!]')
+    .replaceAll('✅', '[OK]')
+    .replaceAll('❌', '[X]')
+    .replaceAll('→', '->')
+    .replaceAll('—', '-')
+    .replaceAll('─────', '-----');
 }
 
 async function hantarNotifTersuai() {
