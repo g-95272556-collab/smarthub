@@ -3523,8 +3523,10 @@ table tbody tr:last-child td { border-bottom: none; }
 .dashboard-feature-grid,
 .dashboard-chart-grid,
 .dashboard-takwim-card,
-.dashboard-guru-card {
-  margin-bottom: 18px;
+.dashboard-guru-card,
+.dash-card-students-att,
+.dash-card-birthday {
+  margin-bottom: 22px;
 }
 .dashboard-feature-grid { animation-delay: 0.1s; }
 .dashboard-chart-grid { animation-delay: 0.2s; }
@@ -5972,17 +5974,17 @@ details[open] > summary svg {
 }
 
 .dash-card-students-att {
-  background: linear-gradient(135deg, #6b2d38 0%, #4c1a24 60%, #301016 100%);
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
 }
 .dash-card-students-att:hover {
-  box-shadow: 0 16px 36px rgba(107,45,56,0.22) !important;
+  box-shadow: 0 16px 36px rgba(30,41,59,0.25) !important;
 }
 
 .dash-card-birthday {
-  background: linear-gradient(135deg, #694a38 0%, #52382b 60%, #38251c 100%);
+  background: linear-gradient(135deg, #484153 0%, #2f2a38 100%);
 }
 .dash-card-birthday:hover {
-  box-shadow: 0 16px 36px rgba(105,74,56,0.22) !important;
+  box-shadow: 0 16px 36px rgba(47,42,56,0.25) !important;
 }
 
 /* Internal Card Shimmer & Decos */
