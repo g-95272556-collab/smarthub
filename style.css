@@ -6153,3 +6153,15 @@ details[open] > summary svg {
 .dash-card-chart .dash-chart-bar-bg {
   background: rgba(255, 255, 255, 0.12) !important;
 }
+
+/* Legend line for weather icons explanation */
+.dash-weather-legend-line {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
