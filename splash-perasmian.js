@@ -1,6 +1,20 @@
 // Splash Perasmian — dipindah dari index.html untuk CSP compliance
 /* ── Splash: semak flag SEGERA sebelum page render ── */
 /* ── Splash dipaparkan SELEPAS login — dipanggil oleh app.js (checkAndShowSplash) ── */
+async function resolveSplashPerasmiName() {
+  var cfgGb = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
+  if (cfgGb) return cfgGb;
+  try {
+    var lsGb = (localStorage.getItem('AMARAN_CFG_GB') || '').trim();
+    if (lsGb) return lsGb;
+  } catch(e) {}
+  if (typeof window.getGuruBesarNameFromData === 'function') {
+    var nama = await window.getGuruBesarNameFromData();
+    if (nama) return String(nama).trim();
+  }
+  return '';
+}
+
 window.showSplashPerasmian = function (previewMode) {
   var splash = document.getElementById('splashLaunch');
   if (!splash) return;
@@ -84,19 +98,15 @@ window.showSplashPerasmian = function (previewMode) {
   var verEl = document.getElementById('splashVer');
   if (verEl && cfgVer) verEl.textContent = 'Versi ' + cfgVer + '  ·  ' + HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
 
-  /* Nama GB */
+  /* Nama perasmi */
   (function () {
     var el = document.getElementById('splashGBName');
     if (!el) return;
-    var cfgGb = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
-    if (cfgGb) { el.textContent = cfgGb; return; }
-    var lsGb = ''; try { lsGb = (localStorage.getItem('AMARAN_CFG_GB') || '').trim(); } catch(e) {}
-    if (lsGb) { el.textContent = lsGb; return; }
-    if (window.APP && window.APP.user && window.APP.user.name) {
-      el.textContent = window.APP.user.name;
-      return;
-    }
     el.textContent = '';
+    resolveSplashPerasmiName().then(function (nama) {
+      var cur = document.getElementById('splashGBName');
+      if (cur) cur.textContent = nama || '';
+    }).catch(function () {});
   })();
 
   /* Sequential reveal */
@@ -149,7 +159,7 @@ window.showSplashPerasmian = function (previewMode) {
 };
 
 /* ── Fungsi Rasmikan ─────────────────────────────────────────────── */
-function splashRasmikan() {
+async function splashRasmikan() {
   var btn = document.getElementById('splashBtn');
   if (btn) {
     btn.disabled = true;
@@ -175,16 +185,13 @@ function splashRasmikan() {
     var prsGBName = document.getElementById('splashPrsGBName');
     var prsDatetime = document.getElementById('splashPrsDatetime');
 
-    /* Nama perasmi — ambil dari konfigurasi splash, fallback bertingkat */
+    /* Nama perasmi — sama seperti pada kad splash */
     if (prsGBName) {
-      var gbEl = document.getElementById('splashGBName');
-      /* Guna nama yang sudah dimuatkan pada kad splash */
-      var gbName = (gbEl && gbEl.textContent.trim() !== '——————————————') ? gbEl.textContent.trim() : '';
-      if (gbName) {
-        prsGBName.textContent = gbName;
-      } else {
-        prsGBName.textContent = (window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || localStorage.getItem('AMARAN_CFG_GB') || (window.APP && window.APP.user && window.APP.user.name) || '——————————';
-      }
+      resolveSplashPerasmiName().then(function (gbName) {
+        prsGBName.textContent = gbName || '——————————';
+      }).catch(function () {
+        prsGBName.textContent = '——————————';
+      });
     }
 
     /* Tarikh & masa perasmian */

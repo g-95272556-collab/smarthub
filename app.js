@@ -16690,7 +16690,6 @@ function muatSplashConfigUI() {
   var tarikh = localStorage.getItem('SPLASH_CFG_TARIKH') || '';
   var versi  = localStorage.getItem('SPLASH_CFG_VERSI')  || (window.SMARTSCHOOLHUB_RUNTIME_CONFIG && window.SMARTSCHOOLHUB_RUNTIME_CONFIG.appVersion) || '2.0';
   var gb     = localStorage.getItem('AMARAN_CFG_GB')     || '';
-  if (!gb && window.APP && window.APP.user && window.APP.user.name) gb = window.APP.user.name;
   var elT = document.getElementById('cfg-splash-tarikh');
   var elV = document.getElementById('cfg-splash-versi');
   var elG = document.getElementById('cfg-splash-gb');
@@ -16748,7 +16747,10 @@ async function checkAndShowSplash(user) {
     if (today < launchDate) return;
   }
 
-  /* 3. Tunjuk splash perasmian */
+  /* 3. Hanya pentadbir boleh membuat perasmian */
+  if (!isPentadbir()) return;
+
+  /* 4. Tunjuk splash perasmian */
   if (typeof window.showSplashPerasmian === 'function') {
     window.showSplashPerasmian(false);
   }
