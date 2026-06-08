@@ -13,10 +13,12 @@ window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
                              -> profil log masuk (fallback terakhir).
      appVersion  : Versi app yang dipaparkan pada splash.
      splashIdleMs : Tempoh idle sebelum butang rasmikan aktif (ms).
+     splashAudioSrc : Fail audio latar untuk splash perasmian.
   */
   launchDate : '2026-06-08',
   gbName     : '',
   splashIdleMs : 6000,
+  splashAudioSrc : 'assets/splash-launch-ceremonial.mp3',
   appVersion : '2.0'
 }, window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {});
 

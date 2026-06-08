@@ -22,6 +22,73 @@ function getSplashIdleMs() {
   return Math.min(Math.max(value, 0), 30000);
 }
 
+function getSplashAudioSrc() {
+  var runtimeCfg = window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {};
+  var src = String(runtimeCfg.splashAudioSrc || 'assets/splash-launch-ceremonial.wav').trim();
+  return src || 'assets/splash-launch-ceremonial.wav';
+}
+
+function ensureSplashAudio() {
+  if (window._splashBgAudio) return window._splashBgAudio;
+  var audio = new Audio();
+  audio.src = getSplashAudioSrc();
+  audio.loop = true;
+  audio.preload = 'none';
+  audio.volume = 0.9;
+  audio.setAttribute('playsinline', 'playsinline');
+  audio.setAttribute('aria-hidden', 'true');
+  window._splashBgAudio = audio;
+  return audio;
+}
+
+function playSplashAudio() {
+  var audio = ensureSplashAudio();
+  if (!audio) return;
+  try {
+    audio.currentTime = 0;
+    audio.volume = 0.9;
+    var p = audio.play();
+    if (p && typeof p.catch === 'function') p.catch(function() {});
+  } catch (e) {}
+}
+
+function stopSplashAudio() {
+  var audio = window._splashBgAudio;
+  if (!audio) return;
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch (e) {}
+}
+
+function updateSplashDateTime() {
+  var t = new Date();
+  var HARI = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+  var BULAN = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+  var hm = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+  var dateMain = t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
+  var tEl = document.getElementById('splashTarikh');
+  if (tEl) {
+    tEl.innerHTML =
+      '<span class="splash-date-day">' + HARI[t.getDay()] + '</span>' +
+      '<span class="splash-date-sep">·</span>' +
+      '<span class="splash-date-main">' + dateMain + '</span>' +
+      '<span class="splash-date-sep">·</span>' +
+      '<span class="splash-date-time">' + hm + '</span>';
+  }
+  var cfgVer = '';
+  try { cfgVer = (localStorage.getItem('SPLASH_CFG_VERSI') || '').trim() || ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).appVersion || ''); } catch(e) {}
+  var verEl = document.getElementById('splashVer');
+  if (verEl && cfgVer) {
+    verEl.innerHTML =
+      '<span class="splash-ver-chip">Versi ' + cfgVer + '</span>' +
+      '<span class="splash-date-sep">·</span>' +
+      '<span class="splash-ver-chip">' + HARI[t.getDay()] + ', ' + dateMain + '</span>' +
+      '<span class="splash-date-sep">·</span>' +
+      '<span class="splash-ver-chip">' + hm + '</span>';
+  }
+}
+
 window.showSplashPerasmian = function (previewMode) {
   var splash = document.getElementById('splashLaunch');
   if (!splash) return;
@@ -29,6 +96,11 @@ window.showSplashPerasmian = function (previewMode) {
   if (window._splashAutoCloseTimer) {
     clearTimeout(window._splashAutoCloseTimer);
     window._splashAutoCloseTimer = null;
+  }
+  stopSplashAudio();
+  if (window._splashDateTimer) {
+    clearInterval(window._splashDateTimer);
+    window._splashDateTimer = null;
   }
 
   /* Reset state sekiranya dipanggil semula (preview) */
@@ -96,18 +168,16 @@ window.showSplashPerasmian = function (previewMode) {
     }
   }
 
-  /* Tarikh */
-  var t = new Date();
-  var HARI  = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
-  var BULAN = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
-  var tEl = document.getElementById('splashTarikh');
-  if (tEl) tEl.textContent = HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
-
-  /* Versi */
-  var cfgVer = '';
-  try { cfgVer = (localStorage.getItem('SPLASH_CFG_VERSI') || '').trim() || ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).appVersion || ''); } catch(e) {}
-  var verEl = document.getElementById('splashVer');
-  if (verEl && cfgVer) verEl.textContent = 'Versi ' + cfgVer + '  ·  ' + HARI[t.getDay()] + ', ' + t.getDate() + ' ' + BULAN[t.getMonth()] + ' ' + t.getFullYear();
+  /* Tarikh + jam */
+  updateSplashDateTime();
+  window._splashDateTimer = setInterval(function() {
+    if (!document.getElementById('splashLaunch')) {
+      clearInterval(window._splashDateTimer);
+      window._splashDateTimer = null;
+      return;
+    }
+    updateSplashDateTime();
+  }, 1000);
 
   /* Nama perasmi */
   (function () {
@@ -208,6 +278,7 @@ async function splashRasmikan() {
     clearInterval(window._splashIdleTimer);
     window._splashIdleTimer = null;
   }
+  playSplashAudio();
   try { localStorage.setItem('smarthubLaunched', '1'); } catch (e) {}
   if (window._splashAutoCloseTimer) {
     clearTimeout(window._splashAutoCloseTimer);
@@ -288,6 +359,7 @@ async function splashRasmikan() {
         if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
         if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
         if (window._splashAutoCloseTimer) { clearTimeout(window._splashAutoCloseTimer); window._splashAutoCloseTimer = null; }
+        stopSplashAudio();
       }, 1200);
     }, 14000); /* 4500ms (perasmian screen) + 1000ms (transition) + 8000ms (pause) = ~13500 */
   }, 600);

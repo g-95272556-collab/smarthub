@@ -16,6 +16,9 @@
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icon-192.png">
 <title>SmartSchoolHub v2.0 — SK Kiandongo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="preload" as="style" href="style.css">
 <link rel="stylesheet" href="style.css">
 <script src="runtime-config.js"></script>
@@ -981,34 +984,52 @@
       </div>
 
       <div class="nav-section-label">Murid & Disiplin</div>
-      <button class="nav-item c-cyan" data-module="kehadiran-murid">
-        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-graduation-cap"></use></svg></span>
-        <span class="nav-copy"><span class="nav-label">Kehadiran Murid</span><span class="nav-desc">Ambil kehadiran kelas, semak status dan elak rekod berganda.</span></span>
-      </button>
-      <button class="nav-item c-red" data-module="amaran-kehadiran">
-        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-alert-triangle"></use></svg></span>
-        <span class="nav-copy"><span class="nav-label">Amaran Kehadiran</span><span class="nav-desc">Kenal pasti murid berisiko dan jana surat amaran disiplin.</span></span>
-      </button>
+      <div class="nav-feature-card nav-card-cyan">
+        <div class="nav-feature-head">
+          <strong class="nav-feature-title">Murid & Disiplin</strong>
+          <p class="nav-feature-note">Pengurusan kehadiran murid, pemantauan disiplin dan tindakan amaran.</p>
+        </div>
+        <button class="nav-item nav-item-feature c-cyan" data-module="kehadiran-murid">
+          <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-graduation-cap"></use></svg></span>
+          <span class="nav-copy"><span class="nav-label">Kehadiran Murid</span><span class="nav-desc">Ambil kehadiran kelas, semak status dan elak rekod berganda.</span></span>
+        </button>
+        <button class="nav-item nav-item-feature c-red" data-module="amaran-kehadiran">
+          <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-alert-triangle"></use></svg></span>
+          <span class="nav-copy"><span class="nav-label">Amaran Kehadiran</span><span class="nav-desc">Kenal pasti murid berisiko dan jana surat amaran disiplin.</span></span>
+        </button>
+      </div>
 
       <div class="nav-section-label" data-admin-label="true">Pengurusan Data</div>
-      <button class="nav-item c-teal" data-admin-nav="true" data-module="data-guru">
-        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-database"></use></svg></span>
-        <span class="nav-copy"><span class="nav-label">Data Guru</span><span class="nav-desc">Kemaskini profil guru, peranan, kelas dan akses pentadbiran.</span></span>
-      </button>
-      <button class="nav-item c-blue" data-admin-nav="true" data-module="data-murid">
-        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-contact"></use></svg></span>
-        <span class="nav-copy"><span class="nav-label">Data Murid</span><span class="nav-desc">Urus senarai murid, kelas, status dan maklumat penjaga.</span></span>
-      </button>
-      <button class="nav-item c-amber" data-admin-nav="true" data-module="hari-lahir">
-        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-cake"></use></svg></span>
-        <span class="nav-copy"><span class="nav-label">Data Hari Lahir</span><span class="nav-desc">Pantau hari lahir guru/murid dan notifikasi ucapan.</span></span>
-      </button>
+      <div class="nav-feature-card nav-card-teal" data-admin-nav="true">
+        <div class="nav-feature-head">
+          <strong class="nav-feature-title">Pengurusan Data</strong>
+          <p class="nav-feature-note">Urus maklumat guru, murid, kelas dan rekod pentadbiran sekolah.</p>
+        </div>
+        <button class="nav-item nav-item-feature c-teal" data-admin-nav="true" data-module="data-guru">
+          <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-database"></use></svg></span>
+          <span class="nav-copy"><span class="nav-label">Data Guru</span><span class="nav-desc">Kemaskini profil guru, peranan, kelas dan akses pentadbiran.</span></span>
+        </button>
+        <button class="nav-item nav-item-feature c-blue" data-admin-nav="true" data-module="data-murid">
+          <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-contact"></use></svg></span>
+          <span class="nav-copy"><span class="nav-label">Data Murid</span><span class="nav-desc">Urus senarai murid, kelas, status dan maklumat penjaga.</span></span>
+        </button>
+        <button class="nav-item nav-item-feature c-amber" data-admin-nav="true" data-module="hari-lahir">
+          <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-cake"></use></svg></span>
+          <span class="nav-copy"><span class="nav-label">Data Hari Lahir</span><span class="nav-desc">Pantau hari lahir guru/murid dan notifikasi ucapan.</span></span>
+        </button>
+      </div>
 
       <div class="nav-section-label" data-admin-label="true">Sistem</div>
-      <button class="nav-item c-teal" data-admin-nav="true" data-module="konfigurasi">
-        <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-settings"></use></svg></span>
-        <span class="nav-copy"><span class="nav-label">Konfigurasi</span><span class="nav-desc">Tetapkan admin, integrasi, notifikasi, AI dan data operasi.</span></span>
-      </button>
+      <div class="nav-feature-card nav-card-emerald" data-admin-nav="true">
+        <div class="nav-feature-head">
+          <strong class="nav-feature-title">Sistem</strong>
+          <p class="nav-feature-note">Tetapan konfigurasi, integrasi dan kawalan pentadbiran sistem.</p>
+        </div>
+        <button class="nav-item nav-item-feature c-teal" data-admin-nav="true" data-module="konfigurasi">
+          <span class="nav-icon"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-settings"></use></svg></span>
+          <span class="nav-copy"><span class="nav-label">Konfigurasi</span><span class="nav-desc">Tetapkan admin, integrasi, notifikasi, AI dan data operasi.</span></span>
+        </button>
+      </div>
 
       <div class="sidebar-user" id="sidebarUser">
         <div class="user-initials" id="userInitials">?</div>
@@ -1051,41 +1072,60 @@
       <!-- ══ DASHBOARD ══ -->
       <div id="mod-dashboard" class="module active is-visible">
         <div class="page-header">
-          <div>
+          <div class="page-header-left">
             <h1 class="page-title-icon"><svg class="lucide-icon" width="28" height="28"><use href="#lucide-layout-dashboard"></use></svg> Papan Pemuka</h1>
-            <p id="todayDateLabel">Memuat tarikh...</p>
+            <div id="todayDateLabel" class="dash-clock-hero">
+              <div class="dash-clock-row-top">
+                <span class="dash-clock-pulse"></span>
+                <span id="dashClockDay" class="dash-clock-day">—</span>
+              </div>
+              <div id="dashClockDate" class="dash-clock-date">Memuat tarikh...</div>
+              <div class="dash-clock-row-time">
+                <svg class="lucide-icon dash-clock-icon" width="20" height="20"><use href="#lucide-clock"></use></svg>
+                <span id="dashClockTime" class="dash-clock-time">--:--:--</span>
+                <span id="dashClockAmpm" class="dash-clock-ampm"></span>
+              </div>
+            </div>
           </div>
           <button class="btn btn-primary" data-action="refresh-dashboard"><svg class="lucide-icon" width="18" height="18"><use href="#lucide-refresh-cw"></use></svg> Muat Semula</button>
         </div>
 
         <!-- Stat Cards -->
         <div class="card-grid card-grid-4 animate-fade-up dashboard-stat-grid">
-          <div class="stat-card">
-            <div class="stat-icon blue"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-graduation-cap"></use></svg></div>
+          <div class="stat-card stat-card-v2 sc-blue">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
+            <div class="stat-icon blue"><svg class="lucide-icon" width="26" height="26"><use href="#lucide-graduation-cap"></use></svg></div>
             <div class="stat-info">
               <small>Murid Hadir</small>
               <strong id="dash-murid-hadir" class="stat-value">—</strong>
               <span id="dash-murid-pct" class="dash-pct"></span>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon red"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-user-x"></use></svg></div>
+          <div class="stat-card stat-card-v2 sc-red">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
+            <div class="stat-icon red"><svg class="lucide-icon" width="26" height="26"><use href="#lucide-user-x"></use></svg></div>
             <div class="stat-info">
               <small>Tidak Hadir</small>
               <strong id="dash-tidak-hadir" class="stat-value">—</strong>
               <span>murid hari ini</span>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon gold"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-users"></use></svg></div>
+          <div class="stat-card stat-card-v2 sc-gold">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
+            <div class="stat-icon gold"><svg class="lucide-icon" width="26" height="26"><use href="#lucide-users"></use></svg></div>
             <div class="stat-info">
               <small>Guru Hadir</small>
               <strong id="dash-guru-hadir" class="stat-value">—</strong>
               <span id="dash-guru-sub">hari ini</span>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-icon green"><svg class="lucide-icon" width="24" height="24"><use href="#lucide-mail-check"></use></svg></div>
+          <div class="stat-card stat-card-v2 sc-emerald">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
+            <div class="stat-icon green"><svg class="lucide-icon" width="26" height="26"><use href="#lucide-mail-check"></use></svg></div>
             <div class="stat-info">
               <small>Notif Dihantar</small>
               <strong id="dash-notif" class="stat-value">—</strong>
@@ -1098,7 +1138,9 @@
         <div class="card-grid card-grid-3 animate-fade-up dashboard-feature-grid">
 
           <!-- Cuaca -->
-          <div class="card dashboard-surface-accent dash-card-weather no-hover-lift">
+          <div class="card dashboard-surface-accent dash-card-weather">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
             <div class="dash-weather-head">
               <div>
                 <div class="dash-label-row">
@@ -1120,7 +1162,9 @@
           </div>
 
           <!-- Waktu Solat -->
-          <div class="card dashboard-surface-accent dash-card-solat no-hover-lift">
+          <div class="card dashboard-surface-accent dash-card-solat">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
             <div class="dash-label-row mb-12">
               <svg class="lucide-icon" width="14" height="14"><use href="#lucide-clock"></use></svg> WAKTU SOLAT — TONGOD (SBH07)
             </div>
@@ -1131,13 +1175,17 @@
           </div>
 
           <!-- Guru Bertugas -->
-          <div class="card dashboard-surface-accent dash-card-duty no-hover-lift">
+          <div class="card dashboard-surface-accent dash-card-duty">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
             <div class="dash-label-row mb-4">
               <svg class="lucide-icon" width="14" height="14"><use href="#lucide-clipboard-check"></use></svg> GURU BERTUGAS
             </div>
             <div id="dash-bertugas-minggu" class="dash-duty-week">Minggu ini</div>
-            <div id="dash-bertugas-nama" class="dash-duty-name">—</div>
-            <div id="dash-bertugas-pembantu" class="dash-duty-helper"></div>
+            <div class="dash-duty-main-wrapper">
+              <div id="dash-bertugas-nama" class="dash-duty-name">—</div>
+              <div id="dash-bertugas-pembantu" class="dash-duty-helper"></div>
+            </div>
             <div class="dash-duty-next">
               <div class="dash-duty-next-label">MINGGU DEPAN</div>
               <div id="dash-bertugas-depan" class="dash-duty-next-name">—</div>
@@ -1147,7 +1195,9 @@
 
         <!-- Chart + Aktiviti -->
         <div class="card-grid card-grid-2 animate-fade-up dashboard-chart-grid">
-          <div class="card">
+          <div class="card dash-card-chart">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
             <div class="section-header">
               <h2 class="section-title-icon"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-bar-chart-3"></use></svg> Kehadiran Minggu Ini (%)</h2>
               <button class="btn btn-sm btn-secondary" data-action="refresh-dashboard" aria-label="Muat Semula Dashboard"><svg class="lucide-icon" width="14" height="14"><use href="#lucide-refresh-cw"></use></svg></button>
@@ -1159,7 +1209,9 @@
               <span>Isnin</span><span>Selasa</span><span>Rabu</span><span>Khamis</span><span>Jumaat</span>
             </div>
           </div>
-          <div class="card">
+          <div class="card dash-card-upcoming">
+            <div class="sc-deco"></div>
+            <div class="sc-shimmer"></div>
             <div class="section-header">
               <h2 class="section-title-icon"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-calendar-days"></use></svg> Peristiwa Akan Datang</h2>
               <button class="btn btn-sm btn-secondary" data-action="open-takwim-config">Kelola</button>
@@ -1171,7 +1223,9 @@
         </div>
 
         <!-- Takwim Sekolah -->
-        <div class="card animate-fade-up dashboard-takwim-card">
+        <div class="card animate-fade-up dashboard-takwim-card dash-card-takwim-calendar">
+          <div class="sc-deco"></div>
+          <div class="sc-shimmer"></div>
           <div class="section-header">
             <h2 class="section-title-icon"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-calendar-days"></use></svg> Takwim Sekolah</h2>
             <div class="dash-takwim-actions">
@@ -1187,7 +1241,9 @@
         </div>
 
         <!-- Status Kehadiran Guru Minggu Ini -->
-        <div class="card dashboard-guru-card">
+        <div class="card dashboard-guru-card dash-card-teachers-att">
+          <div class="sc-deco"></div>
+          <div class="sc-shimmer"></div>
           <div class="section-header">
             <h2 class="section-title-icon"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-users"></use></svg> Kehadiran Guru Minggu Ini</h2>
             <button class="btn btn-sm btn-secondary" data-module="kehadiran-guru">Lihat Semua</button>
@@ -1207,7 +1263,9 @@
         </div>
 
         <!-- Murid Tidak Hadir -->
-        <div class="card">
+        <div class="card dash-card-students-att">
+          <div class="sc-deco"></div>
+          <div class="sc-shimmer"></div>
           <div class="section-header">
             <h2 class="section-title-icon"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-user-x"></use></svg> Murid Tidak Hadir Hari Ini</h2>
             <button class="btn btn-sm btn-secondary" data-module="kehadiran-murid">Lihat Semua</button>
@@ -1217,7 +1275,10 @@
           </div>
         </div>
 
-        <div class="card dashboard-guru-card">
+        <!-- Makluman Hari Lahir -->
+        <div class="card dash-card-birthday">
+          <div class="sc-deco"></div>
+          <div class="sc-shimmer"></div>
           <div class="section-header">
             <h2 class="section-title-icon"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-cake"></use></svg> Makluman Hari Lahir</h2>
             <button class="btn btn-sm btn-secondary" data-module="hari-lahir">Lihat Semua</button>
@@ -4807,9 +4868,6 @@ Berikut ialah makluman guru bertugas untuk minggu ini:
 <!-- TOAST CONTAINER -->
 <div id="toast-container"></div>
 
-<script src="dskp_embedded.js"></script>
-<script src="takwim.js"></script>
-<script src="aktiviti.js"></script>
 <script src="app.js?v=20260608-login-redirect" defer></script>
 </body>
 </html>

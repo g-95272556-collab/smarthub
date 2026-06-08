@@ -108,14 +108,8 @@ async function initTakwimModule() {
   // 1. Cuba sync dari D1 dulu — jika berjaya, D1 jadi sumber utama
   const synced = await _takwimSyncFromD1();
 
-  // 2. Jika D1 tiada data atau offline, seed dari TAKWIM_2026
-  const existing = getTakwimEvents();
-  const has2026 = existing.some(e => (e.id || '').startsWith('ps2026-'));
-  if (!has2026 || existing.length < 10) {
-    loadTakwim2026('merge');
-    // Tolak data baru ke D1 selepas seed
-    _takwimSyncFromD1();
-  }
+  // 2. Sentiasa kembalikan sebarang data aktiviti/takwim 2026 standard yang terpadam secara automatik
+  loadTakwim2026('merge', true);
 
   // 3. Render
   renderDashboardTakwim();
@@ -873,7 +867,7 @@ function isValidImportedTakwimEvent(event) {
 // Sumber: Surat Siaran KPM Bil. 3 Tahun 2025 & Jabatan Perdana Menteri (HKA 2026)
 // ──────────────────────────────────────────────────────────────
 
-function loadTakwim2026(mode = 'merge') {
+function loadTakwim2026(mode = 'merge', isSilent = false) {
   const TAKWIM_2026 = [
 
     // ── PENGGAL & CUTI SEKOLAH ──────────────────────────────────
@@ -1144,18 +1138,20 @@ function loadTakwim2026(mode = 'merge') {
     const toAdd = TAKWIM_2026.filter(e => !existingIds.has(e.id));
     finalEvents = [...existing, ...toAdd];
     if (toAdd.length === 0) {
-      showToast('Takwim 2026 sudah pun dimuat. Tiada rekod baru ditambah.', 'info');
+      if (!isSilent) showToast('Takwim 2026 sudah pun dimuat. Tiada rekod baru ditambah.', 'info');
       return;
     }
   }
 
   saveTakwimEvents(finalEvents);
-  showToast(
-    mode === 'replace'
-      ? `Takwim 2026 dimuatkan semula. ${TAKWIM_2026.length} acara diisi.`
-      : `${TAKWIM_2026.filter(e => !new Set(existing.map(x=>x.id)).has(e.id)).length} acara takwim 2026 ditambah.`,
-    'success'
-  );
+  if (!isSilent) {
+    showToast(
+      mode === 'replace'
+        ? `Takwim 2026 dimuatkan semula. ${TAKWIM_2026.length} acara diisi.`
+        : `${TAKWIM_2026.filter(e => !new Set(existing.map(x=>x.id)).has(e.id)).length} acara takwim 2026 ditambah.`,
+      'success'
+    );
+  }
   if (typeof trackActivity === 'function') {
     trackActivity('takwim', 'Takwim Persekolahan 2026 Kumpulan B dimuatkan', null, 'sukses');
   }

@@ -2895,9 +2895,10 @@ async function muatWaktuSolat() {
     var next = null;
     var html = senarai.map(function(s) {
       var p = s.masa.split(':'), wm = p.length>=2 ? parseInt(p[0])*60+parseInt(p[1]) : 9999;
-      var st = isNext ? 'font-weight:700;color:#FFD700' : 'opacity:0.88';
-      var marker = isNext ? '<svg class="lucide-icon" width="12" height="12" style="fill:currentColor;display:inline-block;margin-right:4px"><use href="#lucide-play"></use></svg> ' : '';
-      return '<div style="display:flex;justify-content:space-between;'+st+';padding:3px 0"><span>'+marker+s.nama+'</span><span>'+s.masa+'</span></div>';
+      var isN = !next && wm > nm; if (isN) next = s;
+      var activeClass = isN ? 'solat-row active' : 'solat-row';
+      var indicator = isN ? '<span class="solat-active-indicator"><span class="solat-active-dot"></span></span>' : '';
+      return '<div class="' + activeClass + '"><span>' + indicator + s.nama + '</span><span class="solat-time-val">' + s.masa + '</span></div>';
     }).join('');
     var le = document.getElementById('dash-solat-list'); if(le) le.innerHTML = html;
     var ne = document.getElementById('dash-solat-seterusnya');
@@ -2907,11 +2908,11 @@ async function muatWaktuSolat() {
     var now2 = new Date(), nm2 = getCurrentTotalMinutes(now2), nxt = null;
     var h2 = fb.map(function(s){ 
       var p=s.m.split(':'),wm=parseInt(p[0])*60+parseInt(p[1]),isN=!nxt&&wm>nm2; if(isN)nxt=s; 
-      var st=isN?'font-weight:700;color:#FFD700':'opacity:0.88'; 
-      var marker = isN ? '<svg class="lucide-icon" width="12" height="12" style="fill:currentColor;display:inline-block;margin-right:4px"><use href="#lucide-play"></use></svg> ' : '';
-      return '<div style="display:flex;justify-content:space-between;'+st+';padding:3px 0"><span>'+marker+s.n+'</span><span>'+s.m+'</span></div>'; 
+      var activeClass = isN ? 'solat-row active' : 'solat-row';
+      var indicator = isN ? '<span class="solat-active-indicator"><span class="solat-active-dot"></span></span>' : '';
+      return '<div class="' + activeClass + '"><span>' + indicator + s.n + '</span><span class="solat-time-val">' + s.m + '</span></div>'; 
     }).join('');
-    var le = document.getElementById('dash-solat-list'); if(le) le.innerHTML = h2 + '<div style="font-size:0.65rem;opacity:0.5;margin-top:4px">Anggaran (offline)</div>';
+    var le = document.getElementById('dash-solat-list'); if(le) le.innerHTML = h2 + '<div class="solat-offline-tag">Anggaran (offline)</div>';
     var ne = document.getElementById('dash-solat-seterusnya'); if(ne) ne.textContent = nxt ? 'Seterusnya: '+nxt.n+' - '+nxt.m : 'Semua telah berlalu';
   }
 }
@@ -4422,6 +4423,13 @@ function enterApp(user) {
   renderSidebarUserIdentity(user);
 
   setTodayDates();
+  // Live clock — update every second
+  if (!window._dashClockTimer) {
+    window._dashClockTimer = setInterval(function() {
+      if (!document.getElementById('todayDateLabel')) { clearInterval(window._dashClockTimer); window._dashClockTimer = null; return; }
+      setTodayDates();
+    }, 1000);
+  }
   configSyncPush();
   scheduleIdleWork(async function() {
     await loadBackendOperationalConfig(true);
@@ -4827,9 +4835,34 @@ async function callWorkerAIStream(prompt, type, onChunk) {
 function setTodayDates() {
   const now = new Date();
   const nowParts = getMalaysiaDateParts(now);
-  const label = getMalaysiaDateLabel(now);
+
+  // --- Rich clock hero ---
   const el = document.getElementById('todayDateLabel');
-  if (el) el.textContent = label;
+  if (el) {
+    var weekdayFmt = new Intl.DateTimeFormat('ms-MY', { timeZone: MALAYSIA_TIMEZONE, weekday: 'long' });
+    var dayLabel = weekdayFmt.format(now);
+    var dateOnlyFmt = new Intl.DateTimeFormat('ms-MY', { timeZone: MALAYSIA_TIMEZONE, day: 'numeric', month: 'long', year: 'numeric' });
+    var dateLabel = dateOnlyFmt.format(now);
+
+    var hFmt = new Intl.DateTimeFormat('ms-MY', { timeZone: MALAYSIA_TIMEZONE, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    var timeParts = hFmt.formatToParts(now);
+    var hh = '', mm = '', ss = '', ampm = '';
+    timeParts.forEach(function(p) {
+      if (p.type === 'hour') hh = p.value;
+      if (p.type === 'minute') mm = p.value;
+      if (p.type === 'second') ss = p.value;
+      if (p.type === 'dayPeriod') ampm = p.value;
+    });
+
+    var dayEl = document.getElementById('dashClockDay');
+    var dateEl = document.getElementById('dashClockDate');
+    var timeEl = document.getElementById('dashClockTime');
+    var ampmEl = document.getElementById('dashClockAmpm');
+    if (dayEl) dayEl.textContent = dayLabel;
+    if (dateEl) dateEl.textContent = dateLabel;
+    if (timeEl) timeEl.innerHTML = escapeHtml(hh) + '<span class="colon-blink">:</span>' + escapeHtml(mm) + '<span class="colon-blink">:</span>' + escapeHtml(ss);
+    if (ampmEl) ampmEl.textContent = ampm.toUpperCase();
+  }
 
   const isoDate = nowParts.ymd;
   ['guruFilterDate','muridFilterDate','notifTarikh','kTarikh'].forEach(id => {
@@ -4838,8 +4871,8 @@ function setTodayDates() {
   });
   const monthEl = document.getElementById('laporanBulan');
   if (monthEl) monthEl.value = nowParts.yearMonth;
-  const timeEl = document.getElementById('kMasa');
-  if (timeEl) timeEl.value = nowParts.hm;
+  const timeInputEl = document.getElementById('kMasa');
+  if (timeInputEl) timeInputEl.value = nowParts.hm;
 }
 
 async function refreshDashboard() {
