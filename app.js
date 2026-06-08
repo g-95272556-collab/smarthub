@@ -5704,7 +5704,8 @@ async function submitKehadiranGuruManualAdmin() {
       showToast('Rekod kehadiran ' + nama + ' untuk ' + tarikh + ' sudah wujud. ' + statusText + 'Admin tidak boleh tambah rekod baharu.', 'error');
       return;
     }
-    const row = [nama, tarikh, status, masa, catatan, APP.user ? APP.user.email : '', 'manual-admin'];
+    const targetEmail = String((selected && selected.emel) || '').trim();
+    const row = [nama, tarikh, status, masa, catatan, targetEmail, 'manual-admin'];
     const data = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_GURU', row: row });
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan rekod manual.');
     closeModal('modalKehadiranGuruManualAdmin');
@@ -5829,7 +5830,7 @@ function parseKehadiranGuruRow(r) {
       masa: String(row[4] || '').trim(),
       status: String(row[5] || '').trim(),
       catatan: String(row[15] || row[14] || '').trim(),
-      gps: Boolean(String(row[6] || '').trim() || String(row[7] || '').trim()),
+      gps: (Boolean(String(row[6] || '').trim()) && /^-?\d/.test(String(row[6] || '').trim())) || (Boolean(String(row[7] || '').trim()) && /^-?\d/.test(String(row[7] || '').trim())),
       raw: row
     };
     parsed[0] = parsed.nama;
@@ -5848,7 +5849,7 @@ function parseKehadiranGuruRow(r) {
     masa: String(row[3] || '').trim(),
     status: String(row[2] || '').trim(),
     catatan: String(row[4] || '').trim(),
-    gps: Boolean(String(row[6] || '').trim()),
+    gps: Boolean(String(row[6] || '').trim()) && /^-?\d/.test(String(row[6] || '').trim()),
     raw: row
   };
   parsed[0] = parsed.nama;
