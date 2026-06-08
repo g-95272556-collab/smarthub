@@ -15714,7 +15714,10 @@ async function lkJanaImejGeminiParallel(imgPlaceholders, label) {
 async function callWorkerAIGemini(prompt, withImage) {
   geminiMigrasiKunciLegacy();
 
-  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Soalan subjektif/struktur/esei: WAJIB sediakan ruang jawapan kosong (garis putus-putus atau beberapa baris kosong) di bawah soalan untuk murid menulis jawapan.\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\nPERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar/rajah, tulis placeholder tepat ini: [GAMBAR: deskripsi ringkas gambar dalam Bahasa Melayu]\n- JANGAN hasilkan imej terus — sistem akan jana imej secara berperingkat selepas teks siap.\n- Satu soalan hanya satu placeholder [GAMBAR:].\n- PENTING: Jika arahan menyatakan bilangan TEPAT soalan bergambar, WAJIB patuhi — jangan lebih, jangan kurang.';
+  var _lkSystemPrompt = 'Anda adalah pakar pendidikan sekolah rendah Malaysia yang mahir dalam DSKP KPM. Jana lembaran kerja (worksheet) yang berkualiti, tepat dan sesuai dengan aras tahun murid yang dinyatakan.\n\nWAJIB: Patuhi format terkini KPM untuk PBD (Pentaksiran Bilik Darjah) dan UASA (Ujian Akhir Sesi Akademik).\n\nPERATURAN FORMAT (WAJIB IKUT):\n- JANGAN sertakan maklumat pengepala (header), tajuk sekolah, ruangan nama/tarikh/markah murid. Maklumat ini dijana oleh sistem. Mulakan terus dengan soalan.\n- Gunakan TEKS BIASA sahaja. JANGAN guna markdown (*bold*, #heading, **text**, dll)\n- Label bahagian: BAHAGIAN A, BAHAGIAN B, BAHAGIAN C, BAHAGIAN D\n- Nombor soalan berturutan: 1. 2. 3. ...\n- Aneka pilihan: gunakan A. B. C. D.\n- Isi tempat kosong: gunakan garis bawah ________________\n- Soalan subjektif/struktur/esei: WAJIB sediakan ruang jawapan kosong (garis putus-putus atau beberapa baris kosong) di bawah soalan untuk murid menulis jawapan.\n- Baris kosong antara setiap soalan\n- Akhiri dengan SKEMA PEMARKAHAN\n\n' + 
+  (withImage 
+    ? 'PERATURAN SOALAN BERGAMBAR:\n- Jika soalan memerlukan gambar/rajah, tulis placeholder tepat ini: [GAMBAR: deskripsi ringkas gambar dalam Bahasa Melayu]\n- JANGAN hasilkan imej terus — sistem akan jana imej secara berperingkat selepas teks siap.\n- Satu soalan hanya satu placeholder [GAMBAR:].\n- PENTING: Jika arahan menyatakan bilangan TEPAT soalan bergambar, WAJIB patuhi — jangan lebih, jangan kurang.'
+    : 'PERATURAN TEKS SAHAJA:\n- JANGAN sertakan sebarang soalan bergambar, rajah, imej, atau sebarang penanda imej seperti [GAMBAR: ...]. Semua soalan mestilah berdasarkan teks bertulis sahaja.');
 
   var attempt = geminiDapatkanKunci();
   while (attempt) {
@@ -16162,6 +16165,12 @@ async function janaLembaranKerja() {
       } else {
         if (engine === 'deepseek') aiCatatPenggunaan('deepseek-error', 1);
         throw new Error(result.message || 'Gagal menjana lembaran kerja.');
+      }
+    }
+
+    if (result.success && (engine === 'deepseek' || engine === 'gemini')) {
+      if (result.content) {
+        result.content = result.content.replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, '');
       }
     }
 
