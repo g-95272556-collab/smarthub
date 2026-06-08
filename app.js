@@ -5720,7 +5720,23 @@ async function submitKehadiranGuruManualAdmin() {
   if (!status) { showToast('Status wajib dipilih.', 'error'); return; }
   try {
     const guruTarget = selected || { nama: nama, emel: '', jawatan: '' };
-    const existingRows = await getGuruAttendanceEntriesForDate(guruTarget, tarikh);
+    const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
+    if (!data.success) throw new Error(data.error || 'Gagal memuatkan rekod kehadiran');
+    const headers = data.rows[0];
+    const dataRows = data.rows.slice(1);
+
+    const parsedRows = dataRows.map(parseKehadiranGuruRow);
+    const candidateEmails = getGuruProfileEmailCandidates(guruTarget);
+    const existingRows = parsedRows.filter(function(r) {
+      if (!String(r.tarikh || '').startsWith(tarikh)) return false;
+      const sameName = String(r.nama || '').toLowerCase() === String(guruTarget.nama || '').toLowerCase();
+      if (r.nama && guruTarget.nama && !sameName) return false;
+      
+      const sameEmail = candidateEmails.some(function(email) {
+        return email && String(r.email || '').toLowerCase() === email;
+      });
+      return sameName || sameEmail;
+    });
     
     const existingCheckIns = existingRows.filter(r => !isPunchOutStatus(r.status));
     const existingCheckOuts = existingRows.filter(r => isPunchOutStatus(r.status));
@@ -5743,9 +5759,10 @@ async function submitKehadiranGuruManualAdmin() {
       const cleanName = nama.toLowerCase().replace(/[^a-z0-9]/g, '');
       targetEmail = cleanName + '@kiandongo.moe.temp';
     }
-    const row = [nama, tarikh, status, masa, catatan, targetEmail, gpsValue];
-    const data = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_GURU', row: row });
-    if (!data.success) throw new Error(data.error || 'Gagal menyimpan rekod manual.');
+    const newRow = padSheetRow([nama, tarikh, status, masa, catatan, targetEmail, gpsValue], headers.length);
+    dataRows.push(newRow);
+
+    await pushFullSheet('KEHADIRAN_GURU', headers, dataRows);
     closeModal('modalKehadiranGuruManualAdmin');
     showToast('Rekod manual ' + nama + ' berjaya disimpan.', 'success');
     loadKehadiranGuru();
