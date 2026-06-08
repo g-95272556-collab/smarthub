@@ -1542,7 +1542,7 @@
             <div class="form-group"><label>Alamat Baris 2</label><input type="text" id="cfg-amaran-alamat2" placeholder="KUNAK, SABAH."></div>
             <div class="form-group"><label>Telefon</label><input type="text" id="cfg-amaran-tel" placeholder="089-873123"></div>
             <div class="form-group"><label>E-mel Sekolah</label><input type="text" id="cfg-amaran-emel" placeholder="xba1234@moe.edu.my"></div>
-            <div class="form-group"><label>Nama Guru Besar</label><input type="text" id="cfg-amaran-gb" placeholder="NAMA GURU BESAR"></div>
+            <div class="form-group"><label>Nama Perasmi</label><input type="text" id="cfg-amaran-gb" placeholder="NAMA PERASMI"></div>
             <div class="form-group"><label>Prefix Rujukan</label><input type="text" id="cfg-amaran-rujukan" placeholder="SKK/HEM/Disiplin"></div>
           </div>
           <div class="mt-14">
@@ -3399,7 +3399,7 @@ Berikut ialah makluman guru bertugas untuk minggu ini:
               <button class="btn btn-sm btn-secondary" data-action="scroll-config-section" data-target="mod-konfigurasi">Menu</button>
             </div>
             <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px;line-height:1.7">
-              Tetapan skrin perasmian rasmi yang dipaparkan kepada Guru Besar semasa pelancaran sistem. Nama GB diambil secara automatik dari data guru (jawatan = <strong>Guru Besar</strong>).
+              Tetapan skrin perasmian rasmi semasa pelancaran sistem. Nama perasmi diisi terus pada konfigurasi ini, dengan nama login Google sebagai sandaran jika ruang ini kosong.
             </p>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:20px">
@@ -3413,9 +3413,9 @@ Berikut ialah makluman guru bertugas untuk minggu ini:
                 <input type="text" id="cfg-splash-versi" placeholder="cth: 2.0" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem">
               </div>
               <div class="form-group">
-                <label>Override Nama GB <span style="font-weight:400;color:var(--muted)">(pilihan)</span></label>
-                <input type="text" id="cfg-splash-gb" placeholder="Kosong = ambil dari data guru" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem">
-                <small style="color:var(--muted)">Isi hanya jika nama dalam data guru tidak betul.</small>
+                <label>Nama Perasmi <span style="font-weight:400;color:var(--muted)">(pilihan)</span></label>
+                <input type="text" id="cfg-splash-gb" placeholder="Nama perasmi rasmi" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.9rem">
+                <small style="color:var(--muted)">Isi nama perasmi, atau biarkan kosong untuk guna nama login Google semasa.</small>
               </div>
             </div>
 

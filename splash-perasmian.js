@@ -91,15 +91,12 @@ window.showSplashPerasmian = function (previewMode) {
     var cfgGb = ((window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || '').trim();
     if (cfgGb) { el.textContent = cfgGb; return; }
     var lsGb = ''; try { lsGb = (localStorage.getItem('AMARAN_CFG_GB') || '').trim(); } catch(e) {}
-    if (lsGb) el.textContent = lsGb;
-    if (typeof window.getGuruBesarNameFromData === 'function') {
-      window.getGuruBesarNameFromData().then(function (nama) {
-        var cur = document.getElementById('splashGBName');
-        if (cur && nama) cur.textContent = nama;
-      }).catch(function () {});
-    } else if (!lsGb && window.APP && window.APP.user) {
-      el.textContent = (window.APP.user.name || '');
+    if (lsGb) { el.textContent = lsGb; return; }
+    if (window.APP && window.APP.user && window.APP.user.name) {
+      el.textContent = window.APP.user.name;
+      return;
     }
+    el.textContent = '';
   })();
 
   /* Sequential reveal */
@@ -178,20 +175,15 @@ function splashRasmikan() {
     var prsGBName = document.getElementById('splashPrsGBName');
     var prsDatetime = document.getElementById('splashPrsDatetime');
 
-    /* Nama GB — ambil dari data guru, fallback bertingkat */
+    /* Nama perasmi — ambil dari konfigurasi splash, fallback bertingkat */
     if (prsGBName) {
       var gbEl = document.getElementById('splashGBName');
-      /* Guna nama yang sudah dimuatkan pada kad splash (hasil poll getGuruBesarNameFromData) */
+      /* Guna nama yang sudah dimuatkan pada kad splash */
       var gbName = (gbEl && gbEl.textContent.trim() !== '——————————————') ? gbEl.textContent.trim() : '';
       if (gbName) {
         prsGBName.textContent = gbName;
-      } else if (typeof window.getGuruBesarNameFromData === 'function') {
-        /* Panggil sekali lagi jika belum ada */
-        window.getGuruBesarNameFromData().then(function (nama) {
-          if (prsGBName) prsGBName.textContent = nama || '——————————';
-        }).catch(function () {});
       } else {
-        prsGBName.textContent = (window.APP && window.APP.userProfile && window.APP.userProfile.name) || '——————————';
+        prsGBName.textContent = (window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {}).gbName || localStorage.getItem('AMARAN_CFG_GB') || (window.APP && window.APP.user && window.APP.user.name) || '——————————';
       }
     }
 
