@@ -2873,21 +2873,24 @@ _{SEKOLAH}_</textarea>
           </div>
           <div class="form-group" style="margin-top:12px">
             <label>Templat Mesej Fonnte</label>
-            <textarea id="takwimGuruNotifTemplate" rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">ðŸ“š *Peringatan Takwim {SEKOLAH}*
+            <textarea id="takwimGuruNotifTemplate" rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">📌 *Makluman Takwim {SEKOLAH}*
 
 {PERINGATAN}
 
-ðŸŽ¯ *{TAJUK}*
-ðŸ—“ï¸ Tarikh: {TARIKH_PENUH}
-ðŸ·ï¸ Kategori: {KATEGORI}
-âŒ› Tempoh: {TEMPOH}
-ðŸ“ Catatan: {CATATAN}
-ðŸ“Œ Tindakan/Nota: {NOTA_OPERASI}
+Assalamualaikum dan salam sejahtera warga {SEKOLAH},
 
-ðŸ™‚ Mohon ambil maklum dan buat persediaan awal.
-ðŸ¤ Terima kasih atas kerjasama semua.
+Berikut ialah makluman untuk perhatian semua:
 
-ðŸ« _{SEKOLAH}_</textarea>
+✨ *{TAJUK}*
+🗓️ *Tarikh:* {TARIKH_PENUH}
+🏷️ *Kategori:* {KATEGORI}
+⏳ *Tempoh:* {TEMPOH}
+📝 *Catatan:* {CATATAN}
+📍 *Tindakan/Nota:* {NOTA_OPERASI}
+
+Sila ambil maklum dan buat persediaan berkaitan lebih awal. Terima kasih atas kerjasama semua. 🤝
+
+🏫 _{SEKOLAH}_</textarea>
             <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">Token disokong: <code>{PERINGATAN}</code>, <code>{TAJUK}</code>, <code>{TARIKH}</code>, <code>{TARIKH_PENUH}</code>, <code>{KATEGORI}</code>, <code>{CATATAN}</code>, <code>{TEMPOH}</code>, <code>{NOTA_OPERASI}</code>, <code>{SEKOLAH}</code>.</div>
           </div>
           <div class="d-flex gap-10 flex-wrap mt-14">
@@ -4772,7 +4775,7 @@ Berikut ialah makluman guru bertugas untuk minggu ini:
       <div class="form-group">
         <label>Status</label>
         <select id="kGuruAdminStatus">
-          <option value="">• Hadir</option>
+          <option value="Hadir">• Hadir</option>
           <option value="Lewat">⚠️ Lewat</option>
           <option value="Tidak Hadir">❌ Tidak Hadir</option>
           <option value="Cuti">📅 Cuti Diluluskan</option>

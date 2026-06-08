@@ -3,6 +3,6 @@
   "TAKWIM_GURU_NOTIF_TARGET": "",
   "TAKWIM_GURU_NOTIF_DAY_BEFORE_TIME": "17:00",
   "TAKWIM_GURU_NOTIF_SAME_DAY_TIME": "06:30",
-  "TAKWIM_GURU_NOTIF_TEMPLATE": "📚 *Peringatan Takwim {SEKOLAH}*\n\n{PERINGATAN}\n\n🎯 *{TAJUK}*\n🗓️ Tarikh: {TARIKH_PENUH}\n🏷️ Kategori: {KATEGORI}\n⌛ Tempoh: {TEMPOH}\n📝 Catatan: {CATATAN}\n📌 Tindakan/Nota: {NOTA_OPERASI}\n\n🙂 Mohon ambil maklum dan buat persediaan awal.\n🤝 Terima kasih atas kerjasama semua.\n\n🏫 _{SEKOLAH}_",
+  "TAKWIM_GURU_NOTIF_TEMPLATE": "📌 *Makluman Takwim {SEKOLAH}*\n\n{PERINGATAN}\n\nAssalamualaikum dan salam sejahtera warga {SEKOLAH},\n\nBerikut ialah makluman untuk perhatian semua:\n\n✨ *{TAJUK}*\n🗓️ *Tarikh:* {TARIKH_PENUH}\n🏷️ *Kategori:* {KATEGORI}\n⏳ *Tempoh:* {TEMPOH}\n📝 *Catatan:* {CATATAN}\n📍 *Tindakan/Nota:* {NOTA_OPERASI}\n\nSila ambil maklum dan buat persediaan berkaitan lebih awal. Terima kasih atas kerjasama semua. 🤝\n\n🏫 _{SEKOLAH}_",
   "TAKWIM_GURU_NOTIF_NOTE": "Sila semak kehadiran, tempat, bahan, dan tugasan berkaitan sebelum program bermula."
 }

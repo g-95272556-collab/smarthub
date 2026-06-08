@@ -570,7 +570,7 @@ function bindShellActionHandlers() {
       case 'punch-out-manual':
         return punchOutManual();
       case 'open-kehadiran-guru-modal':
-        return openTambahKehadiranGuru();
+        return isPentadbir() ? openTambahKehadiranGuruManualAdmin() : openTambahKehadiranGuru();
       case 'check-gps':
         return mulaAutoGPS();
       case 'auto-hadir-manual':
@@ -1492,9 +1492,15 @@ var DUTY_NOTIF_CONFIG_KEYS = {
   note: 'DUTY_NOTIF_NOTE',
   dispatchState: 'DUTY_NOTIF_DISPATCH_STATE_JSON'
 };
-
-DEFAULT_ATTENDANCE_TEMPLATES.muridTeacherGroup = '📣 *Makluman Kehadiran Murid/Pengurusan RMT kepada Guru Kelas dan Guru Penyelaras RMT* 📣\n\n👋 Salam sejahtera semua guru kelas dan guru penyelaras RMT,\n\nMohon semua guru kelas/penyelaras RMT *mengisi kehadiran murid dalam MOEIS IDME (https://idme.moe.gov.my/login) dan Pengurusan RMT (https://appsjohor.moe.gov.my/rmt/) sebelum jam {MASA_DEADLINE} pagi* bagi memastikan rekod sekolah lengkap dan tepat.\n\n📅 Tarikh: {TARIKH}\n\n🕒 Sila lengkapkan segera jika masih belum direkodkan.\n\n🤝 Terima kasih atas kerjasama dan tindakan pantas semua.\n\n🏫 _{SEKOLAH}_';
-var DEFAULT_TAKWIM_GURU_NOTIF_TEMPLATE = '📚 *Peringatan Takwim {SEKOLAH}*\n\n{PERINGATAN}\n\n🎯 *{TAJUK}*\n🗓️ Tarikh: {TARIKH_PENUH}\n🏷️ Kategori: {KATEGORI}\n⌛ Tempoh: {TEMPOH}\n📝 Catatan: {CATATAN}\n📌 Tindakan/Nota: {NOTA_OPERASI}\n\n🙂 Mohon ambil maklum dan buat persediaan awal.\n🤝 Terima kasih atas kerjasama semua.\n\n🏫 _{SEKOLAH}_';
+var DEFAULT_ATTENDANCE_TEMPLATES = {
+  guruAdmin: '⏰ *Peringatan Kehadiran Guru* ⏰\n\n📅 Tarikh: {TARIKH}\n\n📋 Guru berikut masih belum mendaftar kehadiran:\n\n{SENARAI}\n\n🔔 Mohon kerjasama untuk daftar kehadiran secepat mungkin. Terima kasih! 🤝\n\n🏫 _{SEKOLAH}_',
+  guruPersonal: '⏰ *Peringatan Kehadiran* ⏰\n\n👋 Selamat pagi Cikgu {NAMA},\n\n📅 Sehingga {TARIKH}, kehadiran anda masih belum direkodkan.\n\n🔔 Mohon luangkan masa untuk daftar kehadiran ya. Kerjasama cikgu amat dihargai! 🌟\n\n🏫 _{SEKOLAH}_',
+  muridGuardian: '📋 *Makluman Kehadiran Murid* 📋\n\n👋 Selamat sejahtera ibu bapa / penjaga,\n\n👤 Nama: *{NAMA}*\n🏫 Kelas: *{KELAS}*\n📅 Tarikh: {TARIKH}\n📊 Status: *{STATUS}*\n\n⚠️ Sekiranya ada sebarang pertanyaan atau kekeliruan, sila hubungi pihak sekolah. Kami sedia membantu. 🤝\n\n📚 Kehadiran ke sekolah sangat penting untuk kejayaan anak-anak. Terima kasih atas perhatian dan kerjasama tuan/puan.\n\n🏫 _{SEKOLAH}_',
+  muridSummary: '📊 *Ringkasan Kehadiran Murid* 📊\n\n📅 Tarikh: {TARIKH}\n🏫 Kelas: {KELAS}\n👥 Bilangan Murid Tidak Hadir: *{BILANGAN}*\n\n📋 Senarai:\n{SENARAI}\n\n✅ Untuk makluman dan tindakan lanjut.\n\n🏫 _{SEKOLAH}_',
+  muridClassGroup: '📊 *Kehadiran Murid {KELAS}* 📊\n\n📅 Tarikh: {TARIKH}\n\n📋 Murid yang tidak hadir:\n{SENARAI}\n\n⚠️ Mohon kerjasama ibu bapa untuk maklumkan pihak sekolah jika anak tidak dapat hadir. Terima kasih! 🤝\n\n🏫 _{SEKOLAH}_',
+  muridTeacherGroup: '📣 *Makluman Kehadiran Murid/Pengurusan RMT kepada Guru Kelas dan Guru Penyelaras RMT* 📣\n\n👋 Salam sejahtera semua guru kelas dan guru penyelaras RMT,\n\nMohon semua guru kelas/penyelaras RMT *mengisi kehadiran murid dalam MOEIS IDME (https://idme.moe.gov.my/login) dan Pengurusan RMT (https://appsjohor.moe.gov.my/rmt/) sebelum jam {MASA_DEADLINE} pagi* bagi memastikan rekod sekolah lengkap dan tepat.\n\n📅 Tarikh: {TARIKH}\n\n🕒 Sila lengkapkan segera jika masih belum direkodkan.\n\n🤝 Terima kasih atas kerjasama dan tindakan pantas semua.\n\n🏫 _{SEKOLAH}_'
+};
+var DEFAULT_TAKWIM_GURU_NOTIF_TEMPLATE = '📌 *Makluman Takwim {SEKOLAH}*\n\n{PERINGATAN}\n\nAssalamualaikum dan salam sejahtera warga {SEKOLAH},\n\nBerikut ialah makluman untuk perhatian semua:\n\n✨ *{TAJUK}*\n🗓️ *Tarikh:* {TARIKH_PENUH}\n🏷️ *Kategori:* {KATEGORI}\n⏳ *Tempoh:* {TEMPOH}\n📝 *Catatan:* {CATATAN}\n📍 *Tindakan/Nota:* {NOTA_OPERASI}\n\nSila ambil maklum dan buat persediaan berkaitan lebih awal. Terima kasih atas kerjasama semua. 🤝\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_DUTY_NOTIF_TEMPLATE = '📋 *Jadual Bertugas Mingguan* 📋\n\n👋 Selamat sejahtera Cikgu {NAMA},\n\nAnda ditugaskan sebagai *{PERANAN}* untuk minggu hadapan.\n\n📌 Minggu: *{MINGGU}*\n🗓️ Tarikh: *{TARIKH_MULA}* hingga *{TARIKH_AKHIR}*\n\n👤 Guru Bertugas: *{GURU}*\n🤝 Pembantu: *{PEMBANTU}*\n📝 Catatan: {CATATAN}\n\n💪 Tugas: Kawalan perhimpunan, kantin, disiplin, kebersihan & laporan mingguan.\n\n🌟 Semoga dipermudahkan segala urusan.\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_DUTY_NOTIF_GROUP_TEMPLATE = '📋 *Makluman Jadual Guru Bertugas Mingguan* 📋\n\n👋 Salam Sejahtera Dan Salam Onsoi Semua Warga SK Kiandongo👋\n\nBerikut ialah makluman guru bertugas untuk minggu ini:\n\n📌 Minggu: *{MINGGU}*\n🗓️ Tarikh: *{TARIKH_MULA}* hingga *{TARIKH_AKHIR}*\n\n👤 Guru Bertugas: *{GURU}*\n🤝 Pembantu: *{PEMBANTU}*\n📝 Catatan/Cuti: {CATATAN}\n\n💪 Mohon semua warga sekolah mengambil maklum dan memberikan kerjasama sepanjang minggu bertugas ini.\n\n🌟 Semoga segala urusan dipermudahkan.\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_BIRTHDAY_TEMPLATES = {
