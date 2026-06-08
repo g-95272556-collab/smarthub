@@ -1,4 +1,4 @@
-﻿// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // SMART SCHOOL HUB v2.0 — SK Kiandongo
 // app.js — Main Application JavaScript
 // ═══════════════════════════════════════════════════════════════
@@ -14829,7 +14829,7 @@ function lkPostProcessOutput(raw) {
 function lkBinaSumber(phase) {
   var tahun = (document.getElementById('lkTahun') || {}).value || '1';
   var jenis = document.querySelector('input[name="lkJenis"]:checked') ? document.querySelector('input[name="lkJenis"]:checked').value : 'pbd-pt';
-  var jenisLabel = { 'pdpc': 'PDPC / Lembaran Kerja', 'pbd-pt': 'PBD Berterusan', 'pbd-at': 'PBD Akhir Tahun', 'uasa': 'UASA' };
+  var jenisLabel = { 'pbd-pt': 'Lembaran Kerja PDPC', 'pbd-at': 'PBD Berterusan', 'uasa': 'UASA' };
   var sel = document.getElementById('lkSubjek');
   var subjekLabel = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : sel.value) : '';
   var subjekVal = sel ? sel.value : '';
@@ -15475,29 +15475,23 @@ async function callWorkerAIGemini(prompt, withImage) {
 
       // ══ STEP 3: Bina HTML — selitkan imej inline mengikut urutan index ══
       var imgCounter = 0;
-      var htmlTokens = {};
-      var htmlContent = rawText
+      var formattedHtml = lkPostProcessOutput(rawText);
+      var htmlContent = formattedHtml
         .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
           var currentIdx = imgCounter++;
           var dataUri = imgByIndex[currentIdx];
           var rajahNum = currentIdx + 1;
-          var token = '%%LK_INLINE_IMAGE_' + rajahNum + '%%';
           if (dataUri) {
-            htmlTokens[token] = '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
+            return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
               '<img src="' + dataUri + '" style="max-width:55%;height:auto;max-height:220px;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
               '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
               '</div>';
           } else {
-            htmlTokens[token] = '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
-              '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + escapeHtml(desc.trim()) + ']</span>' +
+            return '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
+              '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + desc.trim() + ']</span>' +
               '</div>';
           }
-          return token;
-        })
-        .split(/(%%LK_INLINE_IMAGE_\d+%%)/g)
-        .map(function(part) { return htmlTokens[part] || escapeHtml(part); })
-        .join('')
-        .replace(/\n/g, '<br>');
+        });
 
       if (!htmlContent) throw new Error('Tiada kandungan dihasilkan oleh Gemini');
       return { success: true, content: htmlContent, images: [], isHtml: true };
@@ -15571,7 +15565,8 @@ async function callHybridDeepSeekGemini(prompt) {
 
   // ── STEP 4: Replace placeholder dengan imej atau kotak fallback ──
   var imgCounter = 0;
-  var htmlContent = rawText
+  var formattedHtml = lkPostProcessOutput(rawText);
+  var htmlContent = formattedHtml
     .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
       var currentIdx = imgCounter++;
       var dataUri = imgByIndex[currentIdx];
@@ -15586,8 +15581,7 @@ async function callHybridDeepSeekGemini(prompt) {
           '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + desc.trim() + ']</span>' +
           '</div>';
       }
-    })
-    .replace(/\n/g, '<br>');
+    });
 
   var totalJana = Object.keys(imgByIndex).length;
   return { success: true, content: htmlContent, images: [], isHtml: true, _imgCount: totalJana };
@@ -15797,7 +15791,8 @@ async function callHybridDeepSeekOpenAI(prompt) {
 
   // ── STEP 4: Replace placeholder dengan imej atau kotak fallback ──
   var imgCounter = 0;
-  var htmlContent = rawText
+  var formattedHtml = lkPostProcessOutput(rawText);
+  var htmlContent = formattedHtml
     .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
       var currentIdx = imgCounter++;
       var dataUri = imgByIndex[currentIdx];
@@ -15812,8 +15807,7 @@ async function callHybridDeepSeekOpenAI(prompt) {
           '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + desc.trim() + ']</span>' +
           '</div>';
       }
-    })
-    .replace(/\n/g, '<br>');
+    });
 
   var totalJana = Object.keys(imgByIndex).length;
   return { success: true, content: htmlContent, images: [], isHtml: true, _imgCount: totalJana };
@@ -16334,7 +16328,7 @@ function lkCetakOutput() {
   var subjekLabel = subjekSel ? (subjekSel.options[subjekSel.selectedIndex] ? subjekSel.options[subjekSel.selectedIndex].text : '') : '';
   var tahun = (document.getElementById('lkTahun') || {value:''}).value;
   var masa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
-  var guru = '';
+  var guru = (APP.user && APP.user.name) || '';
   var kodKertas = (document.getElementById('lkKodKertas') || {}).value || '_______________________';
   var bilSoalan = (document.getElementById('lkBilSoalan') || {}).value || '___';
   
@@ -16641,7 +16635,7 @@ async function lkCetakSemuaMurid() {
     var subjekLabel = subjekSel && subjekSel.options[subjekSel.selectedIndex] ? subjekSel.options[subjekSel.selectedIndex].text : '';
     var tahun = (document.getElementById('lkTahun') || {}).value || '';
     var masa = (document.getElementById('lkMasaMenjawab') || {}).value || '1 Jam 15 Minit';
-    var guru = '';
+    var guru = (APP.user && APP.user.name) || '';
     var kodKertas = (document.getElementById('lkKodKertas') || {}).value || '_______________________';
     var bilSoalan = (document.getElementById('lkBilSoalan') || {}).value || '___';
     var isUjianFormal = (jenis === 'uasa' || jenis === 'pbd-at');
