@@ -2077,7 +2077,7 @@ async function saveAttendanceNotificationConfig() {
 }
 
 // ── Kawalan Akses ────────────────────────
-var DEFAULT_ADMIN_EMAILS = ['xba2238@moe.edu.my', 'g-95272556@moe-dl.edu.my'];
+var DEFAULT_ADMIN_EMAILS = ['g-95272556@moe-dl.edu.my'];
 var MODUL_PENTADBIR = ['data-guru','data-murid','konfigurasi','notifikasi','hari-lahir'];
 // Cache email pentadbir dari Data Guru (auto-detect)
 var _guruAutoAdminEmails = []; // [{ email, nama, jawatan }]
