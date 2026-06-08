@@ -532,6 +532,10 @@ function bindShellActionHandlers() {
     var action = String(actionButton.getAttribute('data-action') || '').trim();
     if (!action) return;
     event.preventDefault();
+    if (!canRunAction(action)) {
+      showToast('Akses terhad - tindakan ini tidak dibenarkan untuk akaun semasa.', 'error');
+      return;
+    }
 
     switch (action) {
       case 'splash-rasmikan':
@@ -1462,6 +1466,7 @@ var BIRTHDAY_NOTIF_CONFIG_KEYS = {
   fonnteToken: 'FONNTE_TOKEN',
   fonnteGuruGroup: 'HL_FONNTE_GROUP',
   fonnteTestGroup: 'FONNTE_TEST_GROUP',
+  sendTime: 'HL_SEND_TIME',
   guruTemplate: 'HL_TEMPLATE_GURU',
   muridTemplate: 'HL_TEMPLATE_MURID',
   dispatchState: 'HL_NOTIF_DISPATCH_STATE_JSON'
@@ -1519,6 +1524,9 @@ var DEFAULT_BIRTHDAY_TEMPLATES = {
 };
 function getGroupKelas(k) { return GROUP_WA_KELAS[k] || ''; }
 function getGroupGuruFonnteId() { return String(hlConfig.fonnteGroup || '').trim(); }
+function getBirthdayNotifSendTime() {
+  return String(localStorage.getItem('ssh_hl_send_time') || '08:00').trim() || '08:00';
+}
 function buildGroupKelasConfigKey(kelas) {
   return 'GROUP_WA_' + String(kelas || '').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
@@ -1627,6 +1635,9 @@ function applyBackendOperationalConfig(config) {
   if (cfg.HL_NOTIF_ENABLED !== undefined && cfg.HL_NOTIF_ENABLED !== null && cfg.HL_NOTIF_ENABLED !== '') {
     localStorage.setItem('ssh_hl_notif_enabled', String(cfg.HL_NOTIF_ENABLED).trim() === 'false' ? 'false' : 'true');
   }
+  if (cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime] !== undefined && String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime] || '').trim()) {
+    localStorage.setItem('ssh_hl_send_time', String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime]).trim());
+  }
   // Sync tetapan kehadiran dari backend
   if (cfg.ATTENDANCE_GURU_NOTIF_ENABLED !== undefined && cfg.ATTENDANCE_GURU_NOTIF_ENABLED !== '') {
     localStorage.setItem('ssh_attendance_guru_notif_enabled', String(cfg.ATTENDANCE_GURU_NOTIF_ENABLED).trim() === 'false' ? 'false' : 'true');
@@ -1688,6 +1699,9 @@ function applyBackendOperationalConfig(config) {
   if (cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.muridTemplate] !== undefined && String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.muridTemplate] || '').trim()) {
     localStorage.setItem('ssh_hl_template_murid', String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.muridTemplate]).trim());
   }
+  if (cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime] !== undefined && String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime] || '').trim()) {
+    localStorage.setItem('ssh_hl_send_time', String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime]).trim());
+  }
   if (typeof openaiKemaskiniStatusUI === 'function') openaiKemaskiniStatusUI();
 }
 function applyNotificationRuntimeConfig(config) {
@@ -1706,7 +1720,9 @@ function applyNotificationRuntimeConfig(config) {
   hlConfig.fonnteGroup = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteGuruGroup] || cfg.FONNTE_GROUP || hlConfig.fonnteGroup || '').trim();
   hlConfig.fonntePibgGroup = String(cfg.FONNTE_PIBG_GROUP || hlConfig.fonntePibgGroup || '').trim();
   hlConfig.fonnteTestGroup = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteTestGroup] || hlConfig.fonnteTestGroup || '120363423994004887@g.us').trim();
+  hlConfig.sendTime = String(cfg[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime] || hlConfig.sendTime || localStorage.getItem('ssh_hl_send_time') || '08:00').trim() || '08:00';
   localStorage.setItem('ssh_hl_config', JSON.stringify(hlConfig));
+  localStorage.setItem('ssh_hl_send_time', hlConfig.sendTime);
 }
 
 function isTelegramBackendReady() {
@@ -1733,6 +1749,7 @@ async function loadBackendOperationalConfig(forceReload) {
 const CONFIG_SYNC_MAP = {
   ssh_hl_config: 'HL_CONFIG_JSON',
   ssh_hl_notif_enabled: 'HL_NOTIF_ENABLED',
+  ssh_hl_send_time: 'HL_SEND_TIME',
   ssh_notif_auto_enabled: 'NOTIF_AUTO_ENABLED',
   ssh_attendance_guru_reminder_time: 'ATTENDANCE_GURU_REMINDER_TIME',
   ssh_attendance_murid_cutoff_time: 'ATTENDANCE_MURID_CUTOFF_TIME',
@@ -1855,10 +1872,13 @@ function renderBirthdayNotifConfigSummary(config) {
   var telegramChat = String(effectiveConfig[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramChat] || hlConfig.tgChat || '').trim();
   var telegramTopic = String(effectiveConfig[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramTopic] || hlConfig.tgTopic || '').trim();
   var fonnteToken = String(effectiveConfig[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteToken] || '').trim();
+  var sendTime = String(effectiveConfig[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime] || localStorage.getItem('ssh_hl_send_time') || '08:00').trim() || '08:00';
   var telegramBotConfigured = telegramBot || String(effectiveConfig.TELEGRAM_BOT_CONFIGURED || '').trim() === 'true' || !!hlConfig.tgBotConfigured;
   var fonnteTokenConfigured = fonnteToken || String(effectiveConfig.FONNTE_TOKEN_CONFIGURED || '').trim() === 'true' || !!hlConfig.fonnteTokenConfigured;
   var guruGroup = String(effectiveConfig[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteGuruGroup] || hlConfig.fonnteGroup || '').trim();
   var activeClassCount = SENARAI_KELAS_MURID.filter(function(kelas) { return !!getGroupKelas(kelas); }).length;
+
+  setBirthdayNotifInputValue('birthdayNotifSendTime', sendTime);
 
   setText('birthdayNotifTelegramStatus', telegramBotConfigured && telegramChat ? 'Aktif' : 'Tidak lengkap');
   setText('birthdayNotifTelegramMeta', telegramBotConfigured && telegramChat
@@ -1891,6 +1911,7 @@ function populateBirthdayNotifConfigInputs(config) {
   setBirthdayNotifInputValue('hl-tg-chat', hlConfig.tgChat);
   setBirthdayNotifInputValue('hl-tg-topic', hlConfig.tgTopic);
   setBirthdayNotifInputValue('hl-fonnte-token', hlConfig.fonnteToken || '');
+  setBirthdayNotifInputValue('birthdayNotifSendTime', getBirthdayNotifSendTime());
   syncGroupGuruFonnteInputs(hlConfig.fonnteGroup || '');
   setBirthdayNotifInputValue(
     'birthdayTplGuru',
@@ -1928,6 +1949,7 @@ async function simpanKonfigHariLahir() {
   var pibgGroup = pibgGroupInput ? String(pibgGroupInput.value || '').trim() : String(hlConfig.fonntePibgGroup || '').trim();
   var guruTemplate = getBirthdayNotifInputValue('birthdayTplGuru') || DEFAULT_BIRTHDAY_TEMPLATES.guru;
   var muridTemplate = getBirthdayNotifInputValue('birthdayTplMurid') || DEFAULT_BIRTHDAY_TEMPLATES.murid;
+  var sendTime = getBirthdayNotifInputValue('birthdayNotifSendTime') || '08:00';
   var payload = {};
   payload[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramBot] = telegramBot;
   payload[BIRTHDAY_NOTIF_CONFIG_KEYS.telegramChat] = telegramChat;
@@ -1936,6 +1958,7 @@ async function simpanKonfigHariLahir() {
   payload.FONNTE_GROUP = guruGroup;
   payload[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteGuruGroup] = guruGroup;
   payload[BIRTHDAY_NOTIF_CONFIG_KEYS.fonnteTestGroup] = testGroup;
+  payload[BIRTHDAY_NOTIF_CONFIG_KEYS.sendTime] = sendTime;
   payload.FONNTE_PIBG_GROUP = pibgGroup;
   payload[BIRTHDAY_NOTIF_CONFIG_KEYS.guruTemplate] = guruTemplate;
   payload[BIRTHDAY_NOTIF_CONFIG_KEYS.muridTemplate] = muridTemplate;
@@ -1951,10 +1974,12 @@ async function simpanKonfigHariLahir() {
   hlConfig.fonnteTokenConfigured = !!fonnteToken || !!hlConfig.fonnteTokenConfigured;
   hlConfig.fonnteGroup = guruGroup;
   hlConfig.fonnteTestGroup = testGroup;
+  hlConfig.sendTime = sendTime;
   localStorage.setItem('ssh_hl_config', JSON.stringify(hlConfig));
   localStorage.setItem('ssh_group_wa_kelas', JSON.stringify(GROUP_WA_KELAS));
   localStorage.setItem('ssh_hl_template_guru', guruTemplate);
   localStorage.setItem('ssh_hl_template_murid', muridTemplate);
+  localStorage.setItem('ssh_hl_send_time', sendTime);
   syncGroupGuruFonnteInputs(guruGroup);
 
   try {
@@ -2120,6 +2145,154 @@ function isPentadbir() {
   if (getAdminEmails().some(function(e){ return e.toLowerCase() === userEmail; })) return true;
   // Semak juga dari auto-detect Data Guru
   return _guruAutoAdminEmails.some(function(g){ return g.email === userEmail; });
+}
+function canManageAdminModules() {
+  return isPentadbir();
+}
+function canAccessRestrictedModule(moduleId) {
+  return !MODUL_PENTADBIR.includes(moduleId) || canManageAdminModules();
+}
+function isPengurusanSekolah() {
+  if (!APP.user) return false;
+  var roleText = String(APP.user.role || APP.user.jawatan || '').toLowerCase();
+  return roleText.includes('guru besar') || roleText.includes('penolong kanan');
+}
+function canAccessPengurusanSekolahTools() {
+  return isPentadbir() || isPengurusanSekolah();
+}
+const ADMIN_TEKNIKAL_ACTIONS = new Set([
+  'open-kehadiran-guru-manual-admin',
+  'submitKehadiranGuruManualAdmin',
+  'edit-kehadiran-guru-admin',
+  'delete-kehadiran-guru-admin',
+  'submitEditKehadiranGuruAdmin',
+  'add-admin-email',
+  'remove-admin-email',
+  'clear-config-status',
+  'save-worker-url',
+  'check-worker-status',
+  'save-communication-config',
+  'save-advanced-config',
+  'setup-sheets',
+  'save-class-groups',
+  'save-gemini-key',
+  'delete-gemini-key',
+  'save-gemini-daily-limit',
+  'reset-gemini-quota',
+  'save-openai-key',
+  'delete-openai-key',
+  'load-config',
+  'refreshBirthdayConfigStatus',
+  'loadDataGuru',
+  'exportGuruCSV',
+  'openModalGuru',
+  'importGuruCSV',
+  'downloadGuruTemplate',
+  'loadDataMurid',
+  'exportMuridCSV',
+  'openModalMurid',
+  'importMuridCSV',
+  'downloadMuridTemplate',
+  'save-kokum-program-config',
+  'load-kokum-program-config',
+  'reset-kokum-program-config',
+  'download-kokum-guru-template',
+  'import-kokum-guru-config',
+  'download-kokum-murid-template',
+  'import-kokum-murid-config',
+  'load-d1-summary',
+  'load-d1-editable-sheet',
+  'render-d1-editable-sheet',
+  'add-d1-editor-row',
+  'export-d1-editor-csv',
+  'save-d1-editor',
+  'reset-d1-editor',
+  'clear-d1-editor-filters',
+  'clear-d1-selected-sheet',
+  'clear-d1-all-data',
+  'remove-d1-editor-row',
+  'save-splash-config',
+  'reset-splash-launch',
+  'preview-splash',
+  'sync-all-blob',
+  'refresh-blob-status',
+  'sync-blob-to-d1',
+  'muat-jadual-bertugas-d1',
+  'simpan-jadual-bertugas-d1',
+  'tambah-jadual-bertugas-row',
+  'hapus-jadual-bertugas-row',
+  'save-amaran-config',
+  'send-amaran-test-group',
+  'load-amaran-kehadiran',
+  'print-amaran-modal',
+  'send-amaran-modal',
+  'close-amaran-modal',
+  'preview-warning-letter',
+  'send-warning-letter-pdf',
+  'load-laporan-bertugas-attendance',
+  'load-laporan-bertugas-classes',
+  'generate-laporan-bertugas-ai',
+  'save-laporan-bertugas',
+  'print-laporan-bertugas',
+  'openOPRImagePicker',
+  'remove-opr-image',
+  'janaOPR',
+  'janaSemuaOPR',
+  'cetakOPR',
+  'loadPelaporanKokumLatest',
+  'simpanPelaporanKokum',
+  'cetakPelaporanKokum',
+  'load-sheet-data',
+  'setSemuaStatus',
+  'submitGuru',
+  'submitMurid',
+  'submitKehadiranGuru',
+  'submitKehadiranKelas',
+  'sync-takwim-jadual',
+  'save-takwim-event',
+  'reset-takwim-form',
+  'export-takwim-events',
+  'load-takwim-2026',
+  'load-hari-lahir',
+  'open-modal-hari-lahir',
+  'send-birthday-wishes-today',
+  'send-birthday-wish-one',
+  'reset-birthday-guard-today',
+  'import-hl-csv',
+  'delete-hari-lahir',
+  'edit-data-record'
+]);
+const PENGURUSAN_SEKOLAH_ACTIONS = new Set([
+  'open-takwim-config',
+  'open-birthday-config',
+  'toggle-takwim-guru-notif',
+  'save-takwim-guru-notif-config',
+  'test-takwim-guru-notif',
+  'toggle-duty-notif',
+  'save-duty-notif-config',
+  'test-duty-notif',
+  'open-notif-log',
+  'toggle-notif-auto',
+  'test-telegram',
+  'test-fonnte',
+  'switch-notif-tab',
+  'send-murid-absent-notif',
+  'send-custom-notif',
+  'send-guru-absent-notif',
+  'save-template',
+  'open-activity-log-config',
+  'load-notif-log',
+  'open-notif-hantar',
+  'open-notif-hantar-focus-guru',
+  'toggle-guru-attendance-notif',
+  'toggle-murid-attendance-notif',
+  'toggle-murid-sub-option',
+  'save-attendance-notif-config'
+]);
+function canRunAction(action) {
+  if (ADMIN_TEKNIKAL_ACTIONS.has(action)) return canManageAdminModules();
+  if (PENGURUSAN_SEKOLAH_ACTIONS.has(action)) return canAccessPengurusanSekolahTools();
+  return true;
 }
 function addAdminEmail() {
   var input = document.getElementById('configAdminEmail');
@@ -2365,7 +2538,7 @@ async function semakNotifGuruBertugasMingguDepan() {
   var nowParts = getMalaysiaDateParts(new Date());
   if (nowParts.weekday !== 0 || nowParts.hm < getDutyNotifTime()) return;
   if (!isHariPersekolahan(getDutyNotificationTargetMonday())) return;
-  if (!isPentadbir()) return;
+  if (!canAccessPengurusanSekolahTools()) return;
   if (!isFonnteBackendReady()) {
     await loadBackendOperationalConfig(true);
   }
@@ -4290,7 +4463,7 @@ function handleLogout(silent) {
 function showModule(id) {
   if (id === 'geofence') id = 'kehadiran-guru';
   _currentModuleId = id;
-  if (MODUL_PENTADBIR.includes(id) && !isPentadbir()) {
+  if (!canAccessRestrictedModule(id)) {
     showToast('Akses terhad - pentadbir sahaja.', 'error'); return;
   }
   const mod = document.getElementById('mod-' + id);
@@ -5671,7 +5844,7 @@ function renderKehadiranGuruManualAdminOptions(gurus) {
 }
 
 async function openTambahKehadiranGuruManualAdmin() {
-  if (!isPentadbir()) {
+  if (!canManageAdminModules()) {
     showToast('Akses terhad - pentadbir sahaja.', 'error');
     return;
   }
@@ -5699,7 +5872,7 @@ async function openTambahKehadiranGuruManualAdmin() {
 }
 
 async function submitKehadiranGuruManualAdmin() {
-  if (!isPentadbir()) {
+  if (!canManageAdminModules()) {
     showToast('Akses terhad - pentadbir sahaja.', 'error');
     return;
   }
@@ -5772,7 +5945,7 @@ async function submitKehadiranGuruManualAdmin() {
 }
 
 async function deleteKehadiranGuruAdmin(nama, tarikh) {
-  if (!isPentadbir()) {
+  if (!canManageAdminModules()) {
     showToast('Akses terhad - pentadbir sahaja.', 'error');
     return;
   }
@@ -5802,7 +5975,7 @@ async function deleteKehadiranGuruAdmin(nama, tarikh) {
 }
 
 async function openEditKehadiranGuruAdmin(nama, tarikh) {
-  if (!isPentadbir()) {
+  if (!canManageAdminModules()) {
     showToast('Akses terhad - pentadbir sahaja.', 'error');
     return;
   }
@@ -8289,7 +8462,7 @@ let _birthdayNotifBusy = false;
 async function semakDanHantarNotifikasiTakwimGuruAuto() {
   if (_takwimGuruNotifBusy) return;
   if (!isNotifAutoEnabled() || !isTakwimGuruNotifEnabled()) return;
-  if (!isPentadbir()) return;
+  if (!canAccessPengurusanSekolahTools()) return;
   if (!isFonnteBackendReady()) {
     await loadBackendOperationalConfig(true);
   }
@@ -8606,6 +8779,9 @@ async function semakNotifHariLahirAuto() {
   if (_birthdayNotifBusy) return;
   if (!isNotifAutoEnabled()) return;
   if (!isHLNotifEnabled()) return;
+  var sendTime = getBirthdayNotifSendTime();
+  var nowHm = getMalaysiaDateParts(new Date()).hm;
+  if (nowHm < sendTime) return;
   const todayYmd = getTodayYMD();
   const today = getMalaysiaTodayDate();
   const m = today.getMonth() + 1;
