@@ -567,6 +567,10 @@ function bindShellActionHandlers() {
         return navigateTakwimBulan(parseInt(actionButton.getAttribute('data-direction') || '0', 10) || 0);
       case 'load-kehadiran-guru':
         return loadKehadiranGuru({ preserveTable: true });
+      case 'open-kehadiran-guru-manual-admin':
+        return openTambahKehadiranGuruManualAdmin();
+      case 'submitKehadiranGuruManualAdmin':
+        return submitKehadiranGuruManualAdmin();
       case 'punch-out-manual':
         return punchOutManual();
       case 'open-kehadiran-guru-modal':
