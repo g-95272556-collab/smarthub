@@ -571,6 +571,12 @@ function bindShellActionHandlers() {
         return openTambahKehadiranGuruManualAdmin();
       case 'submitKehadiranGuruManualAdmin':
         return submitKehadiranGuruManualAdmin();
+      case 'edit-kehadiran-guru-admin':
+        return openEditKehadiranGuruAdmin(actionButton.getAttribute('data-nama') || '', actionButton.getAttribute('data-tarikh') || '');
+      case 'delete-kehadiran-guru-admin':
+        return deleteKehadiranGuruAdmin(actionButton.getAttribute('data-nama') || '', actionButton.getAttribute('data-tarikh') || '');
+      case 'submitEditKehadiranGuruAdmin':
+        return submitEditKehadiranGuruAdmin();
       case 'punch-out-manual':
         return punchOutManual();
       case 'open-kehadiran-guru-modal':
@@ -5720,6 +5726,217 @@ async function submitKehadiranGuruManualAdmin() {
   }
 }
 
+async function deleteKehadiranGuruAdmin(nama, tarikh) {
+  if (!isPentadbir()) {
+    showToast('Akses terhad - pentadbir sahaja.', 'error');
+    return;
+  }
+  const confirmResult = confirm('Adakah anda pasti untuk memadam semua rekod kehadiran untuk ' + nama + ' pada tarikh ' + tarikh + '?');
+  if (!confirmResult) return;
+
+  try {
+    const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
+    if (!data.success) throw new Error(data.error || 'Gagal membaca data.');
+    
+    const headers = data.rows[0];
+    const dataRows = data.rows.slice(1);
+    
+    const updatedDataRows = dataRows.filter(function(row) {
+      const parsed = parseKehadiranGuruRow(row);
+      if (parsed.nama.toLowerCase() === 'nama') return true;
+      const match = parsed.nama.toLowerCase() === nama.toLowerCase() && parsed.tarikh === tarikh;
+      return !match;
+    });
+    
+    await pushFullSheet('KEHADIRAN_GURU', headers, updatedDataRows);
+    showToast('Rekod kehadiran berjaya dipadam.', 'success');
+    loadKehadiranGuru();
+  } catch(e) {
+    showToast('Gagal memadam rekod: ' + e.message, 'error');
+  }
+}
+
+async function openEditKehadiranGuruAdmin(nama, tarikh) {
+  if (!isPentadbir()) {
+    showToast('Akses terhad - pentadbir sahaja.', 'error');
+    return;
+  }
+  
+  document.getElementById('editkGuruAdminNama').textContent = nama;
+  document.getElementById('editkGuruAdminTarikhText').textContent = tarikh;
+  document.getElementById('editkGuruAdminNamaVal').value = nama;
+  document.getElementById('editkGuruAdminTarikh').value = tarikh;
+  
+  document.getElementById('editkGuruAdminStatus').value = 'Hadir';
+  document.getElementById('editkGuruAdminMasaMasuk').value = '';
+  document.getElementById('editkGuruAdminCatatanMasuk').value = '';
+  document.getElementById('editkGuruAdminMasaKeluar').value = '';
+  document.getElementById('editkGuruAdminCatatanKeluar').value = '';
+  
+  try {
+    const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
+    if (!data.success) throw new Error(data.error || 'Gagal membaca data.');
+    
+    const matched = (data.rows.slice(1) || []).map(parseKehadiranGuruRow).filter(function(r) {
+      return r.nama.toLowerCase() === nama.toLowerCase() && r.tarikh === tarikh;
+    });
+    
+    let checkInItem = null;
+    let checkOutItem = null;
+    
+    matched.forEach(function(r) {
+      if (isPunchOutStatus(r.status)) {
+        if (!checkOutItem || r.masa > checkOutItem.masa) {
+          checkOutItem = r;
+        }
+      } else {
+        if (!checkInItem || r.masa < checkInItem.masa) {
+          checkInItem = r;
+        }
+      }
+    });
+    
+    if (checkInItem) {
+      document.getElementById('editkGuruAdminStatus').value = checkInItem.status || 'Hadir';
+      document.getElementById('editkGuruAdminMasaMasuk').value = checkInItem.masa || '';
+      document.getElementById('editkGuruAdminCatatanMasuk').value = checkInItem.catatan || '';
+    }
+    if (checkOutItem) {
+      document.getElementById('editkGuruAdminMasaKeluar').value = checkOutItem.masa || '';
+      document.getElementById('editkGuruAdminCatatanKeluar').value = checkOutItem.catatan || '';
+    }
+    
+    openModal('modalEditKehadiranGuruAdmin');
+  } catch(e) {
+    showToast('Gagal memuatkan rekod: ' + e.message, 'error');
+  }
+}
+
+async function submitEditKehadiranGuruAdmin() {
+  if (!isPentadbir()) {
+    showToast('Akses terhad - pentadbir sahaja.', 'error');
+    return;
+  }
+  const nama = document.getElementById('editkGuruAdminNamaVal').value;
+  const tarikh = document.getElementById('editkGuruAdminTarikh').value;
+  const statusMasuk = document.getElementById('editkGuruAdminStatus').value;
+  const masaMasuk = document.getElementById('editkGuruAdminMasaMasuk').value;
+  const catatanMasuk = document.getElementById('editkGuruAdminCatatanMasuk').value.trim();
+  const masaKeluar = document.getElementById('editkGuruAdminMasaKeluar').value;
+  const catatanKeluar = document.getElementById('editkGuruAdminCatatanKeluar').value.trim();
+
+  if (!nama || !tarikh) {
+    showToast('Maklumat guru/staf atau tarikh tidak sah.', 'error');
+    return;
+  }
+
+  try {
+    const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
+    if (!data.success) throw new Error(data.error || 'Gagal membaca data.');
+
+    const headers = data.rows[0];
+    const dataRows = data.rows.slice(1);
+
+    let userEmail = '';
+    dataRows.forEach(function(row) {
+      const parsed = parseKehadiranGuruRow(row);
+      if (parsed.nama.toLowerCase() === nama.toLowerCase() && parsed.email) {
+        userEmail = parsed.email;
+      }
+    });
+
+    if (!userEmail) {
+      try {
+        const gurus = await getGuruList();
+        const found = (gurus || []).find(g => String(g.nama || '').trim().toLowerCase() === nama.toLowerCase());
+        if (found) userEmail = String(found.emel || '').trim();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    const otherRows = [];
+    let existingCheckInRow = null;
+    let existingCheckOutRow = null;
+
+    dataRows.forEach(function(row) {
+      const parsed = parseKehadiranGuruRow(row);
+      if (parsed.nama.toLowerCase() === 'nama') {
+        otherRows.push(row);
+        return;
+      }
+      if (parsed.nama.toLowerCase() === nama.toLowerCase() && parsed.tarikh === tarikh) {
+        if (isPunchOutStatus(parsed.status)) {
+          existingCheckOutRow = row;
+        } else {
+          existingCheckInRow = row;
+        }
+      } else {
+        otherRows.push(row);
+      }
+    });
+
+    let updatedCheckInRow = null;
+    if (existingCheckInRow) {
+      const parsed = parseKehadiranGuruRow(existingCheckInRow);
+      if (parsed.id) {
+        existingCheckInRow[4] = masaMasuk;
+        existingCheckInRow[5] = statusMasuk;
+        if (existingCheckInRow.length > 15) {
+          existingCheckInRow[15] = catatanMasuk;
+        } else if (existingCheckInRow.length > 14) {
+          existingCheckInRow[14] = catatanMasuk;
+        } else {
+          existingCheckInRow[14] = catatanMasuk;
+        }
+      } else {
+        existingCheckInRow[2] = statusMasuk;
+        existingCheckInRow[3] = masaMasuk;
+        existingCheckInRow[4] = catatanMasuk;
+      }
+      updatedCheckInRow = existingCheckInRow;
+    } else if (masaMasuk) {
+      updatedCheckInRow = padSheetRow([nama, tarikh, statusMasuk, masaMasuk, catatanMasuk, userEmail, 'manual-admin'], headers.length);
+    }
+
+    let updatedCheckOutRow = null;
+    if (masaKeluar) {
+      if (existingCheckOutRow) {
+        const parsed = parseKehadiranGuruRow(existingCheckOutRow);
+        if (parsed.id) {
+          existingCheckOutRow[4] = masaKeluar;
+          existingCheckOutRow[5] = 'Punch Out';
+          if (existingCheckOutRow.length > 15) {
+            existingCheckOutRow[15] = catatanKeluar;
+          } else if (existingCheckOutRow.length > 14) {
+            existingCheckOutRow[14] = catatanKeluar;
+          } else {
+            existingCheckOutRow[14] = catatanKeluar;
+          }
+        } else {
+          existingCheckOutRow[2] = 'Punch Out';
+          existingCheckOutRow[3] = masaKeluar;
+          existingCheckOutRow[4] = catatanKeluar;
+        }
+        updatedCheckOutRow = existingCheckOutRow;
+      } else {
+        updatedCheckOutRow = padSheetRow([nama, tarikh, 'Punch Out', masaKeluar, catatanKeluar, userEmail, 'manual-admin'], headers.length);
+      }
+    }
+
+    const newRows = otherRows;
+    if (updatedCheckInRow) newRows.push(updatedCheckInRow);
+    if (updatedCheckOutRow) newRows.push(updatedCheckOutRow);
+
+    await pushFullSheet('KEHADIRAN_GURU', headers, newRows);
+    closeModal('modalEditKehadiranGuruAdmin');
+    showToast('Rekod kehadiran berjaya dikemas kini.', 'success');
+    loadKehadiranGuru();
+  } catch (e) {
+    showToast('Ralat semasa mengemas kini: ' + e.message, 'error');
+  }
+}
+
 async function initKehadiranGuruModule() {
   renderHariPersekolahanBanner();
   await updateGeoUserPanel();
@@ -5952,31 +6169,56 @@ async function loadKehadiranGuru(options) {
   if (!opts.preserveTable || !tbody.children.length) {
     showSkeleton('guruKehadiranBody', 'table');
   }
+  const colspan = isPentadbir() ? 8 : 7;
   try {
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
     if (!data.success) throw new Error(data.error || 'Gagal');
     const rows = (data.rows || []).map(parseKehadiranGuruRow);
     const groupedRows = buildGuruAttendanceDisplayRows(rows);
     const date = document.getElementById('guruFilterDate').value;
-    let displayRows = groupedRows;
+    let displayRows = groupedRows.filter(r => r.nama && r.nama.toLowerCase() !== 'nama');
     if (date) displayRows = displayRows.filter(r => String(r.tarikh || '').startsWith(date));
+    
+    // Update the header row dynamically
+    const theadTr = tbody.closest('table').querySelector('thead tr');
+    if (theadTr) {
+      if (isPentadbir()) {
+        if (!theadTr.querySelector('.col-tindakan')) {
+          const th = document.createElement('th');
+          th.className = 'col-tindakan';
+          th.textContent = 'Tindakan';
+          theadTr.appendChild(th);
+        }
+      } else {
+        const th = theadTr.querySelector('.col-tindakan');
+        if (th) th.remove();
+      }
+    }
+
     const hEl = document.getElementById('guru-stat-hadir');
     const tEl = document.getElementById('guru-stat-tidak');
     const cEl = document.getElementById('guru-stat-cuti');
     if (hEl) hEl.textContent = displayRows.filter(r => ['Hadir','Lewat'].includes(r.status)).length;
     if (tEl) tEl.textContent = displayRows.filter(r => ['Tidak Berada','Tanpa Kenyataan','Tidak Hadir'].includes(r.status)).length;
     if (cEl) cEl.textContent = displayRows.filter(r => ['Cuti','MC'].includes(r.status)).length;
-    if (!displayRows.length) { tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">Tiada rekod</td></tr>'; return; }
+    if (!displayRows.length) { tbody.innerHTML = '<tr><td colspan="' + colspan + '" style="color:var(--muted);text-align:center;padding:20px">Tiada rekod</td></tr>'; return; }
     tbody.innerHTML = displayRows.map(function(r) {
       const catatanGabung = [r.catatanMasuk, r.catatanKeluar ? 'Keluar: ' + r.catatanKeluar : ''].filter(Boolean).join(' | ');
       const sourceBadges = buildAttendanceSourceBadges(r);
       const statusHtml = statusBadge(r.status || '-') + (r.masaKeluar ? ' <span class="badge badge-blue">Punch Out</span>' : '') + (sourceBadges ? ' ' + sourceBadges : '');
       const gpsHtml = (r.gpsMasuk ? '<span class="badge badge-blue">Masuk</span>' : '') + (r.gpsKeluar ? ' <span class="badge badge-green">Keluar</span>' : '');
-      return '<tr><td data-label="Nama"><strong>' + escapeHtml(r.nama || '-') + '</strong></td><td data-label="Tarikh">' + escapeHtml(r.tarikh || '-') + '</td><td data-label="Masa Masuk">' + escapeHtml(r.masaMasuk || '-') + '</td><td data-label="Masa Keluar">' + escapeHtml(r.masaKeluar || '-') + '</td><td data-label="Status">' + statusHtml + '</td><td data-label="Catatan" style="color:var(--muted);font-size:0.82rem">' + escapeHtml(catatanGabung) + '</td><td data-label="GPS">' + gpsHtml + '</td></tr>';
+      let actionHtml = '';
+      if (isPentadbir()) {
+        actionHtml = '<td data-label="Tindakan" style="display:flex;gap:5px;flex-wrap:wrap">' +
+          '<button class="btn btn-sm btn-secondary" data-action="edit-kehadiran-guru-admin" data-nama="' + escapeHtml(r.nama) + '" data-tarikh="' + escapeHtml(r.tarikh) + '">Edit</button>' +
+          '<button class="btn btn-sm btn-danger" data-action="delete-kehadiran-guru-admin" data-nama="' + escapeHtml(r.nama) + '" data-tarikh="' + escapeHtml(r.tarikh) + '">Padam</button>' +
+          '</td>';
+      }
+      return '<tr><td data-label="Nama"><strong>' + escapeHtml(r.nama || '-') + '</strong></td><td data-label="Tarikh">' + escapeHtml(r.tarikh || '-') + '</td><td data-label="Masa Masuk">' + escapeHtml(r.masaMasuk || '-') + '</td><td data-label="Masa Keluar">' + escapeHtml(r.masaKeluar || '-') + '</td><td data-label="Status">' + statusHtml + '</td><td data-label="Catatan" style="color:var(--muted);font-size:0.82rem">' + escapeHtml(catatanGabung) + '</td><td data-label="GPS">' + gpsHtml + '</td>' + actionHtml + '</tr>';
     }).join('');
     if (!opts.silent) showToast('Data kehadiran guru dikemas kini.', 'success');
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--red);text-align:center;padding:20px">' + escapeHtml(e.message) + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="' + colspan + '" style="color:var(--red);text-align:center;padding:20px">' + escapeHtml(e.message) + '</td></tr>';
     showToast(opts.silent ? 'Paparan live kehadiran guru terganggu: ' + e.message : e.message, 'error');
   } finally {
     _kehadiranGuruLoading = false;
