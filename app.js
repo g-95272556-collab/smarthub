@@ -15740,7 +15740,7 @@ async function callWorkerAIGemini(prompt, withImage) {
       }
 
       var imgByIndex = {}; // { 0: dataUri, 1: dataUri, ... }
-      if (imgPlaceholders.length > 0) {
+      if (withImage && imgPlaceholders.length > 0) {
         imgByIndex = await lkJanaImejGeminiParallel(imgPlaceholders, 'Langkah 2/2: Jana imej soalan bergambar');
       }
 
@@ -16076,7 +16076,7 @@ async function janaLembaranKerja() {
   if (retryBtn) retryBtn.classList.add('is-hidden'); // sembunyi dari janaan sebelumnya
   var batalBtn = document.getElementById('lkBatalBtn');
   if (batalBtn) batalBtn.classList.remove('is-hidden');
-  var engineLabel = engine === 'gemini' ? 'Gemini (Teks & Imej)' : engine === 'hybrid' ? 'Gemini (Teks & Imej)' : engine === 'openai' ? 'DeepSeek + DALL-E 3' : 'DeepSeek';
+  var engineLabel = engine === 'gemini' ? 'Gemini (Teks Sahaja)' : engine === 'hybrid' ? 'Gemini (Teks & Imej)' : engine === 'openai' ? 'DeepSeek + DALL-E 3' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
   document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>';
 
@@ -16116,11 +16116,11 @@ async function janaLembaranKerja() {
     {
       var prompt = lkBinaSumber();
       var result;
-      if (engine === 'gemini' || engine === 'hybrid') {
-        // DeepSeek teks + Gemini imej
+      if (engine === 'hybrid') {
         result = await callHybridDeepSeekGemini(prompt);
+      } else if (engine === 'gemini') {
+        result = await callWorkerAIGemini(prompt, false);
       } else if (engine === 'openai') {
-        // DeepSeek teks + DALL-E 3 imej
         result = await callHybridDeepSeekOpenAI(prompt);
       } else {
         // DeepSeek: cuba streaming dahulu supaya teks muncul sedikit demi sedikit
