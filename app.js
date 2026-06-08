@@ -15800,69 +15800,7 @@ async function callWorkerAIGemini(prompt, withImage) {
 
 // ── HYBRID: DeepSeek (teks) + Gemini (imej) ─────────────────────
 async function callHybridDeepSeekGemini(prompt) {
-  if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
-
-  // ── STEP 1: DeepSeek jana teks ──
-  if (_lkCancelled) throw new Error('__cancelled__');
-  var dsResult;
-  try {
-    dsResult = await callWorkerAI(prompt, 'lembaran_kerja');
-    if (!dsResult.success) throw new Error(dsResult.error || dsResult.message || 'Gagal');
-  } catch (err) {
-    console.warn('DeepSeek failed, falling back to Gemini for text & image generation:', err);
-    showToast('DeepSeek terganggu. Menggunakan enjin Gemini...', 'info');
-    if (geminiAdaKunciAktif()) {
-      return await callWorkerAIGemini(prompt, true);
-    } else {
-      throw new Error('DeepSeek terganggu dan tiada Kunci API Gemini aktif untuk fallback: ' + err.message);
-    }
-  }
-  aiCatatPenggunaan('deepseek-text', 1);
-  var rawText = dsResult.content || '';
-  if (!rawText.trim()) throw new Error('DeepSeek tidak menghasilkan teks.');
-  // Strip baris maklumat murid yang dijana secara berlebihan oleh AI
-  rawText = rawText.split('\n').filter(function(ln) {
-    return !_LK_MURID_INFO_REGEX.test(ln.trim());
-  }).join('\n');
-  rawText = lkEnforceImagePlaceholderLimit(rawText, lkGetRequestedImageCount());
-
-  // ── STEP 2: Parse semua placeholder [GAMBAR:] atau [IMEJ:] ──
-  var placeholderRegex = /\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi;
-  var imgPlaceholders = []; // { index, full, desc }
-  var m;
-  var idx = 0;
-  while ((m = placeholderRegex.exec(rawText)) !== null) {
-    imgPlaceholders.push({ index: idx++, full: m[0], desc: m[1].trim() });
-  }
-
-  // ── STEP 3: Jana imej Gemini — simpan mengikut index ──
-  var imgByIndex = {}; // { 0: dataUri, 1: dataUri, ... }
-  if (imgPlaceholders.length > 0) {
-    imgByIndex = await lkJanaImejGeminiParallel(imgPlaceholders, 'Langkah 2/2: Gemini jana imej');
-  }
-
-  // ── STEP 4: Replace placeholder dengan imej atau kotak fallback ──
-  var imgCounter = 0;
-  var formattedHtml = lkPostProcessOutput(rawText);
-  var htmlContent = formattedHtml
-    .replace(/\[(?:GAMBAR|IMEJ):\s*([^\]]+)\]/gi, function(full, desc) {
-      var currentIdx = imgCounter++;
-      var dataUri = imgByIndex[currentIdx];
-      var rajahNum = currentIdx + 1;
-      if (dataUri) {
-        return '<div class="lk-inline-image" style="margin:15px 0;text-align:center">' +
-          '<img src="' + dataUri + '" style="max-width:55%;height:auto;max-height:220px;border:1pt solid #ccc;padding:4px;border-radius:3px" alt="Rajah ' + rajahNum + '">' +
-          '<small style="display:block;margin-top:4px;color:#666;font-style:italic">Rajah ' + rajahNum + '</small>' +
-          '</div>';
-      } else {
-        return '<div class="lk-inline-image" style="margin:15px 0;text-align:center;padding:12px;border:1pt dashed #aaa;background:#f9f9f9;border-radius:3px">' +
-          '<span style="color:#888;font-style:italic">[Rajah ' + rajahNum + ': ' + desc.trim() + ']</span>' +
-          '</div>';
-      }
-    });
-
-  var totalJana = Object.keys(imgByIndex).length;
-  return { success: true, content: htmlContent, images: [], isHtml: true, _imgCount: totalJana };
+  return await callWorkerAIGemini(prompt, true);
 }
 
 
@@ -16138,7 +16076,7 @@ async function janaLembaranKerja() {
   if (retryBtn) retryBtn.classList.add('is-hidden'); // sembunyi dari janaan sebelumnya
   var batalBtn = document.getElementById('lkBatalBtn');
   if (batalBtn) batalBtn.classList.remove('is-hidden');
-  var engineLabel = engine === 'gemini' ? 'DeepSeek + Gemini' : engine === 'hybrid' ? 'DeepSeek + Gemini (Hybrid)' : engine === 'openai' ? 'DeepSeek + DALL-E 3' : 'DeepSeek';
+  var engineLabel = engine === 'gemini' ? 'Gemini (Teks & Imej)' : engine === 'hybrid' ? 'Gemini (Teks & Imej)' : engine === 'openai' ? 'DeepSeek + DALL-E 3' : 'DeepSeek';
   lkSetStatus('loading', engineLabel + ' sedang menjana lembaran kerja... Sila tunggu (30-90 saat).');
   document.getElementById('lkOutputBox').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Memproses permintaan ' + engineLabel + '...<br><small>Menjana teks dan melukis imej secara terus...</small></div>';
 
