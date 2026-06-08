@@ -15096,15 +15096,16 @@ function lkBinaSumber(phase) {
   // ── Ekstrak bilangan soalan bergambar dari nota (jika ada) ──
   var bilImej = lkCapRequestedImageCount(lkGetRequestedImageCount(), bilSoalan);
 
-  // ── Bina prompt — had imej di baris PERTAMA supaya AI baca dahulu ──
-  var p = '';
+  // ── Bina prompt — had soalan dan imej di baris PERTAMA (keutamaan tertinggi) ──
+  var p = 'ARAHAN PALING UTAMA - WAJIB PATUH SECARA MANDATORI:\n';
+  p += '1. Jumlah soalan keseluruhan yang dijana MESTI TEPAT ' + bilSoalan + ' soalan. Jangan kurang, jangan lebih!\n';
   if (bilImej > 0) {
-    p += 'ARAHAN PALING PENTING - WAJIB PATUH:\n';
-    p += '1. Jumlah soalan keseluruhan mesti TEPAT ' + bilSoalan + '.\n';
     p += '2. Jumlah soalan bergambar mesti TEPAT ' + bilImej + '.\n';
     p += '3. Letakkan SATU sahaja placeholder [GAMBAR: deskripsi ringkas] pada setiap soalan bergambar.\n';
     p += '4. Jumlah placeholder [GAMBAR:] dalam keseluruhan output mesti TEPAT ' + bilImej + ' dan DILARANG melebihi ' + bilImej + '.\n';
     p += '5. Baki ' + Math.max(0, bilSoalan - bilImej) + ' soalan mesti tanpa gambar dan tanpa placeholder [GAMBAR:].\n\n';
+  } else {
+    p += '2. JANGAN sertakan sebarang gambar, rajah, atau placeholder [GAMBAR:] di dalam mana-mana soalan.\n\n';
   }
   p += 'Jana lembaran kerja untuk murid Tahun ' + tahun + ' (Tahap ' + tahap + '), Sekolah Kebangsaan Malaysia.\n\n';
   p += 'MAKLUMAT:\n';
