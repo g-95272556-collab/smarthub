@@ -5113,11 +5113,13 @@ async function getGuruAttendanceEntriesForDate(profil, tarikh) {
     .map(parseKehadiranGuruRow)
     .filter(function(r) {
       if (!String(r.tarikh || '').startsWith(tarikh)) return false;
-      const sameEmail = candidateEmails.some(function(email) {
-        return String(r.email || '').toLowerCase() === email;
-      });
       const sameName = String(r.nama || '').toLowerCase() === String(profil.nama || '').toLowerCase();
-      return sameEmail || sameName;
+      if (r.nama && profil.nama && !sameName) return false;
+      
+      const sameEmail = candidateEmails.some(function(email) {
+        return email && String(r.email || '').toLowerCase() === email;
+      });
+      return sameName || sameEmail;
     });
 }
 
