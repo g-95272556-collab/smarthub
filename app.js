@@ -16039,16 +16039,12 @@ async function callHybridDeepSeekOpenAI(prompt) {
     if (e.target && e.target.name === 'lkEngine') {
       var note = document.getElementById('lkEngineNote');
       if (!note) return;
-      if (e.target.value === 'gemini') {
-        note.innerHTML = '⚡ <strong>Gemini (DeepSeek + Gemini):</strong> DeepSeek jana teks soalan, Gemini jana imej sahaja. Jimat kuota Gemini, kualiti imej terjamin.';
-      } else if (e.target.value === 'hybrid') {
-        note.innerHTML = '⚡ <strong>Hybrid (DeepSeek + Gemini):</strong> DeepSeek jana teks soalan, Gemini jana imej sahaja. Jimat kuota Gemini, kualiti imej terjamin.';
-      } else if (e.target.value === 'openai') {
-        note.innerHTML = '🔀 <strong>Hybrid (DeepSeek + DALL-E 3):</strong> DeepSeek jana teks soalan secara percuma, DALL-E 3 (OpenAI) jana imej inline berkualiti tinggi. Memerlukan Kunci API OpenAI (berbayar untuk imej sahaja).';
-        var sub = document.getElementById('lk-engine-status-subtitle');
-        if (sub) sub.textContent = 'DeepSeek untuk teks, DALL-E 3 (OpenAI) untuk imej. Anggaran pada peranti ini.';
+      if (e.target.value === 'hybrid') {
+        note.innerHTML = '⚡ <strong>Gemini (Teks & Imej):</strong> Enjin Gemini menjana teks soalan dan melukis imej secara terus. Laju, stabil dan automatik.';
+      } else if (e.target.value === 'gemini') {
+        note.innerHTML = '✨ <strong>Gemini (Teks Sahaja):</strong> Enjin Gemini menjana soalan dalam bentuk teks sahaja tanpa melukis sebarang gambar. Amat laju dan stabil.';
       } else {
-        note.innerHTML = '⚠️ <strong>DeepSeek:</strong> AI hanya menjana teks. Penanda <em>[GAMBAR: deskripsi]</em> akan digunakan. Anda boleh jana imej menggunakan Gemini kemudian.';
+        note.innerHTML = '⚠️ <strong>DeepSeek:</strong> Enjin DeepSeek menjana soalan dalam bentuk teks sahaja. Tiada sebarang gambar atau penanda imej akan dimasukkan.';
       }
     }
   });
