@@ -5738,7 +5738,11 @@ async function submitKehadiranGuruManualAdmin() {
     }
 
     const gpsValue = (lokasi === 'geofence') ? '5.305566,116.963391' : 'diluar-geofence';
-    const targetEmail = String((selected && selected.emel) || '').trim();
+    let targetEmail = String((selected && selected.emel) || '').trim();
+    if (!targetEmail) {
+      const cleanName = nama.toLowerCase().replace(/[^a-z0-9]/g, '');
+      targetEmail = cleanName + '@kiandongo.moe.temp';
+    }
     const row = [nama, tarikh, status, masa, catatan, targetEmail, gpsValue];
     const data = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_GURU', row: row });
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan rekod manual.');
