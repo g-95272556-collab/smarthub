@@ -2831,7 +2831,7 @@ function loadGroupKelasUI() {
 // ── Dashboard Functions ───────────────────
 async function muatCuaca() {
   try {
-    var d = await fetchJsonWithTimeout('https://api.open-meteo.com/v1/forecast?latitude=5.3055655&longitude=116.9633906&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&wind_speed_unit=kmh&timezone=Asia%2FKuala_Lumpur', 3500);
+    var d = await fetchJsonWithTimeout('https://api.open-meteo.com/v1/forecast?latitude=5.3055655&longitude=116.9633906&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=sunrise,sunset&wind_speed_unit=kmh&timezone=Asia%2FKuala_Lumpur', 3500);
     var c = d.current;
     var icons = {
       0: 'sun',
@@ -2855,10 +2855,32 @@ async function muatCuaca() {
     setText('dash-cuaca-lembap', c.relative_humidity_2m);
     setText('dash-cuaca-angin', Math.round(c.wind_speed_10m));
     setText('dash-cuaca-rasa', Math.round(c.apparent_temperature));
+    
+    // Parse sunrise / sunset
+    var sunriseStr = '—';
+    var sunsetStr = '—';
+    if (d.daily && Array.isArray(d.daily.sunrise) && d.daily.sunrise.length > 0) {
+      var sr = d.daily.sunrise[0];
+      if (sr && sr.includes('T')) {
+        var tParts = sr.split('T')[1].split(':');
+        sunriseStr = tParts[0] + ':' + tParts[1] + ' AM';
+      }
+    }
+    if (d.daily && Array.isArray(d.daily.sunset) && d.daily.sunset.length > 0) {
+      var ss = d.daily.sunset[0];
+      if (ss && ss.includes('T')) {
+        var tParts = ss.split('T')[1].split(':');
+        var hr = parseInt(tParts[0]);
+        var displayHr = hr > 12 ? hr - 12 : hr;
+        sunsetStr = String(displayHr).padStart(2, '0') + ':' + tParts[1] + ' PM';
+      }
+    }
+    setText('dash-cuaca-sunrise', sunriseStr);
+    setText('dash-cuaca-sunset', sunsetStr);
+
     var ic = $id('dash-cuaca-icon'); 
     if(ic) {
       ic.innerHTML = '<svg class="lucide-icon" width="44" height="44"><use href="#lucide-' + iconName + '"></use></svg>';
-      
     }
   } catch(e) { setText('dash-cuaca-desc','Gagal'); }
 }
