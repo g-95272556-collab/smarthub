@@ -4231,7 +4231,6 @@ function enterApp(user) {
   scheduleIdleWork(async function() {
     await loadBackendOperationalConfig(true);
     configSyncPull();
-        showPremiumLaunchSplash(false);
     refreshDashboard();
     semakNotifGuruBertugasMingguDepan();
     applyKawalanAkses();
@@ -17194,6 +17193,10 @@ function showPremiumLaunchSplash(isPreview) {
   });
 
   if (window._plsInterval) clearInterval(window._plsInterval);
+  if (window._plsAutoDismissTimer) {
+    clearTimeout(window._plsAutoDismissTimer);
+    window._plsAutoDismissTimer = null;
+  }
 
   function update() {
     let n = Date.now();
@@ -17216,6 +17219,13 @@ function showPremiumLaunchSplash(isPreview) {
 
   update();
   window._plsInterval = setInterval(update, 1000);
+
+  // Fail-safe: jangan biarkan splash premium mengunci bootstrap jika tiada tindakan
+  if (!isPreview) {
+    window._plsAutoDismissTimer = setTimeout(function() {
+      tutupPremiumSplash();
+    }, 8000);
+  }
 }
 
 function tutupPremiumSplash() {
@@ -17225,6 +17235,10 @@ function tutupPremiumSplash() {
     setTimeout(() => { splash.classList.add('is-hidden'); }, 800);
   }
   if (window._plsInterval) clearInterval(window._plsInterval);
+  if (window._plsAutoDismissTimer) {
+    clearTimeout(window._plsAutoDismissTimer);
+    window._plsAutoDismissTimer = null;
+  }
 }
 
 

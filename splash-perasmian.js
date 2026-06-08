@@ -5,6 +5,11 @@ window.showSplashPerasmian = function (previewMode) {
   var splash = document.getElementById('splashLaunch');
   if (!splash) return;
 
+  if (window._splashAutoCloseTimer) {
+    clearTimeout(window._splashAutoCloseTimer);
+    window._splashAutoCloseTimer = null;
+  }
+
   /* Reset state sekiranya dipanggil semula (preview) */
   splash.style.opacity = '1';
   splash.style.display = 'flex';
@@ -48,6 +53,22 @@ window.showSplashPerasmian = function (previewMode) {
     if (prevBadge) prevBadge.remove();
     var cb = document.getElementById('splashClosePreview');
     if (cb) cb.remove();
+
+    var skipBtn = document.getElementById('splashCloseSkip');
+    if (!skipBtn) {
+      skipBtn = document.createElement('button');
+      skipBtn.id = 'splashCloseSkip';
+      skipBtn.style.cssText = 'position:absolute;top:18px;left:18px;z-index:10;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:8.5pt;padding:6px 14px;border-radius:999px;cursor:pointer';
+      skipBtn.textContent = 'Tutup Sementara';
+      skipBtn.onclick = function() {
+        splash.style.transition = 'opacity 0.4s ease';
+        splash.style.opacity = '0';
+        setTimeout(function(){ splash.style.display = 'none'; splash.style.transition = ''; splash.style.opacity = '1'; }, 400);
+        if (window._splashRaf) { cancelAnimationFrame(window._splashRaf); window._splashRaf = null; }
+        if (window._splashAutoCloseTimer) { clearTimeout(window._splashAutoCloseTimer); window._splashAutoCloseTimer = null; }
+      };
+      splash.appendChild(skipBtn);
+    }
   }
 
   /* Tarikh */
@@ -114,6 +135,20 @@ window.showSplashPerasmian = function (previewMode) {
     window._splashRaf = requestAnimationFrame(animStars);
   }
   animStars();
+
+  if (!previewMode) {
+    window._splashAutoCloseTimer = setTimeout(function() {
+      var curSplash = document.getElementById('splashLaunch');
+      if (!curSplash) return;
+      curSplash.style.transition = 'opacity 0.5s ease';
+      curSplash.style.opacity = '0';
+      setTimeout(function() {
+        if (curSplash && curSplash.parentNode) curSplash.parentNode.removeChild(curSplash);
+        if (window._splashRaf) { cancelAnimationFrame(window._splashRaf); window._splashRaf = null; }
+        if (window._splashAutoCloseTimer) { clearTimeout(window._splashAutoCloseTimer); window._splashAutoCloseTimer = null; }
+      }, 500);
+    }, 12000);
+  }
 };
 
 /* ── Fungsi Rasmikan ─────────────────────────────────────────────── */
@@ -125,6 +160,10 @@ function splashRasmikan() {
     if (btnTxt) btnTxt.textContent = '✦ Merakamkan perasmian...';
   }
   try { localStorage.setItem('smarthubLaunched', '1'); } catch (e) {}
+  if (window._splashAutoCloseTimer) {
+    clearTimeout(window._splashAutoCloseTimer);
+    window._splashAutoCloseTimer = null;
+  }
 
   /* Shoot particles from button */
   splashShootParticles();
@@ -205,11 +244,12 @@ function splashRasmikan() {
         splash.style.transition = 'opacity 1.2s ease';
         splash.style.opacity = '0';
         setTimeout(function () {
-          if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
-          if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
-        }, 1200);
-      }, 14000); /* 4500ms (perasmian screen) + 1000ms (transition) + 8000ms (pause) = ~13500 */
-    }, 600);
+        if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+        if (window._splashRaf) cancelAnimationFrame(window._splashRaf);
+        if (window._splashAutoCloseTimer) { clearTimeout(window._splashAutoCloseTimer); window._splashAutoCloseTimer = null; }
+      }, 1200);
+    }, 14000); /* 4500ms (perasmian screen) + 1000ms (transition) + 8000ms (pause) = ~13500 */
+  }, 600);
 
   }, 700);
 }
@@ -603,4 +643,3 @@ function splashAudioFadeOut() {
     _splashAudio.ctx = null; _splashAudio.masterGain = null;
   }, 2800);
 }
-
