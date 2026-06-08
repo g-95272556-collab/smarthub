@@ -4743,12 +4743,22 @@ async function loadGuruProfile() {
 
 function getGuruProfileEmailCandidates(profil) {
   var seen = {};
-  return [
-    APP.user && APP.user.email,
-    profil && profil.emelLogin,
-    profil && profil.emelRasmi,
-    profil && profil.emel
-  ]
+  var list = [];
+  if (profil) {
+    list.push(profil.emelLogin);
+    list.push(profil.emelRasmi);
+    list.push(profil.emel);
+  }
+  if (APP.user && APP.user.email) {
+    var isAdminCheckingOther = profil && 
+      (profil.nama || '').toLowerCase() !== (APP.user.name || '').toLowerCase() &&
+      (profil.emel || '').toLowerCase() !== (APP.user.email || '').toLowerCase();
+      
+    if (!isAdminCheckingOther) {
+      list.unshift(APP.user.email);
+    }
+  }
+  return list
     .map(function(email) { return String(email || '').trim().toLowerCase(); })
     .filter(function(email) {
       if (!email || seen[email]) return false;
