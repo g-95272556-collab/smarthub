@@ -2103,7 +2103,8 @@ async function saveAttendanceNotificationConfig() {
 
 // ── Kawalan Akses ────────────────────────
 var DEFAULT_ADMIN_EMAILS = ['g-95272556@moe-dl.edu.my'];
-var MODUL_PENTADBIR = ['data-guru','data-murid','konfigurasi','notifikasi','hari-lahir'];
+var MODUL_TEKNIKAL_RESTRICTED = ['data-guru','data-murid'];
+var MODUL_PENGURUSAN_RESTRICTED = ['konfigurasi','notifikasi','hari-lahir'];
 // Cache email pentadbir dari Data Guru (auto-detect)
 var _guruAutoAdminEmails = []; // [{ email, nama, jawatan }]
 var _JAWATAN_PENTADBIR = ['guru besar','penolong kanan pentadbiran','penolong kanan hem','penolong kanan kokurikulum','penolong kanan kokum'];
@@ -2140,7 +2141,7 @@ function saveAdminEmails(emails) {
 function isPentadbir() {
   if (!APP.user) return false;
   var roleText = String(APP.user.role || APP.user.jawatan || '').toLowerCase();
-  if (roleText.includes('admin') || roleText.includes('pentadbir') || roleText.includes('guru besar') || roleText.includes('penolong kanan')) return true;
+  if (roleText.includes('admin') || roleText.includes('pentadbir')) return true;
   var userEmail = String(APP.user.email || '').toLowerCase();
   if (getAdminEmails().some(function(e){ return e.toLowerCase() === userEmail; })) return true;
   // Semak juga dari auto-detect Data Guru
@@ -2149,16 +2150,21 @@ function isPentadbir() {
 function canManageAdminModules() {
   return isPentadbir();
 }
-function canAccessRestrictedModule(moduleId) {
-  return !MODUL_PENTADBIR.includes(moduleId) || canManageAdminModules();
-}
 function isPengurusanSekolah() {
   if (!APP.user) return false;
   var roleText = String(APP.user.role || APP.user.jawatan || '').toLowerCase();
   return roleText.includes('guru besar') || roleText.includes('penolong kanan');
 }
+function canManagePengurusanModules() {
+  return canManageAdminModules() || isPengurusanSekolah();
+}
+function canAccessRestrictedModule(moduleId) {
+  if (MODUL_TEKNIKAL_RESTRICTED.includes(moduleId)) return canManageAdminModules();
+  if (MODUL_PENGURUSAN_RESTRICTED.includes(moduleId)) return canManagePengurusanModules();
+  return true;
+}
 function canAccessPengurusanSekolahTools() {
-  return isPentadbir() || isPengurusanSekolah();
+  return canManagePengurusanModules();
 }
 const ADMIN_TEKNIKAL_ACTIONS = new Set([
   'open-kehadiran-guru-manual-admin',
