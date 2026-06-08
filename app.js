@@ -14405,7 +14405,7 @@ async function loadKehadiranMurid(options) {
 var _lkInited = false;
 var _lkGenerating = false;
 var _lkCancelled = false;
-var _lkSoalanMode = 'auto'; // Tracks if question count is auto (KPM) or manual
+var _lkSoalanMode = 'manual'; // Tracks if question count is auto (KPM) or manual
 
 
 // DSKP data — embedded sebagai asas, CSV sheet sebagai pelengkap
