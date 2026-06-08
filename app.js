@@ -1401,6 +1401,17 @@ function scheduleIdleWork(fn) {
   }
 }
 
+function hideInitialLoadingScreen() {
+  const ls = $id('loadingScreen');
+  if (ls) {
+    ls.classList.add('hidden');
+    setTimeout(function() {
+      ls.classList.add('is-hidden');
+    }, 500);
+  }
+  document.body.classList.remove('is-loading');
+}
+
 // ════════════════════════════════════════
 // SMART SCHOOL HUB v2.0 — EXTENSION
 // Jadual, Kawalan Akses, Dashboard, Notif
@@ -3881,41 +3892,37 @@ async function checkLoginWorkerStatus() {
 
 document.addEventListener('DOMContentLoaded', () => {
   _domReady = true;
-  exposeLoginBootstrapActions();
-  bindLoginBootstrapActions();
-  bindShellActionHandlers();
-  initPWA();
-  syncResponsiveAppChrome();
-  window.addEventListener('resize', syncResponsiveAppChrome);
-  syncBootstrapConfigInputs();
-  renderOPRImageGrid();
-  geminiKemaskiniStatusUI();
-  showLoginPage();
-  updateLoginReadinessMessage();
-  if (!_gsiReady && hasGoogleSignInClient()) {
-    onGSIReady();
-  } else if (!_gsiReady) {
-    setTimeout(() => {
-      if (!_gsiReady && hasGoogleSignInClient()) onGSIReady();
-    }, 800);
+  hideInitialLoadingScreen();
+  try {
+    exposeLoginBootstrapActions();
+    bindLoginBootstrapActions();
+    bindShellActionHandlers();
+    initPWA();
+    syncResponsiveAppChrome();
+    window.addEventListener('resize', syncResponsiveAppChrome);
+    syncBootstrapConfigInputs();
+    renderOPRImageGrid();
+    geminiKemaskiniStatusUI();
+    showLoginPage();
+    updateLoginReadinessMessage();
+    if (!_gsiReady && hasGoogleSignInClient()) {
+      onGSIReady();
+    } else if (!_gsiReady) {
+      setTimeout(() => {
+        if (!_gsiReady && hasGoogleSignInClient()) onGSIReady();
+      }, 800);
+    }
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        loadGoogleIdentityScript();
+      }, 300);
+    });
+    initAuth();
+    if (typeof initTakwimModule === 'function') initTakwimModule();
+  } catch (err) {
+    console.error('Bootstrap init failed:', err);
+    hideInitialLoadingScreen();
   }
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      const ls = $id('loadingScreen');
-      if (ls) {
-        ls.classList.add('hidden');
-        setTimeout(() => {
-          ls.classList.add('is-hidden');
-          document.body.classList.remove('is-loading');
-        }, 500);
-      } else {
-        document.body.classList.remove('is-loading');
-      }
-      loadGoogleIdentityScript();
-    }, 300);
-  });
-  initAuth();
-  if (typeof initTakwimModule === 'function') initTakwimModule();
 });
 
 function initAuth() {
