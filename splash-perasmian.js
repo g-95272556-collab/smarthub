@@ -15,6 +15,13 @@ async function resolveSplashPerasmiName() {
   return '';
 }
 
+function getSplashIdleMs() {
+  var runtimeCfg = window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {};
+  var value = Number(runtimeCfg.splashIdleMs);
+  if (!Number.isFinite(value) || value < 0) value = 6000;
+  return Math.min(Math.max(value, 0), 30000);
+}
+
 window.showSplashPerasmian = function (previewMode) {
   var splash = document.getElementById('splashLaunch');
   if (!splash) return;
@@ -36,7 +43,11 @@ window.showSplashPerasmian = function (previewMode) {
   var flash = document.getElementById('splashFlash');
   if (flash) { flash.style.opacity = '0'; flash.style.transition = ''; }
   var btn = document.getElementById('splashBtn');
-  if (btn) { btn.disabled = false; var bt = btn.querySelector('.btn-text'); if (bt) bt.textContent = 'RASMIKAN SEKARANG'; }
+  if (btn) {
+    btn.disabled = true;
+    var bt = btn.querySelector('.btn-text');
+    if (bt) bt.textContent = 'SEDIA...';
+  }
 
   /* Preview badge */
   var prevBadge = document.getElementById('splashPreviewBadge');
@@ -144,6 +155,33 @@ window.showSplashPerasmian = function (previewMode) {
   animStars();
 
   if (!previewMode) {
+    var idleMs = getSplashIdleMs();
+    var idleLabel = btn ? btn.querySelector('.btn-text') : null;
+    if (idleMs > 0 && btn && idleLabel) {
+      var start = Date.now();
+      if (window._splashIdleTimer) {
+        clearInterval(window._splashIdleTimer);
+        window._splashIdleTimer = null;
+      }
+      window._splashIdleTimer = setInterval(function() {
+        var remaining = Math.max(0, idleMs - (Date.now() - start));
+        if (remaining <= 0) {
+          clearInterval(window._splashIdleTimer);
+          window._splashIdleTimer = null;
+          btn.disabled = false;
+          idleLabel.textContent = 'RASMIKAN SEKARANG';
+          var foot = document.querySelector('#splashCard .splash-footnote');
+          if (foot) foot.textContent = 'Tindakan ini akan direkod · Sila tekan butang untuk merasmikan';
+          return;
+        }
+        var sec = Math.ceil(remaining / 1000);
+        idleLabel.textContent = 'SEDIA DALAM ' + sec + 's';
+      }, 250);
+    } else if (btn) {
+      btn.disabled = false;
+      if (btn.querySelector('.btn-text')) btn.querySelector('.btn-text').textContent = 'RASMIKAN SEKARANG';
+    }
+
     window._splashAutoCloseTimer = setTimeout(function() {
       var curSplash = document.getElementById('splashLaunch');
       if (!curSplash) return;
@@ -154,7 +192,7 @@ window.showSplashPerasmian = function (previewMode) {
         if (window._splashRaf) { cancelAnimationFrame(window._splashRaf); window._splashRaf = null; }
         if (window._splashAutoCloseTimer) { clearTimeout(window._splashAutoCloseTimer); window._splashAutoCloseTimer = null; }
       }, 500);
-    }, 12000);
+    }, 12000 + idleMs);
   }
 };
 
@@ -165,6 +203,10 @@ async function splashRasmikan() {
     btn.disabled = true;
     var btnTxt = btn.querySelector('.btn-text');
     if (btnTxt) btnTxt.textContent = '✦ Merakamkan perasmian...';
+  }
+  if (window._splashIdleTimer) {
+    clearInterval(window._splashIdleTimer);
+    window._splashIdleTimer = null;
   }
   try { localStorage.setItem('smarthubLaunched', '1'); } catch (e) {}
   if (window._splashAutoCloseTimer) {

@@ -12,9 +12,11 @@ window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
                              -> getGuruBesarNameFromData() [jawatan=Guru Besar]
                              -> profil log masuk (fallback terakhir).
      appVersion  : Versi app yang dipaparkan pada splash.
+     splashIdleMs : Tempoh idle sebelum butang rasmikan aktif (ms).
   */
   launchDate : '2026-06-08',
   gbName     : '',
+  splashIdleMs : 6000,
   appVersion : '2.0'
 }, window.SMARTSCHOOLHUB_RUNTIME_CONFIG || {});
 
