@@ -13877,12 +13877,14 @@ function openModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('is-hidden');
+  el.classList.remove('d-none');
   el.classList.add('is-grid');
 }
 function closeModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.add('is-hidden');
+  el.classList.add('d-none');
   el.classList.remove('is-grid');
 }
 document.addEventListener('click', function(e) { var btn = e.target.closest('[data-close-modal]'); if (btn) { closeModal(btn.getAttribute('data-close-modal')); } });
