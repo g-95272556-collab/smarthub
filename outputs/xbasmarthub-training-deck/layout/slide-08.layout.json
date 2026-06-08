@@ -1,0 +1,732 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/e3akte",
+    "id": "e3akte",
+    "slide": 8,
+    "layoutId": "060a507f-fabf-455a-8e9c-253c1b576955",
+    "layoutName": "Title Slide",
+    "layoutType": "title",
+    "masterLayoutId": "733b2e3b-5b4d-43d7-a1cb-b86a07b7efcc",
+    "masterLayoutName": "Master",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "bg1": "#FFFFFF",
+      "bg2": "#000000",
+      "tx1": "#1F1F1F",
+      "tx2": "#FFFFFF",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "typefaces": [
+      "Aptos",
+      "Aptos Display"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "060a507f-fabf-455a-8e9c-253c1b576955",
+      "name": "Title Slide",
+      "type": "title",
+      "parentLayoutId": "733b2e3b-5b4d-43d7-a1cb-b86a07b7efcc",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "733b2e3b-5b4d-43d7-a1cb-b86a07b7efcc",
+      "name": "Master",
+      "type": "master",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/je9cvixc",
+      "id": "1",
+      "bbox": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "geometry": "rect",
+      "fillColor": "#FFFFFF",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 2,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/8z25kb6x",
+      "id": "2",
+      "bbox": [
+        72,
+        54,
+        260,
+        24
+      ],
+      "geometry": "rect",
+      "text": "LAPORAN",
+      "textPreview": "LAPORAN",
+      "resolvedFontSize": 14,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 14,
+        "typeface": "Aptos",
+        "color": "#3A78C2",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "LAPORAN"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "LAPORAN",
+          "resolvedTextStyle": {
+            "fontSize": 14,
+            "typeface": "Aptos",
+            "color": "#3A78C2",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "LAPORAN",
+              "fontSize": 14,
+              "typeface": "Aptos",
+              "color": "#3A78C2",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 3,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/1gvy90je",
+      "id": "3",
+      "bbox": [
+        72,
+        82,
+        980,
+        54
+      ],
+      "geometry": "rect",
+      "text": "Dua modul yang kerap melibatkan dokumentasi: Guru Bertugas dan Kokum",
+      "textPreview": "Dua modul yang kerap melibatkan dokumentasi: Guru Bertugas dan Kokum",
+      "resolvedFontSize": 28,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 28,
+        "typeface": "Aptos Display",
+        "color": "#1B2F55",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Dua modul yang kerap melibatkan dokumentasi: Guru Bertugas dan Kokum"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Dua modul yang kerap melibatkan dokumentasi: Guru Bertugas dan Kokum",
+          "resolvedTextStyle": {
+            "fontSize": 28,
+            "typeface": "Aptos Display",
+            "color": "#1B2F55",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Dua modul yang kerap melibatkan dokumentasi: Guru Bertugas dan Kokum",
+              "fontSize": 28,
+              "typeface": "Aptos Display",
+              "color": "#1B2F55",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 4,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/q1orytsv",
+      "id": "4",
+      "bbox": [
+        72,
+        138,
+        980,
+        38
+      ],
+      "geometry": "rect",
+      "text": "Terangkan fungsi kedua-duanya secara ringkas supaya guru nampak perbezaan penggunaan.",
+      "textPreview": "Terangkan fungsi kedua-duanya secara ringkas supaya guru nampak perbezaan penggunaan.",
+      "resolvedFontSize": 16,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 16,
+        "typeface": "Aptos",
+        "color": "#5F6C84",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Terangkan fungsi kedua-duanya secara ringkas supaya guru nampak perbezaan penggunaan."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Terangkan fungsi kedua-duanya secara ringkas supaya guru nampak perbezaan penggunaan.",
+          "resolvedTextStyle": {
+            "fontSize": 16,
+            "typeface": "Aptos",
+            "color": "#5F6C84",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Terangkan fungsi kedua-duanya secara ringkas supaya guru nampak perbezaan penggunaan.",
+              "fontSize": 16,
+              "typeface": "Aptos",
+              "color": "#5F6C84"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 5,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fmlkjm1c",
+      "id": "5",
+      "bbox": [
+        72,
+        224,
+        548,
+        320
+      ],
+      "geometry": "rect",
+      "fillColor": "#EAF1FB",
+      "lineColor": "#D8E1EE",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 6,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/87ed8bat",
+      "id": "6",
+      "bbox": [
+        90,
+        240,
+        512,
+        28
+      ],
+      "geometry": "rect",
+      "text": "Laporan Guru Bertugas",
+      "textPreview": "Laporan Guru Bertugas",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Aptos",
+        "color": "#1B2F55",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Laporan Guru Bertugas"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Laporan Guru Bertugas",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Aptos",
+            "color": "#1B2F55",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Laporan Guru Bertugas",
+              "fontSize": 18,
+              "typeface": "Aptos",
+              "color": "#1B2F55",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 7,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xs72x4na",
+      "id": "7",
+      "bbox": [
+        90,
+        274,
+        512,
+        258
+      ],
+      "geometry": "rect",
+      "text": "Digunakan semasa minggu bertugas untuk merekod pemerhatian seperti disiplin, kebersihan, cuaca, aktiviti dan rumusan harian/mingguan. Gunakan bahasa formal dan ringkas.",
+      "textPreview": "Digunakan semasa minggu bertugas untuk merekod pemerhatian seperti disiplin, kebersihan, cuaca, aktiviti dan rumusan harian/mingguan. Gun...",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "color": "#203040",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Digunakan semasa minggu bertugas untuk merekod pemerhatian seperti disiplin,"
+          },
+          {
+            "index": 2,
+            "text": "kebersihan, cuaca, aktiviti dan rumusan harian/mingguan. Gunakan bahasa formal"
+          },
+          {
+            "index": 3,
+            "text": "dan ringkas."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Digunakan semasa minggu bertugas untuk merekod pemerhatian seperti disiplin, kebersihan, cuaca, aktiviti dan rumusan harian/mingguan. Gunakan bahasa formal dan ringkas.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Aptos",
+            "color": "#203040",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Digunakan semasa minggu bertugas untuk merekod pemerhatian seperti disiplin, kebersihan, cuaca, aktiviti dan rumusan harian/mingguan. Gunakan bahasa formal dan ringkas.",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#203040"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 8,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/qd4vmtwr",
+      "id": "8",
+      "bbox": [
+        660,
+        224,
+        548,
+        320
+      ],
+      "geometry": "rect",
+      "fillColor": "#F6F8FC",
+      "lineColor": "#D8E1EE",
+      "lineWidth": 1.5
+    },
+    {
+      "order": 9,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/fyxobm58",
+      "id": "9",
+      "bbox": [
+        678,
+        240,
+        512,
+        28
+      ],
+      "geometry": "rect",
+      "text": "Pelaporan Kokum",
+      "textPreview": "Pelaporan Kokum",
+      "resolvedFontSize": 18,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18,
+        "typeface": "Aptos",
+        "color": "#1B2F55",
+        "bold": true,
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Pelaporan Kokum"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Pelaporan Kokum",
+          "resolvedTextStyle": {
+            "fontSize": 18,
+            "typeface": "Aptos",
+            "color": "#1B2F55",
+            "bold": true,
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Pelaporan Kokum",
+              "fontSize": 18,
+              "typeface": "Aptos",
+              "color": "#1B2F55",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 10,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/7mp0bi9s",
+      "id": "10",
+      "bbox": [
+        678,
+        274,
+        512,
+        258
+      ],
+      "geometry": "rect",
+      "text": "Digunakan untuk aktiviti kokurikulum: kehadiran, unit terlibat, ringkasan aktiviti, pencapaian dan status tindakan susulan. Sesuai untuk guru penasihat dan penyelaras.",
+      "textPreview": "Digunakan untuk aktiviti kokurikulum: kehadiran, unit terlibat, ringkasan aktiviti, pencapaian dan status tindakan susulan. Sesuai untuk ...",
+      "resolvedFontSize": 15,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 15,
+        "typeface": "Aptos",
+        "color": "#203040",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 3,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Digunakan untuk aktiviti kokurikulum: kehadiran, unit terlibat, ringkasan aktiviti,"
+          },
+          {
+            "index": 2,
+            "text": "pencapaian dan status tindakan susulan. Sesuai untuk guru penasihat dan"
+          },
+          {
+            "index": 3,
+            "text": "penyelaras."
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Digunakan untuk aktiviti kokurikulum: kehadiran, unit terlibat, ringkasan aktiviti, pencapaian dan status tindakan susulan. Sesuai untuk guru penasihat dan penyelaras.",
+          "resolvedTextStyle": {
+            "fontSize": 15,
+            "typeface": "Aptos",
+            "color": "#203040",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Digunakan untuk aktiviti kokurikulum: kehadiran, unit terlibat, ringkasan aktiviti, pencapaian dan status tindakan susulan. Sesuai untuk guru penasihat dan penyelaras.",
+              "fontSize": 15,
+              "typeface": "Aptos",
+              "color": "#203040"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 11,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/e1w7mp0b",
+      "id": "11",
+      "bbox": [
+        72,
+        684,
+        420,
+        18
+      ],
+      "geometry": "rect",
+      "text": "SmartSchoolHub / xbasmarthub / SK Kiandongo",
+      "textPreview": "SmartSchoolHub / xbasmarthub / SK Kiandongo",
+      "resolvedFontSize": 10,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10,
+        "typeface": "Aptos",
+        "color": "#5F6C84",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "SmartSchoolHub / xbasmarthub / SK Kiandongo"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "SmartSchoolHub / xbasmarthub / SK Kiandongo",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Aptos",
+            "color": "#5F6C84",
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "SmartSchoolHub / xbasmarthub / SK Kiandongo",
+              "fontSize": 10,
+              "typeface": "Aptos",
+              "color": "#5F6C84"
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    },
+    {
+      "order": 12,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/psfil0rq",
+      "id": "12",
+      "bbox": [
+        1160,
+        684,
+        48,
+        18
+      ],
+      "geometry": "rect",
+      "text": "8",
+      "textPreview": "8",
+      "resolvedFontSize": 10,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 10,
+        "typeface": "Aptos",
+        "color": "#5F6C84",
+        "bold": true,
+        "alignment": "right",
+        "verticalAlignment": "top",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      "textLayout": {
+        "lineCount": 1,
+        "lines": [
+          {
+            "index": 1,
+            "text": "8"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "8",
+          "resolvedTextStyle": {
+            "fontSize": 10,
+            "typeface": "Aptos",
+            "color": "#5F6C84",
+            "bold": true,
+            "alignment": "right"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "8",
+              "fontSize": 10,
+              "typeface": "Aptos",
+              "color": "#5F6C84",
+              "bold": true
+            }
+          ],
+          "marginLeft": 0
+        }
+      ],
+      "fillColor": "rgba(0, 0, 0, 0)",
+      "lineColor": "rgba(0, 0, 0, 0)",
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}
