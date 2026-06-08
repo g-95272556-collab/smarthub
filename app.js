@@ -7348,8 +7348,7 @@ async function simpanLaporanGuruBertugasMingguan() {
   try {
     const duplicate = await findExistingLaporanBertugasDuplicate(payload);
     if (duplicate) {
-      showToast('Laporan guru bertugas untuk minggu ini sudah disimpan. Simpan dibatalkan.', 'error');
-      return;
+      if (!confirm('Laporan guru bertugas untuk minggu ini sudah wujud. Adakah anda pasti mahu mengemas kini laporan ini?')) { showToast('Simpan dibatalkan.', 'info'); return; }
     }
   } catch (dupErr) {
     showToast(dupErr.message, 'error');
@@ -7443,7 +7442,8 @@ function cetakLaporanGuruBertugasMingguan() {
   const payload = getLaporanGuruBertugasPayload();
   if (!payload.tarikhLaporan) { showToast('Sila pilih tarikh laporan dahulu.', 'error'); return; }
   const win = window.open('', '_blank');
-  const attendanceRows = (payload.kehadiran || []).map(function(item) { return [item.hari || '', item.tarikh || '', item.hadir || '', item.enrolmen || '', item.peratus || '']; });
+  if (!win) { showToast('Sila benarkan pop-up untuk mencetak laporan.', 'error'); return; }
+  const attendanceRows = (payload.kehadiran || []).map(function(item) { return [item.hari || '', item.tarikh || '', item.hadir || '', item.enrolmen || '', typeof item.peratus === 'number' ? item.peratus.toFixed(1) + '%' : (item.peratus || '')]; });
   const aktivitiRows = (payload.aktiviti || []).map(function(item) { return [item.bil || '', item.kategori || '', item.aktiviti || '', item.tarikhHari || '']; });
   const disiplinRows = [['Status Umum', payload.disiplin.statusUmum || '-'], ['Kes Salah Laku', payload.disiplin.kesSalahLaku || '-'], ['Pakaian Seragam', payload.disiplin.pakaianSeragam || '-'], ['Buku Demerit', payload.disiplin.bukuDemerit || '-']];
   const rmtRows = [['Status Pelaksanaan', payload.rmt.statusPelaksanaan || '-'], ['Jumlah Penerima RMT', payload.rmt.jumlahPenerima || '-'], ['Menu Minggu Ini', payload.rmt.menuMinggu || '-'], ['Aduan / Masalah', payload.rmt.aduanMasalah || '-']];
