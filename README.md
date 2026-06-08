@@ -1,8 +1,12 @@
 # SmartSchoolHub SK Kiandongo
 
-Salinan kerja statik bagi `xbasmarthub.netlify.app` untuk tujuan edit, semakan, dan deploy semula ke Netlify.
+Salinan kerja statik bagi `xbasmarthub.netlify.app` untuk tujuan pembangunan, semakan, dan deploy semula ke Netlify.
 
-## Struktur projek
+## Ringkasan
+
+SmartSchoolHub ialah static SPA/PWA untuk pengurusan sekolah. Repo ini mengandungi shell UI, modul logik utama, cache PWA, konfigurasi runtime, dan fungsi Netlify untuk penyelarasan konfigurasi.
+
+## Struktur Projek
 
 ```text
 .
@@ -18,40 +22,48 @@ Salinan kerja statik bagi `xbasmarthub.netlify.app` untuk tujuan edit, semakan, 
 |-- splash-perasmian.js
 |-- style.css
 |-- takwim.js
+|-- config/
+|-- netlify/
 |-- netlify.toml
 |-- _redirects
-`-- scripts/
+|-- scripts/
 ```
 
-## Fail yang selalu diedit
+## Fail Utama
 
-- `runtime-config.js`: URL worker, OAuth Google, versi app, tarikh splash.
-- `index.html`: shell utama dan markup modul.
-- `style.css`: gaya UI.
-- `app.js`: logik utama aplikasi.
-- `takwim.js`: modul takwim.
-- `aktiviti.js`: modul aktiviti.
+- `app.js`: logik utama aplikasi, login, modul, dan notifikasi.
+- `index.html`: shell utama dan markup semua modul.
+- `style.css`: gaya UI dan responsif.
+- `runtime-config.js`: URL backend, OAuth, versi app, dan tarikh splash.
 - `service-worker.js`: cache PWA.
+- `takwim.js`: modul takwim sekolah.
+- `aktiviti.js`: modul aktiviti.
 
-## Cara jalankan lokal
+## Dokumen Penting
+
+- `PRODUCTION_PLAN.md`: pelan produksi dan checklist release.
+- `SECURITY.md`: prinsip keselamatan aplikasi.
+- `DEPLOYMENT_SECURITY.md`: kawalan keselamatan semasa deploy.
+
+## Jalankan Lokal
 
 ```powershell
-Set-Location "D:\Pull Netlify\xbasmarthub.netlify.app"
+Set-Location "D:\Pull Netlify"
 npm run serve
 ```
 
 Buka `http://localhost:8080`.
 
-## Cara semak sebelum deploy
+## Semak Sebelum Deploy
 
 ```powershell
-Set-Location "D:\Pull Netlify\xbasmarthub.netlify.app"
+Set-Location "D:\Pull Netlify"
 npm run verify
 ```
 
 Semakan ini memastikan fail teras wujud dan rujukan utama deploy tidak tercicir.
 
-## Cara deploy ke Netlify
+## Deploy Netlify
 
 1. Push repo ini ke GitHub.
 2. Di Netlify, pilih `Add new site` > `Import an existing project`.
@@ -61,9 +73,9 @@ Semakan ini memastikan fail teras wujud dan rujukan utama deploy tidak tercicir.
    - Publish directory: `.`
 5. Deploy site.
 
-## Netlify Function `db-config`
+## Function `db-config`
 
-Repo ini kini mengandungi function [netlify/functions/db-config.js](D:\Pull Netlify\xbasmarthub.netlify.app\netlify\functions\db-config.js) untuk:
+Repo ini mengandungi function [netlify/functions/db-config.js](</D:/Pull Netlify/netlify/functions/db-config.js>) untuk:
 
 - baca semua config Blob atau satu key tertentu
 - simpan config melalui `POST { config: {...} }`
@@ -76,9 +88,9 @@ Environment variables yang disyorkan di Netlify:
 - `WORKER_SECRET`
 - `ADMIN_WORKER_SECRET`
 
-Function ini sudah menerima key `TAKWIM_GURU_NOTIF_*`, jadi konfigurasi mesej peringatan takwim guru boleh disimpan ke Blob dan kemudian diselaraskan ke D1 selepas redeploy.
+Function ini menerima key `TAKWIM_GURU_NOTIF_*`, jadi konfigurasi mesej takwim guru boleh disimpan ke Blob dan diselaraskan ke D1 selepas redeploy.
 
-## Nota penting
+## Nota Penting
 
 - Aplikasi ini ialah static SPA/PWA.
 - `runtime-config.js` masih menghala ke worker production semasa. Ubah dahulu jika mahu guna backend lain.
