@@ -5699,6 +5699,7 @@ async function submitKehadiranGuruManualAdmin() {
   const tarikh = String((document.getElementById('kGuruAdminTarikh') || {}).value || '').trim();
   const masa = String((document.getElementById('kGuruAdminMasa') || {}).value || '').trim();
   const status = String((document.getElementById('kGuruAdminStatus') || {}).value || '').trim();
+  const lokasi = String((document.getElementById('kGuruAdminLokasi') || {}).value || 'geofence').trim();
   const catatanInput = String((document.getElementById('kGuruAdminCatatan') || {}).value || '').trim();
   const catatan = catatanInput || 'Rekod manual oleh admin';
   if (!nama) { showToast('Sila pilih guru atau staff.', 'error'); return; }
@@ -5708,14 +5709,25 @@ async function submitKehadiranGuruManualAdmin() {
   try {
     const guruTarget = selected || { nama: nama, emel: '', jawatan: '' };
     const existingRows = await getGuruAttendanceEntriesForDate(guruTarget, tarikh);
-    if (existingRows.length) {
-      const statusList = formatGuruAttendanceStatusList(existingRows);
-      const statusText = statusList.length ? 'Status sedia ada: ' + statusList.join(', ') + '. ' : '';
-      showToast('Rekod kehadiran ' + nama + ' untuk ' + tarikh + ' sudah wujud. ' + statusText + 'Admin tidak boleh tambah rekod baharu.', 'error');
-      return;
+    
+    const existingCheckIns = existingRows.filter(r => !isPunchOutStatus(r.status));
+    const existingCheckOuts = existingRows.filter(r => isPunchOutStatus(r.status));
+
+    if (isPunchOutStatus(status)) {
+      if (existingCheckOuts.length > 0) {
+        showToast('Rekod punch-out bagi ' + nama + ' untuk ' + tarikh + ' sudah wujud.', 'error');
+        return;
+      }
+    } else {
+      if (existingCheckIns.length > 0) {
+        showToast('Rekod punch-in bagi ' + nama + ' untuk ' + tarikh + ' sudah wujud.', 'error');
+        return;
+      }
     }
+
+    const gpsValue = (lokasi === 'geofence') ? '5.305566,116.963391' : 'diluar-geofence';
     const targetEmail = String((selected && selected.emel) || '').trim();
-    const row = [nama, tarikh, status, masa, catatan, targetEmail, 'manual-admin'];
+    const row = [nama, tarikh, status, masa, catatan, targetEmail, gpsValue];
     const data = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_GURU', row: row });
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan rekod manual.');
     closeModal('modalKehadiranGuruManualAdmin');
