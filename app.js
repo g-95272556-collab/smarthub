@@ -1,4 +1,4 @@
-﻿// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // SMART SCHOOL HUB v2.0 — SK Kiandongo
 // app.js — Main Application JavaScript
 // ═══════════════════════════════════════════════════════════════
@@ -5069,8 +5069,34 @@ async function getGuruKehadiranHariIni(profil, tarikh) {
         return String(r.email || '').toLowerCase() === email;
       });
       const sameName = String(r.nama || '').toLowerCase() === String(profil.nama || '').toLowerCase();
+        return sameEmail || sameName;
+      });
+}
+
+async function getGuruAttendanceEntriesForDate(profil, tarikh) {
+  const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
+  if (!data.success) throw new Error(data.error || 'Gagal memuatkan rekod guru');
+  const candidateEmails = getGuruProfileEmailCandidates(profil);
+  return (data.rows || [])
+    .map(parseKehadiranGuruRow)
+    .filter(function(r) {
+      if (!String(r.tarikh || '').startsWith(tarikh)) return false;
+      const sameEmail = candidateEmails.some(function(email) {
+        return String(r.email || '').toLowerCase() === email;
+      });
+      const sameName = String(r.nama || '').toLowerCase() === String(profil.nama || '').toLowerCase();
       return sameEmail || sameName;
     });
+}
+
+function formatGuruAttendanceStatusList(rows) {
+  const statuses = [];
+  (rows || []).forEach(function(r) {
+    const status = String(r && r.status || '').trim();
+    if (!status) return;
+    if (!statuses.includes(status)) statuses.push(status);
+  });
+  return statuses;
 }
 
 async function rekodPunchOutGuru(opts) {
@@ -5537,6 +5563,90 @@ async function submitKehadiranGuru() {
     showToast('✅ ' + nama + ' — ' + status + ' direkod!', 'success');
     loadKehadiranGuru();
   } catch(e) { showToast('Ralat: ' + e.message, 'error'); }
+}
+
+function renderKehadiranGuruManualAdminOptions(gurus) {
+  const select = document.getElementById('kGuruAdminNama');
+  if (!select) return;
+  const list = Array.isArray(gurus) ? gurus : [];
+  window._guruAttendanceManualAdminList = list.slice();
+  if (!list.length) {
+    select.innerHTML = '<option value="">Tiada data guru/staff dijumpai</option>';
+    return;
+  }
+  select.innerHTML = '<option value="">-- Pilih guru atau staff --</option>' + list.map(function(g, idx) {
+    const parts = [g.nama || ''];
+    if (g.jawatan) parts.push(g.jawatan);
+    if (g.kelas) parts.push('Kelas: ' + g.kelas);
+    return '<option value="' + idx + '">' + escapeHtml(parts.filter(Boolean).join(' | ')) + '</option>';
+  }).join('');
+}
+
+async function openTambahKehadiranGuruManualAdmin() {
+  if (!isPentadbir()) {
+    showToast('Akses terhad - pentadbir sahaja.', 'error');
+    return;
+  }
+  const now = new Date();
+  const tarikhEl = document.getElementById('kGuruAdminTarikh');
+  const masaEl = document.getElementById('kGuruAdminMasa');
+  const statusEl = document.getElementById('kGuruAdminStatus');
+  const catatanEl = document.getElementById('kGuruAdminCatatan');
+  const selectEl = document.getElementById('kGuruAdminNama');
+  if (tarikhEl) tarikhEl.value = getTodayYMD(now);
+  if (masaEl) masaEl.value = getCurrentTimeHM(now);
+  if (statusEl) statusEl.value = 'Hadir';
+  if (catatanEl) catatanEl.value = 'Rekod manual oleh admin';
+  if (selectEl) selectEl.innerHTML = '<option value="">Memuatkan senarai guru/staff...</option>';
+  openModal('modalKehadiranGuruManualAdmin');
+  try {
+    const gurus = await getGuruList();
+    renderKehadiranGuruManualAdminOptions((gurus || []).filter(function(g) {
+      return String((g && g.nama) || '').trim();
+    }));
+  } catch (e) {
+    renderKehadiranGuruManualAdminOptions([]);
+    showToast(e && e.message ? e.message : 'Gagal memuatkan senarai guru/staff.', 'error');
+  }
+}
+
+async function submitKehadiranGuruManualAdmin() {
+  if (!isPentadbir()) {
+    showToast('Akses terhad - pentadbir sahaja.', 'error');
+    return;
+  }
+  const selectEl = document.getElementById('kGuruAdminNama');
+  const list = window._guruAttendanceManualAdminList || [];
+  const idx = selectEl ? parseInt(selectEl.value || '', 10) : NaN;
+  const selected = Number.isInteger(idx) ? list[idx] : null;
+  const nama = String((selected && selected.nama) || '').trim();
+  const tarikh = String((document.getElementById('kGuruAdminTarikh') || {}).value || '').trim();
+  const masa = String((document.getElementById('kGuruAdminMasa') || {}).value || '').trim();
+  const status = String((document.getElementById('kGuruAdminStatus') || {}).value || '').trim();
+  const catatanInput = String((document.getElementById('kGuruAdminCatatan') || {}).value || '').trim();
+  const catatan = catatanInput || 'Rekod manual oleh admin';
+  if (!nama) { showToast('Sila pilih guru atau staff.', 'error'); return; }
+  if (!tarikh) { showToast('Tarikh wajib diisi.', 'error'); return; }
+  if (!masa) { showToast('Masa wajib diisi.', 'error'); return; }
+  if (!status) { showToast('Status wajib dipilih.', 'error'); return; }
+  try {
+    const guruTarget = selected || { nama: nama, emel: '', jawatan: '' };
+    const existingRows = await getGuruAttendanceEntriesForDate(guruTarget, tarikh);
+    if (existingRows.length) {
+      const statusList = formatGuruAttendanceStatusList(existingRows);
+      const statusText = statusList.length ? 'Status sedia ada: ' + statusList.join(', ') + '. ' : '';
+      showToast('Rekod kehadiran ' + nama + ' untuk ' + tarikh + ' sudah wujud. ' + statusText + 'Admin tidak boleh tambah rekod baharu.', 'error');
+      return;
+    }
+    const row = [nama, tarikh, status, masa, catatan, APP.user ? APP.user.email : '', 'manual-admin'];
+    const data = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_GURU', row: row });
+    if (!data.success) throw new Error(data.error || 'Gagal menyimpan rekod manual.');
+    closeModal('modalKehadiranGuruManualAdmin');
+    showToast('Rekod manual ' + nama + ' berjaya disimpan.', 'success');
+    loadKehadiranGuru();
+  } catch (e) {
+    showToast('Ralat: ' + e.message, 'error');
+  }
 }
 
 async function initKehadiranGuruModule() {
@@ -16883,124 +16993,6 @@ async function lkJanaImej() {
 
 // ══ END JANA LEMBARAN KERJA AI ══════════════════════════════════
 
-// ── COMMAND PALETTE (Ctrl+K) ───────────────────────────────────
-(function() {
-  const palette = document.getElementById('cmdPalette');
-  const input = document.getElementById('cmdInput');
-  const results = document.getElementById('cmdResults');
-  if (!palette || !input || !results) return;
-  let selectedIdx = -1;
-
-  function canOpenPalette() {
-    const app = document.getElementById('appPage');
-    const login = document.getElementById('loginPage');
-    return !!(APP.user && app && app.classList.contains('active') && !app.classList.contains('is-hidden') && (!login || login.classList.contains('is-hidden')));
-  }
-
-  document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      if (!canOpenPalette()) return;
-      openPalette();
-    }
-    if (e.key === 'Escape') closePalette();
-  });
-
-  function openPalette() {
-    if (!canOpenPalette()) return;
-    palette.classList.remove('is-hidden');
-    input.value = '';
-    input.focus();
-    renderResults([]);
-  }
-
-  function closePalette() {
-    if (palette) palette.classList.add('is-hidden');
-  }
-
-  input.addEventListener('input', () => {
-    const query = input.value.toLowerCase().trim();
-    if (!query) return renderResults([]);
-
-    const items = [
-      { id: 'dashboard', title: 'Dashboard', sub: 'Ringkasan Utama', action: () => showModule('dashboard') },
-      { id: 'kehadiran-guru', title: 'Kehadiran Guru', sub: 'Daftar Masuk/Keluar GPS', action: () => showModule('kehadiran-guru') },
-      { id: 'kehadiran-murid', title: 'Kehadiran Murid', sub: 'Daftar Kehadiran Kelas', action: () => showModule('kehadiran-murid') },
-      { id: 'amaran-kehadiran', title: 'Amaran Kehadiran', sub: 'Jana Surat Amaran', action: () => showModule('amaran-kehadiran') },
-      { id: 'laporan-mingguan', title: 'Laporan Mingguan', sub: 'Laporan Guru Bertugas', action: () => showModule('laporan-kelas') },
-      { id: 'lembaran-kerja', title: 'Lembaran Kerja AI', sub: 'Jana Latihan Murid', action: () => showModule('lembaran-kerja') },
-      { id: 'takwim', title: 'Takwim Sekolah', sub: 'Urus acara dan cuti sekolah', action: () => showModule('takwim') },
-      { id: 'notifikasi', title: 'Notifikasi', sub: 'Log WhatsApp/Telegram', action: () => showModule('notifikasi') },
-      { id: 'konfigurasi', title: 'Konfigurasi', sub: 'Tetapan Sistem', action: () => showModule('konfigurasi') }
-    ];
-
-    const filtered = items.filter(i => i.title.toLowerCase().includes(query) || i.sub.toLowerCase().includes(query));
-    renderResults(filtered);
-  });
-
-  function renderResults(filtered) {
-    if (!filtered.length && input.value) {
-      results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted);">Tiada hasil dijumpai...</div>';
-      return;
-    }
-    if (!filtered.length) {
-      results.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-size: 0.9rem;">Taip untuk cari modul...</div>';
-      return;
-    }
-
-    results.innerHTML = filtered.map((item, i) => `
-      <div class="cmd-item" data-idx="${i}" style="padding: 12px 16px; cursor: pointer; border-radius: 8px; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; transition: background 0.2s;">
-        <div style="background: #f1f5f9; width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; color: var(--navy);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        </div>
-        <div>
-          <div style="font-weight: 600; font-size: 0.95rem;">${item.title}</div>
-          <div style="font-size: 0.75rem; color: var(--muted);">${item.sub}</div>
-        </div>
-      </div>
-    `).join('');
-
-    const itemEls = results.querySelectorAll('.cmd-item');
-    itemEls.forEach((el, i) => {
-      el.addEventListener('click', () => {
-        filtered[i].action();
-        closePalette();
-      });
-      el.addEventListener('mouseenter', () => setSelection(i));
-    });
-
-    setSelection(0);
-  }
-
-  function setSelection(idx) {
-    const itemEls = results.querySelectorAll('.cmd-item');
-    itemEls.forEach(el => {
-      el.style.background = 'transparent';
-    });
-    if (itemEls[idx]) {
-      itemEls[idx].style.background = '#f1f5f9';
-      selectedIdx = idx;
-    }
-  }
-
-  input.addEventListener('keydown', e => {
-    const itemEls = results.querySelectorAll('.cmd-item');
-    if (!itemEls.length) return;
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelection((selectedIdx + 1) % itemEls.length);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelection((selectedIdx - 1 + itemEls.length) % itemEls.length);
-    } else if (e.key === 'Enter') {
-      if (itemEls[selectedIdx]) itemEls[selectedIdx].click();
-    }
-  });
-
-  palette.addEventListener('click', e => {
-    if (e.target === palette) closePalette();
-  });
-})();
 
 // ── Splash Perasmian Config ───────────────────────────────────────────────
 function muatSplashConfigUI() {
