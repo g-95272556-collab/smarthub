@@ -5972,17 +5972,17 @@ details[open] > summary svg {
 }
 
 .dash-card-students-att {
-  background: linear-gradient(135deg, #e11d48 0%, #be123c 60%, #881337 100%);
+  background: linear-gradient(135deg, #6b2d38 0%, #4c1a24 60%, #301016 100%);
 }
 .dash-card-students-att:hover {
-  box-shadow: 0 20px 48px rgba(225,29,72,0.35) !important;
+  box-shadow: 0 16px 36px rgba(107,45,56,0.22) !important;
 }
 
 .dash-card-birthday {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 60%, #7c2d12 100%);
+  background: linear-gradient(135deg, #694a38 0%, #52382b 60%, #38251c 100%);
 }
 .dash-card-birthday:hover {
-  box-shadow: 0 20px 48px rgba(217,119,6,0.35) !important;
+  box-shadow: 0 16px 36px rgba(105,74,56,0.22) !important;
 }
 
 /* Internal Card Shimmer & Decos */
