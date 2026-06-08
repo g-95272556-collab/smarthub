@@ -15438,7 +15438,9 @@ function geminiMigrasiKunciLegacy() {
 
 function geminiAdaKunciAktif() {
   geminiMigrasiKunciLegacy();
-  return !!geminiDapatkanKunci();
+  if (geminiDapatkanKunci()) return true;
+  if (APP.workerUrl) return true;
+  return false;
 }
 
 function geminiRenderQuotaCards() {
@@ -15526,19 +15528,41 @@ async function geminiSimpanKunci(n) {
   var inp = document.getElementById('geminiKey' + n);
   if (!inp || !inp.value.trim()) { showToast('Sila masukkan kunci API.', 'error'); return; }
   var keyVal = inp.value.trim();
-  localStorage.setItem('ssh_gemini_key_' + n, keyVal);
-  localStorage.removeItem('ssh_gemini_exhausted_' + n);
-  geminiKemaskiniStatusUI();
-  showToast('Kunci Gemini ' + n + ' disimpan pada peranti ini.', 'success');
+  try {
+    if (APP.workerUrl) {
+      var configPayload = {};
+      configPayload['GEMINI_API_KEY_' + n] = keyVal;
+      var data = await callWorker({ action: 'setConfig', config: configPayload });
+      if (!data.success) throw new Error(data.error || 'Gagal menyimpan kunci ke backend.');
+      try { callBlobStoreSet(configPayload).catch(function(){}); } catch(e) {}
+    }
+    localStorage.setItem('ssh_gemini_key_' + n, keyVal);
+    localStorage.removeItem('ssh_gemini_exhausted_' + n);
+    geminiKemaskiniStatusUI();
+    showToast('Kunci Gemini ' + n + ' disimpan pada peranti ini dan backend.', 'success');
+  } catch (e) {
+    showToast('Gagal simpan ke backend: ' + e.message, 'error');
+  }
 }
 
 async function geminiPadamKunci(n) {
-  localStorage.removeItem('ssh_gemini_key_' + n);
-  localStorage.removeItem('ssh_gemini_exhausted_' + n);
-  var inp = document.getElementById('geminiKey' + n);
-  if (inp) inp.value = '';
-  geminiKemaskiniStatusUI();
-  showToast('Kunci Gemini ' + n + ' dipadam daripada peranti ini.', 'info');
+  try {
+    if (APP.workerUrl) {
+      var configPayload = {};
+      configPayload['GEMINI_API_KEY_' + n] = '';
+      var data = await callWorker({ action: 'setConfig', config: configPayload });
+      if (!data.success) throw new Error(data.error || 'Gagal memadam kunci dari backend.');
+      try { callBlobStoreSet(configPayload).catch(function(){}); } catch(e) {}
+    }
+    localStorage.removeItem('ssh_gemini_key_' + n);
+    localStorage.removeItem('ssh_gemini_exhausted_' + n);
+    var inp = document.getElementById('geminiKey' + n);
+    if (inp) inp.value = '';
+    geminiKemaskiniStatusUI();
+    showToast('Kunci Gemini ' + n + ' dipadam daripada peranti ini dan backend.', 'info');
+  } catch (e) {
+    showToast('Gagal padam dari backend: ' + e.message, 'error');
+  }
 }
 
 function geminiResetKuota() {
