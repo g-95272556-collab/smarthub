@@ -15804,11 +15804,18 @@ async function callHybridDeepSeekGemini(prompt) {
 
   // ── STEP 1: DeepSeek jana teks ──
   if (_lkCancelled) throw new Error('__cancelled__');
-  lkSetStatus('loading', '⏳ Langkah 1/2: DeepSeek menjana teks soalan... (~15-25 saat)');
-  var dsResult = await callWorkerAI(prompt, 'lembaran_kerja');
-  if (!dsResult.success) {
-    aiCatatPenggunaan('deepseek-error', 1);
-    throw new Error(dsResult.message || 'DeepSeek gagal menjana teks.');
+  var dsResult;
+  try {
+    dsResult = await callWorkerAI(prompt, 'lembaran_kerja');
+    if (!dsResult.success) throw new Error(dsResult.error || dsResult.message || 'Gagal');
+  } catch (err) {
+    console.warn('DeepSeek failed, falling back to Gemini for text & image generation:', err);
+    showToast('DeepSeek terganggu. Menggunakan enjin Gemini...', 'info');
+    if (geminiAdaKunciAktif()) {
+      return await callWorkerAIGemini(prompt, true);
+    } else {
+      throw new Error('DeepSeek terganggu dan tiada Kunci API Gemini aktif untuk fallback: ' + err.message);
+    }
   }
   aiCatatPenggunaan('deepseek-text', 1);
   var rawText = dsResult.content || '';
@@ -16181,23 +16188,31 @@ async function janaLembaranKerja() {
         // DeepSeek: cuba streaming dahulu supaya teks muncul sedikit demi sedikit
         // Fallback automatik ke callWorkerAI jika Worker belum sokong /ai/stream
         var _lastDOMUpdate = 0;
-        result = await callWorkerAIStream(prompt, 'lembaran_kerja', function(partialText) {
-          if (_lkCancelled) return;
-          
-          // PRESTASI: Melambat (Throttle) kemaskini DOM ke setiap 150ms
-          // Mengelakkan browser "freeze" dan penggunaan CPU/RAM melampau
-          var now = Date.now();
-          if (now - _lastDOMUpdate > 150) {
-            var processedPartial = lkPostProcessOutput(partialText);
-            var lkBox = document.getElementById('lkOutputBox');
-            if (lkBox) {
-              lkBox.innerHTML = '<div class="lk-stream-indicator" style="font-size:.78rem;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed rgba(0,0,0,.1)">⚡ Streaming... teks muncul semasa AI menjana</div>' +
-                '<div class="lk-pp-content">' + processedPartial + '</div>';
-              lkBox.scrollTop = lkBox.scrollHeight;
+        try {
+          result = await callWorkerAIStream(prompt, 'lembaran_kerja', function(partialText) {
+            if (_lkCancelled) return;
+            
+            var now = Date.now();
+            if (now - _lastDOMUpdate > 150) {
+              var processedPartial = lkPostProcessOutput(partialText);
+              var lkBox = document.getElementById('lkOutputBox');
+              if (lkBox) {
+                lkBox.innerHTML = '<div class="lk-stream-indicator" style="font-size:.78rem;color:var(--muted);margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed rgba(0,0,0,.1)">⚡ Streaming... teks muncul semasa AI menjana</div>' +
+                  '<div class="lk-pp-content">' + processedPartial + '</div>';
+                lkBox.scrollTop = lkBox.scrollHeight;
+              }
+              _lastDOMUpdate = now;
             }
-            _lastDOMUpdate = now;
+          });
+        } catch (dsErr) {
+          console.warn('DeepSeek stream failed, falling back to Gemini text-only:', dsErr);
+          showToast('DeepSeek terganggu. Menggunakan Gemini untuk jana teks...', 'info');
+          if (geminiAdaKunciAktif()) {
+            result = await callWorkerAIGemini(prompt, false);
+          } else {
+            throw dsErr;
           }
-        });
+        }
       }
 
       if (result.success) {
