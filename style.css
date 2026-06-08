@@ -5924,14 +5924,13 @@ details[open] > summary svg {
 .dash-card-students-att,
 .dash-card-birthday {
   border-radius: 20px !important;
-  background: var(--surface-glass);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  box-shadow: 0 10px 30px rgba(8, 21, 43, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.12) !important;
   transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
   position: relative;
   overflow: hidden;
+  padding: 24px 26px !important;
 }
 
 .dash-card-chart:hover,
@@ -5940,27 +5939,51 @@ details[open] > summary svg {
 .dash-card-teachers-att:hover,
 .dash-card-students-att:hover,
 .dash-card-birthday:hover {
-  transform: translateY(-8px) scale(1.008);
+  transform: translateY(-8px) scale(1.01);
 }
 
-/* Specific Accent Borders and Glows */
-.dash-card-chart { border-top: 4px solid #06b6d4 !important; }
-.dash-card-chart:hover { box-shadow: 0 24px 48px rgba(6, 182, 212, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important; }
+/* Gradients for each card */
+.dash-card-chart {
+  background: linear-gradient(135deg, #0e7490 0%, #155e75 60%, #083344 100%);
+}
+.dash-card-chart:hover {
+  box-shadow: 0 20px 48px rgba(14,116,144,0.35) !important;
+}
 
-.dash-card-upcoming { border-top: 4px solid #6366f1 !important; }
-.dash-card-upcoming:hover { box-shadow: 0 24px 48px rgba(99, 102, 241, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important; }
+.dash-card-upcoming {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 60%, #1e1b4b 100%);
+}
+.dash-card-upcoming:hover {
+  box-shadow: 0 20px 48px rgba(79,70,229,0.35) !important;
+}
 
-.dash-card-takwim-calendar { border-top: 4px solid #3b82f6 !important; }
-.dash-card-takwim-calendar:hover { box-shadow: 0 24px 48px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important; }
+.dash-card-takwim-calendar {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #172554 100%);
+}
+.dash-card-takwim-calendar:hover {
+  box-shadow: 0 20px 48px rgba(30,64,175,0.35) !important;
+}
 
-.dash-card-teachers-att { border-top: 4px solid #14b8a6 !important; }
-.dash-card-teachers-att:hover { box-shadow: 0 24px 48px rgba(20, 184, 166, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important; }
+.dash-card-teachers-att {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 60%, #115e59 100%);
+}
+.dash-card-teachers-att:hover {
+  box-shadow: 0 20px 48px rgba(13,148,136,0.35) !important;
+}
 
-.dash-card-students-att { border-top: 4px solid #f43f5e !important; }
-.dash-card-students-att:hover { box-shadow: 0 24px 48px rgba(244, 63, 94, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important; }
+.dash-card-students-att {
+  background: linear-gradient(135deg, #e11d48 0%, #be123c 60%, #881337 100%);
+}
+.dash-card-students-att:hover {
+  box-shadow: 0 20px 48px rgba(225,29,72,0.35) !important;
+}
 
-.dash-card-birthday { border-top: 4px solid #f59e0b !important; }
-.dash-card-birthday:hover { box-shadow: 0 24px 48px rgba(245, 158, 11, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important; }
+.dash-card-birthday {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 60%, #7c2d12 100%);
+}
+.dash-card-birthday:hover {
+  box-shadow: 0 20px 48px rgba(217,119,6,0.35) !important;
+}
 
 /* Internal Card Shimmer & Decos */
 .dash-card-chart .sc-deco,
@@ -5970,9 +5993,9 @@ details[open] > summary svg {
 .dash-card-students-att .sc-deco,
 .dash-card-birthday .sc-deco {
   position: absolute;
-  width: 120px; height: 120px;
+  width: 130px; height: 130px;
   border-radius: 50%;
-  border: 1.5px solid rgba(0, 0, 0, 0.02);
+  border: 2px solid rgba(255, 255, 255, 0.08);
   top: -30px; right: -30px;
   pointer-events: none;
   animation: scDecoSpin 30s linear infinite;
@@ -5986,9 +6009,147 @@ details[open] > summary svg {
 .dash-card-birthday .sc-shimmer {
   position: absolute;
   inset: 0;
-  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
   background-size: 250% 100%;
   animation: scShimmer 6s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
+}
+
+/* Ensure text headers inherit white color inside premium cards */
+.dash-card-chart h2,
+.dash-card-upcoming h2,
+.dash-card-takwim-calendar h2,
+.dash-card-teachers-att h2,
+.dash-card-students-att h2,
+.dash-card-birthday h2 {
+  color: #fff !important;
+}
+.dash-card-chart .section-header button,
+.dash-card-upcoming .section-header button,
+.dash-card-takwim-calendar .section-header button,
+.dash-card-teachers-att .section-header button,
+.dash-card-students-att .section-header button,
+.dash-card-birthday .section-header button {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+.dash-card-chart .section-header button:hover,
+.dash-card-upcoming .section-header button:hover,
+.dash-card-takwim-calendar .section-header button:hover,
+.dash-card-teachers-att .section-header button:hover,
+.dash-card-students-att .section-header button:hover,
+.dash-card-birthday .section-header button:hover {
+  background: rgba(255, 255, 255, 0.28) !important;
+  transform: scale(1.05);
+}
+
+/* Adjustments for specific elements inside cards */
+/* 1. Takwim Grid integration inside dark card */
+.dash-card-takwim-calendar .takwim-grid-cell {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+.dash-card-takwim-calendar .takwim-grid-cell:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+.dash-card-takwim-calendar .dash-takwim-legend > div {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+}
+.dash-card-takwim-calendar .dash-takwim-legend span {
+  color: #fff !important;
+}
+.dash-card-takwim-calendar .dash-takwim-label {
+  color: #fff !important;
+  font-weight: 700;
+}
+
+/* 2. Tables inside dark card (Teacher Attendance) */
+.dash-card-teachers-att table th {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #fff !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15) !important;
+}
+.dash-card-teachers-att table td {
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.dash-card-teachers-att tr:hover td {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+.dash-card-teachers-att .badge {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 3. Birthday list & upcoming events */
+.dash-card-birthday .birthday-row,
+.dash-card-birthday .dash-empty-box {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  border-radius: 12px;
+}
+.dash-card-upcoming .dash-empty-box {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  border-radius: 12px;
+  padding: 16px;
+}
+.dash-card-upcoming .dash-scroll-box > div {
+  color: #fff !important;
+}
+.dash-card-upcoming .dash-scroll-box > div h3,
+.dash-card-upcoming .dash-scroll-box > div strong,
+.dash-card-upcoming .dash-scroll-box > div span,
+.dash-card-upcoming .dash-scroll-box > div div {
+  color: #fff !important;
+}
+
+/* 4. Student Attendance list */
+.dash-card-students-att .dash-empty-note,
+.dash-card-students-att .empty-state,
+.dash-card-students-att .empty-state-title,
+.dash-card-students-att .empty-state-desc {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+.dash-card-students-att .empty-state-icon {
+  color: #fff !important;
+}
+.dash-card-students-att .kelas-group-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px;
+  color: #fff !important;
+  padding: 12px 14px;
+}
+.dash-card-students-att .kelas-group-title {
+  color: #fff !important;
+  border-bottom-color: rgba(255, 255, 255, 0.15) !important;
+}
+.dash-card-students-att .murid-tidak-hadir-row {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 5. Chart labels & containers */
+.dash-card-chart .dash-chart-labels span {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+.dash-card-chart .dash-chart-bar-value {
+  color: #fff !important;
+}
+.dash-card-chart .dash-chart-loading {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+.dash-card-chart .dash-chart-bar-fill {
+  background: linear-gradient(180deg, #22d3ee 0%, #06b6d4 100%) !important;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+.dash-card-chart .dash-chart-bar-bg {
+  background: rgba(255, 255, 255, 0.12) !important;
 }
