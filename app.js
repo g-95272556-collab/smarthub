@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════════
 // SMART SCHOOL HUB v2.0 — SK Kiandongo
 // app.js — Main Application JavaScript
 // ═══════════════════════════════════════════════════════════════
@@ -1458,6 +1458,7 @@ var ATTENDANCE_NOTIF_CONFIG_KEYS = {
   muridGuardianTemplate: 'ATTENDANCE_MURID_GUARDIAN_TEMPLATE',
   muridSummaryTemplate: 'ATTENDANCE_MURID_SUMMARY_TEMPLATE',
   muridClassGroupTemplate: 'ATTENDANCE_MURID_CLASS_GROUP_TEMPLATE',
+  muridTeacherGroupTemplate: 'ATTENDANCE_MURID_TEACHER_GROUP_TEMPLATE',
   note: 'ATTENDANCE_NOTIF_NOTE'
 };
 var TAKWIM_GURU_NOTIF_CONFIG_KEYS = {
@@ -1480,13 +1481,8 @@ var DUTY_NOTIF_CONFIG_KEYS = {
   note: 'DUTY_NOTIF_NOTE',
   dispatchState: 'DUTY_NOTIF_DISPATCH_STATE_JSON'
 };
-var DEFAULT_ATTENDANCE_TEMPLATES = {
-  guruAdmin: '⏰ *Peringatan Kehadiran Guru* ⏰\n\n📅 Tarikh: {TARIKH}\n\n📋 Guru berikut masih belum mendaftar kehadiran:\n\n{SENARAI}\n\n🔔 Mohon kerjasama untuk daftar kehadiran secepat mungkin. Terima kasih! 🤝\n\n🏫 _{SEKOLAH}_',
-  guruPersonal: '⏰ *Peringatan Kehadiran* ⏰\n\n👋 Selamat pagi Cikgu {NAMA},\n\n📅 Sehingga {TARIKH}, kehadiran anda masih belum direkodkan.\n\n🔔 Mohon luangkan masa untuk daftar kehadiran ya. Kerjasama cikgu amat dihargai! 🌟\n\n🏫 _{SEKOLAH}_',
-  muridGuardian: '📋 *Makluman Kehadiran Murid* 📋\n\n👋 Selamat sejahtera ibu bapa / penjaga,\n\n👤 Nama: *{NAMA}*\n🏫 Kelas: *{KELAS}*\n📅 Tarikh: {TARIKH}\n📊 Status: *{STATUS}*\n\n⚠️ Sekiranya ada sebarang pertanyaan atau kekeliruan, sila hubungi pihak sekolah. Kami sedia membantu. 🤝\n\n📚 Kehadiran ke sekolah sangat penting untuk kejayaan anak-anak. Terima kasih atas perhatian dan kerjasama tuan/puan.\n\n🏫 _{SEKOLAH}_',
-  muridSummary: '📊 *Ringkasan Kehadiran Murid* 📊\n\n📅 Tarikh: {TARIKH}\n🏫 Kelas: {KELAS}\n👥 Bilangan Murid Tidak Hadir: *{BILANGAN}*\n\n📋 Senarai:\n{SENARAI}\n\n✅ Untuk makluman dan tindakan lanjut.\n\n🏫 _{SEKOLAH}_',
-  muridClassGroup: '📊 *Kehadiran Murid {KELAS}* 📊\n\n📅 Tarikh: {TARIKH}\n\n📋 Murid yang tidak hadir:\n{SENARAI}\n\n⚠️ Mohon kerjasama ibu bapa untuk maklumkan pihak sekolah jika anak tidak dapat hadir. Terima kasih! 🤝\n\n🏫 _{SEKOLAH}_'
-};
+
+DEFAULT_ATTENDANCE_TEMPLATES.muridTeacherGroup = '📣 *Makluman Kehadiran Murid/Pengurusan RMT kepada Guru Kelas dan Guru Penyelaras RMT* 📣\n\n👋 Salam sejahtera semua guru kelas dan guru penyelaras RMT,\n\nMohon semua guru kelas/penyelaras RMT *mengisi kehadiran murid dalam MOEIS IDME (https://idme.moe.gov.my/login) dan Pengurusan RMT (https://appsjohor.moe.gov.my/rmt/) sebelum jam {MASA_DEADLINE} pagi* bagi memastikan rekod sekolah lengkap dan tepat.\n\n📅 Tarikh: {TARIKH}\n\n🕒 Sila lengkapkan segera jika masih belum direkodkan.\n\n🤝 Terima kasih atas kerjasama dan tindakan pantas semua.\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_TAKWIM_GURU_NOTIF_TEMPLATE = '📚 *Peringatan Takwim {SEKOLAH}*\n\n{PERINGATAN}\n\n🎯 *{TAJUK}*\n🗓️ Tarikh: {TARIKH_PENUH}\n🏷️ Kategori: {KATEGORI}\n⌛ Tempoh: {TEMPOH}\n📝 Catatan: {CATATAN}\n📌 Tindakan/Nota: {NOTA_OPERASI}\n\n🙂 Mohon ambil maklum dan buat persediaan awal.\n🤝 Terima kasih atas kerjasama semua.\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_DUTY_NOTIF_TEMPLATE = '📋 *Jadual Bertugas Mingguan* 📋\n\n👋 Selamat sejahtera Cikgu {NAMA},\n\nAnda ditugaskan sebagai *{PERANAN}* untuk minggu hadapan.\n\n📌 Minggu: *{MINGGU}*\n🗓️ Tarikh: *{TARIKH_MULA}* hingga *{TARIKH_AKHIR}*\n\n👤 Guru Bertugas: *{GURU}*\n🤝 Pembantu: *{PEMBANTU}*\n📝 Catatan: {CATATAN}\n\n💪 Tugas: Kawalan perhimpunan, kantin, disiplin, kebersihan & laporan mingguan.\n\n🌟 Semoga dipermudahkan segala urusan.\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_DUTY_NOTIF_GROUP_TEMPLATE = '📋 *Makluman Jadual Guru Bertugas Mingguan* 📋\n\n👋 Salam Sejahtera Dan Salam Onsoi Semua Warga SK Kiandongo👋\n\nBerikut ialah makluman guru bertugas untuk minggu ini:\n\n📌 Minggu: *{MINGGU}*\n🗓️ Tarikh: *{TARIKH_MULA}* hingga *{TARIKH_AKHIR}*\n\n👤 Guru Bertugas: *{GURU}*\n🤝 Pembantu: *{PEMBANTU}*\n📝 Catatan/Cuti: {CATATAN}\n\n💪 Mohon semua warga sekolah mengambil maklum dan memberikan kerjasama sepanjang minggu bertugas ini.\n\n🌟 Semoga segala urusan dipermudahkan.\n\n🏫 _{SEKOLAH}_';
@@ -1964,6 +1960,7 @@ function populateAttendanceNotificationConfig(config) {
   const muridGuardianTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridGuardianTemplate], 'ssh_attendance_tpl_murid_guardian', getLegacyMuridGuardianTemplate());
   const muridSummaryTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridSummaryTemplate], 'ssh_attendance_tpl_murid_summary', DEFAULT_ATTENDANCE_TEMPLATES.muridSummary);
   const muridClassGroupTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridClassGroupTemplate], 'ssh_attendance_tpl_murid_class_group', DEFAULT_ATTENDANCE_TEMPLATES.muridClassGroup);
+  const muridTeacherGroupTemplate = getConfigText(cfg[ATTENDANCE_NOTIF_CONFIG_KEYS.muridTeacherGroupTemplate], 'ssh_attendance_tpl_murid_teacher_group', DEFAULT_ATTENDANCE_TEMPLATES.muridTeacherGroup);
 
   localStorage.setItem('ssh_attendance_guru_notif_enabled', guruEnabled ? 'true' : 'false');
   localStorage.setItem('ssh_attendance_murid_notif_enabled', muridEnabled ? 'true' : 'false');
@@ -1978,6 +1975,7 @@ function populateAttendanceNotificationConfig(config) {
   localStorage.setItem('ssh_attendance_tpl_murid_guardian', muridGuardianTemplate);
   localStorage.setItem('ssh_attendance_tpl_murid_summary', muridSummaryTemplate);
   localStorage.setItem('ssh_attendance_tpl_murid_class_group', muridClassGroupTemplate);
+  localStorage.setItem('ssh_attendance_tpl_murid_teacher_group', muridTeacherGroupTemplate);
 
   // Simpan terus ke localStorage (select lama sudah diganti dengan toggle butang)
   localStorage.setItem('ssh_attendance_guru_notif_enabled', guruEnabled ? 'true' : 'false');
@@ -1993,6 +1991,7 @@ function populateAttendanceNotificationConfig(config) {
   setInputValue('attendanceTplMuridGuardian', muridGuardianTemplate);
   setInputValue('attendanceTplMuridSummary', muridSummaryTemplate);
   setInputValue('attendanceTplMuridClassGroup', muridClassGroupTemplate);
+  setInputValue('attendanceTplMuridTeacherGroup', muridTeacherGroupTemplate);
   updateAttendanceNotificationStatusUI();
 }
 
@@ -2011,6 +2010,7 @@ async function saveAttendanceNotificationConfig() {
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridGuardianTemplate] = getInputTrimmed('attendanceTplMuridGuardian', DEFAULT_ATTENDANCE_TEMPLATES.muridGuardian);
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridSummaryTemplate] = getInputTrimmed('attendanceTplMuridSummary', DEFAULT_ATTENDANCE_TEMPLATES.muridSummary);
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridClassGroupTemplate] = getInputTrimmed('attendanceTplMuridClassGroup', DEFAULT_ATTENDANCE_TEMPLATES.muridClassGroup);
+  payload[ATTENDANCE_NOTIF_CONFIG_KEYS.muridTeacherGroupTemplate] = getInputTrimmed('attendanceTplMuridTeacherGroup', DEFAULT_ATTENDANCE_TEMPLATES.muridTeacherGroup);
   payload[ATTENDANCE_NOTIF_CONFIG_KEYS.note] = getInputTrimmed('attendanceNotifNote', '');
   populateAttendanceNotificationConfig(payload);
   const result = document.getElementById('attendanceNotifConfigResult');
@@ -5495,6 +5495,60 @@ async function getGuruBelumIsiList(tarikh) {
   return dedupeGuruReminderRows(guruList.filter(r => !sudahIsi.has(String(r[0] || '').toLowerCase())));
 }
 
+async function getKelasMuridBelumKeyInList(tarikh) {
+  const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
+  if (!data.success) throw new Error(data.error || 'Gagal memuatkan rekod murid');
+  const kelasSudahIsi = new Set(
+    (data.rows || [])
+      .map(parseKehadiranMuridRow)
+      .filter(function(r) { return String(r.tarikh || '').startsWith(tarikh); })
+      .map(function(r) { return String(r.kelas || '').trim().toLowerCase(); })
+      .filter(Boolean)
+  );
+  return (SENARAI_KELAS_MURID || []).filter(function(kelas) {
+    return !kelasSudahIsi.has(String(kelas || '').trim().toLowerCase());
+  });
+}
+
+function renderMuridTeacherGroupReminder(tarikh, kelasBelumIsi) {
+  const senarai = (kelasBelumIsi || []).map(function(kelas) {
+    return '- ' + kelas;
+  }).join('\n');
+  return renderAttendanceTemplate(
+    getAttendanceTemplate('ssh_attendance_tpl_murid_teacher_group', DEFAULT_ATTENDANCE_TEMPLATES.muridTeacherGroup),
+    {
+      TARIKH: tarikh,
+      MASA_DEADLINE: '10:00',
+      BILANGAN: kelasBelumIsi.length,
+      SENARAI: senarai,
+      SEKOLAH: getSchoolTemplateName()
+    }
+  );
+}
+
+async function semakDanHantarMaklumanMuridGuruKelasAuto() {
+  const now = new Date();
+  const totalMin = getCurrentTotalMinutes(now);
+  if (totalMin < 9 * 60 + 45 || totalMin > 10 * 60) return;
+  if (!isHariPersekolahan(getTodayYMD(now))) return;
+  const tarikh = getTodayYMD(now);
+  const guardKey = 'ssh_notif_murid_guru_kelas_' + tarikh;
+  if (localStorage.getItem(guardKey)) return;
+  const groupTarget = getGroupGuruFonnteId();
+  if (!groupTarget) return;
+  try {
+    const kelasBelumIsi = await getKelasMuridBelumKeyInList(tarikh);
+    if (!kelasBelumIsi.length) return;
+    localStorage.setItem(guardKey, '1');
+    const mesej = renderMuridTeacherGroupReminder(tarikh, kelasBelumIsi);
+    await callFonnte(groupTarget, mesej);
+    logNotif('Makluman Kehadiran Murid Guru Kelas', groupTarget, mesej, 'Berjaya');
+    showToast('Makluman kehadiran murid untuk guru kelas dihantar ke group rasmi.', 'info');
+  } catch (e) {
+    localStorage.removeItem(guardKey);
+  }
+}
+
 async function openTambahKehadiranGuru() {
   if (!isHariPersekolahan(getTodayYMD())) {
     var info = getInfoHariPersekolahan(getTodayYMD());
@@ -5748,7 +5802,7 @@ async function notifMuridTidakHadirJam9() {
   } catch(e) { localStorage.removeItem(notif9Key); }
 }
 
-setInterval(function() { updateWaktuStatus(); semakDanNotifGuruBelumIsi(); notifMuridTidakHadirJam9(); semakNotifHariLahirAuto(); semakNotifGuruBertugasMingguDepan(); semakDanHantarNotifikasiTakwimGuruAuto(); maybeAutoHadir(false); maybeAutoPunchOut(false); }, 60000);
+setInterval(function() { updateWaktuStatus(); semakDanNotifGuruBelumIsi(); semakDanHantarMaklumanMuridGuruKelasAuto(); notifMuridTidakHadirJam9(); semakNotifHariLahirAuto(); semakNotifGuruBertugasMingguDepan(); semakDanHantarNotifikasiTakwimGuruAuto(); maybeAutoHadir(false); maybeAutoPunchOut(false); }, 60000);
 setInterval(updateWaktuStatus, 1000);
 
 function parseKehadiranGuruRow(r) {
@@ -17165,3 +17219,5 @@ function tutupPremiumSplash() {
   }
   if (window._plsInterval) clearInterval(window._plsInterval);
 }
+
+
