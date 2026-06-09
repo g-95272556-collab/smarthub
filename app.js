@@ -5920,6 +5920,7 @@ async function openTambahKehadiranGuru() {
 function autoFillGuru() {}
 
 async function submitKehadiranGuru() {
+  if (window._submitKehadiranGuruBusy) return;
   const nama = (document.getElementById('kGuruNama').value || '').trim();
   const tarikh = document.getElementById('kGuruTarikh').value;
   const masa = document.getElementById('kGuruMasa').value;
@@ -5930,13 +5931,18 @@ async function submitKehadiranGuru() {
   if (!['Cuti','Cuti Sakit','Cuti Kecemasan','Cuti Peribadi'].includes(status) && !isHariPersekolahan(tarikh)) {
     showToast('Tarikh ini bukan hari persekolahan. Kehadiran tidak boleh direkod.', 'error'); return;
   }
+  window._submitKehadiranGuruBusy = true;
   try {
     const data = await callWorker({ action: 'appendRow', sheetKey: 'KEHADIRAN_GURU', row: [nama, tarikh, status, masa, catatan, APP.user ? APP.user.email : ''] });
     if (!data.success) throw new Error(data.error);
     closeModal('modalKehadiranGuru');
     showToast('✅ ' + nama + ' — ' + status + ' direkod!', 'success');
     loadKehadiranGuru();
-  } catch(e) { showToast('Ralat: ' + e.message, 'error'); }
+  } catch(e) {
+    showToast('Ralat: ' + e.message, 'error');
+  } finally {
+    window._submitKehadiranGuruBusy = false;
+  }
 }
 
 function renderKehadiranGuruManualAdminOptions(gurus) {
@@ -5985,6 +5991,7 @@ async function openTambahKehadiranGuruManualAdmin() {
 }
 
 async function submitKehadiranGuruManualAdmin() {
+  if (window._submitKehadiranGuruManualAdminBusy) return;
   if (!canManageAdminModules()) {
     showToast('Akses terhad - pentadbir sahaja.', 'error');
     return;
@@ -6004,6 +6011,15 @@ async function submitKehadiranGuruManualAdmin() {
   if (!tarikh) { showToast('Tarikh wajib diisi.', 'error'); return; }
   if (!masa) { showToast('Masa wajib diisi.', 'error'); return; }
   if (!status) { showToast('Status wajib dipilih.', 'error'); return; }
+
+  window._submitKehadiranGuruManualAdminBusy = true;
+  const btn = document.querySelector('[data-action="submitKehadiranGuruManualAdmin"]');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = 'Menyimpan...';
+  }
+
   try {
     const guruTarget = selected || { nama: nama, emel: '', jawatan: '' };
     const data = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' });
@@ -6054,6 +6070,12 @@ async function submitKehadiranGuruManualAdmin() {
     loadKehadiranGuru();
   } catch (e) {
     showToast('Ralat: ' + e.message, 'error');
+  } finally {
+    window._submitKehadiranGuruManualAdminBusy = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
   }
 }
 
@@ -6144,6 +6166,7 @@ async function openEditKehadiranGuruAdmin(nama, tarikh) {
 }
 
 async function submitEditKehadiranGuruAdmin() {
+  if (window._submitEditKehadiranGuruAdminBusy) return;
   if (!isPentadbir()) {
     showToast('Akses terhad - pentadbir sahaja.', 'error');
     return;
@@ -6159,6 +6182,14 @@ async function submitEditKehadiranGuruAdmin() {
   if (!nama || !tarikh) {
     showToast('Maklumat guru/staf atau tarikh tidak sah.', 'error');
     return;
+  }
+
+  window._submitEditKehadiranGuruAdminBusy = true;
+  const btn = document.querySelector('[data-action="submitEditKehadiranGuruAdmin"]');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = 'Menyimpan...';
   }
 
   try {
@@ -6265,6 +6296,12 @@ async function submitEditKehadiranGuruAdmin() {
     loadKehadiranGuru();
   } catch (e) {
     showToast('Ralat semasa mengemas kini: ' + e.message, 'error');
+  } finally {
+    window._submitEditKehadiranGuruAdminBusy = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
   }
 }
 
