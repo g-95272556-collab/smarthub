@@ -1600,6 +1600,22 @@ function applyBackendOperationalConfig(config) {
   try { localStorage.setItem('ssh_jadual_bertugas', JSON.stringify(_jadualBertugas)); } catch (e) {}
   renderJadualBertugasOverview();
   if (typeof renderGuruBertugasDash === 'function') renderGuruBertugasDash();
+
+  // Hidrat data Takwim dari backend config (D1 / Netlify Blob) jika ada
+  if (cfg.TAKWIM_EVENTS) {
+    try {
+      var parsedEvents = cfg.TAKWIM_EVENTS;
+      if (typeof parsedEvents === 'string') parsedEvents = JSON.parse(parsedEvents);
+      if (Array.isArray(parsedEvents) && parsedEvents.length > 0) {
+        localStorage.setItem('ssh_takwim_events', JSON.stringify(parsedEvents));
+        if (typeof renderDashboardTakwim === 'function') renderDashboardTakwim();
+        if (typeof populateTakwimYearFilter === 'function') populateTakwimYearFilter();
+        if (typeof renderTakwimConfigList === 'function') renderTakwimConfigList();
+      }
+    } catch (e) {
+      console.error('Gagal parse TAKWIM_EVENTS dari backend config:', e);
+    }
+  }
   // Auto-sync catatan takwim ke jadual guru bertugas
   if (_jadualBertugas.length && typeof syncTakwimKeJadualBertugas === 'function') {
     // Fetch takwim events dari backend jika lokal kosong
@@ -4558,6 +4574,7 @@ function showModule(id) {
     loadDataMurid();
     currentAutoRefreshInterval = setInterval(loadDataMurid, 600000);
   } else if (id === 'takwim') {
+    if (typeof _takwimSyncFromD1 === 'function') _takwimSyncFromD1();
     currentAutoRefreshInterval = setInterval(function() {
       if (typeof _takwimSyncFromD1 === 'function') _takwimSyncFromD1();
     }, 120000); // 2 minit — sync dari D1
