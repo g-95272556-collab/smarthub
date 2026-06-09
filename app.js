@@ -5818,19 +5818,54 @@ async function semakDanHantarMaklumanMuridGuruKelasAuto() {
   if (!isHariPersekolahan(getTodayYMD(now))) return;
   const tarikh = getTodayYMD(now);
   const guardKey = 'ssh_notif_murid_guru_kelas_' + tarikh;
+  const globalGuardKey = 'ATTENDANCE_NOTIF_CLASS_REMINDER_SENT_' + tarikh;
+
   if (localStorage.getItem(guardKey)) return;
+  if (_backendConfigCache && _backendConfigCache[globalGuardKey]) {
+    localStorage.setItem(guardKey, '1');
+    return;
+  }
+
+  // Pengesahan dwi-tahap (double check) dengan database/config backend
+  try {
+    const freshData = await callWorker({ action: 'getConfig' });
+    if (freshData && freshData.success && freshData.config) {
+      _backendConfigCache = freshData.config;
+      if (freshData.config[globalGuardKey]) {
+        localStorage.setItem(guardKey, '1');
+        return;
+      }
+    }
+  } catch (e) {}
+
   const groupTarget = getGroupGuruFonnteId();
   if (!groupTarget) return;
+
+  // Set guard di local dan database backend sebelum async call hantar Fonnte
+  localStorage.setItem(guardKey, '1');
+  try {
+    var p = {};
+    p[globalGuardKey] = '1';
+    await callWorker({ action: 'setConfig', config: p });
+  } catch (e) {
+    console.error('Gagal simpan global guard key makluman kelas:', e);
+  }
+
   try {
     const kelasBelumIsi = await getKelasMuridBelumKeyInList(tarikh);
     if (!kelasBelumIsi.length) return;
-    localStorage.setItem(guardKey, '1');
     const mesej = renderMuridTeacherGroupReminder(tarikh, kelasBelumIsi);
     await callFonnte(groupTarget, mesej);
     logNotif('Makluman Kehadiran Murid Guru Kelas', groupTarget, mesej, 'Berjaya');
     showToast('Makluman kehadiran murid untuk guru kelas dihantar ke group rasmi.', 'info');
   } catch (e) {
+    // Rollback jika gagal menghantar
     localStorage.removeItem(guardKey);
+    try {
+      var pRollback = {};
+      pRollback[globalGuardKey] = '';
+      await callWorker({ action: 'setConfig', config: pRollback });
+    } catch (err) {}
   }
 }
 
