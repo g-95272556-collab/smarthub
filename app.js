@@ -6250,9 +6250,35 @@ async function semakDanNotifGuruBelumIsi() {
   if (!isPentadbir() && !isGuruBertugasMingguanCurrent(profil)) return;
   const tarikh = getTodayYMD(now);
   const guardKey = 'ssh_notif_peringatan_' + tarikh;
+  const globalGuardKey = 'ATTENDANCE_NOTIF_GURU_SENT_' + tarikh;
+
   if (localStorage.getItem(guardKey)) return;
-  // Set guard SEBELUM operasi async — elak race condition antara tab
+  if (_backendConfigCache && _backendConfigCache[globalGuardKey]) {
+    localStorage.setItem(guardKey, '1');
+    return;
+  }
+
+  // Pengesahan dwi-tahap (double check) dengan database/config backend
+  try {
+    const freshData = await callWorker({ action: 'getConfig' });
+    if (freshData && freshData.success && freshData.config) {
+      _backendConfigCache = freshData.config;
+      if (freshData.config[globalGuardKey]) {
+        localStorage.setItem(guardKey, '1');
+        return;
+      }
+    }
+  } catch (e) {}
+
+  // Set guard di local dan simpan di database backend
   localStorage.setItem(guardKey, '1');
+  try {
+    var p = {};
+    p[globalGuardKey] = '1';
+    await callWorker({ action: 'setConfig', config: p });
+  } catch (e) {
+    console.error('Gagal simpan global guard key guru:', e);
+  }
   try {
     const [kehadiranData, guruData] = await Promise.all([
       callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' }),
@@ -6294,9 +6320,35 @@ async function notifMuridTidakHadirJam9() {
   const tarikh = getTodayYMD(now);
   if (!isHariPersekolahan(tarikh)) return;
   const notif9Key = 'ssh_notif9_' + tarikh;
+  const globalNotif9Key = 'ATTENDANCE_NOTIF_MURID_SENT_' + tarikh;
+
   if (localStorage.getItem(notif9Key)) return;
-  // Set guard SEBELUM async — elak race condition antara tab
+  if (_backendConfigCache && _backendConfigCache[globalNotif9Key]) {
+    localStorage.setItem(notif9Key, '1');
+    return;
+  }
+
+  // Pengesahan dwi-tahap (double check) dengan database/config backend
+  try {
+    const freshData = await callWorker({ action: 'getConfig' });
+    if (freshData && freshData.success && freshData.config) {
+      _backendConfigCache = freshData.config;
+      if (freshData.config[globalNotif9Key]) {
+        localStorage.setItem(notif9Key, '1');
+        return;
+      }
+    }
+  } catch (e) {}
+
+  // Set guard di local dan database
   localStorage.setItem(notif9Key, '1');
+  try {
+    var p = {};
+    p[globalNotif9Key] = '1';
+    await callWorker({ action: 'setConfig', config: p });
+  } catch (e) {
+    console.error('Gagal simpan global guard key murid:', e);
+  }
   try {
     const kehadiranData = await callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' });
     if (!kehadiranData.success) { localStorage.removeItem(notif9Key); return; }
@@ -8101,6 +8153,13 @@ async function hantarTelegramTidakHadirMuridManual() {
     } else {
       resultBox.textContent += 'WhatsApp wali dimatikan dalam konfigurasi.\n';
     }
+    // Set guard key agar tidak dihantar semula secara automatik hari ini
+    localStorage.setItem('ssh_notif9_' + tarikh, '1');
+    try {
+      var p = {};
+      p['ATTENDANCE_NOTIF_MURID_SENT_' + tarikh] = '1';
+      callWorker({ action: 'setConfig', config: p }).catch(function(){});
+    } catch(e) {}
     showToast('Notifikasi murid dihantar: ' + sent + '/' + rows.length, sent > 0 || tgOk ? 'success' : 'error');
   } catch (e) {
     resultBox.textContent = 'Ralat: ' + e.message;
@@ -8140,6 +8199,13 @@ async function hantarTelegramGuruTidakHadirManual() {
       else skipped++;
     }
     resultBox.textContent += '\n-----\nBerjaya: ' + sent + '  |  Dilangkau: ' + skipped + '  |  Gagal: ' + failed;
+    // Set guard key agar tidak dihantar semula secara automatik hari ini
+    localStorage.setItem('ssh_notif_peringatan_' + today, '1');
+    try {
+      var p = {};
+      p['ATTENDANCE_NOTIF_GURU_SENT_' + today] = '1';
+      callWorker({ action: 'setConfig', config: p }).catch(function(){});
+    } catch(e) {}
     showToast('Peringatan guru dihantar: ' + sent + '/' + belumIsi.length, sent > 0 || tgOk ? 'success' : 'error');
   } catch (e) {
     resultBox.textContent = 'Ralat: ' + e.message;
