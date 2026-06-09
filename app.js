@@ -4497,6 +4497,9 @@ function applyKawalanAkses() {
   document.querySelectorAll('[data-admin-nav="true"]').forEach(function(btn) {
     btn.style.display = admin ? '' : 'none';
   });
+  document.querySelectorAll('[data-non-admin-nav="true"]').forEach(function(btn) {
+    btn.style.display = admin ? 'none' : '';
+  });
   document.querySelectorAll('[data-admin-label="true"]').forEach(function(label) {
     label.style.display = admin ? '' : 'none';
   });
@@ -6905,6 +6908,7 @@ function normalizeBulkMuridStatus(status) {
 }
 
 async function submitKehadiranKelas() {
+  if (window._submitKehadiranKelasBusy) return;
   const kelas = document.getElementById('kMuridKelas').value;
   const tarikh = document.getElementById('kMuridTarikh').value;
   const murid = window._senaraKelasData || [];
@@ -6915,7 +6919,17 @@ async function submitKehadiranKelas() {
   if (!isHariPersekolahan(tarikh)) { showToast('Tarikh ini bukan hari persekolahan. Kehadiran murid tidak boleh direkod.', 'error'); return; }
   if ((window._senaraKelasDataKelas || '') !== kelas) { showToast('Sila muatkan semula senarai kelas sebelum simpan.', 'error'); return; }
   if (!murid.length) { showToast('Tiada senarai murid.', 'error'); return; }
-  showToast('Menyemak rekod sedia ada...', 'info');
+
+  window._submitKehadiranKelasBusy = true;
+  const btn = document.querySelector('[data-action="submitKehadiranKelas"]') || document.querySelector('button[onclick*="submitKehadiran"]');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = 'Menyimpan...';
+  }
+
+  try {
+    showToast('Menyemak rekod sedia ada...', 'info');
   const allTidakHadirList = [];
   let usedLegacyFallback = false;
   const allRowsToSave = murid.map(function(m, idx) {
@@ -7022,6 +7036,15 @@ async function submitKehadiranKelas() {
       showToast(kelas + ': ' + st, fonnteOK||tgOK ? 'success' : 'error');
     } else {
       showToast('Notifikasi ' + kelas + ' sudah dihantar hari ini.', 'info');
+    }
+  }
+  } catch (err) {
+    showToast('Ralat: ' + err.message, 'error');
+  } finally {
+    window._submitKehadiranKelasBusy = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
     }
   }
 }
