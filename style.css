@@ -558,12 +558,15 @@ body.is-loading {
 }
 
 .sidebar-user {
+  position: sticky;
+  bottom: 0;
   margin-top: auto;
   padding: 16px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.04);
+  background: linear-gradient(180deg, #0d1e3d 0%, #08152b 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 20px;
-  margin-top: 24px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4) !important;
+  z-index: 10;
 }
 .sidebar-user .user-initials {
   width: 42px; height: 42px; border-radius: 14px;
@@ -613,6 +616,7 @@ body.is-loading {
 .mobile-app-bar {
   display: none;
   align-items: center;
+  gap: 12px;
   padding: 16px 20px;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
@@ -3181,7 +3185,27 @@ table tbody tr:last-child td { border-bottom: none; }
   .nav-item span { display: inline; }
   .weekly-report-nav { gap: 8px; }
   .weekly-report-nav button { width: 100%; justify-content: center; }
-  .weekly-report-footer { bottom: 10px; }
+  .weekly-report-progress-card strong { font-size: 1.15rem !important; }
+  .weekly-report-footer {
+    position: relative !important;
+    bottom: auto !important;
+    margin-top: 24px;
+    z-index: 3;
+  }
+  .weekly-report-footer-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    text-align: center !important;
+    gap: 14px !important;
+  }
+  .weekly-report-footer-card .report-actions {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  .weekly-report-footer-card .report-actions .btn {
+    flex: 1 !important;
+    width: 100% !important;
+  }
   .d1-editor-toolbar { grid-template-columns: 1fr; }
   .d1-editor-table-wrap { max-height: 58vh; }
   .d1-editor-card-list { display: grid; }
@@ -6165,4 +6189,74 @@ details[open] > summary svg {
   text-align: center;
   font-weight: 500;
   letter-spacing: 0.02em;
+}
+
+/* ─────────────────────────────────────────── */
+/* MOBILE DEVICE OPTIMIZATIONS (ANDROID & IOS) */
+/* ─────────────────────────────────────────── */
+@media (max-width: 480px) {
+  /* 1. Reduce overall layout margins and paddings */
+  .main-content {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-bottom: calc(20px + var(--safe-bottom)) !important;
+  }
+  
+  /* 2. Adjust Dashboard & Standard Cards Padding and Gaps */
+  .card, .stat-card,
+  .dash-card-weather, .dash-card-solat, .dash-card-duty,
+  .dash-card-chart, .dash-card-upcoming, .dash-card-takwim-calendar,
+  .dash-card-teachers-att, .dash-card-students-att, .dash-card-birthday {
+    padding: 16px 14px !important;
+    border-radius: 16px !important;
+  }
+  
+  .card-grid, .config-grid {
+    gap: 12px !important;
+  }
+  
+  /* 3. Typography scaling to prevent clipping / awkward wrapping */
+  .page-title-icon, .page-header h1 {
+    font-size: 1.5rem !important;
+  }
+  .section-header h2 {
+    font-size: 1.05rem !important;
+  }
+  
+  /* 4. Action buttons & Flex containers alignment */
+  .page-header > div:last-child,
+  .section-header > div:last-child,
+  .murid-attendance-footer-actions {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  
+  .page-header > div:last-child > *,
+  .section-header > div:last-child > *,
+  .murid-attendance-footer-actions .btn {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+  
+  /* 5. Mobile Table Responsiveness */
+  .table-wrap {
+    margin: 0 -14px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  /* 6. Form control sizing & spacing */
+  .form-group {
+    margin-bottom: 12px;
+  }
+  .form-group label {
+    font-size: 0.8rem;
+  }
+  
+  /* 7. Safety margin for notch / dynamic island on iOS app bar */
+  .mobile-app-bar {
+    padding: calc(var(--safe-top) + 6px) 10px 6px !important;
+    margin-bottom: 10px !important;
+  }
 }
