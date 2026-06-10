@@ -3223,8 +3223,10 @@ table tbody tr:last-child td { border-bottom: none; }
   .table-wrap table:not(.responsive-mobile-table) {
     min-width: 640px;
   }
-  .responsive-mobile-table thead {
-    display: none;
+  .responsive-mobile-table thead,
+  .responsive-mobile-table thead tr,
+  .responsive-mobile-table thead th {
+    display: none !important;
   }
   .responsive-mobile-table,
   .responsive-mobile-table tbody,
