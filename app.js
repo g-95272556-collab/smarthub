@@ -9703,6 +9703,87 @@ function buildOPRPrintPhotoGrid(items) {
   }).join('');
 }
 
+function hitungDurasiMasa(timeStr) {
+  if (!timeStr) return '';
+  const parts = timeStr.split(/[-–—]|hingga/i);
+  if (parts.length !== 2) return timeStr;
+
+  function parseSingleTime(str) {
+    str = str.toLowerCase().trim();
+    const match = str.match(/(\d+)[\.:](\d+)|(\d+)/);
+    if (!match) return null;
+    
+    let hour = 0;
+    let minute = 0;
+    if (match[1] !== undefined) {
+      hour = parseInt(match[1], 10);
+      minute = parseInt(match[2], 10);
+    } else {
+      hour = parseInt(match[3], 10);
+    }
+
+    let isPM = false;
+    if (str.includes('pm') || str.includes('petang') || str.includes('malam') || str.includes('tengahari') || str.includes('tengah hari') || str.includes('tghari')) {
+      isPM = true;
+    }
+    
+    if (isPM && hour < 12) {
+      hour += 12;
+    } else if (!isPM && hour === 12) {
+      if (str.includes('pagi') || str.includes('malam') || str.includes('am')) {
+        hour = 0;
+      }
+    }
+    
+    return { hour, minute };
+  }
+
+  const startRaw = parseSingleTime(parts[0]);
+  const endRaw = parseSingleTime(parts[1]);
+  
+  if (!startRaw || !endRaw) return timeStr;
+
+  let startHour = startRaw.hour;
+  let startMinute = startRaw.minute;
+  let endHour = endRaw.hour;
+  let endMinute = endRaw.minute;
+
+  const startHasPeriod = /pagi|tengah|petang|malam|am|pm/i.test(parts[0]);
+  const endHasPeriod = /pagi|tengah|petang|malam|am|pm/i.test(parts[1]);
+
+  if (!startHasPeriod && endHasPeriod) {
+    const endIsPM = /petang|malam|pm/i.test(parts[1]) || (endRaw.hour >= 12 && endRaw.hour < 24);
+    const end12 = endRaw.hour > 12 ? endRaw.hour - 12 : endRaw.hour;
+    const start12 = startRaw.hour > 12 ? startRaw.hour - 12 : startRaw.hour;
+    if (endIsPM) {
+      if (start12 < end12) {
+        startHour = start12 + 12;
+      } else {
+        startHour = start12;
+      }
+    }
+  }
+
+  let diffMin = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+  if (diffMin < 0) {
+    diffMin += 24 * 60;
+  }
+
+  const durationHrs = Math.floor(diffMin / 60);
+  const durationMins = diffMin % 60;
+
+  let durationStr = '';
+  if (durationHrs > 0 && durationMins > 0) {
+    durationStr = ` (${durationHrs} jam ${durationMins} minit)`;
+  } else if (durationHrs > 0) {
+    durationStr = ` (${durationHrs} jam)`;
+  } else if (durationMins > 0) {
+    durationStr = ` (${durationMins} minit)`;
+  }
+
+  return timeStr.trim() + durationStr;
+}
+
 function cetakOPR() {
   const get = function(id) {
     const el = document.getElementById(id);
@@ -9869,7 +9950,7 @@ function cetakOPR() {
       }
       .opr-meta-card.program { grid-column: span 2; }
       .opr-meta-card.place { grid-column: span 2; }
-      .opr-meta-card.participants { grid-column: span 2; }
+      .opr-meta-card.participants { grid-column: span 1; }
       .opr-meta-card small {
         display: block;
         margin-bottom: 2px;
@@ -10043,7 +10124,7 @@ function cetakOPR() {
         <div class="opr-title">
           <h1>${escapeHtml(get('opr-institusi') || 'Sekolah')}</h1>
           <p>${escapeHtml(get('opr-alamat') || 'Alamat sekolah')}</p>
-          <span class="opr-subtitle">One Page Report (OPR)</span>
+          <span class="opr-subtitle">Laporan Satu Halaman (OPR)</span>
         </div>
         <div class="opr-badge">Laporan Ringkas<br>1 Muka Surat</div>
       </div>
@@ -10052,6 +10133,7 @@ function cetakOPR() {
         <div class="opr-meta-card"><small>Anjuran</small><strong>${escapeHtml(get('opr-anjuran') || '—')}</strong></div>
         <div class="opr-meta-card"><small>Tarikh</small><strong>${escapeHtml(tarikhFmt)}</strong></div>
         <div class="opr-meta-card place"><small>Tempat</small><strong>${escapeHtml(get('opr-tempat') || '—')}</strong></div>
+        <div class="opr-meta-card"><small>Masa</small><strong>${escapeHtml(hitungDurasiMasa(get('opr-masa')) || '—')}</strong></div>
         <div class="opr-meta-card participants"><small>Peserta</small><strong>${escapeHtml(get('opr-peserta') || '—')}</strong></div>
       </div>
       <div class="opr-main">
