@@ -2337,6 +2337,9 @@ function validateSheetCell(cell, rowIndex, cellIndex) {
 }
 
 async function authorizeRequest(body, actor, env, workerToken) {
+  if (body.action === "verifySession") {
+    return;
+  }
   if (body.action === "readSheet") {
     const sheetKey = String(body.sheetKey || "").trim();
     if (sheetKey === "CONFIG" || !TEACHER_READABLE_SHEETS.includes(sheetKey)) {
