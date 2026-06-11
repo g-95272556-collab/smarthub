@@ -1242,8 +1242,8 @@
           <div id="dash-takwim-legend" class="dash-takwim-legend"></div>
         </div>
 
-        <!-- Status Kehadiran Guru Minggu Ini -->
-        <div class="card dashboard-guru-card dash-card-teachers-att">
+        <!-- Status Kehadiran Guru Minggu Ini (Admin Sahaja) -->
+        <div class="card dashboard-guru-card dash-card-teachers-att" id="dash-card-admin-teachers-att">
           <div class="sc-deco"></div>
           <div class="sc-shimmer"></div>
           <div class="section-header">
@@ -1263,6 +1263,45 @@
             </table>
           </div>
         </div>
+
+        <!-- Rumusan Kehadiran Semua Guru - Minggu Ini (Admin Sahaja) -->
+        <div class="card dashboard-guru-card dash-card-admin-teachers-summary" id="dash-card-admin-teachers-summary">
+          <div class="sc-deco"></div>
+          <div class="sc-shimmer"></div>
+          <div class="section-header">
+            <h2 class="section-title-icon"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-bar-chart-3"></use></svg> Rumusan Kehadiran Semua Guru (Minggu Ini)</h2>
+          </div>
+          <div class="table-wrap">
+            <table class="responsive-mobile-table">
+              <thead>
+                <tr><th>Hari / Tarikh</th><th>Hadir</th><th>Lewat</th><th>Cuti / MC</th><th>Tiada Rekod</th></tr>
+              </thead>
+              <tbody id="dashAdminTeachersSummaryBody">
+                <tr><td colspan="5" class="dash-note-cell">Memuatkan rumusan kehadiran...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Rumusan Kehadiran Saya - Minggu Ini (Guru Sahaja) -->
+        <div class="card dashboard-guru-card dash-card-teacher-my-att" id="dash-card-teacher-my-att">
+          <div class="sc-deco"></div>
+          <div class="sc-shimmer"></div>
+          <div class="section-header">
+            <h2 class="section-title-icon"><svg class="lucide-icon" width="20" height="20"><use href="#lucide-clipboard-check"></use></svg> Rumusan Kehadiran Saya (Minggu Ini)</h2>
+          </div>
+          <div class="table-wrap">
+            <table class="responsive-mobile-table">
+              <thead>
+                <tr><th>Hari / Tarikh</th><th>Masa Masuk</th><th>Status</th><th>Catatan</th></tr>
+              </thead>
+              <tbody id="dashTeacherMyAttBody">
+                <tr><td colspan="4" class="dash-note-cell">Memuatkan rumusan kehadiran anda...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
 
         <!-- Murid Tidak Hadir -->
         <div class="card dash-card-students-att">

@@ -3863,6 +3863,108 @@ function renderDashGuruTable(rows, isninStr, jumaatStr) {
   }).join('');
 }
 
+function renderAdminTeachersSummary(parsedGuru, today, julatMinggu, teacherList) {
+  var summaryBody = document.getElementById('dashAdminTeachersSummaryBody');
+  if (!summaryBody) return;
+  
+  var days = [];
+  for (var i = 0; i < 5; i++) {
+    var ymd = addDaysYMD(julatMinggu.isnin, i);
+    var d = parseLocalDateYMD(ymd);
+    var dayName = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'][d.getDay()];
+    days.push({ ymd: ymd, name: dayName });
+  }
+
+  var html = '';
+  for (var j = 0; j < days.length; j++) {
+    var day = days[j];
+    if (day.ymd > today) {
+      html += '<tr>' +
+        '<td data-label="Hari / Tarikh"><strong>' + day.name + '</strong> <span style="font-size:0.8rem;color:var(--muted)">(' + day.ymd + ')</span></td>' +
+        '<td colspan="4" style="color:var(--muted);text-align:center;font-style:italic">Belum bermula</td>' +
+        '</tr>';
+    } else {
+      var dayAtt = parsedGuru.filter(function(r) { return String(r.tarikh || '').startsWith(day.ymd); });
+      var uniqueAtt = [];
+      var seen = new Set();
+      for (var k = 0; k < dayAtt.length; k++) {
+        var att = dayAtt[k];
+        var key = String(att.email || att.nama).toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueAtt.push(att);
+        }
+      }
+      var hadirCount = uniqueAtt.filter(function(r) { return r.status === 'Hadir'; }).length;
+      var lewatCount = uniqueAtt.filter(function(r) { return r.status === 'Lewat'; }).length;
+      var cutiCount = uniqueAtt.filter(function(r) { return ['Cuti','MC','Sakit','Cuti Kecemasan','Cuti Rehat'].includes(r.status); }).length;
+      var totalActive = teacherList.length || 12;
+      var tiadaRekod = totalActive - hadirCount - lewatCount - cutiCount;
+      if (tiadaRekod < 0) tiadaRekod = 0;
+
+      html += '<tr>' +
+        '<td data-label="Hari / Tarikh"><strong>' + day.name + '</strong> <span style="font-size:0.8rem;color:var(--muted)">(' + day.ymd + ')</span></td>' +
+        '<td data-label="Hadir"><span class="badge badge-green">' + hadirCount + ' orang</span></td>' +
+        '<td data-label="Lewat"><span class="badge badge-amber">' + lewatCount + ' orang</span></td>' +
+        '<td data-label="Cuti / MC"><span class="badge badge-blue">' + cutiCount + ' orang</span></td>' +
+        '<td data-label="Tiada Rekod"><span class="badge badge-red">' + tiadaRekod + ' orang</span></td>' +
+        '</tr>';
+    }
+  }
+  summaryBody.innerHTML = html;
+}
+
+function renderTeacherPersonalSummary(parsedGuru, today, julatMinggu) {
+  var teacherBody = document.getElementById('dashTeacherMyAttBody');
+  if (!teacherBody) return;
+
+  var days = [];
+  for (var i = 0; i < 5; i++) {
+    var ymd = addDaysYMD(julatMinggu.isnin, i);
+    var d = parseLocalDateYMD(ymd);
+    var dayName = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'][d.getDay()];
+    days.push({ ymd: ymd, name: dayName });
+  }
+
+  var myEmail = String(APP.user && APP.user.email || '').toLowerCase().trim();
+  var myName = String(APP.user && APP.user.name || '').toLowerCase().trim();
+
+  var html = '';
+  for (var j = 0; j < days.length; j++) {
+    var day = days[j];
+    if (day.ymd > today) {
+      html += '<tr>' +
+        '<td data-label="Hari / Tarikh"><strong>' + day.name + '</strong> <span style="font-size:0.8rem;color:var(--muted)">(' + day.ymd + ')</span></td>' +
+        '<td colspan="3" style="color:var(--muted);text-align:center;font-style:italic">Belum bermula</td>' +
+        '</tr>';
+    } else {
+      var myRecord = parsedGuru.find(function(r) {
+        var matchEmail = String(r.email || '').toLowerCase().trim() === myEmail;
+        var matchName = String(r.nama || '').toLowerCase().trim() === myName;
+        return String(r.tarikh || '').startsWith(day.ymd) && (matchEmail || (myName && matchName));
+      });
+
+      if (myRecord) {
+        html += '<tr>' +
+          '<td data-label="Hari / Tarikh"><strong>' + day.name + '</strong> <span style="font-size:0.8rem;color:var(--muted)">(' + day.ymd + ')</span></td>' +
+          '<td data-label="Masa Masuk"><strong>' + (myRecord.masa || '-') + '</strong></td>' +
+          '<td data-label="Status">' + statusBadge(myRecord.status) + '</td>' +
+          '<td data-label="Catatan" style="font-size:0.78rem;color:var(--muted)">' + (myRecord.catatan || '-') + '</td>' +
+          '</tr>';
+      } else {
+        html += '<tr>' +
+          '<td data-label="Hari / Tarikh"><strong>' + day.name + '</strong> <span style="font-size:0.8rem;color:var(--muted)">(' + day.ymd + ')</span></td>' +
+          '<td data-label="Masa Masuk"><strong>-</strong></td>' +
+          '<td data-label="Status"><span class="badge badge-red">Tiada Rekod</span></td>' +
+          '<td data-label="Catatan" style="font-size:0.78rem;color:var(--muted)">-</td>' +
+          '</tr>';
+      }
+    }
+  }
+  teacherBody.innerHTML = html;
+}
+
+
 
 
 // ── GOOGLE AUTH ────────────────────────────────────────────────
@@ -4975,6 +5077,8 @@ async function refreshDashboard() {
   showSkeleton('dashChartWrap', 'chart');
   showSkeleton('dash-acara-akan-datang', 'list');
   showSkeleton('dashGuruBody', 'table-guru');
+  showSkeleton('dashAdminTeachersSummaryBody', 'table-guru');
+  showSkeleton('dashTeacherMyAttBody', 'table-guru');
   showSkeleton('dash-murid-tidak-hadir-list', 'list');
   showSkeleton('dash-birthday-list', 'grid-birthday');
 
@@ -4984,11 +5088,13 @@ async function refreshDashboard() {
       var julatMinggu = getJulatMingguSemasa();
       var results = await Promise.allSettled([
         callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_GURU' }),
-        callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' })
+        callWorker({ action: 'readSheet', sheetKey: 'KEHADIRAN_MURID' }),
+        getGuruList()
       ]);
-      var guruRes = results[0], muridRes = results[1];
+      var guruRes = results[0], muridRes = results[1], listRes = results[2];
+      var teachers = (listRes && listRes.status === 'fulfilled') ? listRes.value : [];
       if (guruRes.status === 'fulfilled' && guruRes.value.success) {
-        updateDashboardGuru(guruRes.value.rows || [], today, julatMinggu);
+        updateDashboardGuru(guruRes.value.rows || [], today, julatMinggu, teachers);
       }
       if (muridRes.status === 'fulfilled' && muridRes.value.success) {
         updateDashboardMurid((muridRes.value.rows || []).map(parseKehadiranMuridRow), today);
@@ -5008,16 +5114,38 @@ function getJulatMingguSemasa() {
   };
 }
 
-function updateDashboardGuru(allGuru, today, julatMinggu) {
+function updateDashboardGuru(allGuru, today, julatMinggu, teacherList) {
   var parsedGuru = allGuru.map(parseKehadiranGuruRow).filter(function(r){ return r.nama && r.tarikh && !isPunchOutStatus(r.status); });
   var todayGuru = parsedGuru.filter(function(r){ return String(r.tarikh || '').startsWith(today); });
-  var weekGuru = parsedGuru.filter(function(r){
-    var t = String(r.tarikh || '').split('T')[0];
-    return t >= julatMinggu.isnin && t <= julatMinggu.jumaat;
-  });
+  
+  var cardAdminAtt = document.getElementById('dash-card-admin-teachers-att');
+  var cardAdminSum = document.getElementById('dash-card-admin-teachers-summary');
+  var cardTeacherMy = document.getElementById('dash-card-teacher-my-att');
+  
+  var isAdmin = isPentadbir();
+  
+  if (isAdmin) {
+    if (cardAdminAtt) cardAdminAtt.classList.remove('is-hidden');
+    if (cardAdminSum) cardAdminSum.classList.remove('is-hidden');
+    if (cardTeacherMy) cardTeacherMy.classList.add('is-hidden');
+    
+    var weekGuru = parsedGuru.filter(function(r){
+      var t = String(r.tarikh || '').split('T')[0];
+      return t >= julatMinggu.isnin && t <= julatMinggu.jumaat;
+    });
+    renderDashGuruTable(weekGuru, julatMinggu.isnin, julatMinggu.jumaat);
+    renderAdminTeachersSummary(parsedGuru, today, julatMinggu, teacherList || []);
+  } else {
+    if (cardAdminAtt) cardAdminAtt.classList.add('is-hidden');
+    if (cardAdminSum) cardAdminSum.classList.add('is-hidden');
+    if (cardTeacherMy) cardTeacherMy.classList.remove('is-hidden');
+    
+    renderTeacherPersonalSummary(parsedGuru, today, julatMinggu);
+  }
+  
+  var totalActive = (teacherList && teacherList.length) ? teacherList.length : 12;
   animateCounter('dash-guru-hadir', todayGuru.filter(function(r){ return r.status === 'Hadir' || r.status === 'Lewat'; }).length);
-  setText('dash-guru-sub', 'hadir hari ini daripada 12');
-  renderDashGuruTable(weekGuru, julatMinggu.isnin, julatMinggu.jumaat);
+  setText('dash-guru-sub', 'hadir hari ini daripada ' + totalActive);
 }
 
 async function loadGuruProfile() {
