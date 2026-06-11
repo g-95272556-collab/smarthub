@@ -13994,6 +13994,42 @@ async function saveD1EditableSheet() {
   }
   setD1EditorStatus('Menyimpan sheet ' + sheetKey + '...', 'info');
   try {
+    if (sheetKey === 'GURU') {
+      try {
+        const oldData = await callWorker({ action: 'readSheet', sheetKey: 'GURU' });
+        if (oldData && oldData.success && oldData.rows) {
+          const oldEmails = oldData.rows.slice(1).map(r => String(r[1] || '').trim().toLowerCase()).filter(Boolean);
+          const newEmails = rows.slice(1).map(r => String(r[1] || '').trim().toLowerCase()).filter(Boolean);
+          const deletedEmails = oldEmails.filter(email => !newEmails.includes(email));
+          if (deletedEmails.length > 0) {
+            const configRes = await callBlobStoreGet('USER_CREDENTIALS_JSON');
+            if (configRes && configRes.success && configRes.value) {
+              let creds = {};
+              try {
+                creds = JSON.parse(configRes.value);
+                let updated = false;
+                deletedEmails.forEach(email => {
+                  if (creds[email]) {
+                    delete creds[email];
+                    updated = true;
+                  }
+                });
+                if (updated) {
+                  await callBlobStoreSet({
+                    USER_CREDENTIALS_JSON: JSON.stringify(creds)
+                  });
+                  showToast('Kredensial guru dipadam diselaraskan ke Blob Store.', 'info');
+                }
+              } catch (e) {
+                console.error('Gagal memproses draf kredensial di Blob Store:', e);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal membandingkan emel guru untuk pembersihan Blob Store:', err);
+      }
+    }
     const data = await callWorker({ action: 'replaceSheet', sheetKey: sheetKey, rows: rows });
     if (!data.success) throw new Error(data.error || 'Gagal menyimpan sheet ' + sheetKey + '.');
     clearD1EditorDraft(sheetKey);

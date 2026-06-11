@@ -1302,6 +1302,105 @@ async function d1ReplaceSheet(env, sheetKey, rows) {
   const sheetName = normalizeSheetKey(sheetKey);
   if (!sheetName) return;
   const safeRows = Array.isArray(rows) ? rows.filter((row) => Array.isArray(row)) : [];
+
+  // Clean up deleted teachers or students if sheetName is GURU or MURID
+  if (sheetName === DIRECT_SHEETS.GURU) {
+    try {
+      const oldRows = await d1ReadSheetRows(env, DIRECT_SHEETS.GURU);
+      const oldEmails = oldRows.slice(1).map(r => String(r[1] || '').trim().toLowerCase()).filter(Boolean);
+      const newEmails = safeRows.slice(1).map(r => String(r[1] || '').trim().toLowerCase()).filter(Boolean);
+      const deletedEmails = oldEmails.filter(email => !newEmails.includes(email));
+
+      if (deletedEmails.length > 0) {
+        // 1. Delete from user_credentials table in D1
+        for (const email of deletedEmails) {
+          await env.DB.prepare("DELETE FROM user_credentials WHERE email = ?").bind(email).run();
+        }
+
+        // 2. Delete attendance records from KEHADIRAN_GURU in D1
+        const oldAttendance = await d1ReadSheetRows(env, DIRECT_SHEETS.KEHADIRAN_GURU);
+        const newAttendance = oldAttendance.filter(row => {
+          const email = String(row[2] || "").trim().toLowerCase();
+          return !deletedEmails.includes(email);
+        });
+        if (newAttendance.length < oldAttendance.length) {
+          const cleanAttendance = Array.isArray(newAttendance) ? newAttendance.filter((row) => Array.isArray(row)) : [];
+          await env.DB.prepare("DELETE FROM sheet_rows WHERE sheet_name = ?").bind(DIRECT_SHEETS.KEHADIRAN_GURU).run();
+          if (cleanAttendance.length) {
+            const statements = cleanAttendance.map((row, idx) =>
+              env.DB.prepare(
+                "INSERT INTO sheet_rows (sheet_name, row_index, row_json, updated_at) VALUES (?, ?, ?, ?)"
+              ).bind(DIRECT_SHEETS.KEHADIRAN_GURU, idx, d1RowToJson(row), getMalaysiaDateTimeString())
+            );
+            await env.DB.batch(statements);
+          }
+        }
+
+        // 3. Delete from D1's CONFIG USER_CREDENTIALS_JSON
+        const config = await d1GetConfig(env);
+        if (config && config.USER_CREDENTIALS_JSON) {
+          try {
+            const credentialsMap = JSON.parse(config.USER_CREDENTIALS_JSON);
+            let updated = false;
+            for (const email of deletedEmails) {
+              if (credentialsMap[email]) {
+                delete credentialsMap[email];
+                updated = true;
+              }
+            }
+            if (updated) {
+              await d1SetConfig(env, { USER_CREDENTIALS_JSON: JSON.stringify(credentialsMap) });
+            }
+          } catch (e) {
+            console.error("Gagal mengemaskini USER_CREDENTIALS_JSON di D1 CONFIG:", e);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Ralat semasa pembersihan data guru yang dipadam:", err);
+    }
+  } else if (sheetName === DIRECT_SHEETS.MURID) {
+    try {
+      const oldRows = await d1ReadSheetRows(env, DIRECT_SHEETS.MURID);
+      const oldStudents = oldRows.slice(1).map(r => ({
+        nama: String(r[0] || "").trim().toLowerCase(),
+        kelas: String(r[1] || "").trim().toLowerCase()
+      })).filter(s => s.nama);
+      const newStudents = safeRows.slice(1).map(r => ({
+        nama: String(r[0] || "").trim().toLowerCase(),
+        kelas: String(r[1] || "").trim().toLowerCase()
+      })).filter(s => s.nama);
+
+      const deletedStudents = oldStudents.filter(os =>
+        !newStudents.some(ns => ns.nama === os.nama && ns.kelas === os.kelas)
+      );
+
+      if (deletedStudents.length > 0) {
+        // Delete attendance records from KEHADIRAN_MURID in D1
+        const oldAttendance = await d1ReadSheetRows(env, DIRECT_SHEETS.KEHADIRAN_MURID);
+        const newAttendance = oldAttendance.filter(row => {
+          const name = String(row[3] || "").trim().toLowerCase();
+          const kelas = String(row[2] || "").trim().toLowerCase();
+          return !deletedStudents.some(ds => ds.nama === name && ds.kelas === kelas);
+        });
+        if (newAttendance.length < oldAttendance.length) {
+          const cleanAttendance = Array.isArray(newAttendance) ? newAttendance.filter((row) => Array.isArray(row)) : [];
+          await env.DB.prepare("DELETE FROM sheet_rows WHERE sheet_name = ?").bind(DIRECT_SHEETS.KEHADIRAN_MURID).run();
+          if (cleanAttendance.length) {
+            const statements = cleanAttendance.map((row, idx) =>
+              env.DB.prepare(
+                "INSERT INTO sheet_rows (sheet_name, row_index, row_json, updated_at) VALUES (?, ?, ?, ?)"
+              ).bind(DIRECT_SHEETS.KEHADIRAN_MURID, idx, d1RowToJson(row), getMalaysiaDateTimeString())
+            );
+            await env.DB.batch(statements);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Ralat semasa pembersihan data murid yang dipadam:", err);
+    }
+  }
+
   await d1ClearSheet(env, sheetName);
   if (safeRows.length) {
     await d1UpdateSheetValues(env, sheetName, safeRows);
