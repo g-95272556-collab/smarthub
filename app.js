@@ -6505,7 +6505,7 @@ async function notifMuridTidakHadirJam9() {
   } catch(e) { localStorage.removeItem(notif9Key); }
 }
 
-setInterval(function() { updateWaktuStatus(); semakDanNotifGuruBelumIsi(); semakDanHantarMaklumanMuridGuruKelasAuto(); notifMuridTidakHadirJam9(); semakNotifHariLahirAuto(); semakNotifGuruBertugasMingguDepan(); semakDanHantarNotifikasiTakwimGuruAuto(); maybeAutoHadir(false); maybeAutoPunchOut(false); }, 60000);
+setInterval(function() { updateWaktuStatus(); maybeAutoHadir(false); maybeAutoPunchOut(false); }, 60000);
 setInterval(updateWaktuStatus, 1000);
 
 function parseKehadiranGuruRow(r) {
