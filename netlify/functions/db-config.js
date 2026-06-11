@@ -2,7 +2,7 @@ const { getStore } = require("@netlify/blobs");
 
 const STORE_NAME = "smarthub-config";
 const BLOB_KEY = "config";
-const FORCED_ADMIN_EMAILS = ["once2502@gmail.com"];
+const FORCED_ADMIN_EMAILS = [];
 
 const ALLOWED_EXACT_KEYS = new Set([
   "ADMIN_EMAILS_JSON",

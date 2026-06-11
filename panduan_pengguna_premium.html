@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan SmartSchoolHub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #E0E7FF;
+            --secondary: #10B981;
+            --secondary-light: #D1FAE5;
+            --dark: #1F2937;
+            --light: #F9FAFB;
+            --gray: #6B7280;
+            --white: #FFFFFF;
+            --danger: #EF4444;
+            --danger-light: #FEE2E2;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--white);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), #3B82F6);
+            color: var(--white);
+            padding: 50px 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .section {
+            padding: 40px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Install Cards */
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--light);
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 25px;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .card h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .card ol {
+            padding-left: 20px;
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        .card li {
+            margin-bottom: 8px;
+        }
+
+        .highlight {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Role Sections */
+        .role-box {
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .role-guru {
+            background-color: var(--secondary-light);
+            border-left: 5px solid var(--secondary);
+        }
+
+        .role-admin {
+            background-color: var(--danger-light);
+            border-left: 5px solid var(--danger);
+        }
+
+        .role-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .role-guru .role-title { color: #047857; }
+        .role-admin .role-title { color: #B91C1C; }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .feature-item {
+            background: rgba(255,255,255,0.6);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .feature-item h4 {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* Print styling for PDF */
+        @media print {
+            body { padding: 0; background: white; }
+            .container { box-shadow: none; max-width: 100%; border-radius: 0; }
+            .card { break-inside: avoid; }
+            .section { page-break-inside: avoid; }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: var(--primary);
+            color: white;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <span class="badge">Panduan Rasmi 2026</span>
+        <h1>SmartSchoolHub</h1>
+        <p>Aplikasi Web Progresif (PWA) SK Kiandongo</p>
+    </div>
+
+    <!-- Section: Instalasi -->
+    <div class="section">
+        <h2 class="section-title">📲 Cara Pemasangan (PWA)</h2>
+        <p style="margin-bottom: 25px; color: var(--gray);">Aplikasi ini tidak memerlukan storan besar. Pasang terus dari pelayar web anda untuk akses pantas.</p>
+        
+        <div class="grid-cards">
+            <div class="card">
+                <div class="card-icon">💻</div>
+                <h3>PC / Laptop (Windows/Mac)</h3>
+                <ol>
+                    <li>Buka <span class="highlight">Chrome / Edge</span>.</li>
+                    <li>Layari URL <i>xbasmarthub.netlify.app</i>.</li>
+                    <li>Klik ikon <strong>Install</strong> di hujung kanan kotak URL (Address Bar).</li>
+                    <li>Klik <strong>Install</strong> pada pop-up.</li>
+                </ol>
+            </div>
+            
+            <div class="card">
+                <div class="card-icon">📱</div>
+                <h3>Android (Telefon/Tablet)</h3>
+                <ol>
+                    <li>Buka <span class="highlight">Google Chrome</span>.</li>
+                    <li>Layari portal rasmi.</li>
+                    <li>Klik menu <strong>tiga titik (⋮)</strong> di atas kanan.</li>
+                    <li>Pilih <strong>Add to Home screen</strong>.</li>
+                </ol>
+            </div>
+
+            <div class="card">
+                <div class="card-icon">🍎</div>
+                <h3>iPhone / iPad (iOS)</h3>
+                <ol>
+                    <li>Buka pelayar <span class="highlight">Safari</span>.</li>
+                    <li>Layari portal rasmi.</li>
+                    <li>Ketik ikon <strong>Share</strong> (kotak beranak panah atas).</li>
+                    <li>Pilih <strong>Add to Home Screen</strong>.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Log Masuk -->
+    <div class="section">
+        <h2 class="section-title">🔐 Cara Log Masuk</h2>
+        <p style="color: var(--gray);">Log masuk adalah menggunakan sistem keselamatan <strong>Single Sign-On (SSO)</strong>.</p>
+        <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin-top: 15px; border-left: 4px solid var(--primary);">
+            <p><strong>Langkah 1:</strong> Buka aplikasi SmartSchoolHub yang telah dipasang.</p>
+            <p><strong>Langkah 2:</strong> Pilih log masuk menggunakan akaun rasmi (cth: e-mel MOE DL).</p>
+            <p><strong>Langkah 3:</strong> Selepas berjaya, sistem akan memaparkan Dashboard berdasarkan peranan anda.</p>
+        </div>
+    </div>
+
+    <!-- Section: Guru -->
+    <div class="section">
+        <div class="role-box role-guru">
+            <h2 class="role-title">👨‍🏫 Panduan Khas: Guru</h2>
+            <p style="margin-bottom: 20px; color: #065F46;">Fokus utama paparan guru adalah kelancaran tugas harian dan pemantauan aktiviti.</p>
+            
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h4 style="color: #047857;">📊 Dashboard Utama</h4>
+                    <p style="font-size: 0.9rem; color: #064E3B;">Melihat pengumuman rasmi sekolah terkini dan ringkasan am tugasan semasa sebaik sahaja log masuk.</p>
+                </div>
+                <div class="feature-item">
+                    <h4 style="color: #047857;">📅 Modul Takwim</h4>
+                    <p style="font-size: 0.9rem; color: #064E3B;">Semak takwim sekolah, jadual mesyuarat, dan acara. Boleh ditapis mengikut bulan untuk perancangan.</p>
+                </div>
+                <div class="feature-item">
+                    <h4 style="color: #047857;">🏃 Modul Aktiviti</h4>
+                    <p style="font-size: 0.9rem; color: #064E3B;">Isi laporan kehadiran kokurikulum dan baca arahan aktiviti terkini terus dari telefon bimbit.</p>
+                </div>
+                <div class="feature-item">
+                    <h4 style="color: #047857;">📚 Modul DSKP</h4>
+                    <p style="font-size: 0.9rem; color: #064E3B;">Rujukan pantas Dokumen Standard Kurikulum (DSKP) tanpa perlu memuat turun fail berasingan.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Admin -->
+    <div class="section">
+        <div class="role-box role-admin">
+            <h2 class="role-title">⚙️ Panduan Khas: Pentadbir (Admin)</h2>
+            <p style="margin-bottom: 20px; color: #991B1B;">Akses penyuntingan untuk mengurus kandungan aplikasi secara berpusat (Cloudflare D1).</p>
+            
+            <div class="feature-list">
+                <div class="feature-item">
+                    <h4 style="color: #B91C1C;">✏️ Pengurusan Takwim & Aktiviti</h4>
+                    <p style="font-size: 0.9rem; color: #7F1D1D;">Tambah, kemaskini, atau padam data takwim dan program. Perubahan akan terpapar secara langsung kepada semua guru apabila disegerak (sync).</p>
+                </div>
+                <div class="feature-item">
+                    <h4 style="color: #B91C1C;">🛠️ Tetapan Konfigurasi</h4>
+                    <p style="font-size: 0.9rem; color: #7F1D1D;">Kawal tetapan notifikasi (`TAKWIM_GURU_NOTIF_*`) dan data kritikal lain melalui panel Admin.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" style="text-align: center; color: var(--gray); font-size: 0.9rem;">
+        <p>Bantuan Teknikal: Sila muat semula (Refresh) jika data tidak dikemas kini.</p>
+        <p style="margin-top: 10px;">&copy; 2026 Unit ICT SK Kiandongo.</p>
+    </div>
+</div>
+
+</body>
+</html>
