@@ -1821,7 +1821,7 @@ const CONFIG_SYNC_MAP = {
 };
 
 function configSyncPush() {
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return;
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return;
   var payload = {};
   for (var lsKey in CONFIG_SYNC_MAP) {
     var val = localStorage.getItem(lsKey);
@@ -2119,7 +2119,7 @@ async function saveAttendanceNotificationConfig() {
     showToast('Konfigurasi kehadiran disimpan pada peranti ini.', 'success');
     return;
   }
-  if (!APP.user || !APP.user.idToken) {
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) {
     if (result) {
       result.classList.remove('is-hidden');
       result.textContent = 'Konfigurasi disimpan pada peranti ini. Untuk simpan ke backend, sila log masuk semula sebagai pentadbir.';
@@ -2474,7 +2474,7 @@ function pruneDutyNotifDispatchState(state, todayYmd) {
   return next;
 }
 async function refreshDutyNotifDispatchState() {
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return {};
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return {};
   var data = await callWorker({ action: 'getConfig' });
   if (!data || !data.success) throw new Error('Gagal memuat status notifikasi guru bertugas.');
   applyBackendOperationalConfig(data.config || {});
@@ -2492,7 +2492,7 @@ async function saveDutyNotifDispatchState(state) {
 async function acquireDutyNotifDispatchSlot(monday, triggerDate) {
   var localKey = 'ssh_duty_notif_' + String(monday || '') + '_' + String(triggerDate || '');
   if (localStorage.getItem(localKey)) return { ok: false, localKey: localKey };
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken || !isPentadbir()) return { ok: true, localKey: localKey, shared: false };
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken) || !isPentadbir()) return { ok: true, localKey: localKey, shared: false };
   var owner = getTakwimGuruNotifRunnerId();
   var state = await refreshDutyNotifDispatchState();
   var now = new Date();
@@ -2508,13 +2508,13 @@ async function acquireDutyNotifDispatchSlot(monday, triggerDate) {
 async function markDutyNotifDispatchSent(slot, monday, triggerDate) {
   if (!slot || !slot.localKey) return;
   localStorage.setItem(slot.localKey, '1');
-  if (!slot.shared || !APP.workerUrl || !APP.user || !APP.user.idToken || !isPentadbir()) return;
+  if (!slot.shared || !APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken) || !isPentadbir()) return;
   var state = await refreshDutyNotifDispatchState();
   state[slot.localKey] = { status: 'sent', owner: slot.owner || getTakwimGuruNotifRunnerId(), monday: monday || '', triggerDate: triggerDate || getTodayYMD(), sentAt: new Date().toISOString() };
   await saveDutyNotifDispatchState(state);
 }
 async function releaseDutyNotifDispatchSlot(slot) {
-  if (!slot || !slot.localKey || !slot.shared || !APP.workerUrl || !APP.user || !APP.user.idToken || !isPentadbir()) return;
+  if (!slot || !slot.localKey || !slot.shared || !APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken) || !isPentadbir()) return;
   var state = await refreshDutyNotifDispatchState();
   if (state[slot.localKey] && state[slot.localKey].status === 'locked') {
     delete state[slot.localKey];
@@ -2831,7 +2831,7 @@ async function syncTakwimKeJadualBertugas(senyap) {
   renderJadualBertugasOverview();
   renderJadualBertugasEditTable();
 
-  if (dikemaskini > 0 && APP.workerUrl && APP.user && APP.user.idToken && isPentadbir()) {
+  if (dikemaskini > 0 && APP.workerUrl && APP.user && (APP.user.idToken || APP.user.sshSessionToken) && isPentadbir()) {
     try {
       var data = await callWorker({ action: 'saveJadualBertugas', rows: _jadualBertugas });
       if (!data || !data.success) throw new Error(data && data.error || 'Gagal menyimpan jadual');
@@ -3711,7 +3711,7 @@ async function saveDutyNotificationConfig() {
     showToast('Tetapan notifikasi guru bertugas disimpan pada peranti ini.', 'success');
     return;
   }
-  if (!APP.user || !APP.user.idToken) {
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) {
     if (result) {
       result.style.display = 'block';
       result.classList.remove('is-hidden');
@@ -3820,7 +3820,7 @@ async function saveTakwimGuruNotificationConfig() {
     showToast('Tetapan notifikasi takwim guru disimpan pada peranti ini.', 'success');
     return;
   }
-  if (!APP.user || !APP.user.idToken) {
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) {
     if (result) {
       result.classList.remove('is-hidden');
       result.textContent = 'Tetapan disimpan pada peranti ini. Untuk sync backend, sila log masuk semula sebagai pentadbir.';
@@ -5026,6 +5026,7 @@ function getWorkerAuthPayload() {
   if (!APP.user) return null;
   return {
     idToken: APP.user.idToken || '',
+    sshSessionToken: APP.user.sshSessionToken || '',
     email: APP.user.email || '',
     name: APP.user.name || '',
     sub: APP.user.sub || ''
@@ -5033,7 +5034,7 @@ function getWorkerAuthPayload() {
 }
 
 async function refreshVerifiedUserRole() {
-  if (!APP.user || !APP.user.idToken) return null;
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return null;
   const verifiedUser = await verifyGoogleSessionWithBackend(APP.user);
   APP.user = verifiedUser;
   setStoredSshUser(APP.user);
@@ -5056,7 +5057,7 @@ async function callAdminWorker(payload) {
 
 async function callWorkerWithTimeout(payload, timeoutMs) {
   if (!APP.workerUrl) throw new Error('Worker URL belum disimpan. Pergi ke Konfigurasi dahulu.');
-  if (needsAuthenticatedWorkerAction(payload) && (!APP.user || !APP.user.idToken)) {
+  if (needsAuthenticatedWorkerAction(payload) && (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken))) {
     throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   }
   var url = APP.workerUrl.replace(/\/+$/, '') + '/api';
@@ -5088,7 +5089,7 @@ async function callWorkerWithTimeout(payload, timeoutMs) {
 
 async function callWorker(payload) {
   if (!APP.workerUrl) throw new Error('Worker URL belum disimpan. Pergi ke Konfigurasi dahulu.');
-  if (needsAuthenticatedWorkerAction(payload) && (!APP.user || !APP.user.idToken)) {
+  if (needsAuthenticatedWorkerAction(payload) && (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken))) {
     throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   }
   const url = APP.workerUrl.replace(/\/+$/, '') + '/api';
@@ -5164,7 +5165,7 @@ async function pushFullSheet(sheetKey, headers, dataRows) {
 
 async function callWorkerAI(prompt, type) {
   if (!APP.workerUrl) throw new Error('Worker URL diperlukan');
-  if (!APP.user || !APP.user.idToken) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   const url = APP.workerUrl.replace(/\/+$/, '') + '/ai';
   const res = await fetch(url, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -5184,7 +5185,7 @@ async function callWorkerAI(prompt, type) {
 // Fallback automatik ke callWorkerAI jika endpoint tidak disokong (404/error)
 async function callWorkerAIStream(prompt, type, onChunk) {
   if (!APP.workerUrl) throw new Error('Worker URL diperlukan');
-  if (!APP.user || !APP.user.idToken) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   const url = APP.workerUrl.replace(/\/+$/, '') + '/ai/stream';
   try {
     const res = await fetch(url, {
@@ -8809,7 +8810,7 @@ function pruneTakwimGuruDispatchState(state, todayYmd) {
   return next;
 }
 async function refreshTakwimGuruDispatchState() {
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return {};
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return {};
   var data = await callWorker({ action: 'getConfig' });
   if (!data || !data.success) throw new Error('Gagal memuat status notifikasi takwim guru.');
   applyBackendOperationalConfig(data.config || {});
@@ -8835,7 +8836,7 @@ function isTakwimGuruDispatchEntryActive(entry, nowMs) {
 async function acquireTakwimGuruDispatchSlot(eventId, reminderType, triggerDate) {
   var localKey = getTakwimGuruNotifGuardKey(eventId, reminderType, triggerDate);
   if (localStorage.getItem(localKey)) return { ok: false, localKey: localKey };
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return { ok: true, localKey: localKey, shared: false };
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return { ok: true, localKey: localKey, shared: false };
 
   var owner = getTakwimGuruNotifRunnerId();
   var state = await refreshTakwimGuruDispatchState();
@@ -8867,7 +8868,7 @@ async function acquireTakwimGuruDispatchSlot(eventId, reminderType, triggerDate)
 async function markTakwimGuruDispatchSent(slot) {
   if (!slot || !slot.localKey) return;
   localStorage.setItem(slot.localKey, '1');
-  if (!slot.shared || !APP.workerUrl || !APP.user || !APP.user.idToken) return;
+  if (!slot.shared || !APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return;
   var state = await refreshTakwimGuruDispatchState();
   state[slot.localKey] = {
     status: 'sent',
@@ -8880,7 +8881,7 @@ async function markTakwimGuruDispatchSent(slot) {
   await saveTakwimGuruDispatchState(state);
 }
 async function releaseTakwimGuruDispatchSlot(slot) {
-  if (!slot || !slot.shared || !slot.localKey || !APP.workerUrl || !APP.user || !APP.user.idToken) return;
+  if (!slot || !slot.shared || !slot.localKey || !APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return;
   var state = await refreshTakwimGuruDispatchState();
   var current = state[slot.localKey];
   if (current && current.status === 'locked' && current.owner === slot.owner) {
@@ -8935,7 +8936,7 @@ function pruneBirthdayDispatchState(state, todayYmd) {
   return next;
 }
 async function refreshBirthdayDispatchState() {
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return {};
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return {};
   var data = await callWorker({ action: 'getConfig' });
   if (!data || !data.success) throw new Error('Gagal memuat status notifikasi hari lahir.');
   applyBackendOperationalConfig(data.config || {});
@@ -8961,7 +8962,7 @@ function isBirthdayDispatchEntryActive(entry, nowMs) {
 async function acquireBirthdayDispatchSlot(person, triggerDate) {
   var localKey = getBirthdayNotifGuardKey(person, triggerDate);
   if (localStorage.getItem(localKey)) return { ok: false, localKey: localKey };
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return { ok: true, localKey: localKey, shared: false, triggerDate: triggerDate };
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return { ok: true, localKey: localKey, shared: false, triggerDate: triggerDate };
 
   var owner = getBirthdayNotifRunnerId();
   var state = await refreshBirthdayDispatchState();
@@ -8993,7 +8994,7 @@ async function markBirthdayDispatchSent(slot, person) {
   if (!slot || !slot.localKey) return;
   localStorage.setItem(slot.localKey, '1');
   localStorage.setItem('ssh_notif_hl_' + String(slot.triggerDate || getTodayYMD()), '1');
-  if (!slot.shared || !APP.workerUrl || !APP.user || !APP.user.idToken) return;
+  if (!slot.shared || !APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return;
   var state = await refreshBirthdayDispatchState();
   state[slot.localKey] = {
     status: 'sent',
@@ -9005,7 +9006,7 @@ async function markBirthdayDispatchSent(slot, person) {
   await saveBirthdayDispatchState(state);
 }
 async function releaseBirthdayDispatchSlot(slot) {
-  if (!slot || !slot.shared || !slot.localKey || !APP.workerUrl || !APP.user || !APP.user.idToken) return;
+  if (!slot || !slot.shared || !slot.localKey || !APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return;
   var state = await refreshBirthdayDispatchState();
   var current = state[slot.localKey];
   if (current && current.status === 'locked' && current.owner === slot.owner) {
@@ -9014,7 +9015,7 @@ async function releaseBirthdayDispatchSlot(slot) {
   }
 }
 async function clearBirthdayDispatchStateForDate(triggerDate) {
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return false;
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return false;
   var state = await refreshBirthdayDispatchState();
   var changed = false;
   Object.keys(state || {}).forEach(function(key) {
@@ -9253,7 +9254,7 @@ function importHLCSV() {
       if (didChange) added++;
     });
     localStorage.setItem('ssh_hl_data', JSON.stringify(hlData));
-    if (APP.workerUrl && APP.user && APP.user.idToken) {
+    if (APP.workerUrl && APP.user && (APP.user.idToken || APP.user.sshSessionToken)) {
       saveHariLahirToBackend().catch(function(err) {
         console.warn('Simpan backend Hari Lahir selepas import gagal:', err);
       });
@@ -9300,7 +9301,7 @@ function openModalHariLahir() {
     showToast(nama + ' ditambah.', 'success');
     loadHariLahir(false);
   };
-  if (APP.workerUrl && APP.user && APP.user.idToken) {
+  if (APP.workerUrl && APP.user && (APP.user.idToken || APP.user.sshSessionToken)) {
     saveHariLahirToBackend().then(finalize).catch(function(e) {
       showToast('Rekod ditambah pada browser ini tetapi backend Hari Lahir gagal disimpan: ' + e.message, 'error');
       loadHariLahir(false);
@@ -9537,8 +9538,8 @@ async function testFonnteConnection() {
     showToast('Worker URL belum disimpan. Sila set di Konfigurasi > Sambungan Worker.', 'error');
     return;
   }
-  if (!APP.user || !APP.user.idToken) {
-    showToast('Sila log masuk Google terlebih dahulu untuk menghantar notifikasi.', 'error');
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) {
+    showToast('Sila log masuk terlebih dahulu untuk menghantar notifikasi.', 'error');
     return;
   }
   showToast('Menghantar mesej ujian sistem ke ' + testGroup + '...', 'info');
@@ -9590,7 +9591,7 @@ async function testTakwimNotif() {
 
 async function testTelegramConnection() {
   if (!APP.workerUrl) { showToast('Worker URL belum disimpan.', 'error'); return; }
-  if (!APP.user || !APP.user.idToken) { showToast('Sila log masuk Google dahulu.', 'error'); return; }
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) { showToast('Sila log masuk terlebih dahulu.', 'error'); return; }
   if (!isTelegramBackendReady()) { showToast('Telegram Bot belum dikonfigurasi. Sila set di Konfigurasi > Komunikasi.', 'warning'); return; }
 
   var school = getSchoolTemplateName();
@@ -9652,8 +9653,8 @@ function getTestGroup() {
     showToast('Tiada Group ID Ujian. Sila set di Konfigurasi > Komunikasi.', 'warning');
     return '';
   }
-  if (!APP.user || !APP.user.idToken) {
-    showToast('Sila log masuk Google dahulu.', 'error');
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) {
+    showToast('Sila log masuk terlebih dahulu.', 'error');
     return '';
   }
   return testGroup;
@@ -12368,7 +12369,7 @@ function deriveBirthdayRecordsFromMuridRows(rows) {
 }
 
 async function saveHariLahirToBackend() {
-  if (!APP.workerUrl || !APP.user || !APP.user.idToken) return false;
+  if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return false;
   var rows = [HARILAHIR_SHEET_HEADERS].concat(normalizeStoredHLData(hlData).map(function(record) {
     return buildHariLahirSheetRow(record);
   }).filter(Boolean));
@@ -12942,7 +12943,7 @@ async function updateWorkerStatus() {
       el.style.background = 'rgba(16,185,129,0.05)';
       el.style.borderColor = 'rgba(16,185,129,0.2)';
       el.style.color = 'var(--green)';
-      if (APP.user && APP.user.idToken) {
+      if (APP.user && (APP.user.idToken || APP.user.sshSessionToken)) {
         try {
           renderWorkerD1CapacityStatus(await callAdminWorker({ action: 'getDiagnostics' }));
         } catch (diagErr) {
@@ -15536,7 +15537,7 @@ function geminiGetUsageDate() {
 // supaya penggunaan dari mana-mana peranti/browser dikira bersama.
 async function aiSyncDariD1() {
   try {
-    if (!APP.workerUrl || !APP.user || !APP.user.idToken) return;
+    if (!APP.workerUrl || !APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) return;
     var today = geminiGetUsageDate ? geminiGetUsageDate() : new Date().toISOString().slice(0, 10);
     var resp = await callWorker({ action: 'getAiUsage', date: today });
     if (!resp || !resp.success || !resp.rows || !resp.rows.length) return;
@@ -15619,7 +15620,7 @@ function aiSimpanPenggunaan(data) {
   geminiRenderQuotaCards();
 
   // ── Sync ke Worker D1 (fire-and-forget — tidak sekat UI) ──
-  if (APP.workerUrl && APP.user && APP.user.idToken) {
+  if (APP.workerUrl && APP.user && (APP.user.idToken || APP.user.sshSessionToken)) {
     callWorker({
       action: 'saveAiUsage',
       email: APP.user.email || '',
@@ -16071,7 +16072,7 @@ async function callWorkerAIGemini(prompt, withImage) {
 
   // Fallback: Worker
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
-  if (!APP.user || !APP.user.idToken) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   var wUrl = APP.workerUrl.replace(/\/+$/, '') + '/ai/gemini';
   var wRes = await fetch(wUrl, {
     method: 'POST',
@@ -17371,7 +17372,7 @@ function lkExtractImejPlaceholders(text) {
 
 async function callWorkerAIImage(prompt) {
   if (!APP.workerUrl) throw new Error('Worker URL belum dikonfigurasi.');
-  if (!APP.user || !APP.user.idToken) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
+  if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) throw new Error('Sesi keselamatan tamat. Sila log keluar dan log masuk semula.');
   var url = APP.workerUrl.replace(/\/+$/, '') + '/ai/image';
   var res = await fetch(url, {
     method: 'POST',
