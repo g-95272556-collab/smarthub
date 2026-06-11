@@ -877,17 +877,74 @@
   <div class="login-card">
     <div class="login-logo" role="img" aria-label="Logo Rasmi SK Kiandongo"></div>
     <h1>SmartSchoolHub</h1>
-    <p>Selamat datang warga SK Kiandongo.<br>Log masuk menggunakan akaun Google sekolah.</p>
+    <p>Selamat datang warga SK Kiandongo.<br>Sila pilih kaedah log masuk ke sistem sekolah.</p>
     <div class="login-welcome-note">Akses rasmi sekolah</div>
 
-    <div class="login-action-panel">
-      <div class="login-action-title">Masuk ke sistem sekolah</div>
+    <!-- Login Mode Tabs -->
+    <div class="login-tabs" style="display:flex; border-bottom:1px solid rgba(26,79,160,0.1); margin-top:20px; margin-bottom:20px; gap:10px;">
+      <button id="tabGoogleBtn" class="login-tab-btn active" style="flex:1; padding:12px; background:none; border:none; border-bottom:2px solid var(--blue); color:var(--blue); font-weight:600; font-size:0.9rem; cursor:pointer; transition:all 0.3s ease;" type="button">
+        Akaun Google
+      </button>
+      <button id="tabEmailBtn" class="login-tab-btn" style="flex:1; padding:12px; background:none; border:none; border-bottom:2px solid transparent; color:var(--muted); font-weight:600; font-size:0.9rem; cursor:pointer; transition:all 0.3s ease;" type="button">
+        Emel & Kata Laluan
+      </button>
+    </div>
+
+    <!-- Google Login Panel -->
+    <div id="googleLoginPanel" class="login-action-panel">
+      <div class="login-action-title">Masuk menggunakan akaun Google</div>
       <!-- Real Google Sign-In Button -->
       <div class="g-sign-in-wrapper">
         <div id="googleSignInBtn"></div>
       </div>
       <a id="googleRedirectLoginBtn" class="btn btn-secondary btn-full is-hidden" href="https://accounts.google.com/o/oauth2/v2/auth?client_id=553204925712-qolkihf8jsmeash2ionto7035b352meh.apps.googleusercontent.com&amp;redirect_uri=https%3A%2F%2Fxbasmarthub.netlify.app%2F&amp;response_type=id_token&amp;scope=openid%20email%20profile&amp;prompt=select_account&amp;state=smarthub-static-fallback&amp;nonce=smarthub-static-fallback" style="margin-top:10px">Log Masuk Google (Redirect)</a>
       <div class="login-help-text">Gunakan email Google yang telah didaftarkan oleh pihak sekolah.</div>
+    </div>
+
+    <!-- Email & Password Login Panel -->
+    <div id="emailLoginPanel" class="login-action-panel is-hidden">
+      <!-- Login Form -->
+      <div id="emailLoginForm">
+        <div class="login-action-title">Log Masuk Emel</div>
+        <div style="display:flex; flex-direction:column; gap:12px; text-align:left; margin-bottom:12px;">
+          <div>
+            <label for="loginEmail" style="font-size:0.75rem; font-weight:600; margin-bottom:4px; display:block; color:var(--navy);">Alamat Emel</label>
+            <input id="loginEmail" type="email" placeholder="g-xxxxxx@moe-dl.edu.my" style="width:100%; padding:10px 12px; border:1px solid rgba(26,79,160,0.2); border-radius:10px; font-size:0.85rem; background:var(--surface); color:var(--text); box-sizing:border-box;">
+          </div>
+          <div>
+            <label for="loginPassword" style="font-size:0.75rem; font-weight:600; margin-bottom:4px; display:block; color:var(--navy);">Kata Laluan</label>
+            <input id="loginPassword" type="password" placeholder="Masukkan kata laluan" style="width:100%; padding:10px 12px; border:1px solid rgba(26,79,160,0.2); border-radius:10px; font-size:0.85rem; background:var(--surface); color:var(--text); box-sizing:border-box;">
+          </div>
+        </div>
+        <button id="emailLoginSubmitBtn" class="btn btn-primary btn-full" style="padding:12px; font-size:0.85rem; cursor:pointer;" type="button">Log Masuk</button>
+        <div style="margin-top:15px; text-align:center; font-size:0.8rem;">
+          Pengguna kali pertama? <a href="#" id="showRegisterBtn" style="color:var(--blue); font-weight:600; text-decoration:none;">Daftar di sini</a>
+        </div>
+      </div>
+
+      <!-- Registration Form -->
+      <div id="emailRegisterForm" class="is-hidden">
+        <div class="login-action-title">Daftar Kata Laluan</div>
+        <p style="font-size:0.75rem; color:var(--muted); text-align:center; margin-top:0; margin-bottom:15px;">Daftar kata laluan untuk emel anda yang telah tersenarai dalam data guru sekolah.</p>
+        <div style="display:flex; flex-direction:column; gap:12px; text-align:left; margin-bottom:12px;">
+          <div>
+            <label for="registerEmail" style="font-size:0.75rem; font-weight:600; margin-bottom:4px; display:block; color:var(--navy);">Alamat Emel</label>
+            <input id="registerEmail" type="email" placeholder="g-xxxxxx@moe-dl.edu.my" style="width:100%; padding:10px 12px; border:1px solid rgba(26,79,160,0.2); border-radius:10px; font-size:0.85rem; background:var(--surface); color:var(--text); box-sizing:border-box;">
+          </div>
+          <div>
+            <label for="registerPassword" style="font-size:0.75rem; font-weight:600; margin-bottom:4px; display:block; color:var(--navy);">Cipta Kata Laluan Baru</label>
+            <input id="registerPassword" type="password" placeholder="Minimum 6 aksara" style="width:100%; padding:10px 12px; border:1px solid rgba(26,79,160,0.2); border-radius:10px; font-size:0.85rem; background:var(--surface); color:var(--text); box-sizing:border-box;">
+          </div>
+          <div>
+            <label for="registerConfirmPassword" style="font-size:0.75rem; font-weight:600; margin-bottom:4px; display:block; color:var(--navy);">Sahkan Kata Laluan</label>
+            <input id="registerConfirmPassword" type="password" placeholder="Sahkan kata laluan baru" style="width:100%; padding:10px 12px; border:1px solid rgba(26,79,160,0.2); border-radius:10px; font-size:0.85rem; background:var(--surface); color:var(--text); box-sizing:border-box;">
+          </div>
+        </div>
+        <button id="emailRegisterSubmitBtn" class="btn btn-primary btn-full" style="padding:12px; font-size:0.85rem; cursor:pointer;" type="button">Daftar & Cipta</button>
+        <div style="margin-top:15px; text-align:center; font-size:0.8rem;">
+          Sudah daftar kata laluan? <a href="#" id="showLoginBtn" style="color:var(--blue); font-weight:600; text-decoration:none;">Log masuk di sini</a>
+        </div>
+      </div>
     </div>
 
     <!-- Developer Bypass Login Panel (visible only on localhost) -->

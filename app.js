@@ -4439,6 +4439,182 @@ function retryGSIRender() {
   else showToast('Google Sign-In belum siap dimuat. Tunggu sebentar dan cuba lagi.', 'error');
 }
 
+function initEmailPasswordLogin() {
+  const tabGoogle = document.getElementById('tabGoogleBtn');
+  const tabEmail = document.getElementById('tabEmailBtn');
+  const googlePanel = document.getElementById('googleLoginPanel');
+  const emailPanel = document.getElementById('emailLoginPanel');
+
+  if (tabGoogle && tabEmail && googlePanel && emailPanel) {
+    tabGoogle.onclick = function() {
+      tabGoogle.classList.add('active');
+      tabGoogle.style.borderBottom = '2px solid var(--blue)';
+      tabGoogle.style.color = 'var(--blue)';
+      tabEmail.classList.remove('active');
+      tabEmail.style.borderBottom = '2px solid transparent';
+      tabEmail.style.color = 'var(--muted)';
+      googlePanel.classList.remove('is-hidden');
+      emailPanel.classList.add('is-hidden');
+    };
+    tabEmail.onclick = function() {
+      tabEmail.classList.add('active');
+      tabEmail.style.borderBottom = '2px solid var(--blue)';
+      tabEmail.style.color = 'var(--blue)';
+      tabGoogle.classList.remove('active');
+      tabGoogle.style.borderBottom = '2px solid transparent';
+      tabGoogle.style.color = 'var(--muted)';
+      emailPanel.classList.remove('is-hidden');
+      googlePanel.classList.add('is-hidden');
+    };
+  }
+
+  // Toggle Forms
+  const showRegister = document.getElementById('showRegisterBtn');
+  const showLogin = document.getElementById('showLoginBtn');
+  const loginForm = document.getElementById('emailLoginForm');
+  const registerForm = document.getElementById('emailRegisterForm');
+
+  if (showRegister && showLogin && loginForm && registerForm) {
+    showRegister.onclick = function(e) {
+      e.preventDefault();
+      loginForm.classList.add('is-hidden');
+      registerForm.classList.remove('is-hidden');
+    };
+    showLogin.onclick = function(e) {
+      e.preventDefault();
+      registerForm.classList.add('is-hidden');
+      loginForm.classList.remove('is-hidden');
+    };
+  }
+
+  // Handle Login
+  const loginSubmit = document.getElementById('emailLoginSubmitBtn');
+  if (loginSubmit && !loginSubmit.onclick) {
+    loginSubmit.onclick = async function() {
+      const email = String(document.getElementById('loginEmail').value).trim();
+      const password = String(document.getElementById('loginPassword').value);
+
+      if (!email || !password) {
+        showToast('Sila masukkan emel dan kata laluan.', 'error');
+        return;
+      }
+
+      showToast('Melog masuk...', 'info');
+      try {
+        const data = await callWorker({
+          action: 'loginEmailPassword',
+          email: email,
+          password: password
+        });
+
+        if (!data.success) {
+          throw new Error(data.error || 'Ralat log masuk.');
+        }
+
+        showToast('Log masuk berjaya!', 'success');
+        
+        // Save user session
+        const actor = data.actor;
+        APP.user = {
+          email: actor.email,
+          name: actor.name,
+          role: actor.role,
+          jawatan: actor.jawatan,
+          kelas: actor.kelas,
+          idToken: '',
+          sshSessionToken: data.sshSessionToken,
+          sub: actor.sub
+        };
+
+        setStoredSshUser(APP.user);
+        enterApp(APP.user);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+  }
+
+  // Handle Registration
+  const registerSubmit = document.getElementById('emailRegisterSubmitBtn');
+  if (registerSubmit && !registerSubmit.onclick) {
+    registerSubmit.onclick = async function() {
+      const email = String(document.getElementById('registerEmail').value).trim();
+      const password = String(document.getElementById('registerPassword').value);
+      const confirmPassword = String(document.getElementById('registerConfirmPassword').value);
+
+      if (!email || !password || !confirmPassword) {
+        showToast('Sila lengkapkan semua medan.', 'error');
+        return;
+      }
+
+      const domain = email.split('@')[1];
+      if (domain === 'moe-dl.edu.my') {
+        showToast('Akaun moe-dl.edu.my dikesan. Sila log masuk menggunakan Google OAuth (ID DELIMa) di tab pertama.', 'warning');
+        return;
+      }
+
+      if (password.length < 6) {
+        showToast('Kata laluan mestilah sekurang-kurangnya 6 aksara.', 'error');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showToast('Kata laluan pengesahan tidak sepadan.', 'error');
+        return;
+      }
+
+      showToast('Mendaftar kata laluan...', 'info');
+      try {
+        const data = await callWorker({
+          action: 'registerEmailPassword',
+          email: email,
+          password: password
+        });
+
+        if (!data.success) {
+          throw new Error(data.error || 'Ralat pendaftaran.');
+        }
+
+        showToast('Pendaftaran berjaya!', 'success');
+
+        // Sync to Netlify Blobs
+        try {
+          const configRes = await callBlobStoreGet('USER_CREDENTIALS_JSON');
+          let creds = {};
+          if (configRes && configRes.success && configRes.value) {
+            try {
+              creds = JSON.parse(configRes.value);
+            } catch (e) {
+              creds = {};
+            }
+          }
+          creds[data.email] = {
+            hash: data.password_hash,
+            salt: data.salt
+          };
+          await callBlobStoreSet({
+            USER_CREDENTIALS_JSON: JSON.stringify(creds)
+          });
+          showToast('Kredensial diselaraskan ke Netlify Blobs.', 'success');
+        } catch (blobErr) {
+          console.error('Gagal menyelaras ke Netlify Blobs:', blobErr);
+          showToast('Pendaftaran berjaya di D1, ralat penyelarasan Blobs: ' + blobErr.message, 'info');
+        }
+
+        // Switch to login form
+        if (registerForm && loginForm) {
+          registerForm.classList.add('is-hidden');
+          loginForm.classList.remove('is-hidden');
+          const loginEmailInput = document.getElementById('loginEmail');
+          if (loginEmailInput) loginEmailInput.value = data.email;
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+  }
+}
+
 function showLoginPage() {
   document.getElementById('loginPage').classList.remove('is-hidden');
   const app = document.getElementById('appPage');
@@ -4447,6 +4623,7 @@ function showLoginPage() {
   bindLoginBootstrapActions();
   syncBootstrapConfigInputs();
   initDevLogin();
+  initEmailPasswordLogin();
   if (_gsiReady) renderGSIButton();
   else {
     const btn = document.getElementById('googleSignInBtn');

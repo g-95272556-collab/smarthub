@@ -15,6 +15,7 @@ const ADMIN_ROLES = [
   "guru besar",
   "penolong kanan hem",
   "penolong kanan kokurikulum",
+  "penolong kanan kokum",
   "penolong kanan pentadbiran"
 ];
 const STUDENT_CLASSES = ["1 NILAM","2 INTAN","3 KRISTAL","4 MUTIARA","5 DELIMA","6 BAIDURI"];
@@ -376,7 +377,7 @@ async function handleAPI(request, env, corsHeaders) {
       }
       if (!actor) {
         try {
-          actor = await verifyGoogleIdentity(auth, env, request);
+          actor = await verifyGoogleIdentity(auth, env, request, workerToken);
         } catch (err) {
           return jsonResp(
             { success: false, error: err.message || "Akses tidak dibenarkan", code: err.code || "AUTH_REQUIRED" },
@@ -421,6 +422,124 @@ async function handleAPI(request, env, corsHeaders) {
         err.status || 403,
         corsHeaders
       );
+    }
+  }
+
+  if (body.action === "registerEmailPassword") {
+    try {
+      const email = String(body.email || "").trim().toLowerCase();
+      const password = String(body.password || "");
+      if (!email || !password) {
+        throw makeHttpError(400, "Emel dan kata laluan diperlukan.", "MISSING_FIELDS");
+      }
+
+      await ensureD1Schema(env);
+
+      // Verify email is in GURU list
+      const guruRows = await getGuruSheetRows(env, workerToken);
+      const guru = findGuruByIdentity(guruRows, { email }, true);
+
+      const domain = email.split("@")[1];
+      if (domain === "moe-dl.edu.my") {
+        if (!guru) {
+          throw makeHttpError(403, "Emel domain moe-dl.edu.my ini tidak tersenarai dalam data guru sekolah. Sila hubungi pentadbir.", "EMAIL_NOT_IN_DB");
+        } else {
+          throw makeHttpError(403, "Akaun moe-dl.edu.my dikesan. Sila log masuk menggunakan Google OAuth (ID DELIMa) di tab pertama.", "USE_GOOGLE_OAUTH");
+        }
+      }
+
+      if (!guru) {
+        throw makeHttpError(403, "Emel ini tidak tersenarai dalam data guru sekolah.", "AUTH_FORBIDDEN");
+      }
+
+      // Check if already registered in D1 user_credentials
+      const existing = await env.DB.prepare("SELECT email FROM user_credentials WHERE email = ?").bind(email).first();
+      if (existing) {
+        throw makeHttpError(409, "Akaun ini sudah didaftarkan. Sila log masuk.", "ACCOUNT_EXISTS");
+      }
+
+      const salt = crypto.randomUUID();
+      const hash = await hashPassword(password, salt);
+
+      await env.DB.prepare("INSERT INTO user_credentials (email, password_hash, salt) VALUES (?, ?, ?)")
+        .bind(email, hash, salt).run();
+
+      return jsonResp({
+        success: true,
+        message: "Pendaftaran berjaya. Sila log masuk.",
+        email,
+        password_hash: hash,
+        salt
+      }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message || "Gagal mendaftar akaun." }, err.status || 500, corsHeaders);
+    }
+  }
+
+  if (body.action === "loginEmailPassword") {
+    try {
+      const email = String(body.email || "").trim().toLowerCase();
+      const password = String(body.password || "");
+      if (!email || !password) {
+        throw makeHttpError(400, "Emel dan kata laluan diperlukan.", "MISSING_FIELDS");
+      }
+
+      await ensureD1Schema(env);
+
+      // Check user_credentials table in D1
+      let cred = await env.DB.prepare("SELECT * FROM user_credentials WHERE email = ?").bind(email).first();
+
+      // Fallback Sync from Netlify USER_CREDENTIALS_JSON config
+      if (!cred) {
+        const config = await d1GetConfig(env);
+        if (config && config.USER_CREDENTIALS_JSON) {
+          try {
+            const credentialsMap = JSON.parse(config.USER_CREDENTIALS_JSON);
+            const matched = credentialsMap[email];
+            if (matched && matched.hash && matched.salt) {
+              await env.DB.prepare("INSERT OR REPLACE INTO user_credentials (email, password_hash, salt) VALUES (?, ?, ?)")
+                .bind(email, matched.hash, matched.salt).run();
+              cred = { email, password_hash: matched.hash, salt: matched.salt };
+            }
+          } catch (e) {
+            console.error("Failed to parse USER_CREDENTIALS_JSON config:", e);
+          }
+        }
+      }
+
+      if (!cred) {
+        throw makeHttpError(403, "Akaun ini belum didaftarkan dengan kata laluan. Sila daftar terlebih dahulu.", "AUTH_FORBIDDEN");
+      }
+
+      const computedHash = await hashPassword(password, cred.salt);
+      if (computedHash !== cred.password_hash) {
+        throw makeHttpError(401, "Kata laluan salah.", "AUTH_INVALID_CREDENTIALS");
+      }
+
+      // Retrieve GURU record
+      const guruRows = await getGuruSheetRows(env, workerToken);
+      const guru = findGuruByIdentity(guruRows, { email }, true);
+      if (!guru) {
+        throw makeHttpError(403, "Akaun ini tiada dalam senarai guru aktif.", "AUTH_FORBIDDEN");
+      }
+
+      const adminEmails = await getConfiguredAdminEmails(env, workerToken);
+      const isAdmin = isSystemAdminActor({ email }, guru, adminEmails);
+
+      const verifiedActor = {
+        email,
+        name: String(guru.nama || "").trim(),
+        sub: "email-password-sub-" + email,
+        picture: "",
+        role: isAdmin ? "admin" : "teacher",
+        jawatan: String(guru.jawatan || "").trim(),
+        kelas: String(guru.kelas || "").trim()
+      };
+
+      const sshSessionToken = await generateSshSessionToken(verifiedActor, env);
+      return jsonResp({ success: true, actor: verifiedActor, sshSessionToken }, 200, corsHeaders);
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message || "Gagal log masuk." }, err.status || 500, corsHeaders);
     }
   }
 
@@ -1101,6 +1220,15 @@ async function ensureD1Schema(env) {
   await env.DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_takwim_tarikh ON takwim_events(tarikh)
   `).run().catch(() => {});
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS user_credentials (
+      email TEXT PRIMARY KEY,
+      password_hash TEXT NOT NULL,
+      salt TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
   D1_SCHEMA_READY = true;
 }
 
@@ -2578,6 +2706,31 @@ function isAllowedGoogleEmailDomain(email, env) {
   return getAllowedGoogleEmailDomains(env).includes(domain);
 }
 
+async function isRegisteredTeacherEmail(email, env, workerToken) {
+  try {
+    const rows = await getGuruSheetRows(env, workerToken);
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i] || [];
+      const emailInRow = String(row[1] || "").trim().toLowerCase();
+      if (emailInRow === normalizedEmail) {
+        return true;
+      }
+    }
+  } catch (e) {
+    console.error("Ralat menyemak emel terdaftar:", e);
+  }
+  return false;
+}
+
+async function hashPassword(password, salt) {
+  const encoder = new TextEncoder();
+  const passwordBytes = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", passwordBytes);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 async function getGoogleVerificationKeys() {
   if (GOOGLE_KEYS_CACHE.expiresAt > Date.now() && GOOGLE_KEYS_CACHE.keys.size) {
     return GOOGLE_KEYS_CACHE.keys;
@@ -2659,7 +2812,7 @@ function normalizeBase64(value) {
   return normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
 }
 
-async function verifyGoogleIdentity(auth, env, request = null) {
+async function verifyGoogleIdentity(auth, env, request = null, workerToken = null) {
   const idToken = String((auth && auth.idToken) || "").trim();
   if (!idToken) {
     throw makeHttpError(401, "Sesi keselamatan tamat. Sila log masuk semula.", "AUTH_REQUIRED");
@@ -2677,7 +2830,11 @@ async function verifyGoogleIdentity(auth, env, request = null) {
       if (!mockEmail || mockEmail.indexOf("@") === -1) {
         throw makeHttpError(400, "Emel mock tidak sah.", "AUTH_REQUIRED");
       }
-      if (!isAllowedGoogleEmailDomain(mockEmail, env)) {
+      let token = workerToken;
+      if (!token && env.WORKER_SECRET) {
+        token = await generateDailyToken(env.WORKER_SECRET);
+      }
+      if (!isAllowedGoogleEmailDomain(mockEmail, env) && !(await isRegisteredTeacherEmail(mockEmail, env, token))) {
         throw makeHttpError(403, "Akaun Google di luar domain sekolah tidak dibenarkan.", "AUTH_FORBIDDEN");
       }
       return {
@@ -2753,7 +2910,14 @@ async function verifyGoogleIdentity(auth, env, request = null) {
     throw makeHttpError(403, "Email pengguna tidak dapat disahkan.", "AUTH_FORBIDDEN");
   }
   if (!isAllowedGoogleEmailDomain(actor.email, env)) {
-    throw makeHttpError(403, "Akaun Google di luar domain sekolah tidak dibenarkan.", "AUTH_FORBIDDEN");
+    let token = workerToken;
+    if (!token && env.WORKER_SECRET) {
+      token = await generateDailyToken(env.WORKER_SECRET);
+    }
+    const isRegistered = await isRegisteredTeacherEmail(actor.email, env, token);
+    if (!isRegistered) {
+      throw makeHttpError(403, "Akaun Google di luar domain sekolah tidak dibenarkan.", "AUTH_FORBIDDEN");
+    }
   }
 
   GOOGLE_TOKEN_CACHE.set(idToken, { actor, expiresAt });
