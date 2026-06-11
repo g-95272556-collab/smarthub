@@ -886,8 +886,24 @@
       <div class="g-sign-in-wrapper">
         <div id="googleSignInBtn"></div>
       </div>
-      <a id="googleRedirectLoginBtn" class="btn btn-secondary btn-full is-hidden" href="https://accounts.google.com/o/oauth2/v2/auth?client_id=553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com&amp;redirect_uri=https%3A%2F%2Fxbasmarthub.netlify.app%2F&amp;response_type=id_token&amp;scope=openid%20email%20profile&amp;prompt=select_account&amp;state=smarthub-static-fallback&amp;nonce=smarthub-static-fallback" style="margin-top:10px">Log Masuk Google (Redirect)</a>
+      <a id="googleRedirectLoginBtn" class="btn btn-secondary btn-full is-hidden" href="https://accounts.google.com/o/oauth2/v2/auth?client_id=553204925712-qolkihf8jsmeash2ionto7035b352meh.apps.googleusercontent.com&amp;redirect_uri=https%3A%2F%2Fxbasmarthub.netlify.app%2F&amp;response_type=id_token&amp;scope=openid%20email%20profile&amp;prompt=select_account&amp;state=smarthub-static-fallback&amp;nonce=smarthub-static-fallback" style="margin-top:10px">Log Masuk Google (Redirect)</a>
       <div class="login-help-text">Gunakan email Google yang telah didaftarkan oleh pihak sekolah.</div>
+    </div>
+
+    <!-- Developer Bypass Login Panel (visible only on localhost) -->
+    <div id="devLoginPanel" class="login-action-panel is-hidden" style="margin-top:20px; border:1px dashed var(--blue); background:rgba(26,79,160,0.04);">
+      <div class="login-action-title" style="color:var(--blue); display:flex; align-items:center; justify-content:center; gap:6px;">
+        <svg class="lucide-icon" width="16" height="16" style="stroke:currentColor;"><use href="#lucide-sparkles"></use></svg>
+        Pembangunan Tempatan (Bypass OAuth)
+      </div>
+      <p style="font-size:0.75rem; margin-top:0; margin-bottom:12px; color:var(--muted); text-align:center;">OAuth client asal telah dipadamkan. Guna borang ini untuk log masuk secara tempatan.</p>
+      <div style="display:flex; flex-direction:column; gap:8px; text-align:left;">
+        <div>
+          <label for="devLoginEmail" style="font-size:0.75rem; font-weight:600; margin-bottom:4px; display:block; color:var(--navy);">Emel Pengguna (DL Moe)</label>
+          <input id="devLoginEmail" type="email" value="g-95272556@moe-dl.edu.my" placeholder="emel@moe-dl.edu.my" style="width:100%; padding:10px 12px; border:1px solid rgba(26,79,160,0.2); border-radius:10px; font-size:0.85rem; background:var(--surface); color:var(--text); box-sizing:border-box;">
+        </div>
+        <button id="devLoginBtn" class="btn btn-primary btn-full" style="padding:12px; font-size:0.85rem; cursor:pointer;" type="button">Log Masuk Segera</button>
+      </div>
     </div>
 
     <details class="login-config-card" id="loginBootstrapConfig">

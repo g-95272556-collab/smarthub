@@ -3,7 +3,7 @@
 // app.js — Main Application JavaScript
 // ═══════════════════════════════════════════════════════════════
 
-const DEFAULT_GOOGLE_CLIENT_ID = '553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com';
+const DEFAULT_GOOGLE_CLIENT_ID = '553204925712-qolkihf8jsmeash2ionto7035b352meh.apps.googleusercontent.com';
 const DEFAULT_GOOGLE_AUTH_URL = 'https://smartschoolhub-google-oauth.g-95272556.workers.dev';
 const DEFAULT_NETLIFY_SITE_URL = 'https://xbasmarthub.netlify.app';
 
@@ -4360,10 +4360,45 @@ async function handleGoogleCredential(response) {
 }
 
 function parseJWT(token) {
+  if (String(token || '').startsWith('mock-token:')) {
+    const email = token.slice(11).trim().toLowerCase();
+    return {
+      email: email,
+      name: email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, ' '),
+      sub: 'mock-sub-' + email,
+      exp: Math.floor(Date.now() / 1000) + 5 * 24 * 60 * 60
+    };
+  }
   try {
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
     return JSON.parse(atob(base64));
   } catch { return null; }
+}
+
+function initDevLogin() {
+  const hostname = window.location.hostname;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  const panel = document.getElementById('devLoginPanel');
+  if (panel) {
+    if (isLocal) {
+      panel.classList.remove('is-hidden');
+    } else {
+      panel.classList.add('is-hidden');
+    }
+  }
+  const btn = document.getElementById('devLoginBtn');
+  if (btn && !btn.onclick) {
+    btn.onclick = async function() {
+      const emailInput = document.getElementById('devLoginEmail');
+      const email = String(emailInput ? emailInput.value : '').trim();
+      if (!email) { showToast('Sila masukkan emel.', 'error'); return; }
+      if (email.indexOf('@') === -1) { showToast('Emel tidak sah.', 'error'); return; }
+      
+      showToast('Melog masuk secara bypass...', 'info');
+      const mockCredential = 'mock-token:' + email;
+      await handleGoogleCredential({ credential: mockCredential });
+    };
+  }
 }
 
 function renderGSIButton() {
@@ -4411,6 +4446,7 @@ function showLoginPage() {
   exposeLoginBootstrapActions();
   bindLoginBootstrapActions();
   syncBootstrapConfigInputs();
+  initDevLogin();
   if (_gsiReady) renderGSIButton();
   else {
     const btn = document.getElementById('googleSignInBtn');
@@ -4444,7 +4480,7 @@ async function verifyGoogleSessionWithBackend(user) {
   try {
     let oauthActor = null;
     let oauthError = null;
-    if (user.idToken) {
+    if (user.idToken && !user.idToken.startsWith('mock-token:')) {
       for (let i = 0; i < authCandidates.length; i++) {
         const authUrl = authCandidates[i].replace(/\/+$/, '') + '/auth/google/verify';
         try {

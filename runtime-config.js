@@ -1,6 +1,6 @@
 window.SMARTSCHOOLHUB_RUNTIME_CONFIG = Object.assign({
   workerUrl: 'https://smartschoolhub-skkiandongo.g-95272556.workers.dev',
-  googleClientId: '553204925712-p975t8hnehd4vfhs3igf4ba9c63edf0f.apps.googleusercontent.com',
+  googleClientId: '553204925712-qolkihf8jsmeash2ionto7035b352meh.apps.googleusercontent.com',
   googleAuthUrl: 'https://smartschoolhub-google-oauth.g-95272556.workers.dev',
   netlifySiteUrl: 'https://xbasmarthub.netlify.app',
 
