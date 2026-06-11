@@ -256,6 +256,9 @@ export default {
         corsHeaders
       );
     }
+  },
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(handleScheduledNotification(event, env));
   }
 };
 
@@ -3225,3 +3228,655 @@ async function verifySshSessionToken(token, env) {
     return null;
   }
 }
+
+// ── BACKEND SCHEDULED (CRON) NOTIFICATIONS & HELPERS ─────────────────────────
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getMalaysiaTimeParts() {
+  const d = new Date();
+  const malaysianTime = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const yyyy = malaysianTime.getUTCFullYear();
+  const mm = String(malaysianTime.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(malaysianTime.getUTCDate()).padStart(2, "0");
+  const hour = malaysianTime.getUTCHours();
+  const minute = malaysianTime.getUTCMinutes();
+  const weekday = malaysianTime.getUTCDay();
+
+  return {
+    ymd: `${yyyy}-${mm}-${dd}`,
+    hm: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+    hour,
+    minute,
+    weekday,
+    yyyy,
+    mm,
+    dd
+  };
+}
+
+async function isHariPersekolahanCron(env, todayYmd, config) {
+  const d = new Date();
+  const malaysianTime = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const day = malaysianTime.getUTCDay();
+  if (day === 0 || day === 6) return false;
+
+  if (env.DB) {
+    try {
+      const results = await env.DB.prepare(
+        "SELECT tajuk, kategori FROM takwim_events WHERE tarikh <= ? AND (tarikh_akhir >= ? OR tarikh_akhir IS NULL)"
+      ).bind(todayYmd, todayYmd).all();
+      const events = results.results || [];
+      for (const ev of events) {
+        const kat = String(ev.kategori || "").toLowerCase();
+        if (kat.includes("cuti")) {
+          return false;
+        }
+      }
+    } catch (e) {
+      console.error("isHariPersekolahanCron error:", e);
+    }
+  }
+  return true;
+}
+
+async function dispatchNotificationCron(env, channel, payload, config) {
+  if (channel === "telegram") {
+    const botToken = String(config.TELEGRAM_BOT || "").trim();
+    const chatId = String(payload.chatId || config.TELEGRAM_CHAT || "").trim();
+    const topic = String(payload.topic || config.TELEGRAM_TOPIC || "").trim();
+    const message = String(payload.message || "").trim();
+
+    if (!botToken || !chatId || !message) return false;
+
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const bodyPayload = {
+      chat_id: chatId,
+      text: message,
+      parse_mode: payload.parseMode || "Markdown"
+    };
+    if (topic) {
+      bodyPayload.message_thread_id = parseInt(topic, 10);
+    }
+
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyPayload)
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        await logNotificationCron(env, "Telegram", chatId, message, "Berjaya");
+        return true;
+      }
+      await logNotificationCron(env, "Telegram", chatId, message, `Gagal: ${data.description || "HTTP Ralat"}`);
+    } catch (e) {
+      await logNotificationCron(env, "Telegram", chatId, message, `Gagal: ${e.message}`);
+    }
+    return false;
+
+  } else if (channel === "fonnte") {
+    const fonnteToken = String(config.FONNTE_TOKEN || "").trim();
+    const target = String(payload.target || "").trim();
+    const message = String(payload.message || "").trim();
+
+    if (!fonnteToken || !target || !message) return false;
+
+    const params = new URLSearchParams();
+    params.set("target", target);
+    params.set("message", message);
+    if (payload.fileUrl) params.set("url", payload.fileUrl);
+    if (payload.filename) params.set("filename", payload.filename);
+
+    try {
+      const res = await fetch("https://api.fonnte.com/send", {
+        method: "POST",
+        headers: {
+          "Authorization": fonnteToken,
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: params.toString()
+      });
+      const data = await res.json();
+      if (res.ok && (data.status === true || data.status === "true")) {
+        await logNotificationCron(env, "WhatsApp", target, message, "Berjaya");
+        return true;
+      }
+      await logNotificationCron(env, "WhatsApp", target, message, `Gagal: ${data.reason || "Fonnte Ralat"}`);
+    } catch (e) {
+      await logNotificationCron(env, "WhatsApp", target, message, `Gagal: ${e.message}`);
+    }
+    return false;
+  }
+  return false;
+}
+
+async function logNotificationCron(env, type, target, message, status) {
+  const d = new Date();
+  const malaysianTime = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+  const timeStr = malaysianTime.toISOString().replace("T", " ").slice(0, 19);
+  const row = [timeStr, type, target, status, message];
+  try {
+    if (shouldUseCloudflareD1(env)) {
+      await d1AppendRows(env, "BIRTHDAY_LOG", [row]);
+    } else if (shouldUseGoogleSheets(env)) {
+      await googleAppendRows(env, "BIRTHDAY_LOG", [row]);
+    }
+  } catch (e) {
+    console.error("Gagal tulis log notifikasi:", e);
+  }
+}
+
+async function setCronGuard(env, key, value) {
+  try {
+    if (shouldUseCloudflareD1(env)) {
+      await d1SetConfig(env, { [key]: value });
+    } else if (shouldUseGoogleSheets(env)) {
+      await googleSetConfig(env, { [key]: value });
+    }
+  } catch (e) {
+    console.error("Gagal simpan guard key:", e);
+  }
+}
+
+function parseKehadiranMuridRowBackend(row) {
+  if (!row || !Array.isArray(row)) return null;
+  let tarikh = String(row[1] || "").trim();
+  let kelas = String(row[2] || "").trim();
+  let nama = String(row[3] || "").trim();
+  let status = String(row[5] || "").trim();
+  let telefon = String(row[6] || "").trim();
+  let catatan = String(row[9] || "").trim();
+
+  if (status === "MC") status = "Sakit";
+
+  return {
+    tarikh,
+    kelas,
+    nama,
+    status,
+    telefon,
+    catatan
+  };
+}
+
+function parseKehadiranGuruRowBackend(row) {
+  if (!row || !Array.isArray(row)) return null;
+  return {
+    id: String(row[0] || "").trim(),
+    tarikh: String(row[1] || "").trim(),
+    email: String(row[2] || "").trim(),
+    nama: String(row[3] || "").trim(),
+    masa: String(row[4] || "").trim(),
+    status: String(row[5] || "").trim(),
+    catatan: String(row[15] || row[14] || "").trim()
+  };
+}
+
+function addDaysYMD(dateStr, days) {
+  try {
+    const parts = dateStr.split("-");
+    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    d.setDate(d.getDate() + days);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+function addMinutesHM(hmStr, minutes) {
+  try {
+    const parts = hmStr.split(":");
+    let h = parseInt(parts[0], 10);
+    let m = parseInt(parts[1], 10) + minutes;
+    if (m >= 60) {
+      h += Math.floor(m / 60);
+      m = m % 60;
+    }
+    h = h % 24;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  } catch (e) {
+    return hmStr;
+  }
+}
+
+function buildTakwimReminderText(event, type, schoolName, config) {
+  const tpl = String(config.TAKWIM_GURU_NOTIF_TEMPLATE || "");
+  const tajuk = String(event.tajuk || "").trim();
+  const kategori = String(event.kategori || "Lain-lain").trim();
+  const catatan = String(event.catatan || "Tiada").trim();
+  const note = String(config.TAKWIM_GURU_NOTIF_NOTE || "").trim();
+
+  let tempoh = "Satu Hari";
+  if (event.tarikh_akhir && event.tarikh_akhir !== event.tarikh) {
+    tempoh = `${event.tarikh} hingga ${event.tarikh_akhir}`;
+  }
+
+  const reminderPrefix = type === "day-before"
+    ? `🚨 *PERINGATAN H-1:* Esok terdapat aktiviti berikut yang dijadualkan. Mohon maklum.`
+    : `📢 *PERINGATAN HARI INI:* Hari ini terdapat aktiviti berikut yang berlangsung.`;
+
+  let finalTpl = tpl;
+  if (!finalTpl || finalTpl.includes("DEFAULT_TEMPLATE_PLACEHOLDER") || !finalTpl.trim()) {
+    finalTpl = "📌 *Makluman Takwim {SEKOLAH}*\n\n{PERINGATAN}\n\nBerikut ialah makluman untuk perhatian semua:\n\n✨ *{TAJUK}*\n🗓️ *Tarikh:* {TARIKH_PENUH}\n🏷️ *Kategori:* {KATEGORI}\n⏳ *Tempoh:* {TEMPOH}\n📝 *Catatan:* {CATATAN}\n📍 *Tindakan/Nota:* {NOTA_OPERASI}\n\nTerima kasih. 🤝\n\n🏫 _{SEKOLAH}_";
+  }
+
+  return finalTpl
+    .replace(/{SEKOLAH}/g, schoolName)
+    .replace(/{PERINGATAN}/g, reminderPrefix)
+    .replace(/{TAJUK}/g, tajuk)
+    .replace(/{TARIKH_PENUH}/g, event.tarikh)
+    .replace(/{KATEGORI}/g, kategori)
+    .replace(/{TEMPOH}/g, tempoh)
+    .replace(/{CATATAN}/g, catatan)
+    .replace(/{NOTA_OPERASI}/g, note || "Sila ambil maklum dan buat persediaan berkaitan.");
+}
+
+async function sendGuruReminderCron(env, todayYmd, config) {
+  if (String(config.ATTENDANCE_GURU_NOTIF_ENABLED || "true").trim() === "false") return;
+  try {
+    const [kehadiranRows, guruRows] = await Promise.all([
+      readBackendSheetRows(env, "KEHADIRAN_GURU", ""),
+      readBackendSheetRows(env, "GURU", "")
+    ]);
+
+    const sudahIsi = new Set(
+      kehadiranRows
+        .slice(1)
+        .map(r => parseKehadiranGuruRowBackend(r))
+        .filter(r => r && String(r.tarikh || "").startsWith(todayYmd))
+        .map(r => String(r.nama || "").toLowerCase().trim())
+    );
+
+    const guruList = guruRows
+      .slice(1)
+      .filter(r => r[0] && String(r[0]).toLowerCase().trim() !== "nama")
+      .filter(r => !["Pembantu Operasi"].includes(r[2] || ""));
+
+    const belumIsi = guruList.filter(r => r[0] && !sudahIsi.has(String(r[0]).toLowerCase().trim()));
+    if (!belumIsi.length) return;
+
+    const schoolName = "SK Kiandongo";
+    const listText = belumIsi.map(g => `- ${g[0]}`).join("\n");
+    const tplAdmin = String(config.ATTENDANCE_GURU_ADMIN_TEMPLATE || "Peringatan Kehadiran Guru\n\nGuru berikut belum mendaftar kehadiran pada {TARIKH}:\n\n{SENARAI}\n\nSila daftar segera.\n\n_{SEKOLAH}_");
+    const adminMsg = tplAdmin
+      .replace(/{TARIKH}/g, todayYmd)
+      .replace(/{SENARAI}/g, listText)
+      .replace(/{SEKOLAH}/g, schoolName);
+
+    await dispatchNotificationCron(env, "telegram", { message: adminMsg }, config);
+
+    const tplPersonal = String(config.ATTENDANCE_GURU_PERSONAL_TEMPLATE || "Peringatan\n\nCikgu {NAMA}, anda belum mendaftar kehadiran hari ini ({TARIKH}). Sila daftar segera.\n\n_{SEKOLAH}_");
+    for (const g of belumIsi) {
+      const tel = String(g[4] || g[6] || "").trim();
+      if (!tel) continue;
+      const personalMsg = tplPersonal
+        .replace(/{NAMA}/g, g[0])
+        .replace(/{TARIKH}/g, todayYmd)
+        .replace(/{SEKOLAH}/g, schoolName);
+      
+      await dispatchNotificationCron(env, "fonnte", { target: tel, message: personalMsg }, config);
+      await sleep(500);
+    }
+  } catch (e) {
+    console.error("sendGuruReminderCron error:", e);
+  }
+}
+
+async function sendMuridAbsentCron(env, todayYmd, config) {
+  if (String(config.ATTENDANCE_MURID_NOTIF_ENABLED || "true").trim() === "false") return;
+  try {
+    const dataRows = await readBackendSheetRows(env, "KEHADIRAN_MURID", "");
+    const tidakHadir = dataRows
+      .slice(1)
+      .map(r => parseKehadiranMuridRowBackend(r))
+      .filter(r => r && r.tarikh === todayYmd && ["Tidak Hadir", "Sakit", "Ponteng"].includes(r.status));
+
+    if (!tidakHadir.length) return;
+
+    const schoolName = "SK Kiandongo";
+
+    if (String(config.ATTENDANCE_MURID_NOTIFY_TELEGRAM || "true").trim() !== "false") {
+      const listText = tidakHadir.map(m => `- ${m.nama} (${m.kelas})`).join("\n");
+      const tplSummary = String(config.ATTENDANCE_MURID_SUMMARY_TEMPLATE || "Makluman Kehadiran Murid\n\nTarikh: {TARIKH}\nKelas: {KELAS}\nBilangan: {BILANGAN}\n\n{SENARAI}\n\n_{SEKOLAH}_");
+      const summaryMsg = tplSummary
+        .replace(/{TARIKH}/g, todayYmd)
+        .replace(/{KELAS}/g, "Semua Kelas")
+        .replace(/{BILANGAN}/g, tidakHadir.length)
+        .replace(/{SENARAI}/g, listText)
+        .replace(/{SEKOLAH}/g, schoolName);
+
+      await dispatchNotificationCron(env, "telegram", { message: summaryMsg }, config);
+    }
+
+    if (String(config.ATTENDANCE_MURID_NOTIFY_GUARDIAN || "true").trim() !== "false") {
+      const tplGuardian = String(config.ATTENDANCE_MURID_GUARDIAN_TEMPLATE || "Makluman Kehadiran\n\nSelamat sejahtera,\n\nAnak jagaan tuan/puan, {NAMA} dari kelas {KELAS}, direkodkan {STATUS} pada {TARIKH}.\n\nSila hubungi pihak sekolah jika ada pertanyaan.\n\n_{SEKOLAH}_");
+      for (const m of tidakHadir) {
+        const tel = String(m.telefon || "").trim();
+        if (!tel) continue;
+        const msg = tplGuardian
+          .replace(/{NAMA}/g, m.nama)
+          .replace(/{KELAS}/g, m.kelas)
+          .replace(/{STATUS}/g, m.status)
+          .replace(/{TARIKH}/g, todayYmd)
+          .replace(/{SEKOLAH}/g, schoolName);
+
+        await dispatchNotificationCron(env, "fonnte", { target: tel, message: msg }, config);
+        await sleep(500);
+      }
+    }
+  } catch (e) {
+    console.error("sendMuridAbsentCron error:", e);
+  }
+}
+
+async function sendClassReminderCron(env, todayYmd, config) {
+  if (String(config.ATTENDANCE_MURID_NOTIF_ENABLED || "true").trim() === "false") return;
+  if (String(config.ATTENDANCE_MURID_NOTIFY_CLASS_GROUP || "true").trim() === "false") return;
+  
+  const groupTarget = String(config.FONNTE_GROUP || "").trim();
+  if (!groupTarget) return;
+
+  try {
+    const dataRows = await readBackendSheetRows(env, "KEHADIRAN_MURID", "");
+    const sudahIsi = new Set(
+      dataRows
+        .slice(1)
+        .map(r => parseKehadiranMuridRowBackend(r))
+        .filter(r => r && r.tarikh === todayYmd)
+        .map(r => String(r.kelas || "").trim().toLowerCase())
+        .filter(Boolean)
+    );
+
+    let classesList = ["1 NILAM","2 INTAN","3 KRISTAL","4 MUTIARA","5 DELIMA","6 BAIDURI"];
+    try {
+      const rawClasses = JSON.parse(config.SENARAI_KELAS_JSON || "null");
+      if (Array.isArray(rawClasses) && rawClasses.length) classesList = rawClasses;
+    } catch (e) {}
+
+    const kelasBelumIsi = classesList.filter(k => !sudahIsi.has(String(k || "").trim().toLowerCase()));
+    if (!kelasBelumIsi.length) return;
+
+    const listText = kelasBelumIsi.map(k => `- ${k}`).join("\n");
+    const tpl = String(config.ATTENDANCE_MURID_TEACHER_GROUP_TEMPLATE || "📣 *Makluman Kehadiran Murid/Pengurusan RMT kepada Guru Kelas dan Guru Penyelaras RMT* 📣\n\n👋 Salam sejahtera semua guru kelas dan guru penyelaras RMT,\n\nMohon semua guru kelas/penyelaras RMT *mengisi kehadiran murid dalam MOEIS IDME (https://idme.moe.gov.my/login) dan Pengurusan RMT (https://appsjohor.moe.gov.my/rmt/) sebelum jam {MASA_DEADLINE} pagi* bagi memastikan rekod sekolah lengkap dan tepat.\n\n📅 Tarikh: {TARIKH}\n\n🕒 Sila lengkapkan segera jika masih belum direkodkan.\n\n🤝 Terima kasih atas kerjasama dan tindakan pantas semua.\n\n🏫 _{SEKOLAH}_");
+    
+    const schoolName = "SK Kiandongo";
+    const msg = tpl
+      .replace(/{TARIKH}/g, todayYmd)
+      .replace(/{MASA_DEADLINE}/g, "10:00")
+      .replace(/{BILANGAN}/g, kelasBelumIsi.length)
+      .replace(/{SENARAI}/g, listText)
+      .replace(/{SEKOLAH}/g, schoolName);
+
+    await dispatchNotificationCron(env, "fonnte", { target: groupTarget, message: msg }, config);
+  } catch (e) {
+    console.error("sendClassReminderCron error:", e);
+  }
+}
+
+async function sendBirthdayCron(env, todayYmd, config) {
+  if (String(config.HL_NOTIF_ENABLED || "true").trim() === "false") return;
+  try {
+    const rawRows = await readBackendSheetRows(env, "HARILAHIR", "");
+    if (!rawRows || rawRows.length <= 1) return;
+
+    const d = new Date();
+    const malaysianTime = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+    const currentMonth = malaysianTime.getUTCMonth() + 1;
+    const currentDay = malaysianTime.getUTCDate();
+
+    const senarai = rawRows
+      .slice(1)
+      .map(r => {
+        if (!r || !r[0] || !r[3]) return null;
+        const dobStr = String(r[3]).trim();
+        const dobParts = dobStr.split("-");
+        if (dobParts.length < 3) return null;
+        return {
+          nama: String(r[0]).trim(),
+          peranan: String(r[1] || "").trim().toLowerCase(),
+          kelas: String(r[2] || "").trim(),
+          birthMonth: parseInt(dobParts[1], 10),
+          birthDay: parseInt(dobParts[2], 10),
+          birthYear: parseInt(dobParts[0], 10),
+          tel: String(r[4] || "").trim()
+        };
+      })
+      .filter(p => p && p.birthMonth === currentMonth && p.birthDay === currentDay);
+
+    if (!senarai.length) return;
+
+    const schoolName = "SK Kiandongo";
+    
+    for (const p of senarai) {
+      const isMurid = p.peranan.includes("murid") || p.peranan.includes("pelajar");
+      const tpl = isMurid
+        ? String(config.BIRTHDAY_MURID_TEMPLATE || "🎂🎉 *Selamat Hari Lahir!* 🎉🎂\n\n🎊 Guru-guru dan warga {SEKOLAH} mengucapkan Selamat Hari Lahir{UMUR_TEXT} kepada:\n\n🌟 *{NAMA}* 🌟\n🏫 Kelas: *{KELAS}*\n\n🎁 Semoga membesar dengan sihat, ceria, dan cemerlang dalam pelajaran. Teruskan berusaha! 📚✨\n\n💝 Anda istimewa dan disayangi!\n\n🏫 _{SEKOLAH}_")
+        : String(config.BIRTHDAY_GURU_TEMPLATE || "🎂🎉 *Selamat Hari Lahir!* 🎉🎂\n\n🎊 Warga {SEKOLAH} mengucapkan Selamat Hari Lahir kepada:\n\n🌟 *{NAMA}* 🌟\n\n🎁 Semoga dipanjangkan umur, dimurahkan rezeki, dan sentiasa dikelilingi kebahagiaan. Anda sangat dihargai! 💝\n\n🇲🇾 Terima kasih atas dedikasi dan sumbangan cikgu kepada anak-anak {SEKOLAH}.\n\n🏫 _{SEKOLAH}_");
+
+      let ageText = "";
+      if (isMurid && p.birthYear) {
+        const curYear = malaysianTime.getUTCFullYear();
+        const age = curYear - p.birthYear;
+        ageText = ` ke-${age}`;
+      }
+
+      const msg = tpl
+        .replace(/{NAMA}/g, p.nama)
+        .replace(/{KELAS}/g, p.kelas)
+        .replace(/{UMUR_TEXT}/g, ageText)
+        .replace(/{SEKOLAH}/g, schoolName);
+
+      await dispatchNotificationCron(env, "telegram", { message: msg }, config);
+
+      let target = "";
+      if (isMurid) {
+        target = p.tel;
+      } else {
+        target = String(config.FONNTE_GROUP || "").trim();
+      }
+
+      if (target) {
+        await dispatchNotificationCron(env, "fonnte", { target: target, message: msg }, config);
+      }
+      await sleep(500);
+    }
+  } catch (e) {
+    console.error("sendBirthdayCron error:", e);
+  }
+}
+
+async function sendDutyReminderCron(env, todayYmd, config) {
+  if (String(config.DUTY_NOTIF_ENABLED || "true").trim() === "false") return;
+  try {
+    const rawDuty = String(config.JADUAL_BERTUGAS_JSON || "").trim();
+    if (!rawDuty) return;
+
+    let dutyList = [];
+    try {
+      dutyList = JSON.parse(rawDuty);
+    } catch (e) {
+      return;
+    }
+    if (!Array.isArray(dutyList) || !dutyList.length) return;
+
+    const d = new Date();
+    const malaysianTime = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+    const day = malaysianTime.getUTCDay();
+    const daysToMonday = day === 0 ? 1 : 8 - day;
+    const nextMondayDate = new Date(malaysianTime.getTime() + daysToMonday * 24 * 60 * 60 * 1000);
+    const yyyy = nextMondayDate.getUTCFullYear();
+    const mm = String(nextMondayDate.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(nextMondayDate.getUTCDate()).padStart(2, "0");
+    const nextMondayYmd = `${yyyy}-${mm}-${dd}`;
+
+    const entry = dutyList.find(r => r && String(r.isnin || "").trim() === nextMondayYmd);
+    if (!entry) return;
+
+    const schoolName = "SK Kiandongo";
+    const rangeText = `${nextMondayYmd} (Isnin) hingga ${addDaysYMD(nextMondayYmd, 4)} (Jumaat)`;
+
+    const groupTarget = String(config.FONNTE_GROUP || "").trim();
+    if (groupTarget) {
+      const tplGroup = String(config.DUTY_NOTIF_GROUP_TEMPLATE || "📋 *Makluman Jadual Guru Bertugas Mingguan* 📋\n\n👋 Salam Sejahtera Dan Salam Onsoi Semua Warga SK Kiandongo👋\n\nBerikut ialah makluman guru bertugas untuk minggu ini:\n\n📌 Minggu: *{MINGGU}*\n🗓️ Tarikh: *{TARIKH_MULA}* hingga *{TARIKH_AKHIR}*\n\n👤 Guru Bertugas: *{GURU}*\n🤝 Pembantu: *{PEMBANTU}*\n📝 Catatan/Cuti: {CATATAN}\n\n💪 Mohon semua warga sekolah mengambil maklum and memberikan kerjasama sepanjang minggu bertugas ini.\n\n🌟 Semoga segala urusan dipermudahkan.\n\n🏫 _{SEKOLAH}_");
+      
+      const groupMsg = tplGroup
+        .replace(/{MINGGU}/g, entry.minggu || rangeText)
+        .replace(/{TARIKH_MULA}/g, nextMondayYmd)
+        .replace(/{TARIKH_AKHIR}/g, addDaysYMD(nextMondayYmd, 4))
+        .replace(/{GURU}/g, entry.guru || "-")
+        .replace(/{PEMBANTU}/g, entry.pembantu || "-")
+        .replace(/{CATATAN}/g, entry.catatan || "-")
+        .replace(/{SEKOLAH}/g, schoolName);
+
+      await dispatchNotificationCron(env, "fonnte", { target: groupTarget, message: groupMsg }, config);
+    }
+
+    const teacherTel = String(entry.telefon || "").trim();
+    if (teacherTel) {
+      const tplPersonal = String(config.DUTY_NOTIF_TEMPLATE || "📋 *Jadual Bertugas Mingguan* 📋\n\n👋 Selamat sejahtera Cikgu {NAMA},\n\nAnda ditugaskan sebagai *{PERANAN}* untuk minggu hadapan.\n\n📌 Minggu: *{MINGGU}*\n🗓️ Tarikh: *{TARIKH_MULA}* hingga *{TARIKH_AKHIR}*\n\n👤 Guru Bertugas: *{GURU}*\n🤝 Pembantu: *{PEMBANTU}*\n📝 Catatan: {CATATAN}\n\n💪 Tugas: Kawalan perhimpunan, kantin, disiplin, kebersihan & laporan mingguan.\n\n🌟 Semoga dipermudahkan segala urusan.\n\n🏫 _{SEKOLAH}_");
+      
+      const personalMsg = tplPersonal
+        .replace(/{NAMA}/g, entry.guru)
+        .replace(/{PERANAN}/g, "Ketua Guru Bertugas")
+        .replace(/{MINGGU}/g, entry.minggu || rangeText)
+        .replace(/{TARIKH_MULA}/g, nextMondayYmd)
+        .replace(/{TARIKH_AKHIR}/g, addDaysYMD(nextMondayYmd, 4))
+        .replace(/{GURU}/g, entry.guru || "-")
+        .replace(/{PEMBANTU}/g, entry.pembantu || "-")
+        .replace(/{CATATAN}/g, entry.catatan || "-")
+        .replace(/{SEKOLAH}/g, schoolName);
+
+      await dispatchNotificationCron(env, "fonnte", { target: teacherTel, message: personalMsg }, config);
+    }
+  } catch (e) {
+    console.error("sendDutyReminderCron error:", e);
+  }
+}
+
+async function sendTakwimCron(env, todayYmd, timeHm, config) {
+  if (String(config.TAKWIM_GURU_NOTIF_ENABLED || "false").trim() === "false") return;
+  try {
+    if (!env.DB) return;
+    
+    const results = await env.DB.prepare(
+      "SELECT id, tarikh, tarikh_akhir, tajuk, kategori, warna, catatan FROM takwim_events ORDER BY tarikh ASC"
+    ).all();
+    const events = results.results || [];
+    if (!events.length) return;
+
+    const dayBeforeTime = String(config.TAKWIM_GURU_NOTIF_DAY_BEFORE_TIME || "17:00").trim();
+    const sameDayTime = String(config.TAKWIM_GURU_NOTIF_SAME_DAY_TIME || "06:30").trim();
+
+    const schoolName = "SK Kiandongo";
+    const target = String(config.TAKWIM_GURU_NOTIF_TARGET || config.FONNTE_GROUP || "").trim();
+
+    for (const ev of events) {
+      const eventId = ev.id;
+      const eventDate = String(ev.tarikh || "").trim();
+      if (!eventDate) continue;
+
+      const beforeDate = addDaysYMD(eventDate, -1);
+
+      if (beforeDate === todayYmd && timeHm >= dayBeforeTime && timeHm < addMinutesHM(dayBeforeTime, 15)) {
+        const guardKey = `TAKWIM_NOTIF_GUARD_${eventId}_day_before_${todayYmd}`;
+        if (String(config[guardKey] || "").trim() !== "1") {
+          await setCronGuard(env, guardKey, "1");
+          const msg = buildTakwimReminderText(ev, "day-before", schoolName, config);
+          if (target) {
+            await dispatchNotificationCron(env, "fonnte", { target: target, message: msg }, config);
+          }
+          await dispatchNotificationCron(env, "telegram", { message: msg }, config);
+        }
+      }
+
+      if (eventDate === todayYmd && timeHm >= sameDayTime && timeHm < addMinutesHM(sameDayTime, 15)) {
+        const guardKey = `TAKWIM_NOTIF_GUARD_${eventId}_same_day_${todayYmd}`;
+        if (String(config[guardKey] || "").trim() !== "1") {
+          await setCronGuard(env, guardKey, "1");
+          const msg = buildTakwimReminderText(ev, "same-day", schoolName, config);
+          if (target) {
+            await dispatchNotificationCron(env, "fonnte", { target: target, message: msg }, config);
+          }
+          await dispatchNotificationCron(env, "telegram", { message: msg }, config);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("sendTakwimCron error:", e);
+  }
+}
+
+async function handleScheduledNotification(event, env) {
+  const timeParts = getMalaysiaTimeParts();
+  const todayYmd = timeParts.ymd;
+  const timeHm = timeParts.hm;
+  console.log(`[CRON TRIGGERED] Malaysia Time: ${todayYmd} ${timeHm}, Day: ${timeParts.weekday}`);
+
+  
+  let config;
+  try {
+    config = shouldUseCloudflareD1(env)
+      ? await d1GetConfig(env)
+      : await googleGetConfig(env);
+  } catch (e) {
+    console.error("Gagal muat konfigurasi di backend scheduled:", e);
+    return;
+  }
+
+  if (String(config.NOTIF_AUTO_ENABLED || "true").trim() === "false") {
+    return;
+  }
+
+  const isSchoolDay = await isHariPersekolahanCron(env, todayYmd, config);
+
+  if (isSchoolDay && timeHm >= "07:45" && timeHm < "08:00") {
+    const key = `ATTENDANCE_NOTIF_GURU_SENT_${todayYmd}`;
+    if (String(config[key] || "").trim() !== "1") {
+      await setCronGuard(env, key, "1");
+      await sendGuruReminderCron(env, todayYmd, config);
+    }
+  }
+
+  if (timeHm >= "08:00" && timeHm < "08:15") {
+    const key = `BIRTHDAY_NOTIF_SENT_${todayYmd}`;
+    if (String(config[key] || "").trim() !== "1") {
+      await setCronGuard(env, key, "1");
+      await sendBirthdayCron(env, todayYmd, config);
+    }
+  }
+
+  if (isSchoolDay && timeHm >= "09:00" && timeHm < "09:15") {
+    const key = `ATTENDANCE_NOTIF_MURID_SENT_${todayYmd}`;
+    if (String(config[key] || "").trim() !== "1") {
+      await setCronGuard(env, key, "1");
+      await sendMuridAbsentCron(env, todayYmd, config);
+    }
+  }
+
+  if (isSchoolDay && timeHm >= "09:45" && timeHm < "10:00") {
+    const key = `ATTENDANCE_NOTIF_CLASS_REMINDER_SENT_${todayYmd}`;
+    if (String(config[key] || "").trim() !== "1") {
+      await setCronGuard(env, key, "1");
+      await sendClassReminderCron(env, todayYmd, config);
+    }
+  }
+
+  if (timeParts.weekday === 0 && timeHm >= "17:00" && timeHm < "17:15") {
+    const key = `DUTY_NOTIF_SENT_${todayYmd}`;
+    if (String(config[key] || "").trim() !== "1") {
+      await setCronGuard(env, key, "1");
+      await sendDutyReminderCron(env, todayYmd, config);
+    }
+  }
+
+  if ((timeHm >= "06:30" && timeHm < "06:45") || (timeHm >= "17:00" && timeHm < "17:15")) {
+    await sendTakwimCron(env, todayYmd, timeHm, config);
+  }
+}
+

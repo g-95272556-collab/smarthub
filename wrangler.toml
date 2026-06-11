@@ -12,3 +12,6 @@ ALLOWED_CORS_ORIGINS = "https://xbasmarthub.netlify.app"
 binding = "DB"
 database_name = "smartschoolhub-d1"
 database_id = "6a0b9c2a-848b-4126-9f0c-5e0907fdee7d"
+
+[triggers]
+crons = ["*/15 * * * *"]
