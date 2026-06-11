@@ -194,7 +194,28 @@ function writePopupDocument(win, html, options) {
   return true;
 }
 
+function isMobileOrTablet() {
+  return /Mobi|Android|iPad|iPhone|iPod/i.test(navigator.userAgent);
+}
+
 function getStoredSshUser() {
+  if (isMobileOrTablet()) {
+    const stored = localStorage.getItem('ssh_user_persistent');
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        const now = Date.now();
+        const maxAge = 5 * 24 * 60 * 60 * 1000; // 5 days
+        if (user.savedAt && (now - user.savedAt) < maxAge) {
+          return JSON.stringify(user);
+        } else {
+          localStorage.removeItem('ssh_user_persistent');
+        }
+      } catch (e) {
+        localStorage.removeItem('ssh_user_persistent');
+      }
+    }
+  }
   const sessionUser = sessionStorage.getItem('ssh_user');
   if (sessionUser) return sessionUser;
   const legacyUser = localStorage.getItem('ssh_user');
@@ -207,12 +228,20 @@ function getStoredSshUser() {
 
 function setStoredSshUser(user) {
   localStorage.removeItem('ssh_user');
-  sessionStorage.setItem('ssh_user', JSON.stringify(user));
+  if (isMobileOrTablet()) {
+    if (user && typeof user === 'object') {
+      user.savedAt = Date.now();
+    }
+    localStorage.setItem('ssh_user_persistent', JSON.stringify(user));
+  } else {
+    sessionStorage.setItem('ssh_user', JSON.stringify(user));
+  }
 }
 
 function clearStoredSshUser() {
   sessionStorage.removeItem('ssh_user');
   localStorage.removeItem('ssh_user');
+  localStorage.removeItem('ssh_user_persistent');
 }
 
 let _gsiReady = false;
@@ -3044,7 +3073,7 @@ function renderWeeklyChart(allRows) {
       }
     }
     
-    var height = pct ? Math.round((pct/100)*85) : 8;
+    var height = pct ? Math.round((pct/100)*65) : 8;
     var gradClass = pct >= 95 ? 'gradient-green' : pct >= 90 ? 'gradient-blue' : pct >= 80 ? 'gradient-amber' : pct > 0 ? 'gradient-red' : 'gradient-blue';
     if (pct === 0) gradClass = ''; // gray/muted default
     
@@ -4291,14 +4320,21 @@ function showLoginPage() {
 
 
 function isValidStoredSession(user) {
-  if (!user || !user.idToken) return false;
+  if (!user) return false;
+  if (user.sshSessionToken) {
+    if (user.savedAt) {
+      const maxAge = 5 * 24 * 60 * 60 * 1000; // 5 days
+      return (Date.now() - user.savedAt) < maxAge;
+    }
+  }
+  if (!user.idToken) return false;
   const payload = parseJWT(user.idToken);
   if (!payload || !payload.exp) return false;
   return Number(payload.exp) * 1000 > Date.now() + 60000;
 }
 
 async function verifyGoogleSessionWithBackend(user) {
-  if (!user || !user.idToken) throw new Error('Sesi Google tidak lengkap.');
+  if (!user || (!user.idToken && !user.sshSessionToken)) throw new Error('Sesi Google tidak lengkap.');
   const authCandidates = buildGoogleAuthBaseUrlCandidates();
   if (!authCandidates.length && !APP.workerUrl) throw new Error('Worker URL belum disimpan.');
   const controller = new AbortController();
@@ -4306,36 +4342,39 @@ async function verifyGoogleSessionWithBackend(user) {
   try {
     let oauthActor = null;
     let oauthError = null;
-    for (let i = 0; i < authCandidates.length; i++) {
-      const authUrl = authCandidates[i].replace(/\/+$/, '') + '/auth/google/verify';
-      try {
-        const oauthResponse = await fetch(authUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            credential: user.idToken || '',
-            idToken: user.idToken || '',
-            email: user.email || '',
-            name: user.name || '',
-            sub: user.sub || ''
-          })
-        });
-        const oauthData = await oauthResponse.json();
-        if (!oauthResponse.ok || !oauthData.success || !oauthData.actor) {
-          const currentError = new Error((oauthData && oauthData.error) || 'Pengesahan Google OAuth gagal.');
-          currentError.code = oauthData && oauthData.code ? oauthData.code : '';
-          oauthError = currentError;
-          continue;
+    if (user.idToken) {
+      for (let i = 0; i < authCandidates.length; i++) {
+        const authUrl = authCandidates[i].replace(/\/+$/, '') + '/auth/google/verify';
+        try {
+          const oauthResponse = await fetch(authUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              credential: user.idToken || '',
+              idToken: user.idToken || '',
+              email: user.email || '',
+              name: user.name || '',
+              sub: user.sub || ''
+            })
+          });
+          const oauthData = await oauthResponse.json();
+          if (!oauthResponse.ok || !oauthData.success || !oauthData.actor) {
+            const currentError = new Error((oauthData && oauthData.error) || 'Pengesahan Google OAuth gagal.');
+            currentError.code = oauthData && oauthData.code ? oauthData.code : '';
+            oauthError = currentError;
+            continue;
+          }
+          oauthActor = oauthData.actor;
+          break;
+        } catch (authErr) {
+          oauthError = authErr;
         }
-        oauthActor = oauthData.actor;
-        break;
-      } catch (authErr) {
-        oauthError = authErr;
       }
     }
 
     let actor = oauthActor;
+    let sshSessionToken = user.sshSessionToken || '';
     if (APP.workerUrl) {
       const response = await fetch(APP.workerUrl.replace(/\/+$/, '') + '/api', {
         method: 'POST',
@@ -4345,6 +4384,7 @@ async function verifyGoogleSessionWithBackend(user) {
           action: 'verifySession',
           auth: {
             idToken: user.idToken || '',
+            sshSessionToken: user.sshSessionToken || '',
             email: user.email || '',
             name: user.name || '',
             sub: user.sub || ''
@@ -4359,6 +4399,9 @@ async function verifyGoogleSessionWithBackend(user) {
         throw err;
       }
       actor = data.actor;
+      if (data.sshSessionToken) {
+        sshSessionToken = data.sshSessionToken;
+      }
     } else if (!actor && oauthError) {
       throw oauthError;
     }
@@ -4367,16 +4410,19 @@ async function verifyGoogleSessionWithBackend(user) {
       throw oauthError || new Error('Pengesahan sesi Google gagal.');
     }
 
-    return {
+    const returnVal = {
       name: String(actor.name || user.name || user.email || '').trim(),
       email: String(actor.email || user.email || '').trim().toLowerCase(),
       picture: String(actor.picture || user.picture || '').trim(),
       sub: String(actor.sub || user.sub || '').trim(),
-      idToken: user.idToken,
+      idToken: user.idToken || '',
+      sshSessionToken: sshSessionToken,
       role: String(actor.role || '').trim(),
       jawatan: String(actor.jawatan || '').trim(),
       kelas: String(actor.kelas || '').trim()
     };
+    if (user.savedAt) returnVal.savedAt = user.savedAt;
+    return returnVal;
   } catch (err) {
     if (err && err.name === 'AbortError') throw new Error('Pengesahan sesi Google mengambil masa terlalu lama.');
     throw err;

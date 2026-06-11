@@ -58,10 +58,17 @@ function json(statusCode, payload) {
 }
 
 function getStoreHandle() {
-  return getStore({
+  const opts = {
     name: STORE_NAME,
     consistency: "strong"
-  });
+  };
+  const siteId = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token = process.env.NETLIFY_AUTH_TOKEN || process.env.NETLIFY_API_TOKEN;
+  if (siteId && token) {
+    opts.siteID = siteId;
+    opts.token = token;
+  }
+  return getStore(opts);
 }
 
 function normalizeConfigObject(input) {
@@ -101,6 +108,11 @@ async function syncBlobToD1(config) {
     return { success: false, error: "WORKER_URL belum diset." };
   }
 
+  let targetUrl = workerUrl;
+  if (!targetUrl.endsWith("/api") && !targetUrl.endsWith("/api/")) {
+    targetUrl = targetUrl.replace(/\/$/, "") + "/api";
+  }
+
   const workerSecret = String(process.env.WORKER_SECRET || "").trim();
   const adminSecret = String(process.env.ADMIN_WORKER_SECRET || "").trim();
 
@@ -108,7 +120,7 @@ async function syncBlobToD1(config) {
   if (workerSecret) headers["X-Worker-Secret"] = workerSecret;
   if (adminSecret) headers["X-Admin-Secret"] = adminSecret;
 
-  const response = await fetch(workerUrl, {
+  const response = await fetch(targetUrl, {
     method: "POST",
     headers,
     body: JSON.stringify({

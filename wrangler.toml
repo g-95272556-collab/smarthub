@@ -1,0 +1,14 @@
+name = "smartschoolhub-skkiandongo"
+main = "SmartSchoolHub_Worker.js"
+compatibility_date = "2026-06-10"
+
+[vars]
+CLOUDFLARE_D1_BACKEND = "1"
+GOOGLE_SHEETS_BACKEND = "0"
+WORKER_SECRET = "187aa607c3f3b15e68c2e5f63f9a4852376f0b9f6481df20"
+ALLOWED_CORS_ORIGINS = "https://xbasmarthub.netlify.app"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "smartschoolhub-d1"
+database_id = "6a0b9c2a-848b-4126-9f0c-5e0907fdee7d"

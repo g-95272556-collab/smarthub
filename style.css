@@ -3348,7 +3348,7 @@ table tbody tr:last-child td { border-bottom: none; }
 }
 
 .chart-bar {
-  width: 100%;
+  width: 24px;
   border-radius: 10px 10px 4px 4px;
   background: var(--blue);
   transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s, box-shadow 0.3s;
@@ -3820,7 +3820,7 @@ table tbody tr:last-child td { border-bottom: none; }
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  height: 80px;
+  height: 120px;
   padding: 8px 0 0;
 }
 .dash-chart-loading,
@@ -6164,21 +6164,14 @@ details[open] > summary svg {
 }
 
 /* 5. Chart labels & containers */
-.dash-card-chart .dash-chart-labels span {
+.dash-card-chart .chart-bar-label {
   color: rgba(255, 255, 255, 0.8) !important;
 }
-.dash-card-chart .dash-chart-bar-value {
+.dash-card-chart .chart-bar-value {
   color: #fff !important;
 }
 .dash-card-chart .dash-chart-loading {
   color: rgba(255, 255, 255, 0.7) !important;
-}
-.dash-card-chart .dash-chart-bar-fill {
-  background: linear-gradient(180deg, #22d3ee 0%, #06b6d4 100%) !important;
-  box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
-}
-.dash-card-chart .dash-chart-bar-bg {
-  background: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Legend line for weather icons explanation */

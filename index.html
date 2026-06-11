@@ -1210,9 +1210,6 @@
             <div id="dashChartWrap" class="dash-chart-wrap">
               <div class="dash-chart-loading">Memuat...</div>
             </div>
-            <div class="dash-chart-labels">
-              <span>Isnin</span><span>Selasa</span><span>Rabu</span><span>Khamis</span><span>Jumaat</span>
-            </div>
           </div>
           <div class="card dash-card-upcoming">
             <div class="sc-deco"></div>
@@ -4868,6 +4865,66 @@ Berikut ialah makluman guru bertugas untuk minggu ini:
     <div class="modal-footer">
       <button class="btn btn-secondary" data-close-modal="modalKehadiranGuruManualAdmin">Batal</button>
       <button class="btn btn-primary" data-action="submitKehadiranGuruManualAdmin"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-check-circle"></use></svg> Simpan Rekod</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT KEHADIRAN GURU ADMIN -->
+<div id="modalEditKehadiranGuruAdmin" class="modal-backdrop d-none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Kemaskini Kehadiran Guru / Staf - Admin</h3>
+      <button class="modal-close" data-close-modal="modalEditKehadiranGuruAdmin">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.25);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:0.82rem;line-height:1.6;color:var(--muted)">
+        Mengedit kehadiran untuk <strong id="editkGuruAdminNama">-</strong> pada tarikh <strong id="editkGuruAdminTarikhText">-</strong>.
+      </div>
+      <input type="hidden" id="editkGuruAdminNamaVal">
+      <input type="hidden" id="editkGuruAdminTarikh">
+      
+      <h4 style="margin-bottom:10px;color:var(--primary);font-size:0.95rem;border-bottom:1px solid var(--border);padding-bottom:5px">Punch In (Daftar Masuk)</h4>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Status Masuk</label>
+          <select id="editkGuruAdminStatus">
+            <option value="Hadir">• Hadir</option>
+            <option value="Lewat">⚠️ Lewat</option>
+            <option value="Tidak Hadir">❌ Tidak Hadir</option>
+            <option value="Cuti">📅 Cuti Diluluskan</option>
+            <option value="MC">🏥 MC</option>
+            <option value="Tugas Luar">🚌 Tugas Luar</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Masa Masuk</label>
+          <input id="editkGuruAdminMasaMasuk" type="time">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Catatan Masuk</label>
+        <input id="editkGuruAdminCatatanMasuk" type="text" placeholder="Catatan punch-in (pilihan)">
+      </div>
+      
+      <h4 style="margin:20px 0 10px 0;color:var(--primary);font-size:0.95rem;border-bottom:1px solid var(--border);padding-bottom:5px">Punch Out (Daftar Keluar)</h4>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Masa Keluar</label>
+          <input id="editkGuruAdminMasaKeluar" type="time">
+        </div>
+        <div class="form-group">
+          <label style="visibility:hidden">Placeholder</label>
+          <div style="font-size:0.82rem;color:var(--muted);padding-top:10px">Status: Punch Out</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Catatan Keluar</label>
+        <input id="editkGuruAdminCatatanKeluar" type="text" placeholder="Catatan punch-out (pilihan)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="modalEditKehadiranGuruAdmin">Batal</button>
+      <button class="btn btn-primary" data-action="submitEditKehadiranGuruAdmin"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-check-circle"></use></svg> Kemaskini Rekod</button>
     </div>
   </div>
 </div>
