@@ -75,7 +75,8 @@ const SENSITIVE_ACTIONS = new Set([
   "batchUpdate",
   "setupAllSheets",
   "storeLetterFile",
-  "verifySession"
+  "verifySession",
+  "sendNotification"
 ]);
 const SECURITY_HEADERS = {
   "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; img-src 'self' data: blob: https://lh3.googleusercontent.com https://*.googleusercontent.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://xbasmarthub.netlify.app https://smartschoolhub-skkiandongo.g-95272556.workers.dev https://smartschoolhub-google-oauth.g-95272556.workers.dev https://api.open-meteo.com https://api.waktusolat.app https://accounts.google.com https://www.googleapis.com https://oauth2.googleapis.com https://api.telegram.org https://api.fonnte.com https://docs.google.com https://generativelanguage.googleapis.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.googleusercontent.com; frame-src https://accounts.google.com https://apis.google.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; upgrade-insecure-requests",
@@ -631,6 +632,98 @@ async function handleAPI(request, env, corsHeaders) {
       return jsonResp({ success: true, rows, date, isAdmin }, 200, corsHeaders);
     } catch (err) {
       return jsonResp({ success: false, error: err.message || "Gagal baca AI usage." }, 500, corsHeaders);
+    }
+  }
+
+  if (body.action === "sendNotification") {
+    try {
+      const channel = String(body.channel || "").trim().toLowerCase();
+      if (channel !== "telegram" && channel !== "fonnte") {
+        return jsonResp({ success: false, error: "Saluran notifikasi tidak sah" }, 400, corsHeaders);
+      }
+
+      const config = shouldUseCloudflareD1(env)
+        ? await d1GetConfig(env, workerToken)
+        : await googleGetConfig(env);
+
+      if (channel === "telegram") {
+        const botToken = String(config.TELEGRAM_BOT || "").trim();
+        const defaultChatId = String(config.TELEGRAM_CHAT || "").trim();
+        const defaultTopic = String(config.TELEGRAM_TOPIC || "").trim();
+
+        const chatId = String(body.chatId || body.target || defaultChatId).trim();
+        const topic = String(body.topic || body.topicId || defaultTopic).trim();
+        const message = String(body.message || "").trim();
+
+        if (!botToken) {
+          return jsonResp({ success: false, error: "Telegram Bot Token belum dikonfigurasi di backend." }, 400, corsHeaders);
+        }
+        if (!chatId) {
+          return jsonResp({ success: false, error: "Telegram Chat ID diperlukan." }, 400, corsHeaders);
+        }
+        if (!message) {
+          return jsonResp({ success: false, error: "Mesej tidak boleh kosong." }, 400, corsHeaders);
+        }
+
+        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        const payload = {
+          chat_id: chatId,
+          text: message,
+          parse_mode: body.parseMode || "Markdown"
+        };
+        if (topic) {
+          payload.message_thread_id = parseInt(topic, 10);
+        }
+
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          return jsonResp({ success: false, error: data.description || "Gagal menghantar ke Telegram" }, response.status || 500, corsHeaders);
+        }
+        return jsonResp({ success: true, result: data.result }, 200, corsHeaders);
+
+      } else if (channel === "fonnte") {
+        const fonnteToken = String(config.FONNTE_TOKEN || "").trim();
+        const target = String(body.target || "").trim();
+        const message = String(body.message || "").trim();
+
+        if (!fonnteToken) {
+          return jsonResp({ success: false, error: "Token Fonnte belum dikonfigurasi di backend." }, 400, corsHeaders);
+        }
+        if (!target) {
+          return jsonResp({ success: false, error: "Sasaran Fonnte (nombor/kumpulan) diperlukan." }, 400, corsHeaders);
+        }
+
+        const params = new URLSearchParams();
+        params.set("target", target);
+        params.set("message", message);
+        if (body.fileUrl) {
+          params.set("url", body.fileUrl);
+        }
+        if (body.filename) {
+          params.set("filename", body.filename);
+        }
+
+        const response = await fetch("https://api.fonnte.com/send", {
+          method: "POST",
+          headers: {
+            "Authorization": fonnteToken,
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: params.toString()
+        });
+        const data = await response.json();
+        if (!response.ok || (data.status !== true && data.status !== "true")) {
+          return jsonResp({ success: false, error: data.reason || "Gagal menghantar ke Fonnte" }, response.status || 500, corsHeaders);
+        }
+        return jsonResp({ success: true, status: true, detail: data }, 200, corsHeaders);
+      }
+    } catch (err) {
+      return jsonResp({ success: false, error: err.message }, 500, corsHeaders);
     }
   }
 
@@ -2048,6 +2141,7 @@ function needsAuthenticatedRequest(body) {
   if (body.action === "getConfig" || body.action === "setConfig" || body.action === "setupAllSheets") return true;
   if ((body.action === "appendRow" || body.action === "appendRows") && body.sheetKey !== "KEHADIRAN_MURID" && body.sheetKey !== "KEHADIRAN_GURU") return true;
   if (body.action === "saveAiUsage" || body.action === "getAiUsage") return true;
+  if (body.action === "sendNotification") return true;
   return false;
 }
 
@@ -2128,7 +2222,7 @@ async function authorizeRequest(body, actor, env, workerToken) {
   if (body.action === "getMurid") {
     return authorizeClassScopedRead(body, actor, env, workerToken);
   }
-  if (body.action === "storeLetterFile") {
+  if (body.action === "storeLetterFile" || body.action === "sendNotification") {
     return authorizeTeacherRead(body, actor, env, workerToken);
   }
   if (body.action === "getTakwimEvents" || body.action === "saveTakwimEvent" ||
