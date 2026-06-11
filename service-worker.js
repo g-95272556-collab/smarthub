@@ -1,4 +1,4 @@
-const CACHE_NAME = "ssh-pwa-v30-csp-app-phase4";
+const CACHE_NAME = "ssh-pwa-v31-oauth-clientid-fix";
 const APP_SHELL = [
   "./",
   "./index.html",
