@@ -9,3 +9,9 @@ Thumbs.db
 .env
 .env.*
 .serve-job-id
+.deepseek/
+scripts/__pycache__/
+scripts/find_*.js
+scripts/search_*.js
+scripts/extract_actions.js
+scripts/fetch_guru.js

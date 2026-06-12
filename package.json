@@ -4,7 +4,8 @@
   "private": true,
   "description": "SmartSchoolHub SK Kiandongo static site recovered from Netlify for local editing and redeploy.",
   "dependencies": {
-    "@netlify/blobs": "^8.1.0"
+    "@netlify/blobs": "^8.1.0",
+    "puppeteer-core": "^25.1.0"
   },
   "scripts": {
     "serve": "node scripts/dev-server.mjs",
