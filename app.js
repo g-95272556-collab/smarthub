@@ -3747,6 +3747,7 @@ async function saveDutyNotificationConfig() {
   payload[DUTY_NOTIF_CONFIG_KEYS.time] = getInputTrimmed('dutyNotifTime', '17:00');
   payload[DUTY_NOTIF_CONFIG_KEYS.targetMode] = getInputTrimmed('dutyNotifTargetMode', 'individual');
   payload[DUTY_NOTIF_CONFIG_KEYS.target] = getInputTrimmed('dutyNotifTarget', '');
+  payload[DUTY_NOTIF_CONFIG_KEYS.group] = getInputTrimmed('dutyNotifGroup', '');
   payload[DUTY_NOTIF_CONFIG_KEYS.template] = getInputTrimmed('dutyNotifTemplate', DEFAULT_DUTY_NOTIF_TEMPLATE);
   payload[DUTY_NOTIF_CONFIG_KEYS.groupTemplate] = getInputTrimmed('dutyNotifGroupTemplate', DEFAULT_DUTY_NOTIF_GROUP_TEMPLATE);
   payload[DUTY_NOTIF_CONFIG_KEYS.note] = getInputTrimmed('dutyNotifNote', '');
