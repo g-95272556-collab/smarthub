@@ -2297,7 +2297,7 @@ _SK Kiandongo_</textarea>
             <button class="btn btn-secondary config-menu-item" data-config-group="notifikasi" data-action="scroll-config-section" data-target="config-attendance-notif-card"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-bell"></use></svg> Notifikasi Kehadiran</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="notifikasi" data-action="scroll-config-section" data-target="config-duty-notif-card"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-clipboard-check"></use></svg> Notifikasi Guru Bertugas</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="notifikasi" data-action="scroll-config-section" data-target="config-notif-module-card"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-message-square"></use></svg> Modul Notifikasi (Admin)</button>
-            <button class="btn btn-secondary config-menu-item" data-config-group="takwim" data-action="scroll-config-section" data-target="config-takwim-guru-notif-card"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-calendar-days"></use></svg> Notifikasi Takwim Guru</button>
+            <button class="btn btn-secondary config-menu-item" data-config-group="takwim" data-action="scroll-config-section" data-target="config-takwim-guru-notif-card"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-calendar-days"></use></svg> Notifikasi Cuti PIBG</button>
 
             <button class="btn btn-secondary config-menu-item" data-config-group="data" data-action="scroll-config-section" data-target="config-kokum-card"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-award"></use></svg> Konfigurasi Kokum</button>
             <button class="btn btn-secondary config-menu-item" data-config-group="data" data-action="scroll-config-section" data-target="config-jadual-card"><svg class="lucide-icon" width="16" height="16"><use href="#lucide-clipboard-list"></use></svg> Jadual Guru Bertugas</button>
@@ -2993,22 +2993,22 @@ _{SEKOLAH}_</textarea>
         <div class="card config-section-card" id="config-takwim-guru-notif-card" data-config-group="takwim" style="margin-top:20px;border:1px solid rgba(14,116,144,.18);background:linear-gradient(180deg,#ffffff 0%,#f3fbff 100%)">
           <div class="section-header" style="align-items:flex-start;gap:14px">
             <div class="flex-1 min-w-0">
-              <h2>Notifikasi Takwim Guru (Fonnte)</h2>
+              <h2>Notifikasi Cuti PIBG (Fonnte)</h2>
               <p style="font-size:0.9rem;color:var(--muted);margin:8px 0 0;line-height:1.7">
                 Hantar peringatan aktiviti atau peristiwa takwim kepada guru melalui Fonnte pada <strong>sehari sebelum</strong> dan <strong>hari kejadian</strong>. Penghantaran menggunakan tarikh mula acara takwim.
               </p>
             </div>
             <div class="d-flex flex-col align-start gap-8">
               <button class="btn btn-sm btn-secondary" data-action="scroll-config-section" data-target="mod-konfigurasi">Kembali ke Menu Konfigurasi</button>
-              <span class="badge badge-blue">Admin Sahaja</span>
+              <span class="badge badge-blue">Backend Automatik</span>
             </div>
           </div>
           <div id="takwimGuruNotifTogglePanel" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border:2px solid rgba(14,116,144,.28);border-radius:14px;background:rgba(14,116,144,.05);margin-top:16px">
             <div class="d-flex align-center gap-10">
               <span style="font-size:1.3rem">📅</span>
               <div>
-                <div style="font-weight:700;font-size:0.95rem">Peringatan Takwim Untuk Guru</div>
-                <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Auto-hantar Fonnte kepada kumpulan guru sehari sebelum dan pada hari acara bermula.</div>
+                <div style="font-weight:700;font-size:0.95rem">Makluman Cuti Kepada PIBG</div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Auto-hantar Fonnte kepada Group Rasmi PIBG untuk cuti peristiwa, cuti umum, dan cuti persekolahan.</div>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
@@ -3020,71 +3020,72 @@ _{SEKOLAH}_</textarea>
             <div class="p-14 border rounded-14 bg-white">
               <div class="fs-082 text-muted mb-6">Sasaran Fonnte</div>
               <div id="takwimGuruNotifTargetStatus" class="font-800 text-blue">Memuat...</div>
-              <div id="takwimGuruNotifTargetMeta" class="mt-6 fs-082 text-muted lh-16">Kumpulan guru atau sasaran khusus akan dipaparkan di sini.</div>
+              <div id="takwimGuruNotifTargetMeta" class="mt-6 fs-082 text-muted lh-16">Group PIBG atau sasaran khusus akan dipaparkan di sini.</div>
             </div>
             <div class="p-14 border rounded-14 bg-white">
               <div class="fs-082 text-muted mb-6">Jadual Hantar</div>
               <div id="takwimGuruNotifScheduleStatus" class="font-800 text-blue">Memuat...</div>
-              <div id="takwimGuruNotifScheduleMeta" class="mt-6 fs-082 text-muted lh-16">Masa H-1 dan hari kejadian akan dipaparkan di sini.</div>
+              <div id="takwimGuruNotifScheduleMeta" class="mt-6 fs-082 text-muted lh-16">Masa H-2 dan hari mula cuti akan dipaparkan di sini.</div>
             </div>
             <div class="p-14 border rounded-14 bg-white">
               <div class="fs-082 text-muted mb-6">Keperluan Operasi</div>
               <div id="takwimGuruNotifRuntimeStatus" class="font-800 text-blue">Memuat...</div>
-              <div id="takwimGuruNotifRuntimeMeta" class="mt-6 fs-082 text-muted lh-16">Token Fonnte, sesi admin, dan takwim aktif diperlukan.</div>
+              <div id="takwimGuruNotifRuntimeMeta" class="mt-6 fs-082 text-muted lh-16">Token Fonnte, Group PIBG, dan takwim cuti aktif diperlukan.</div>
             </div>
           </div>
           <div class="form-row" style="margin-top:16px">
             <div class="form-group">
-              <label>Sasaran Fonnte Guru</label>
-              <input id="takwimGuruNotifTarget" type="text" placeholder="Kosongkan untuk guna Kumpulan Guru dari Komunikasi">
-              <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Boleh isi nombor, kumpulan WhatsApp, atau biarkan kosong untuk guna tetapan <strong>ID Kumpulan Guru (Fonnte)</strong>.</div>
+              <label>Sasaran Fonnte PIBG</label>
+              <input id="takwimGuruNotifTarget" type="text" placeholder="Kosongkan untuk guna ID Kumpulan PIBG dari Komunikasi">
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Boleh isi nombor, kumpulan WhatsApp, atau biarkan kosong untuk guna tetapan <strong>ID Kumpulan PIBG (Fonnte)</strong>.</div>
             </div>
             <div class="form-group">
               <label>Nota Operasi</label>
-              <input id="takwimGuruNotifNote" type="text" placeholder="Contoh: Gunakan untuk makluman mesyuarat dan program rasmi sekolah">
+              <input id="takwimGuruNotifNote" type="text" placeholder="Contoh: Sila rancang perjalanan keluarga dan pastikan murid hadir semula selepas cuti">
             </div>
           </div>
           <div class="form-row" style="margin-top:12px">
             <div class="form-group">
-              <label>Masa Hantar Sehari Sebelum</label>
+              <label>Masa Hantar H-2</label>
               <input id="takwimGuruNotifDayBeforeTime" type="time" value="17:00">
             </div>
             <div class="form-group">
-              <label>Masa Hantar Pada Hari Kejadian</label>
+              <label>Masa Hantar Hari Mula Cuti</label>
               <input id="takwimGuruNotifSameDayTime" type="time" value="06:30">
             </div>
           </div>
           <div class="form-group" style="margin-top:12px">
             <label>Templat Mesej Fonnte</label>
-            <textarea id="takwimGuruNotifTemplate" rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">📌 *Makluman Takwim {SEKOLAH}*
+            <textarea id="takwimGuruNotifTemplate" rows="10" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;font-size:0.85rem;font-family:inherit;line-height:1.7">📢 *Makluman Cuti {SEKOLAH}*
 
 {PERINGATAN}
 
-Assalamualaikum dan salam sejahtera warga {SEKOLAH},
+Assalamualaikum dan salam sejahtera ibu bapa / penjaga,
 
-Berikut ialah makluman untuk perhatian semua:
+Berikut ialah makluman rasmi berkaitan cuti sekolah:
 
-✨ *{TAJUK}*
-🗓️ *Tarikh:* {TARIKH_PENUH}
-🏷️ *Kategori:* {KATEGORI}
-⏳ *Tempoh:* {TEMPOH}
-📝 *Catatan:* {CATATAN}
-📍 *Tindakan/Nota:* {NOTA_OPERASI}
+{JENIS_CUTI_EMOJI} *{JENIS_CUTI}*
+📌 *Perkara:* {TAJUK}
+🗓️ *Cuti bermula:* {TARIKH_MULA_PENUH}
+🗓️ *Cuti berakhir:* {TARIKH_AKHIR_PENUH}
+🏫 *Sesi persekolahan seperti biasa:* {TARIKH_SESI_SEMULA_PENUH}
+📝 *Makluman tambahan:* {CATATAN}
+📍 *Nota sekolah:* {NOTA_OPERASI}
 
-Sila ambil maklum dan buat persediaan berkaitan lebih awal. Terima kasih atas kerjasama semua. 🤝
+Mohon ibu bapa / penjaga mengambil maklum dan membuat persediaan yang berkaitan. Terima kasih atas kerjasama semua. 🤝
 
 🏫 _{SEKOLAH}_</textarea>
-            <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">Token disokong: <code>{PERINGATAN}</code>, <code>{TAJUK}</code>, <code>{TARIKH}</code>, <code>{TARIKH_PENUH}</code>, <code>{KATEGORI}</code>, <code>{CATATAN}</code>, <code>{TEMPOH}</code>, <code>{NOTA_OPERASI}</code>, <code>{SEKOLAH}</code>.</div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">Token disokong: <code>{PERINGATAN}</code>, <code>{JENIS_CUTI}</code>, <code>{JENIS_CUTI_EMOJI}</code>, <code>{TAJUK}</code>, <code>{TARIKH_MULA_PENUH}</code>, <code>{TARIKH_AKHIR_PENUH}</code>, <code>{TARIKH_SESI_SEMULA_PENUH}</code>, <code>{CATATAN}</code>, <code>{NOTA_OPERASI}</code>, <code>{SEKOLAH}</code>.</div>
           </div>
           <div class="d-flex gap-10 flex-wrap mt-14">
-            <button class="btn btn-primary" data-action="save-takwim-guru-notif-config">💾 Simpan Tetapan Takwim Guru</button>
+            <button class="btn btn-primary" data-action="save-takwim-guru-notif-config">💾 Simpan Tetapan Cuti PIBG</button>
             <button class="btn btn-secondary" data-action="load-config">Muat Semula</button>
-            <button class="btn btn-secondary" data-action="test-takwim-guru-notif" data-reminder-type="day-before">Uji Notifikasi H-1</button>
-            <button class="btn btn-secondary" data-action="test-takwim-guru-notif" data-reminder-type="same-day">Uji Notifikasi Hari Kejadian</button>
+            <button class="btn btn-secondary" data-action="test-takwim-guru-notif" data-reminder-type="day-before">Uji Notifikasi H-2</button>
+            <button class="btn btn-secondary" data-action="test-takwim-guru-notif" data-reminder-type="same-day">Uji Hari Mula Cuti</button>
           </div>
           <div id="takwimGuruNotifConfigResult" class="result-box" style="display:none;margin-top:14px"></div>
           <div style="margin-top:12px;font-size:0.8rem;color:var(--muted);line-height:1.7">
-            Penghantaran automatik ini bergantung pada sesi pentadbir yang aktif pada webapp ini. Sistem akan semak setiap minit dan hanya menghantar sekali bagi setiap acara untuk setiap jadual.
+            Penghantaran automatik ini berjalan di backend berdasarkan data takwim sekolah. Sistem akan semak setiap minit dan hanya menghantar sekali bagi setiap cuti untuk setiap jadual.
           </div>
         </div>
 

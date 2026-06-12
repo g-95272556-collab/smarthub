@@ -198,15 +198,66 @@ function isMobileOrTablet() {
   return /Mobi|Android|iPad|iPhone|iPod/i.test(navigator.userAgent);
 }
 
+function getMalaysiaDateFromTimestamp(timestamp) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kuala_Lumpur',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short'
+  }).formatToParts(new Date(timestamp));
+  const map = {};
+  parts.forEach(function(part) {
+    map[part.type] = part.value;
+  });
+  return {
+    year: Number(map.year || 0),
+    month: Number(map.month || 0),
+    day: Number(map.day || 0),
+    weekday: String(map.weekday || '').toLowerCase()
+  };
+}
+
+function getNextMondayExpiryTimestamp(savedAt) {
+  if (!savedAt) return 0;
+  const malaysiaNow = getMalaysiaDateFromTimestamp(savedAt);
+  const weekdayMap = {
+    mon: 0,
+    tue: 1,
+    wed: 2,
+    thu: 3,
+    fri: 4,
+    sat: 5,
+    sun: 6
+  };
+  const weekdayIndex = weekdayMap[malaysiaNow.weekday];
+  if (typeof weekdayIndex !== 'number') return 0;
+  const daysUntilNextMonday = 7 - weekdayIndex;
+  const nextMondayUtc = Date.UTC(
+    malaysiaNow.year,
+    Math.max(0, malaysiaNow.month - 1),
+    malaysiaNow.day + daysUntilNextMonday,
+    0 - 8,
+    0,
+    0,
+    0
+  );
+  return nextMondayUtc;
+}
+
+function isMobilePersistentSessionValid(user) {
+  if (!user || !user.savedAt) return false;
+  const expiryAt = getNextMondayExpiryTimestamp(user.savedAt);
+  return expiryAt > Date.now();
+}
+
 function getStoredSshUser() {
   if (isMobileOrTablet()) {
     const stored = localStorage.getItem('ssh_user_persistent');
     if (stored) {
       try {
         const user = JSON.parse(stored);
-        const now = Date.now();
-        const maxAge = 5 * 24 * 60 * 60 * 1000; // 5 days
-        if (user.savedAt && (now - user.savedAt) < maxAge) {
+        if (isMobilePersistentSessionValid(user)) {
           return JSON.stringify(user);
         } else {
           localStorage.removeItem('ssh_user_persistent');
@@ -1544,7 +1595,7 @@ var DEFAULT_ATTENDANCE_TEMPLATES = {
   muridClassGroup: '📊 *Kehadiran Murid {KELAS}* 📊\n\n📅 Tarikh: {TARIKH}\n\n📋 Murid yang tidak hadir:\n{SENARAI}\n\n⚠️ Mohon kerjasama ibu bapa untuk maklumkan pihak sekolah jika anak tidak dapat hadir. Terima kasih! 🤝\n\n🏫 _{SEKOLAH}_',
   muridTeacherGroup: '📣 *Makluman Kehadiran Murid/Pengurusan RMT kepada Guru Kelas dan Guru Penyelaras RMT* 📣\n\n👋 Salam sejahtera semua guru kelas dan guru penyelaras RMT,\n\nMohon semua guru kelas/penyelaras RMT *mengisi kehadiran murid dalam MOEIS IDME (https://idme.moe.gov.my/login) dan Pengurusan RMT (https://appsjohor.moe.gov.my/rmt/) sebelum jam {MASA_DEADLINE} pagi* bagi memastikan rekod sekolah lengkap dan tepat.\n\n📅 Tarikh: {TARIKH}\n\n🕒 Sila lengkapkan segera jika masih belum direkodkan.\n\n🤝 Terima kasih atas kerjasama dan tindakan pantas semua.\n\n🏫 _{SEKOLAH}_'
 };
-var DEFAULT_TAKWIM_GURU_NOTIF_TEMPLATE = '📌 *Makluman Takwim {SEKOLAH}*\n\n{PERINGATAN}\n\nAssalamualaikum dan salam sejahtera warga {SEKOLAH},\n\nBerikut ialah makluman untuk perhatian semua:\n\n✨ *{TAJUK}*\n🗓️ *Tarikh:* {TARIKH_PENUH}\n🏷️ *Kategori:* {KATEGORI}\n⏳ *Tempoh:* {TEMPOH}\n📝 *Catatan:* {CATATAN}\n📍 *Tindakan/Nota:* {NOTA_OPERASI}\n\nSila ambil maklum dan buat persediaan berkaitan lebih awal. Terima kasih atas kerjasama semua. 🤝\n\n🏫 _{SEKOLAH}_';
+var DEFAULT_TAKWIM_GURU_NOTIF_TEMPLATE = '📢 *Makluman Cuti {SEKOLAH}*\n\n{PERINGATAN}\n\nAssalamualaikum dan salam sejahtera ibu bapa / penjaga,\n\nBerikut ialah makluman rasmi berkaitan cuti sekolah:\n\n{JENIS_CUTI_EMOJI} *{JENIS_CUTI}*\n📌 *Perkara:* {TAJUK}\n🗓️ *Cuti bermula:* {TARIKH_MULA_PENUH}\n🗓️ *Cuti berakhir:* {TARIKH_AKHIR_PENUH}\n🏫 *Sesi persekolahan seperti biasa:* {TARIKH_SESI_SEMULA_PENUH}\n📝 *Makluman tambahan:* {CATATAN}\n📍 *Nota sekolah:* {NOTA_OPERASI}\n\nMohon ibu bapa / penjaga mengambil maklum dan membuat persediaan yang berkaitan. Terima kasih atas kerjasama semua. 🤝\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_DUTY_NOTIF_TEMPLATE = '📋 *Jadual Bertugas Mingguan* 📋\n\n👋 Selamat sejahtera Cikgu {NAMA},\n\nAnda ditugaskan sebagai *{PERANAN}* untuk minggu hadapan.\n\n📌 Minggu: *{MINGGU}*\n🗓️ Tarikh: *{TARIKH_MULA}* hingga *{TARIKH_AKHIR}*\n\n👤 Guru Bertugas: *{GURU}*\n🤝 Pembantu: *{PEMBANTU}*\n📝 Catatan: {CATATAN}\n\n💪 Tugas: Kawalan perhimpunan, kantin, disiplin, kebersihan & laporan mingguan.\n\n🌟 Semoga dipermudahkan segala urusan.\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_DUTY_NOTIF_GROUP_TEMPLATE = '📋 *Makluman Jadual Guru Bertugas Mingguan* 📋\n\n👋 Salam Sejahtera Dan Salam Onsoi Semua Warga SK Kiandongo👋\n\nBerikut ialah makluman guru bertugas untuk minggu ini:\n\n📌 Minggu: *{MINGGU}*\n🗓️ Tarikh: *{TARIKH_MULA}* hingga *{TARIKH_AKHIR}*\n\n👤 Guru Bertugas: *{GURU}*\n🤝 Pembantu: *{PEMBANTU}*\n📝 Catatan/Cuti: {CATATAN}\n\n💪 Mohon semua warga sekolah mengambil maklum dan memberikan kerjasama sepanjang minggu bertugas ini.\n\n🌟 Semoga segala urusan dipermudahkan.\n\n🏫 _{SEKOLAH}_';
 var DEFAULT_BIRTHDAY_TEMPLATES = {
@@ -3288,7 +3339,7 @@ function getDutyNotifGroupTemplate() {
   return String(localStorage.getItem('ssh_duty_notif_group_template') || '').trim() || DEFAULT_DUTY_NOTIF_GROUP_TEMPLATE;
 }
 function getTakwimGuruNotifTarget() {
-  // Notifikasi takwim dihantar ke group PIBG, bukan group guru
+  // Notifikasi cuti dihantar ke group PIBG, bukan group guru
   var target = String(localStorage.getItem('ssh_takwim_guru_notif_target') || '').trim();
   if (target) return target;
   // Fallback ke FONNTE_PIBG_GROUP
@@ -3770,10 +3821,11 @@ function updateTakwimGuruNotificationStatusUI() {
   var target = getTakwimGuruNotifTarget();
   var customTarget = String(localStorage.getItem('ssh_takwim_guru_notif_target') || '').trim();
   var fonnteReady = isFonnteBackendReady();
-  var adminReady = isPentadbir();
-  var hasEvents = false;
+  var holidayCount = 0;
   if (typeof getTakwimEvents === 'function') {
-    try { hasEvents = (getTakwimEvents() || []).length > 0; } catch (e) {}
+    try {
+      holidayCount = (getTakwimEvents() || []).filter(isTakwimHolidayEvent).length;
+    } catch (e) {}
   }
 
   setText('takwimGuruNotifStatus', statusText);
@@ -3789,16 +3841,16 @@ function updateTakwimGuruNotificationStatusUI() {
 
   setText('takwimGuruNotifTargetStatus', target ? 'Sedia' : 'Belum lengkap');
   setText('takwimGuruNotifTargetMeta', target
-    ? (customTarget ? 'Sasaran khusus: ' + target : 'Menggunakan Kumpulan Guru sedia ada: ' + target)
-    : 'Isi sasaran khusus atau lengkapkan ID Kumpulan Guru (Fonnte) dalam tetapan Komunikasi.');
-  setText('takwimGuruNotifScheduleStatus', getTakwimGuruNotifDayBeforeTime() + ' (H-1) • ' + getTakwimGuruNotifSameDayTime() + ' (Hari Kejadian)');
-  setText('takwimGuruNotifScheduleMeta', 'Sistem akan semak masa ini setiap minit dan hantar sekali sahaja untuk setiap acara.');
+    ? (customTarget ? 'Sasaran khusus PIBG: ' + target : 'Menggunakan ID Kumpulan PIBG dari Komunikasi: ' + target)
+    : 'Lengkapkan ID Kumpulan PIBG atau isi sasaran khusus Fonnte.');
+  setText('takwimGuruNotifScheduleStatus', getTakwimGuruNotifDayBeforeTime() + ' (H-2) • ' + getTakwimGuruNotifSameDayTime() + ' (Hari Mula Cuti)');
+  setText('takwimGuruNotifScheduleMeta', 'Sistem backend akan semak masa ini setiap minit dan hantar sekali sahaja untuk setiap cuti.');
   var runtimeStatus = [];
   runtimeStatus.push(fonnteReady ? 'Fonnte OK' : 'Token Fonnte belum lengkap');
-  runtimeStatus.push(adminReady ? 'Sesi admin aktif' : 'Perlu sesi admin');
-  runtimeStatus.push(hasEvents ? 'Takwim ada acara' : 'Tiada acara takwim');
+  runtimeStatus.push(target ? 'Group PIBG sedia' : 'Group PIBG belum lengkap');
+  runtimeStatus.push(holidayCount ? holidayCount + ' cuti dikesan' : 'Tiada cuti dikesan');
   setText('takwimGuruNotifRuntimeStatus', runtimeStatus.join(' • '));
-  setText('takwimGuruNotifRuntimeMeta', 'Fonnte: ' + (fonnteReady ? '✅' : '❌') + ' | Admin: ' + (adminReady ? '✅' : '❌') + ' | Acara takwim: ' + (hasEvents ? '✅' : '❌'));
+  setText('takwimGuruNotifRuntimeMeta', 'Fonnte: ' + (fonnteReady ? '✅' : '❌') + ' | Group PIBG: ' + (target ? '✅' : '❌') + ' | Cuti dalam takwim: ' + (holidayCount ? '✅' : '❌'));
 }
 
 async function saveTakwimGuruNotificationConfig() {
@@ -3815,9 +3867,9 @@ async function saveTakwimGuruNotificationConfig() {
   if (!APP.workerUrl) {
     if (result) {
       result.classList.remove('is-hidden');
-      result.textContent = 'Tetapan notifikasi takwim guru disimpan pada peranti ini. Worker URL belum disimpan, jadi belum diselaraskan ke backend.';
+      result.textContent = 'Tetapan notifikasi cuti PIBG disimpan pada peranti ini. Worker URL belum disimpan, jadi belum diselaraskan ke backend.';
     }
-    showToast('Tetapan notifikasi takwim guru disimpan pada peranti ini.', 'success');
+    showToast('Tetapan notifikasi cuti PIBG disimpan pada peranti ini.', 'success');
     return;
   }
   if (!APP.user || (!APP.user.idToken && !APP.user.sshSessionToken)) {
@@ -3830,14 +3882,14 @@ async function saveTakwimGuruNotificationConfig() {
   }
   try {
     var data = await callWorker({ action: 'setConfig', config: payload });
-    if (!data.success) throw new Error(data.error || 'Gagal menyimpan konfigurasi notifikasi takwim guru.');
+    if (!data.success) throw new Error(data.error || 'Gagal menyimpan konfigurasi notifikasi cuti PIBG.');
     try { await callBlobStoreSet(payload); } catch (blobErr) {}
     if (result) {
       result.classList.remove('is-hidden');
-      result.textContent = 'Konfigurasi notifikasi takwim guru berjaya disimpan ke D1 dan disalin ke Blob.';
+      result.textContent = 'Konfigurasi notifikasi cuti PIBG berjaya disimpan ke D1 dan disalin ke Blob.';
     }
-    showToast('Konfigurasi notifikasi takwim guru berjaya disimpan ke D1 dan Blob.', 'success');
-    if (typeof trackActivity === 'function') trackActivity('konfigurasi', 'Konfigurasi notifikasi takwim guru disimpan', null, 'sukses');
+    showToast('Konfigurasi notifikasi cuti PIBG berjaya disimpan ke D1 dan Blob.', 'success');
+    if (typeof trackActivity === 'function') trackActivity('konfigurasi', 'Konfigurasi notifikasi cuti PIBG disimpan', null, 'sukses');
     try { await loadConfig(); } catch (err) {}
   } catch (e) {
     if (result) {
@@ -4638,8 +4690,7 @@ function isValidStoredSession(user) {
   if (!user) return false;
   if (user.sshSessionToken) {
     if (user.savedAt) {
-      const maxAge = 5 * 24 * 60 * 60 * 1000; // 5 days
-      return (Date.now() - user.savedAt) < maxAge;
+      return isMobileOrTablet() ? isMobilePersistentSessionValid(user) : true;
     }
   }
   if (!user.idToken) return false;
@@ -9041,6 +9092,31 @@ function getTakwimGuruEventList() {
     return [];
   }
 }
+function normalizeTakwimText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+function getTakwimHolidayEventType(event) {
+  var text = [
+    event && event.tajuk,
+    event && event.kategori,
+    event && event.catatan
+  ].map(normalizeTakwimText).join(' ');
+  if (text.indexOf('cuti peristiwa') !== -1) return 'Cuti Peristiwa';
+  if (text.indexOf('cuti umum') !== -1) return 'Cuti Umum';
+  if (text.indexOf('cuti sekolah') !== -1 || text.indexOf('cuti persekolahan') !== -1) return 'Cuti Persekolahan';
+  if (text.indexOf('cuti') !== -1) return 'Cuti Sekolah';
+  return '';
+}
+function isTakwimHolidayEvent(event) {
+  return !!getTakwimHolidayEventType(event);
+}
+function getTakwimHolidayTypeEmoji(type) {
+  var normalized = normalizeTakwimText(type);
+  if (normalized.indexOf('peristiwa') !== -1) return '🎉';
+  if (normalized.indexOf('umum') !== -1) return '🇲🇾';
+  if (normalized.indexOf('persekolahan') !== -1 || normalized.indexOf('sekolah') !== -1) return '🏖️';
+  return '📅';
+}
 function formatTakwimGuruDateRange(event) {
   var start = parseLocalDateYMD(event && event.tarikh);
   if (!start) return String((event && event.tarikh) || '-');
@@ -9053,8 +9129,30 @@ function formatTakwimGuruDateRange(event) {
 }
 function getTakwimGuruReminderLine(reminderType) {
   return reminderType === 'day-before'
-    ? '🌙 Salam sejahtera cikgu.\n⏰ Esok akan berlangsung aktiviti berikut:'
-    : '☀️ Salam sejahtera cikgu.\n📍 Hari ini berlangsung aktiviti berikut:';
+    ? '⏰ *Makluman awal H-2:* Cuti akan bermula dalam masa 2 hari. Mohon ibu bapa / penjaga ambil perhatian.'
+    : '📍 *Makluman hari kejadian:* Cuti bermula hari ini. Sila rancang pergerakan dan urusan anak-anak dengan baik.';
+}
+function findTakwimHolidayResumeDate(event, events) {
+  var endRaw = event ? (event.tarikhAkhir || event.tarikh_akhir || event.tarikh || '') : '';
+  var candidate = addDaysYMD(endRaw, 1);
+  var list = Array.isArray(events) ? events : [];
+  for (var i = 0; i < 30; i++) {
+    var parsed = parseLocalDateYMD(candidate);
+    if (!parsed) break;
+    var day = parsed.getDay();
+    var isWeekend = day === 0 || day === 6;
+    var overlapsHoliday = list.some(function(item) {
+      if (!isTakwimHolidayEvent(item)) return false;
+      var start = String(item.tarikh || '').trim();
+      var end = String(item.tarikhAkhir || item.tarikh_akhir || item.tarikh || '').trim() || start;
+      return start && candidate >= start && candidate <= end;
+    });
+    if (!isWeekend && !overlapsHoliday) {
+      return candidate;
+    }
+    candidate = addDaysYMD(candidate, 1);
+  }
+  return candidate;
 }
 function buildTakwimGuruReminderText(event, reminderType) {
   var type = reminderType === 'day-before' ? 'day-before' : 'same-day';
@@ -9062,12 +9160,23 @@ function buildTakwimGuruReminderText(event, reminderType) {
   var noteText = note || 'Sila semak kehadiran, tempat, bahan, dan tugasan berkaitan.';
   var eventDateRange = formatTakwimGuruDateRange(event);
   var endRaw = event ? (event.tarikhAkhir || event.tarikh_akhir || '') : '';
+  var holidayType = getTakwimHolidayEventType(event) || 'Cuti Sekolah';
+  var events = getTakwimGuruEventList();
+  var resumeDate = findTakwimHolidayResumeDate(event, events);
   return renderAttendanceTemplate(getTakwimGuruNotifTemplate(), {
     PERINGATAN: getTakwimGuruReminderLine(type),
     TAJUK: String((event && event.tajuk) || 'Aktiviti Sekolah').trim(),
     TARIKH: String((event && event.tarikh) || '-').trim(),
     TARIKH_PENUH: eventDateRange,
+    TARIKH_MULA: String((event && event.tarikh) || '-').trim(),
+    TARIKH_MULA_PENUH: formatTakwimGuruDateRange({ tarikh: event && event.tarikh }),
+    TARIKH_AKHIR: String((endRaw || (event && event.tarikh) || '-')).trim(),
+    TARIKH_AKHIR_PENUH: formatTakwimGuruDateRange({ tarikh: endRaw || (event && event.tarikh), tarikhAkhir: endRaw || (event && event.tarikh) }),
+    TARIKH_SESI_SEMULA: String(resumeDate || '-').trim(),
+    TARIKH_SESI_SEMULA_PENUH: formatTakwimGuruDateRange({ tarikh: resumeDate || '-' }),
     KATEGORI: String((event && event.kategori) || 'Aktiviti').trim(),
+    JENIS_CUTI: holidayType,
+    JENIS_CUTI_EMOJI: getTakwimHolidayTypeEmoji(holidayType),
     CATATAN: String((event && event.catatan) || '').trim() || 'Tiada catatan tambahan.',
     TEMPOH: (endRaw && endRaw !== event.tarikh) ? eventDateRange : '1 hari',
     NOTA_OPERASI: noteText,

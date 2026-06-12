@@ -3736,36 +3736,120 @@ function addMinutesHM(hmStr, minutes) {
   }
 }
 
+function normalizeTakwimEventText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getTakwimHolidayType(event) {
+  const text = [
+    event && event.tajuk,
+    event && event.kategori,
+    event && event.catatan
+  ].map(normalizeTakwimEventText).join(" ");
+  if (text.includes("cuti peristiwa")) return "Cuti Peristiwa";
+  if (text.includes("cuti umum")) return "Cuti Umum";
+  if (text.includes("cuti sekolah") || text.includes("cuti persekolahan")) return "Cuti Persekolahan";
+  if (text.includes("cuti")) return "Cuti Sekolah";
+  return "";
+}
+
+function isTakwimHolidayEvent(event) {
+  return !!getTakwimHolidayType(event);
+}
+
+function getTakwimHolidayEmoji(type) {
+  const text = normalizeTakwimEventText(type);
+  if (text.includes("peristiwa")) return "🎉";
+  if (text.includes("umum")) return "🇲🇾";
+  if (text.includes("persekolahan") || text.includes("sekolah")) return "🏖️";
+  return "📅";
+}
+
+function isWeekendYMD(dateStr) {
+  try {
+    const parts = String(dateStr || "").split("-");
+    const date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const day = date.getDay();
+    return day === 0 || day === 6;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getEventEndDate(event) {
+  return String((event && (event.tarikh_akhir || event.tarikhAkhir || event.tarikh)) || "").trim();
+}
+
+function findNextSchoolResumeDate(event, events) {
+  let candidate = addDaysYMD(getEventEndDate(event), 1);
+  const list = Array.isArray(events) ? events : [];
+  for (let i = 0; i < 30; i++) {
+    const blocked = isWeekendYMD(candidate) || list.some((item) => {
+      if (!isTakwimHolidayEvent(item)) return false;
+      const start = String(item.tarikh || "").trim();
+      const end = getEventEndDate(item) || start;
+      return start && candidate >= start && candidate <= end;
+    });
+    if (!blocked) return candidate;
+    candidate = addDaysYMD(candidate, 1);
+  }
+  return candidate;
+}
+
+function formatMalayDate(dateStr) {
+  try {
+    const parts = String(dateStr || "").split("-");
+    if (parts.length < 3) return String(dateStr || "-").trim() || "-";
+    const date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    return date.toLocaleDateString("ms-MY", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kuala_Lumpur" });
+  } catch (e) {
+    return String(dateStr || "-").trim() || "-";
+  }
+}
+
 function buildTakwimReminderText(event, type, schoolName, config) {
   const tpl = String(config.TAKWIM_GURU_NOTIF_TEMPLATE || "");
   const tajuk = String(event.tajuk || "").trim();
-  const kategori = String(event.kategori || "Lain-lain").trim();
+  const kategori = String(event.kategori || "Cuti").trim();
   const catatan = String(event.catatan || "Tiada").trim();
   const note = String(config.TAKWIM_GURU_NOTIF_NOTE || "").trim();
+  const holidayType = getTakwimHolidayType(event) || "Cuti Sekolah";
+  const holidayEmoji = getTakwimHolidayEmoji(holidayType);
+  const startDate = String(event.tarikh || "").trim();
+  const endDate = getEventEndDate(event) || startDate;
+  const resumeDate = findNextSchoolResumeDate(event, config.__takwimEvents || []);
 
-  let tempoh = "Satu Hari";
-  if (event.tarikh_akhir && event.tarikh_akhir !== event.tarikh) {
-    tempoh = `${event.tarikh} hingga ${event.tarikh_akhir}`;
-  }
+  const tempoh = startDate === endDate
+    ? formatMalayDate(startDate)
+    : `${formatMalayDate(startDate)} hingga ${formatMalayDate(endDate)}`;
 
   const reminderPrefix = type === "day-before"
-    ? `🚨 *PERINGATAN H-1:* Esok terdapat aktiviti berikut yang dijadualkan. Mohon maklum.`
-    : `📢 *PERINGATAN HARI INI:* Hari ini terdapat aktiviti berikut yang berlangsung.`;
+    ? `⏰ *Makluman H-2:* Cuti akan bermula dalam masa 2 hari. Mohon ibu bapa / penjaga ambil perhatian.`
+    : `📍 *Makluman Hari Ini:* Cuti bermula hari ini. Semoga urusan semua dipermudahkan.`;
 
   let finalTpl = tpl;
   if (!finalTpl || finalTpl.includes("DEFAULT_TEMPLATE_PLACEHOLDER") || !finalTpl.trim()) {
-    finalTpl = "📌 *Makluman Takwim {SEKOLAH}*\n\n{PERINGATAN}\n\nBerikut ialah makluman untuk perhatian semua:\n\n✨ *{TAJUK}*\n🗓️ *Tarikh:* {TARIKH_PENUH}\n🏷️ *Kategori:* {KATEGORI}\n⏳ *Tempoh:* {TEMPOH}\n📝 *Catatan:* {CATATAN}\n📍 *Tindakan/Nota:* {NOTA_OPERASI}\n\nTerima kasih. 🤝\n\n🏫 _{SEKOLAH}_";
+    finalTpl = "📢 *Makluman Cuti {SEKOLAH}*\n\n{PERINGATAN}\n\nAssalamualaikum dan salam sejahtera ibu bapa / penjaga,\n\nBerikut ialah makluman rasmi berkaitan cuti sekolah:\n\n{JENIS_CUTI_EMOJI} *{JENIS_CUTI}*\n📌 *Perkara:* {TAJUK}\n🗓️ *Cuti bermula:* {TARIKH_MULA_PENUH}\n🗓️ *Cuti berakhir:* {TARIKH_AKHIR_PENUH}\n🏫 *Sesi persekolahan seperti biasa:* {TARIKH_SESI_SEMULA_PENUH}\n📝 *Makluman tambahan:* {CATATAN}\n📍 *Nota sekolah:* {NOTA_OPERASI}\n\nMohon ibu bapa / penjaga mengambil maklum dan membuat persediaan yang berkaitan. Terima kasih atas kerjasama semua. 🤝\n\n🏫 _{SEKOLAH}_";
   }
 
   return finalTpl
     .replace(/{SEKOLAH}/g, schoolName)
     .replace(/{PERINGATAN}/g, reminderPrefix)
     .replace(/{TAJUK}/g, tajuk)
-    .replace(/{TARIKH_PENUH}/g, event.tarikh)
+    .replace(/{TARIKH}/g, startDate)
+    .replace(/{TARIKH_PENUH}/g, tempoh)
+    .replace(/{TARIKH_MULA}/g, startDate)
+    .replace(/{TARIKH_MULA_PENUH}/g, formatMalayDate(startDate))
+    .replace(/{TARIKH_AKHIR}/g, endDate)
+    .replace(/{TARIKH_AKHIR_PENUH}/g, formatMalayDate(endDate))
+    .replace(/{TARIKH_SESI_SEMULA}/g, resumeDate)
+    .replace(/{TARIKH_SESI_SEMULA_PENUH}/g, formatMalayDate(resumeDate))
     .replace(/{KATEGORI}/g, kategori)
+    .replace(/{JENIS_CUTI}/g, holidayType)
+    .replace(/{JENIS_CUTI_EMOJI}/g, holidayEmoji)
     .replace(/{TEMPOH}/g, tempoh)
     .replace(/{CATATAN}/g, catatan)
-    .replace(/{NOTA_OPERASI}/g, note || "Sila ambil maklum dan buat persediaan berkaitan.");
+    .replace(/{NOTA_OPERASI}/g, note || "Sila rancang perjalanan, urusan keluarga, dan kehadiran murid selepas cuti.");
 }
 
 async function sendGuruReminderCron(env, todayYmd, config) {
@@ -4065,24 +4149,26 @@ async function sendTakwimCron(env, todayYmd, timeHm, config) {
     const sameDayTime = String(config.TAKWIM_GURU_NOTIF_SAME_DAY_TIME || "06:30").trim();
 
     const schoolName = "SK Kiandongo";
-    const target = String(config.TAKWIM_GURU_NOTIF_TARGET || config.FONNTE_GROUP || "").trim();
+    const target = String(config.TAKWIM_GURU_NOTIF_TARGET || config.FONNTE_PIBG_GROUP || config.FONNTE_GROUP || "").trim();
+    config.__takwimEvents = events;
 
     for (const ev of events) {
+      if (!isTakwimHolidayEvent(ev)) continue;
+
       const eventId = ev.id;
       const eventDate = String(ev.tarikh || "").trim();
       if (!eventDate) continue;
 
-      const beforeDate = addDaysYMD(eventDate, -1);
+      const beforeDate = addDaysYMD(eventDate, -2);
 
       if (beforeDate === todayYmd && timeHm >= dayBeforeTime && timeHm < addMinutesHM(dayBeforeTime, 15)) {
-        const guardKey = `TAKWIM_NOTIF_GUARD_${eventId}_day_before_${todayYmd}`;
+        const guardKey = `TAKWIM_NOTIF_GUARD_${eventId}_h2_${todayYmd}`;
         if (String(config[guardKey] || "").trim() !== "1") {
           await setCronGuard(env, guardKey, "1");
           const msg = buildTakwimReminderText(ev, "day-before", schoolName, config);
           if (target) {
             await dispatchNotificationCron(env, "fonnte", { target: target, message: msg }, config);
           }
-          await dispatchNotificationCron(env, "telegram", { message: msg }, config);
         }
       }
 
@@ -4094,7 +4180,6 @@ async function sendTakwimCron(env, todayYmd, timeHm, config) {
           if (target) {
             await dispatchNotificationCron(env, "fonnte", { target: target, message: msg }, config);
           }
-          await dispatchNotificationCron(env, "telegram", { message: msg }, config);
         }
       }
     }
@@ -4170,4 +4255,3 @@ async function handleScheduledNotification(event, env) {
     await sendTakwimCron(env, todayYmd, timeHm, config);
   }
 }
-
